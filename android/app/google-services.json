@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "267355109721",
+    "project_id": "isdr2026",
+    "storage_bucket": "isdr2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:267355109721:android:8a055c36100e1266e77448",
+        "android_client_info": {
+          "package_name": "com.yencode.isdr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBW0rtHBbi3wnO1XMRwKViOXkDG12muoiY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
