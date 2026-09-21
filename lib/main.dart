@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/app_theme.dart';
+import 'firebase_options.dart';
 import 'core/constants/app_constants.dart';
 import 'core/routes/app_routes.dart';
 import 'core/services/fcm_service.dart';
@@ -20,7 +21,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase immediately (required for background handler)
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Show app immediately - avoid white screen from blocking on FCM init
