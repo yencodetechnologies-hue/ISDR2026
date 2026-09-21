@@ -777,6 +777,30 @@ class ApiService {
     }
   }
 
+  /// Change the management account password only (name/email/mobile stay untouched).
+  Future<Map<String, dynamic>> changeManagementPassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _dio.put(
+        ApiConfig.updateManagementProfile,
+        data: {'currentPassword': currentPassword, 'newPassword': newPassword},
+      );
+      return {
+        'success': response.data['success'] == true,
+        'message': response.data['message'],
+        'error': response.data['error'],
+      };
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? e.message ?? 'Network error',
+      };
+    }
+  }
+
   /// Management (apartment) self-service profile update including optional password change.
   Future<Map<String, dynamic>> updateManagementProfile({
     required String name,
@@ -1051,6 +1075,30 @@ class ApiService {
       return {
         'success': false,
         'error': e.toString(),
+      };
+    }
+  }
+
+  // Upload / replace the management profile photo
+  Future<Map<String, dynamic>> uploadManagementProfilePhoto(String filePath) async {
+    try {
+      final formData = FormData.fromMap({
+        'profilePic': await MultipartFile.fromFile(filePath, filename: 'profilePic.jpg'),
+      });
+      final response = await _dio.put(
+        ApiConfig.updateManagementProfilePhoto,
+        data: formData,
+      );
+      return {
+        'success': response.data['success'] == true,
+        'profilePic': response.data['profilePic'],
+        'error': response.data['error'],
+      };
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? 'Failed to upload photo',
       };
     }
   }
@@ -2240,6 +2288,110 @@ class ApiService {
       return {'success': false, 'error': msg};
     } catch (e) {
       return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Send a notification to an event's participants (optionally one package / inclusion).
+  Future<Map<String, dynamic>> sendEventNotification({
+    required String eventId,
+    required String message,
+    String? packageId,
+    String? inclusionName,
+  }) async {
+    try {
+      final response = await _dio.post(
+        ApiConfig.managedEventNotifications(eventId),
+        data: {
+          'message': message,
+          if (packageId != null && packageId.isNotEmpty) 'packageId': packageId,
+          if (inclusionName != null && inclusionName.isNotEmpty) 'inclusionName': inclusionName,
+        },
+      );
+      return {
+        'success': response.data['success'] == true,
+        'recipientCount': response.data['recipientCount'] ?? 0,
+        'error': response.data['error'],
+      };
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? e.message ?? 'Network error',
+      };
+    }
+  }
+
+  // ---- Event schedules (speaker sessions) ----
+  Future<Map<String, dynamic>> listEventSchedules(String eventId) async {
+    try {
+      final response = await _dio.get(ApiConfig.managedEventSchedules(eventId));
+      return {
+        'success': response.data['success'] == true,
+        'schedules': response.data['schedules'] ?? [],
+        'error': response.data['error'],
+      };
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? e.message ?? 'Network error',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> createEventSchedule({
+    required String eventId,
+    required String speakerName,
+    required String scheduleName,
+    required String date, // yyyy-MM-dd
+    required String fromTime, // HH:mm
+    required String toTime, // HH:mm
+    String description = '',
+    String? photoPath,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'speakerName': speakerName,
+        'scheduleName': scheduleName,
+        'date': date,
+        'fromTime': fromTime,
+        'toTime': toTime,
+        'description': description,
+        if (photoPath != null)
+          'photo': await MultipartFile.fromFile(photoPath, filename: 'speaker.jpg'),
+      });
+      final response = await _dio.post(
+        ApiConfig.managedEventSchedules(eventId),
+        data: formData,
+      );
+      return {
+        'success': response.data['success'] == true,
+        'schedule': response.data['schedule'],
+        'error': response.data['error'],
+      };
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? e.message ?? 'Network error',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteEventSchedule(String eventId, String scheduleId) async {
+    try {
+      final response =
+          await _dio.delete('${ApiConfig.managedEventSchedules(eventId)}/$scheduleId');
+      return {
+        'success': response.data['success'] == true,
+        'error': response.data['error'],
+      };
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? e.message ?? 'Network error',
+      };
     }
   }
 

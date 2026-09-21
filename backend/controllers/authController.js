@@ -2,6 +2,9 @@ const bcrypt = require('bcryptjs');
 const Apartment = require('../models/Apartment');
 const ManagementUser = require('../models/ManagementUser');
 const generateToken = require('../utils/generateToken');
+const EventStaff = require('../models/EventStaff');
+const { buildStaffPayload } = require('./staffController');
+const { uploadToCloudinary } = require('../middleware/upload');
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
@@ -68,6 +71,7 @@ function buildManagementPayload(apartment) {
     status: 'approved',
     apartmentId,
     isActive: apartment.isActive,
+    profilePic: apartment.profilePic || null,
     propertyType: 'events',
     ownerName: apartment.ownerName || null,
     wardenName: null,
@@ -92,6 +96,46 @@ async function storeFcmToken(doc, fcmToken) {
   await doc.constructor.updateOne({ _id: doc._id }, { fcmTokens: limited });
 }
 
+/** Find an event staff account by email or mobile. */
+async function findStaffAccount(rawId) {
+  const identifier = String(rawId ?? '').trim();
+  if (!identifier) return null;
+  if (identifier.includes('@')) {
+    return EventStaff.findOne({ email: identifier.toLowerCase() }).select('+password');
+  }
+  const mobile = normalizeMobile10(identifier);
+  return mobile ? EventStaff.findOne({ mobileNumber: mobile }).select('+password') : null;
+}
+
+/** Event staff login (used when no management account matches). */
+async function loginStaff(req, res, identifier, passwordStr, fcmToken) {
+  const staff = await findStaffAccount(identifier);
+  if (!staff) {
+    return res.status(400).json({ error: 'No account found with this email or mobile number' });
+  }
+  if (!(await staff.comparePassword(passwordStr))) {
+    return res.status(401).json({ error: 'Invalid email/mobile number or password' });
+  }
+  if (!staff.isActive) {
+    return res.status(403).json({ error: 'Your account has been deactivated. Please contact management.' });
+  }
+  if (staff.status !== 'approved') {
+    return res.status(403).json({ error: 'Your account is not approved yet.' });
+  }
+  const apartment = await Apartment.findById(staff.apartmentId).select('name isActive');
+  if (!apartment || !apartment.isActive) {
+    return res.status(403).json({ error: 'This event account is not active. Please contact management.' });
+  }
+  await storeFcmToken(staff, fcmToken);
+  const token = generateToken(staff._id, staff.apartmentId);
+  return res.json({
+    message: 'Login successful',
+    user: buildStaffPayload(staff, apartment),
+    token,
+    success: true,
+  });
+}
+
 // @desc    Management login (email or mobile + password)
 // @route   POST /api/auth/login
 // @access  Public
@@ -111,15 +155,15 @@ const loginUser = async (req, res) => {
 
     // Event Management is the only login type; it is also the default.
     const normalizedUserType = userType ? String(userType).toLowerCase().trim() : 'apartment';
-    if (normalizedUserType !== 'apartment') {
-      return res.status(400).json({ error: 'Only management login is supported' });
+    if (normalizedUserType !== 'apartment' && normalizedUserType !== 'user') {
+      return res.status(400).json({ error: 'Unsupported login type' });
     }
 
     const lookup = await findManagementAccount(
       email ?? req.body.mobile ?? req.body.mobileNumber ?? req.body.username ?? ''
     );
     if (!lookup) {
-      return res.status(400).json({ error: 'No account found with this email or mobile number' });
+      return await loginStaff(req, res, email ?? req.body.mobile ?? req.body.mobileNumber ?? req.body.username ?? '', passwordStr, fcmToken);
     }
 
     const { apartment, mobile, managementUser } = lookup;
@@ -167,6 +211,12 @@ const loginUser = async (req, res) => {
 // @access  Private
 const getCurrentUser = async (req, res) => {
   try {
+    if (req.userType === 'user') {
+      const staff = await EventStaff.findById(req.userId);
+      if (!staff) return res.status(404).json({ error: 'User not found' });
+      const apt = await Apartment.findById(staff.apartmentId).select('name');
+      return res.json({ user: buildStaffPayload(staff, apt) });
+    }
     const apartment = await Apartment.findById(req.userId);
     if (!apartment) {
       return res.status(404).json({ error: 'User not found' });
@@ -284,6 +334,32 @@ const updateManagementProfile = async (req, res) => {
     });
   } catch (error) {
     console.error('Update management profile error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+// @desc    Upload / replace the management profile photo
+// @route   PUT /api/auth/management-profile-photo
+// @access  Private
+const updateManagementProfilePhoto = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Photo is required' });
+    }
+    const apartment = await Apartment.findById(req.userId);
+    if (!apartment) {
+      return res.status(404).json({ success: false, error: 'Account not found' });
+    }
+    apartment.profilePic = await uploadToCloudinary(req.file.buffer, 'isdr/profiles');
+    await apartment.save();
+    res.json({
+      success: true,
+      message: 'Profile photo updated',
+      profilePic: apartment.profilePic,
+      user: buildManagementPayload(apartment),
+    });
+  } catch (error) {
+    console.error('Update profile photo error:', error);
     res.status(500).json({ success: false, error: error.message || 'Server error' });
   }
 };
@@ -442,6 +518,7 @@ module.exports = {
   loginUser,
   getCurrentUser,
   updateManagementProfile,
+  updateManagementProfilePhoto,
   updateFcmToken,
   listManagementUsers,
   createManagementUser,

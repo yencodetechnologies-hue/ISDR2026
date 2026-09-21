@@ -559,10 +559,8 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     }
     try {
       final apartmentId = _selectedApartmentId;
-      final blocksResponse = await _apiService.getAllBlocks(apartmentId: apartmentId);
-      final blocks = blocksResponse['success'] == true
-          ? _parseBlocksFromApi(blocksResponse['blocks'])
-          : <BlockModel>[];
+      // Events only: there are no blocks or complaints to load, just the staff list.
+      final blocks = <BlockModel>[];
 
       final users = await _authRepository.getAllUsers(apartmentId: apartmentId);
       final securityStaff =
@@ -570,23 +568,12 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       final regularUsers =
           users.where((u) => u.userType == UserType.user || u.userType == UserType.tenant).toList();
 
-      List<ComplaintModel> complaints = [];
-      if (apartmentId != null && apartmentId.isNotEmpty) {
-        final complaintsRes = await _apiService.getComplaints(apartmentId: apartmentId);
-        if (complaintsRes['success'] == true && complaintsRes['complaints'] != null) {
-          final list = complaintsRes['complaints'] as List<dynamic>? ?? [];
-          complaints = list
-              .map((e) => ComplaintModel.fromJson(e as Map<String, dynamic>))
-              .toList();
-        }
-      }
-
       emit(AdminLoaded(
         blocks: blocks,
         allUsers: users,
         securityStaff: securityStaff,
         regularUsers: regularUsers,
-        complaints: complaints,
+        complaints: const <ComplaintModel>[],
         selectedApartmentId: _selectedApartmentId,
       ));
     } catch (e) {

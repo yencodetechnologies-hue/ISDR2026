@@ -1,3 +1,4 @@
+
 class ApiConfig {
   /// Local backend URL for Android Emulator (10.0.2.2 points to host PC's localhost)
   static const String _emulatorBaseUrl = 'http://10.0.2.2:5000/api';
@@ -19,9 +20,9 @@ class ApiConfig {
     defaultValue: '',
   );
 
-  /// Base URL: the live production backend.
-  /// For local testing, return the emulator/LAN URLs (_emulatorBaseUrl / _localBaseUrl)
-  /// or run with --dart-define=API_BASE_URL=http://10.0.2.2:5000/api
+  /// Base URL: the live server.
+  /// To use the local backend instead, return [_emulatorBaseUrl] (Android emulator,
+  /// 10.0.2.2 -> host PC) or [_localBaseUrl] (physical device on the same Wi-Fi).
   static String get baseUrl {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
     return _productionBaseUrl;
@@ -39,6 +40,7 @@ class ApiConfig {
   static String get resetPassword => '$authBase/reset-password';
   static String get getCurrentUser => '$authBase/me';
   static String get updateManagementProfile => '$authBase/management-profile';
+  static String get updateManagementProfilePhoto => '$authBase/management-profile-photo';
   static String get updateFcmToken => '$authBase/fcm-token';
   static String get getAllUsers => '$authBase/users';
   static String get registerTenant => '$authBase/register-tenant';
@@ -207,6 +209,8 @@ class ApiConfig {
   static String get managedEventsList => managedEventsBase;
   static String get managedEventsCreate => managedEventsBase;
   static String managedEventById(String id) => '$managedEventsBase/$id';
+  static String managedEventSchedules(String id) => '$managedEventsBase/$id/schedules';
+  static String managedEventNotifications(String id) => '$managedEventsBase/$id/notifications';
   static String managedEventRegistrations(String id) =>
       '$managedEventsBase/$id/registrations';
   static String managedEventRegistrationSpot(String id) =>

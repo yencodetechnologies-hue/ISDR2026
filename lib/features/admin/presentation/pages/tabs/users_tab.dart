@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/app_theme.dart';
-import '../../../../../core/config/api_config.dart';
 import '../../../../../core/widgets/brand_gradient_cta_button.dart';
 import '../../../../../core/widgets/identity_document_card.dart';
 import '../../../../../core/models/apartment_model.dart';
@@ -434,61 +433,6 @@ class _UsersTabState extends State<UsersTab> {
                       const SizedBox(height: 14),
                       Row(
                         children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                final apartmentId = widget.state.selectedApartmentId ?? widget.apartment?.id;
-                                if (apartmentId == null || apartmentId.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Apartment ID not available')),
-                                  );
-                                  return;
-                                }
-                                final aptPropType = widget.apartment?.propertyType;
-                                final joinUrl = false
-                                    ? '${ApiConfig.publicWebBaseUrl}/join/$apartmentId?propertyType=college&type=college'
-                                    : aptPropType == PropertyType.events
-                                        ? '${ApiConfig.publicWebBaseUrl}/join/$apartmentId?propertyType=events'
-                                        : '${ApiConfig.publicWebBaseUrl}/join/$apartmentId';
-                                Clipboard.setData(ClipboardData(text: joinUrl));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Public Registration Link Copied: $joinUrl'),
-                                    backgroundColor: const Color(0xFF13275D),
-                                    duration: const Duration(seconds: 3),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: const Color(0xFF13275D), width: 1.5),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Icons.link_rounded,
-                                      color: Color(0xFF13275D),
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Copy Link',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xFF13275D),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
                           Expanded(
                             child: GestureDetector(
                               onTap: () => _openAddUser(context),
@@ -1634,17 +1578,6 @@ class _UserListCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (user.username.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          '@${user.username}',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: const Color(0xFF8C8C90),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
                       const SizedBox(height: 6),
                       _InfoRow(
                         icon: Icons.email_outlined,
@@ -1927,14 +1860,6 @@ class _UsersEmptyState extends StatelessWidget {
                 color: AppTheme.textColor.withOpacityCompat(0.55),
               ),
             ),
-            const SizedBox(height: 24),
-            if (showAddButton)
-              BrandGradientCtaButton(
-                label: addLabel,
-                icon: Icons.person_add_alt_1_rounded,
-                height: 48,
-                onPressed: onAdd,
-              ),
           ],
         ),
       ),

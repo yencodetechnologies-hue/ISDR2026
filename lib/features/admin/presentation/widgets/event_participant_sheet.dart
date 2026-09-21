@@ -181,7 +181,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
       'foodPreference': _food,
       'ticketCode': _ticket.text.trim().toUpperCase(),
       'paymentMode': _free ? '' : _paymentMode,
-      'utrNumber': _free ? '' : _utr.text.trim(),
+      'utrNumber': _utr.text.trim(),
     };
     final res = _editing
         ? await widget.api.updateEventRegistration(
@@ -332,7 +332,6 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                         _packageId = v;
                         if (_free) {
                           _paymentMode = '';
-                          _utr.clear();
                         }
                       }),
                     ),
@@ -360,7 +359,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                       ],
                       onChanged: (v) => setState(() => _paymentMode = v ?? ''),
                     ),
-                    _text(_utr, 'UTR no.', required: false, enabled: !_free),
+                    _text(_utr, 'UTR no.', required: false),
                     _text(_address, 'Address', required: false, maxLines: 2),
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),

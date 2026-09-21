@@ -2,6 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { protect, requireManagement } = require('../middleware/auth');
 const { uploadSingleImage } = require('../middleware/upload');
+const { sendNotification } = require('../controllers/eventNotificationController');
+const { claimSummary } = require('../controllers/claimSummaryController');
+const {
+  listSchedules,
+  createSchedule,
+  deleteSchedule,
+} = require('../controllers/eventScheduleController');
 const {
   listEvents,
   createEvent,
@@ -17,6 +24,8 @@ const {
 
 // Events
 router.get('/', protect, requireManagement, listEvents);
+// Must come before '/:id'.
+router.get('/summary', protect, requireManagement, claimSummary);
 router.post('/', protect, requireManagement, createEvent);
 router.get('/:id', protect, requireManagement, getEvent);
 router.put('/:id', protect, requireManagement, updateEvent);
@@ -40,5 +49,19 @@ router.put(
   updateRegistration
 );
 router.delete('/:id/registrations/:regId', protect, requireManagement, deleteRegistration);
+
+// Schedules (speaker sessions)
+router.get('/:id/schedules', protect, requireManagement, listSchedules);
+router.post(
+  '/:id/schedules',
+  protect,
+  requireManagement,
+  uploadSingleImage('photo'),
+  createSchedule
+);
+router.delete('/:id/schedules/:scheduleId', protect, requireManagement, deleteSchedule);
+
+// Notifications to an event's participants
+router.post('/:id/notifications', protect, requireManagement, sendNotification);
 
 module.exports = router;

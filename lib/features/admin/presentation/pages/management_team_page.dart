@@ -507,7 +507,6 @@ class __AddManagementIdBottomSheetState
   final _nameController = TextEditingController();
   final _mobileController = TextEditingController();
   final _emailController = TextEditingController();
-  final _roleController = TextEditingController(text: 'Management Member');
   final _passwordController = TextEditingController();
   final ApiService _apiService = ApiService();
 
@@ -520,7 +519,6 @@ class __AddManagementIdBottomSheetState
     _nameController.dispose();
     _mobileController.dispose();
     _emailController.dispose();
-    _roleController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -535,9 +533,7 @@ class __AddManagementIdBottomSheetState
       mobileNumber: _mobileController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
-      roleTitle: _roleController.text.trim().isEmpty
-          ? 'Management Member'
-          : _roleController.text.trim(),
+      roleTitle: 'Management Member',
       apartmentId: widget.apartmentId,
     );
 
@@ -659,12 +655,6 @@ class __AddManagementIdBottomSheetState
                   if (!RegExp(r'^\S+@\S+\.\S+$').hasMatch(v.trim())) return 'Enter a valid email address';
                   return null;
                 },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _roleController,
-                textCapitalization: TextCapitalization.words,
-                decoration: _inputDecoration('Role / Designation', 'e.g. Management Member', Icons.work_outline),
               ),
               const SizedBox(height: 12),
               TextFormField(

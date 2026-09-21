@@ -692,7 +692,6 @@ const createSpotRegistration = async (req, res) => {
       }
       if (chosenPackage && Number(chosenPackage.rate) === 0) {
         profile.paymentMode = '';
-        profile.utrNumber = '';
       }
       if (req.file) profile.photoUrl = await uploadParticipantPhoto(req.file);
       registration = await createParticipantRegistration(event, { packageId, ticketCode, source: 'spot', profile });
@@ -875,7 +874,6 @@ const bulkImportRegistrations = async (req, res) => {
         }
         if (Number(chosenPackage.rate) === 0) {
           profile.paymentMode = '';
-          profile.utrNumber = '';
         }
         const photo = String(row.photo || '').trim();
         if (/^https?:\/\//i.test(photo)) profile.photoUrl = photo;
@@ -905,6 +903,7 @@ const bulkImportRegistrations = async (req, res) => {
 
 
 module.exports = {
+  normalizeInclusions,
   listEvents,
   createEvent,
   getEvent,

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/user_registration_page.dart';
-import '../../features/auth/presentation/pages/security_registration_page.dart';
 import '../../features/auth/presentation/pages/user_type_selection_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/waiting_approval_page.dart';
@@ -13,13 +12,9 @@ import '../../features/user/presentation/pages/coming_soon_page.dart';
 import '../../features/user/presentation/pages/owner_details_page.dart';
 import '../../features/user/presentation/pages/payments_page.dart';
 import '../../features/user/presentation/pages/support_page.dart';
-import '../../features/user/presentation/pages/support_chat_page.dart';
 import '../../features/user/presentation/pages/feed_page.dart';
 import '../../features/user/presentation/pages/my_posts_page.dart';
-import '../../features/admin/presentation/pages/subscription_purchase_history_page.dart';
 import '../../features/admin/presentation/pages/edit_user_page.dart';
-import '../../features/admin/presentation/pages/view_ads_page.dart';
-import '../../features/admin/presentation/pages/add_ads_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../core/models/apartment_model.dart';
 import '../../core/models/user_model.dart';
@@ -29,7 +24,6 @@ class AppRoutes {
   static const String userTypeSelection = '/user-type-selection';
   static const String login = '/login';
   static const String userRegistration = '/user-registration';
-  static const String securityRegistration = '/security-registration';
   static const String forgotPassword = '/forgot-password';
   static const String waitingApproval = '/waiting-approval';
   static const String adminDashboard = '/admin-dashboard';
@@ -38,11 +32,7 @@ class AppRoutes {
   static const String featureComingSoon = '/feature-coming-soon';
   static const String payments = '/payments';
   static const String support = '/support';
-  static const String supportChat = '/support-chat';
     static const String ownerDetails = '/owner-details';
-    static const String subscriptionPurchaseHistory = '/subscription-purchase-history';
-    static const String viewAds = '/view-ads';
-    static const String addAds = '/add-ads';
     static const String notifications = '/notifications';
     static const String feed = '/feed';
     static const String myPosts = '/my-posts';
@@ -63,7 +53,6 @@ class AppRoutes {
           propertyType: propertyType,
         );
       },
-      securityRegistration: (context) => const SecurityRegistrationPage(),
       forgotPassword: (context) => const ForgotPasswordPage(),
       waitingApproval: (context) => const WaitingApprovalPage(),
       adminDashboard: (context) => const AdminRouteGuard(),
@@ -80,24 +69,7 @@ class AppRoutes {
         final isHostel = args is Map && args['isHostel'] == true;
         return SupportPage(isHostel: isHostel);
       },
-      supportChat: (context) {
-        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-        final ticketId = args?['ticketId'] as String? ?? '';
-        final isAdmin = args?['isAdmin'] as bool? ?? false;
-        return SupportChatPage(ticketId: ticketId, isAdmin: isAdmin);
-      },
       ownerDetails: (context) => const OwnerDetailsPage(),
-      subscriptionPurchaseHistory: (context) {
-        final args = ModalRoute.of(context)?.settings.arguments;
-        final apartmentId = args is Map ? args['apartmentId'] as String? ?? '' : '';
-        final apartmentName = args is Map ? args['apartmentName'] as String? : null;
-        return SubscriptionPurchaseHistoryPage(
-          apartmentId: apartmentId,
-          apartmentName: apartmentName,
-        );
-      },
-      viewAds: (context) => const ViewAdsPage(),
-      addAds: (context) => const AddAdsPage(),
       notifications: (context) => const NotificationsPage(),
       feed: (context) => const FeedPage(),
       myPosts: (context) => const MyPostsPage(),

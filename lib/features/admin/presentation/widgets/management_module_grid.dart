@@ -58,6 +58,10 @@ const List<_ModuleVisual> _predefinedVisuals = [
 
   _ModuleVisual('Subscription', Icons.dns_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Management IDs', Icons.badge_outlined, group: 'ACCOUNT'),
+  _ModuleVisual('Brochure', Icons.menu_book_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('Profile', Icons.person_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('Send Notification', Icons.notifications_active_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('Event Schedules', Icons.event_note_rounded, group: 'ACCOUNT'),
 ];
 
 class _ModuleGroupData {

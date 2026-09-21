@@ -1,9 +1,10 @@
 const jwt = require('jsonwebtoken');
 const Apartment = require('../models/Apartment');
+const EventStaff = require('../models/EventStaff');
 
 /**
- * Verifies the Bearer token. Only management (apartment) accounts exist in this
- * backend, so the token's userId is always the property (Apartment) id.
+ * Verifies the Bearer token. The token's userId is either the property (Apartment) id for a
+ * management login, or an event staff account id.
  */
 const protect = async (req, res, next) => {
   const header = req.headers.authorization;
@@ -17,7 +18,14 @@ const protect = async (req, res, next) => {
 
     const apartment = await Apartment.findById(decoded.userId).lean();
     if (!apartment) {
-      return res.status(401).json({ error: 'Not authorized, account not found' });
+      const staff = await EventStaff.findById(decoded.userId).lean();
+      if (!staff || !staff.isActive || staff.status !== 'approved') {
+        return res.status(401).json({ error: 'Not authorized, account not found' });
+      }
+      req.userId = decoded.userId;
+      req.userType = 'user';
+      req.apartmentId = staff.apartmentId.toString();
+      return next();
     }
 
     req.userId = decoded.userId;

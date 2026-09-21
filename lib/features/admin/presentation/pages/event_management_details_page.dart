@@ -48,6 +48,8 @@ class _EventManagementDetailsPageState
   String? _message;
   String _search = '';
   final Set<String> _expandedRegs = {};
+  /// Scanned / not scanned / rejected counts keyed by 'package|inclusion'.
+  Map<String, Map<String, dynamic>> _incStats = {};
 
   String get _eventId =>
       _event['id']?.toString() ?? _event['_id']?.toString() ?? '';
@@ -88,6 +90,7 @@ class _EventManagementDetailsPageState
 
   Future<void> _loadAll() async {
     await Future.wait([_loadEvent(), _loadRegistrations()]);
+    await _loadIncStats();
   }
 
   Future<void> _loadEvent() async {
@@ -99,8 +102,32 @@ class _EventManagementDetailsPageState
     if (!mounted) return;
     if (res['success'] == true && res['event'] is Map) {
       setState(() => _event = Map<String, dynamic>.from(res['event'] as Map));
+      _loadIncStats();
     }
   }
+
+  Future<void> _loadIncStats() async {
+    if (_eventId.isEmpty) return;
+    final res = await _api.getClaimSummary(eventId: _eventId, date: 'to-date');
+    if (!mounted || res['success'] != true) return;
+    final rows = (res['summary']?['inclusions'] as List?) ?? [];
+    setState(() {
+      _incStats = {
+        for (final r in rows)
+          '${r['packageName']}|${r['name']}': Map<String, dynamic>.from(r as Map),
+      };
+    });
+  }
+
+  Widget _statPill(String text, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(text,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+      );
 
   Future<void> _loadRegistrations() async {
     if (_eventId.isEmpty) {
@@ -121,6 +148,7 @@ class _EventManagementDetailsPageState
             [],
       );
     });
+    _loadIncStats();
   }
 
   void _showMessage(String msg) {
@@ -198,6 +226,7 @@ class _EventManagementDetailsPageState
     setState(() => _busy = false);
     if (res['success'] == true) {
       if (res['event'] is Map) setState(() => _event = Map<String, dynamic>.from(res['event'] as Map));
+      _loadIncStats();
       _showMessage(okMessage);
     } else {
       _showMessage(res['error']?.toString() ?? 'Failed to save package');
@@ -330,7 +359,29 @@ class _EventManagementDetailsPageState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(inc['name'].toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(inc['name'].toString(),
+                                style: const TextStyle(fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ),
+                      ...[
+                        const SizedBox(height: 4),
+                        Builder(builder: (_) {
+                          final st = _incStats['${p['name']}|${inc['name']}'] ?? const <String, dynamic>{};
+                          return Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              _statPill('${st['scanned'] ?? 0} Scanned', const Color(0xFF16A34A)),
+                              _statPill('${st['notScanned'] ?? 0} Not scanned', const Color(0xFFD97706)),
+                              _statPill('${st['rejected'] ?? 0} Rejected', const Color(0xFFDC2626)),
+                            ],
+                          );
+                        }),
+                      ],
                       if (days.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Wrap(

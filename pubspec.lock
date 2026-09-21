@@ -201,6 +201,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
+  extension:
+    dependency: transitive
+    description:
+      name: extension
+      sha256: "1d6cc5a2d173407284780b68fd94f2b547184d4190ca7dbf6d0bf43eb43c29d8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   fake_async:
     dependency: transitive
     description:
@@ -620,10 +628,10 @@ packages:
     dependency: transitive
     description:
       name: matcher
-      sha256: "31bd099b47c10cd1aeb55146a2d46ce0277630ecef3f7dae54ad7873f36696cd"
+      sha256: dc0b7dc7651697ea4ff3e69ef44b0407ea32c487a39fff6a4004fa585e901861
       url: "https://pub.dev"
     source: hosted
-    version: "0.12.20"
+    version: "0.12.19"
   material_color_utilities:
     dependency: transitive
     description:
@@ -636,10 +644,10 @@ packages:
     dependency: transitive
     description:
       name: meta
-      sha256: "307249ce4ff29d58a18e97f6345f539382eb9c9c29ecda628900f31de0443dd9"
+      sha256: "23f08335362185a5ea2ad3a4e597f1375e78bce8a040df5c600c8d3552ef2394"
       url: "https://pub.dev"
     source: hosted
-    version: "1.19.0"
+    version: "1.17.0"
   mime:
     dependency: transitive
     description:
@@ -840,6 +848,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.0"
+  pdfx:
+    dependency: "direct main"
+    description:
+      name: pdfx
+      sha256: "83bcd2b971fc2f6ee4299659c96d7d66b2ba4807748571a8a4889f1cde14b754"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.11.0"
   permission_handler:
     dependency: "direct main"
     description:
@@ -896,6 +912,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.2"
+  photo_view:
+    dependency: transitive
+    description:
+      name: photo_view
+      sha256: "1fc3d970a91295fbd1364296575f854c9863f225505c28c46e0a03e48960c75e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.15.0"
   platform:
     dependency: transitive
     description:
@@ -1169,10 +1193,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "2a122cbe059f8b610d3a5415f42e255b6c17b1f21eee1d960f31080237fb4f11"
+      sha256: "8161c84903fd860b26bfdefb7963b3f0b68fee7adea0f59ef805ecca346f0c7a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.12"
+    version: "0.7.10"
   timezone:
     dependency: transitive
     description:
@@ -1189,6 +1213,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  universal_platform:
+    dependency: transitive
+    description:
+      name: universal_platform
+      sha256: "64e16458a0ea9b99260ceb5467a214c1f298d647c659af1bff6d3bf82536b1ec"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   url_launcher:
     dependency: "direct main"
     description:
@@ -1289,10 +1321,10 @@ packages:
     dependency: transitive
     description:
       name: vector_math
-      sha256: "92b9910f66ed1057fd4da7b040ae7c74cafacf885bdc81be496928d5049b032d"
+      sha256: d530bd74fea330e6e364cda7a85019c434070188383e1cd8d9777ee586914c5b
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.3"
+    version: "2.2.0"
   vm_service:
     dependency: transitive
     description:

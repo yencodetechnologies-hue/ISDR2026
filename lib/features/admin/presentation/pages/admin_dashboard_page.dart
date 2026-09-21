@@ -14,13 +14,15 @@ import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../notifications/presentation/bloc/notification_bloc.dart';
 import '../bloc/admin_bloc.dart';
-import 'tabs/subscription_tab.dart';
 import 'tabs/users_tab.dart';
 import 'tabs/managed_events_tab.dart';
 import '../widgets/management_module_grid.dart';
 import 'property_profile_page.dart';
-import 'admin_users_list_page.dart';
 import 'management_team_page.dart';
+import 'brochure_page.dart';
+import 'my_profile_page.dart';
+import 'event_schedules_page.dart';
+import 'send_notification_page.dart';
 
 class _PropertyTabItem {
   final String label;
@@ -147,7 +149,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   @override
   void initState() {
     super.initState();
-    context.read<NotificationBloc>().add(const LoadUnreadCount());
     final apartmentId = widget.selectedApartmentId;
     context.read<AdminBloc>().add(SelectApartmentEvent(apartmentId: apartmentId));
     context.read<AdminBloc>().add(LoadBlocksEvent());
@@ -164,7 +165,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       }
     }
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (_isPropertyScoped) await _hydrateApartmentFromApi();
       await _loadManagedEventsCount();
     });
     _startAutoRefresh();
@@ -174,12 +174,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     _autoRefreshTimer?.cancel();
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (!mounted) return;
-      context.read<NotificationBloc>().add(const LoadUnreadCount());
-      final apartmentId = widget.selectedApartmentId;
       context.read<AdminBloc>().add(LoadBlocksEvent());
-      if (_isPropertyScoped) {
-        _hydrateApartmentFromApi();
-      }
     });
   }
 
@@ -283,7 +278,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   List<_PropertyTabItem> _buildPropertyTabItems() {
     final apt = _apartmentModel;
     final apartmentId = widget.selectedApartmentId;
-    final apartmentName = apt?.name;
 
     return <_PropertyTabItem>[
       _PropertyTabItem(
@@ -299,13 +293,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
         buildContent: (state) => UsersTab(state: state, apartment: apt),
       ),
       _PropertyTabItem(
-        label: 'Subscription',
-        buildContent: (_) => SubscriptionTab(
-          selectedApartmentId: apartmentId,
-          apartmentName: apartmentName,
-        ),
-      ),
-      _PropertyTabItem(
         label: 'Management IDs',
         buildContent: (_) => ManagementTeamPage(
           apartmentId: apartmentId,
@@ -316,6 +303,42 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   }
 
   void _navigateToModule(String label) {
+    if (label.trim().toLowerCase() == 'brochure') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const BrochurePage()),
+      );
+      return;
+    }
+    if (label.trim().toLowerCase() == 'send notification') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SendNotificationPage(
+            apartmentId: widget.selectedApartmentId ?? _apartmentModel?.id,
+          ),
+        ),
+      );
+      return;
+    }
+    if (label.trim().toLowerCase() == 'event schedules') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EventSchedulesPage(
+            apartmentId: widget.selectedApartmentId ?? _apartmentModel?.id,
+          ),
+        ),
+      );
+      return;
+    }
+    if (label.trim().toLowerCase() == 'profile') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MyProfilePage()),
+      );
+      return;
+    }
     final idx = _propertyTabs.indexWhere(
       (t) => t.label.trim().toLowerCase() == label.trim().toLowerCase(),
     );
@@ -383,7 +406,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   }
 
   Widget _buildManagementGridHome(AdminLoaded state) {
-    final labels = _propertyTabs.map((t) => t.label).toList();
+    final labels = [
+      'Brochure',
+      ..._propertyTabs.map((t) => t.label),
+      'Profile',
+      'Send Notification',
+      'Event Schedules',
+    ];
     final apt = _apartmentModel;
     final isHostel = false;
     final totalRooms = totalRoomCountForProperty(blocks: state.blocks);
@@ -482,17 +511,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                     children: [
                       Expanded(
                         child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AdminUsersListPage(
-                                  propertyType: apt?.propertyType,
-                                  apartment: apt,
-                                ),
-                              ),
-                            );
-                          },
+                          onTap: () => _navigateToModule('Event Staff'),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                             decoration: BoxDecoration(
@@ -644,119 +663,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Quick actions',
-                      style: GoogleFonts.inter(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0F172A),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => _navigateToModule(
-                              false ? 'Staffs' : 'Users',
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF13275D), Color(0xFF111827)],
-                                ),
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFFD9820A).withOpacity(0.28),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                false
-                                    ? '＋  Add Staff'
-                                    : '＋  Add resident',
-                                style: GoogleFonts.inter(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (apt?.propertyType != PropertyType.events) ...[
-                            const SizedBox(width: 10),
-                            GestureDetector(
-                              onTap: () => _navigateToModule('Security'),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: const Color(0xFFECECEA)),
-                                ),
-                                child: Text(
-                                  '🛡  Security check',
-                                  style: GoogleFonts.inter(
-                                    color: const Color(0xFF1B1B1D),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                          if (apt?.propertyType != PropertyType.events) ...[
-                            const SizedBox(width: 10),
-                            GestureDetector(
-                              onTap: () => _navigateToModule('Notices'),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: const Color(0xFFECECEA)),
-                                ),
-                                child: Text(
-                                  '📢  Post Notice',
-                                  style: GoogleFonts.inter(
-                                    color: const Color(0xFF1B1B1D),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                          const SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: () => _navigateToModule('Management IDs'),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: const Color(0xFFECECEA)),
-                              ),
-                              child: Text(
-                                '🆔  Management IDs',
-                                style: GoogleFonts.inter(
-                                  color: const Color(0xFF1B1B1D),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
                     ManagementModuleGrid(
                       moduleLabels: labels,
                       onModuleTap: _navigateToModule,
@@ -1089,21 +995,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       ),
     );
 
-    if (_isPropertyScoped && _apartmentModel != null) {
-      actions.add(
-        IconButton(
-          padding: const EdgeInsets.all(8),
-          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-          icon: const Icon(
-            Icons.person_outline_rounded,
-            size: iconSize,
-            color: Colors.white,
-          ),
-          tooltip: 'Profile',
-          onPressed: () => _openPropertyProfile(context),
-        ),
-      );
-    }
     actions.add(
       IconButton(
         padding: const EdgeInsets.all(8),

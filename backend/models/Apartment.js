@@ -39,6 +39,10 @@ const apartmentSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    profilePic: {
+      type: String,
+      default: '',
+    },
     subscriptionStatus: {
       type: Boolean,
       default: false,
