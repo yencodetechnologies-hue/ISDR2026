@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class ApiConfig {
   /// Local backend URL for Android Emulator (10.0.2.2 points to host PC's localhost)
   static const String _emulatorBaseUrl = 'http://10.0.2.2:5000/api';
@@ -19,10 +21,15 @@ class ApiConfig {
     defaultValue: '',
   );
 
-  /// Base URL: returns the live production backend.
+  /// Base URL: the local backend.
+  /// Android emulator -> 10.0.2.2, other devices -> this PC on the local network.
+  /// To use the live server instead, return [_productionBaseUrl].
   static String get baseUrl {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
-    return _productionBaseUrl;
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return _emulatorBaseUrl;
+    }
+    return _localBaseUrl;
   }
 
   static String get authBase => '$baseUrl/auth';

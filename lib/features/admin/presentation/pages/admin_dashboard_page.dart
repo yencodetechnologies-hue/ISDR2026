@@ -13,9 +13,7 @@ import '../../../../core/widgets/logout_confirm_sheet.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../notifications/presentation/bloc/notification_bloc.dart';
-import '../../../maintenance/presentation/pages/maintenance_page.dart';
 import '../bloc/admin_bloc.dart';
-import 'apartment_subscription_wall_page.dart';
 import 'tabs/subscription_tab.dart';
 import 'tabs/users_tab.dart';
 import 'tabs/managed_events_tab.dart';
@@ -128,10 +126,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   AdminLoaded? _lastLoadedState;
   bool _errorSnackBarShown = false;
   final ApiService _apiService = ApiService();
-  bool _apartmentSubscriptionLoading = true;
-  bool _apartmentSubscriptionActive = false;
-  String? _apartmentSubscriptionEndsAtIso;
-  int _apartmentGateDaysLeft = 0;
   TabController? _tabController;
   List<_PropertyTabItem> _propertyTabs = [];
   ApartmentModel? _effectiveApartment;
@@ -170,7 +164,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       }
     }
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _loadApartmentSubscriptionGate();
       if (_isPropertyScoped) await _hydrateApartmentFromApi();
       await _loadManagedEventsCount();
     });
@@ -344,69 +337,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     final authState = context.read<AuthBloc>().state;
     return authState is AuthAuthenticated &&
         authState.user.userType == UserType.apartment;
-  }
-
-  Future<void> _loadApartmentSubscriptionGate() async {
-    final id = widget.selectedApartmentId;
-    if (id == null || id.isEmpty) {
-      if (mounted) {
-        setState(() {
-          _apartmentSubscriptionLoading = false;
-          _apartmentSubscriptionActive = true;
-        });
-      }
-      return;
-    }
-    try {
-      final res = await _apiService.getSubscriptionByApartment(id);
-      if (!mounted) return;
-      final active = res['success'] == true && res['subscriptionStatus'] == true;
-      final ends = res['subscriptionEndsAt']?.toString();
-      final dl = res['daysLeft'];
-      final daysLeft = dl is int ? dl : int.tryParse(dl?.toString() ?? '') ?? 0;
-      setState(() {
-        _apartmentSubscriptionLoading = false;
-        _apartmentSubscriptionActive = active;
-        _apartmentSubscriptionEndsAtIso = ends;
-        _apartmentGateDaysLeft = daysLeft;
-      });
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _apartmentSubscriptionLoading = false;
-          _apartmentSubscriptionActive = false;
-          _apartmentSubscriptionEndsAtIso = null;
-          _apartmentGateDaysLeft = 0;
-        });
-      }
-    }
-  }
-
-  void _openSubscriptionRenewSheet(BuildContext context, String apartmentId) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.92,
-        minChildSize: 0.45,
-        maxChildSize: 0.96,
-        builder: (_, __) => ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          child: ApartmentSubscriptionWallPage(
-            apartmentId: apartmentId,
-            apartmentName: widget.apartment is ApartmentModel
-                ? (widget.apartment as ApartmentModel).name
-                : null,
-            onUnlocked: () {
-              Navigator.of(ctx).pop();
-              setState(() => _apartmentSubscriptionLoading = true);
-              _loadApartmentSubscriptionGate();
-            },
-          ),
-        ),
-      ),
-    );
   }
 
   bool _isAdminUser(AuthState authState) {
@@ -1199,29 +1129,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   @override
   Widget build(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    final aptId = widget.selectedApartmentId;
-
-    if (aptId != null && aptId.isNotEmpty) {
-      if (_apartmentSubscriptionLoading) {
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
-      }
-      if (!_apartmentSubscriptionActive) {
-        return _wrapWithPropertyPopScope(
-          Scaffold(
-            appBar: _buildAppBar(authState),
-            body: MaintenancePage(
-              wrapInScaffold: false,
-              reason: 'subscription_expired',
-              subscriptionEndsAtIso: _apartmentSubscriptionEndsAtIso,
-              daysLeft: _apartmentGateDaysLeft,
-              onRenewSubscription: () => _openSubscriptionRenewSheet(context, aptId),
-            ),
-          ),
-        );
-      }
-    }
 
     final propertyTabs = _propertyTabs;
     final tabController = _tabController;

@@ -5110,38 +5110,6 @@ class ApiService {
     }
   }
 
-  /// Optional [apartmentIdHeader] sends `X-Apartment-Id` (e.g. admin scoped to a building).
-  Future<Map<String, dynamic>> getSubscriptionAppActive({
-    String? apartmentIdHeader,
-  }) async {
-    try {
-      final headers = apartmentIdHeader != null && apartmentIdHeader.isNotEmpty
-          ? {'X-Apartment-Id': apartmentIdHeader}
-          : null;
-      final response = await _dio.get(
-        ApiConfig.subscriptionAppActive,
-        options: headers != null ? Options(headers: headers) : null,
-      );
-      if (response.statusCode == 200) {
-        final data = response.data;
-        return {
-          'success': true,
-          'active': data['active'] == true,
-          'reason': data['reason']?.toString(),
-          'daysLeft': (data['daysLeft'] is num)
-              ? (data['daysLeft'] as num).toInt()
-              : int.tryParse(data['daysLeft']?.toString() ?? '') ?? 0,
-          'subscriptionEndsAt': data['subscriptionEndsAt']?.toString(),
-        };
-      }
-      return {'success': false, 'active': false};
-    } on DioException catch (e) {
-      return {'success': false, 'active': false, 'error': e.message};
-    } catch (e) {
-      return {'success': false, 'active': false, 'error': e.toString()};
-    }
-  }
-
   // Get all notices
   Future<Map<String, dynamic>> getAllNotices({
     String? type,
