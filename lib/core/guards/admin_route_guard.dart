@@ -28,8 +28,7 @@ class _AdminRouteGuardState extends State<AdminRouteGuard> {
         if (_redirecting) return;
         if (state is AuthAuthenticated) {
           _hasBeenAuthenticated = true;
-          if (state.user.userType != UserType.admin &&
-              state.user.userType != UserType.apartment) {
+          if (state.user.userType != UserType.apartment) {
             _redirecting = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (context.mounted) {
@@ -66,24 +65,13 @@ class _AdminRouteGuardState extends State<AdminRouteGuard> {
                 securityEnabled: state.user.securityEnabled ?? true,
                 assignPaymentEnabled: state.user.assignPaymentEnabled ?? true,
                 complaintsEnabled: state.user.complaintsEnabled ?? true,
-                propertyType: state.user.propertyType ?? PropertyType.apartment,
+                propertyType: state.user.propertyType ?? PropertyType.events,
               );
               return AdminDashboardPage(
                 selectedApartmentId: aptId,
                 apartment: apartment,
               );
             }
-          }
-          if (userType == UserType.admin) {
-            final args = ModalRoute.of(context)?.settings.arguments;
-            final selectedApartmentId = args is Map ? args['selectedApartmentId'] as String? : null;
-            final apartment = args is Map ? args['apartment'] : null;
-            final tabIndex = args is Map ? args['tabIndex'] as int? : null;
-            return AdminDashboardPage(
-              selectedApartmentId: selectedApartmentId,
-              apartment: apartment,
-              initialTabIndex: tabIndex,
-            );
           }
         }
         if (state is AuthLoading || state is AuthInitial) {

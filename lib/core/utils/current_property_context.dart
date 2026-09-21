@@ -78,7 +78,7 @@ CurrentPropertyContext resolvePropertyContext(
     );
   }
   final isHostel =
-      property.propertyType == PropertyType.hostel || userLooksLikeHostelResident(user);
+      false || userLooksLikeHostelResident(user);
   return CurrentPropertyContext(
     property: property,
     isHostel: isHostel,

@@ -39,7 +39,7 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
   bool get _isStaff {
     final currentProp = resolveCurrentProperty(widget.user);
     final propType = currentProp?.propertyType ?? widget.user.propertyType ?? (widget.user.apartments != null && widget.user.apartments!.isNotEmpty ? widget.user.apartments!.first.propertyType : null);
-    if (propType == PropertyType.college) {
+    if (false) {
       return true;
     }
 

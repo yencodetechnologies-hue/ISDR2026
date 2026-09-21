@@ -435,7 +435,7 @@ class _VisitorsTabHeader extends StatelessWidget {
                         );
                         return;
                       }
-                      final isSchoolOrCollege = tabState?.widget.apartment?.propertyType == PropertyType.college;
+                      final isSchoolOrCollege = false;
                       final passUrl = isSchoolOrCollege
                           ? '${ApiConfig.publicWebBaseUrl}/visitor-pass/$apartmentId?type=college'
                           : '${ApiConfig.publicWebBaseUrl}/visitor-pass/$apartmentId';

@@ -309,7 +309,7 @@ class _ProfileTabState extends State<ProfileTab> {
                             builder: (context) {
                               final currentProp = resolveCurrentProperty(user);
                               final propType = currentProp?.propertyType ?? user.propertyType ?? (user.apartments != null && user.apartments!.isNotEmpty ? user.apartments!.first.propertyType : null);
-                              final isStaffSchoolOrCollege = propType == PropertyType.college;
+                              final isStaffSchoolOrCollege = false;
                               final btnLabel = isHostel
                                   ? 'Digital Hostel ID'
                                   : (isStaffSchoolOrCollege ? 'View Staff Entry Pass' : 'View Digital Access Pass');
@@ -524,7 +524,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     builder: (context) {
                       final currentProp = resolveCurrentProperty(user);
                       final propType = currentProp?.propertyType ?? user.propertyType ?? (user.apartments != null && user.apartments!.isNotEmpty ? user.apartments!.first.propertyType : null);
-                      final isStaffSchoolOrCollege = propType == PropertyType.college;
+                      final isStaffSchoolOrCollege = false;
 
                       if (isStaffSchoolOrCollege || propType == PropertyType.events) {
                         return const SizedBox.shrink();
@@ -710,7 +710,7 @@ class _ProfileTabState extends State<ProfileTab> {
     String? hostelName;
     if (isHostel && user.apartments != null) {
       for (final a in user.apartments!) {
-        if (a.propertyType == PropertyType.hostel) {
+        if (false) {
           hostelName = a.name;
           break;
         }

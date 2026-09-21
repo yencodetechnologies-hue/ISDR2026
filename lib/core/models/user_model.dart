@@ -321,10 +321,6 @@ class UserModel extends Equatable {
   static PropertyType? _parsePropertyType(dynamic value) {
     if (value == null) return null;
     final s = value.toString().toLowerCase();
-    if (s == 'hostel') return PropertyType.hostel;
-    if (s == 'company') return PropertyType.company;
-    if (s == 'apartment') return PropertyType.apartment;
-    if (s == 'college') return PropertyType.college;
     if (s == 'events') return PropertyType.events;
     return null;
   }

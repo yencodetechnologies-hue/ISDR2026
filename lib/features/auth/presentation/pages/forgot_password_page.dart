@@ -157,7 +157,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: Image.asset(
-                          'assets/maccess.png',
+                          'assets/logo.png',
                           width: 120,
                           height: 120,
                           fit: BoxFit.contain,

@@ -69,7 +69,7 @@ class _UsersTabState extends State<UsersTab> {
     return shouldShowUserMobileForViewer(
       showUserMobileSetting: widget.apartment?.showUserMobile ?? true,
       loginRole: viewer?.loginRole,
-      isHostel: widget.apartment?.propertyType == PropertyType.hostel,
+      isHostel: false,
       viewerUserType: viewer?.userType,
     );
   }
@@ -102,7 +102,7 @@ class _UsersTabState extends State<UsersTab> {
   }
 
   bool _isUserApprovedOrAssigned(UserModel u) {
-    if (widget.apartment?.propertyType == PropertyType.college ||
+    if (false ||
         widget.apartment?.propertyType == PropertyType.events) {
       return u.status == AccountStatus.approved && u.isActive;
     }
@@ -159,7 +159,7 @@ class _UsersTabState extends State<UsersTab> {
       _searchQuery = value;
       if (_tabIndex == 0 && value.isNotEmpty) {
         final isHostel =
-            widget.apartment?.propertyType == PropertyType.hostel;
+            false;
         final tree = buildAssignedUsersTree(
           users: widget.state.regularUsers.where(isUserAssigned).where(_userMatchesSearch).toList(),
           blocks: widget.state.blocks,
@@ -235,7 +235,7 @@ class _UsersTabState extends State<UsersTab> {
         apartment: widget.apartment,
       );
     } else if (value == 'approve') {
-      if (widget.apartment?.propertyType == PropertyType.college ||
+      if (false ||
           widget.apartment?.propertyType == PropertyType.events) {
         _approveStaffDirectly(context, user);
       } else {
@@ -356,7 +356,7 @@ class _UsersTabState extends State<UsersTab> {
     final authState = context.read<AuthBloc>().state;
     final isWarden = authState is AuthAuthenticated && authState.user.loginRole == 'warden';
 
-    final addLabel = widget.apartment?.propertyType == PropertyType.company
+    final addLabel = false
         ? 'Create Company'
         : widget.apartment?.propertyType == PropertyType.events
             ? 'Add Event Staff'
@@ -377,8 +377,8 @@ class _UsersTabState extends State<UsersTab> {
             ? sortedUsers
             : sortedUsers.where(_userMatchesSearch).toList();
         final isHostel =
-            widget.apartment?.propertyType == PropertyType.hostel;
-        final isSchoolOrCollege = widget.apartment?.propertyType == PropertyType.college ||
+            false;
+        final isSchoolOrCollege = false ||
             widget.apartment?.propertyType == PropertyType.events;
         final assignedTree = (_tabIndex == 0 && !isSchoolOrCollege)
             ? buildAssignedUsersTree(
@@ -413,7 +413,7 @@ class _UsersTabState extends State<UsersTab> {
                         Expanded(
                           child: _buildUsersStatCard(
                             icon: Icons.home_work_rounded,
-                            label: widget.apartment?.propertyType == PropertyType.college ||
+                            label: false ||
                                     widget.apartment?.propertyType == PropertyType.events
                                 ? 'Approved'
                                 : 'Assigned',
@@ -445,7 +445,7 @@ class _UsersTabState extends State<UsersTab> {
                                   return;
                                 }
                                 final aptPropType = widget.apartment?.propertyType;
-                                final joinUrl = aptPropType == PropertyType.college
+                                final joinUrl = false
                                     ? '${ApiConfig.publicWebBaseUrl}/join/$apartmentId?propertyType=college&type=college'
                                     : aptPropType == PropertyType.events
                                         ? '${ApiConfig.publicWebBaseUrl}/join/$apartmentId?propertyType=events'
@@ -683,7 +683,7 @@ class _UsersTabState extends State<UsersTab> {
   String _tabLabel(int index) {
     switch (index) {
       case 0:
-        return widget.apartment?.propertyType == PropertyType.college ||
+        return false ||
                 widget.apartment?.propertyType == PropertyType.events
             ? 'Approved'
             : 'Assigned';
@@ -946,7 +946,7 @@ class _UsersFilterChips extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       index == 0 &&
-                              (propertyType == PropertyType.college ||
+                              (false ||
                                   propertyType == PropertyType.events)
                           ? 'Approved'
                           : f.label,
@@ -1659,7 +1659,7 @@ class _UserListCard extends StatelessWidget {
                       ],
                       if (hasRoom &&
                           showRoomBadge &&
-                          propertyType != PropertyType.college &&
+                          true &&
                           propertyType != PropertyType.events) ...[
                         const SizedBox(height: 8),
                         Container(
@@ -1696,7 +1696,7 @@ class _UserListCard extends StatelessWidget {
                         ),
                       ] else if (user.status == AccountStatus.approved &&
                           showRoomBadge &&
-                          propertyType != PropertyType.college &&
+                          true &&
                           propertyType != PropertyType.events) ...[
                         const SizedBox(height: 6),
                         Text(
@@ -2203,7 +2203,7 @@ class _UserDetailsSheet extends StatelessWidget {
     final showMobile = shouldShowUserMobileForViewer(
       showUserMobileSetting: apartment?.showUserMobile ?? true,
       loginRole: viewer?.loginRole,
-      isHostel: apartment?.propertyType == PropertyType.hostel,
+      isHostel: false,
       viewerUserType: viewer?.userType,
     );
     final canCall = showMobile && user.mobileNumber.trim().isNotEmpty;

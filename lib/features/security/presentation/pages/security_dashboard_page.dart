@@ -24,7 +24,6 @@ import '../../../notifications/presentation/bloc/notification_bloc.dart';
 import '../bloc/security_bloc.dart';
 import 'security_visitor_section.dart';
 import 'tabs/security_home_tab.dart';
-import 'tabs/security_kid_exits_tab.dart';
 import 'tabs/security_messages_tab.dart';
 import 'tabs/security_operations_tab.dart';
 import 'tabs/security_visitors_tab.dart';
@@ -54,14 +53,13 @@ class _SecurityDashboardPageState extends State<SecurityDashboardPage>
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
       final pType = authState.user.propertyType;
-      _isSchoolOrCollege = pType == PropertyType.college;
+      _isSchoolOrCollege = false;
     }
 
     _tabTitles = [
       'Home',
       if (!_isSchoolOrCollege) 'Visitors',
       if (!_isSchoolOrCollege) 'Operations',
-      if (!_isSchoolOrCollege) 'Kid exits',
       if (!_isSchoolOrCollege) 'Messages',
     ];
 
@@ -69,7 +67,6 @@ class _SecurityDashboardPageState extends State<SecurityDashboardPage>
       Icons.home_rounded,
       if (!_isSchoolOrCollege) Icons.people_alt_rounded,
       if (!_isSchoolOrCollege) Icons.grid_view_rounded,
-      if (!_isSchoolOrCollege) Icons.child_care_rounded,
       if (!_isSchoolOrCollege) Icons.chat_bubble_rounded,
     ];
 
@@ -126,7 +123,7 @@ class _SecurityDashboardPageState extends State<SecurityDashboardPage>
           padding: const EdgeInsets.all(8.0),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.asset('assets/maccess.png', fit: BoxFit.contain),
+            child: Image.asset('assets/logo.png', fit: BoxFit.contain),
           ),
         ),
         leadingWidth: 52,
@@ -380,8 +377,6 @@ class _SecurityDashboardPageState extends State<SecurityDashboardPage>
                     onScanQr: () => _showScanVehicleQRSheet(context),
                     onUpcomingSheet: () => _showUpcomingVisitorsSheet(context, state.visitors),
                   ),
-                if (!_isSchoolOrCollege)
-                  SecurityKidExitsTab(kidExits: state.kidExits),
                 if (!_isSchoolOrCollege)
                   const SecurityMessagesTab(),
               ],
@@ -2793,7 +2788,7 @@ class _AddVisitorSheetState extends State<_AddVisitorSheet> {
   bool get _isCollege {
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
-      return authState.user.propertyType == PropertyType.college;
+      return false;
     }
     return false;
   }
@@ -3731,7 +3726,7 @@ class _BulkVisitSheetState extends State<_BulkVisitSheet> {
   bool get _isCollege {
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
-      return authState.user.propertyType == PropertyType.college;
+      return false;
     }
     return false;
   }

@@ -1,6 +1,6 @@
 {
-    "name": "isdr",
-    "short_name": "isdr",
+    "name": "ISDR2026",
+    "short_name": "ISDR2026",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

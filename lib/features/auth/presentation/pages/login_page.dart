@@ -135,8 +135,7 @@ class _LoginPageState extends State<LoginPage> {
     String route = AppRoutes.login;
     switch (user.userType) {
       case UserType.admin:
-        route = AppRoutes.adminDashboard;
-        debugPrint('Selected route: $route (Admin Dashboard)');
+        route = AppRoutes.userTypeSelection;
         break;
       case UserType.apartment:
         route = AppRoutes.adminDashboard;
@@ -331,7 +330,7 @@ class _LoginPageState extends State<LoginPage> {
                               padding: const EdgeInsets.all(4),
                               clipBehavior: Clip.antiAlias,
                               child: Image.asset(
-                                'assets/maccess.png',
+                                'assets/logo.png',
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -452,17 +451,13 @@ class _LoginPageState extends State<LoginPage> {
                                       FocusScope.of(context).requestFocus(_passwordFocusNode);
                                     },
                                     decoration: InputDecoration(
-                                      labelText: _selectedUserType == UserType.admin
-                                          ? 'Email'
-                                          : 'Email or mobile number',
+                                      labelText: 'Email or mobile number',
                                       labelStyle: GoogleFonts.inter(
                                         color: const Color(0xFF64748B),
                                         fontSize: 13,
                                       ),
                                       prefixIcon: Icon(
-                                        _selectedUserType == UserType.admin
-                                            ? Icons.email_outlined
-                                            : Icons.person_outline,
+                                        Icons.person_outline,
                                         color: const Color(0xFF2563EB),
                                       ),
                                       filled: true,
@@ -489,9 +484,7 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
-                                        return _selectedUserType == UserType.admin
-                                            ? 'Please enter your email'
-                                            : 'Please enter your email or mobile number';
+                                        return 'Please enter your email or mobile number';
                                       }
                                       if (_selectedUserType != UserType.admin) {
                                         final trimmed = value.trim();

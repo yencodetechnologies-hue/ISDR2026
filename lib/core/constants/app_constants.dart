@@ -2,5 +2,5 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'M Access';
+  static const String appName = 'ISDR2026';
 }

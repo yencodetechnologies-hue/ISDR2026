@@ -11,8 +11,6 @@ import '../../../../../../core/routes/app_routes.dart';
 import '../../../../../../core/services/api_service.dart';
 import '../../../../../../core/utils/current_property_context.dart';
 import '../../../../chat/presentation/pages/guard_conversations_page.dart';
-import 'raise_complaint_dialog.dart';
-import 'report_kid_exit_sheet.dart';
 import 'create_post_sheet.dart';
 import 'create_poll_sheet.dart';
 import 'create_event_sheet.dart';
@@ -20,14 +18,10 @@ import 'profile_qr_sheet.dart';
 import '../visitors_page.dart';
 import '../feed_page.dart';
 import '../my_posts_page.dart';
-import '../vehicles_page.dart';
-import '../family_page.dart';
 import '../gate_approval_page.dart';
 import '../security_list_page.dart';
 import '../unit_visitor_list_page.dart';
-import '../monthly_access_page.dart';
 import '../terms_and_conditions_page.dart';
-import '../leave_requests_page.dart';
 import '../user_events_page.dart';
 
 class HomeTab extends StatefulWidget {
@@ -132,41 +126,11 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  void _showRaiseComplaintDialog() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => RaiseComplaintDialog(
-        userId: widget.user.id,
-        initialType: null,
-      ),
-    );
-  }
-
   void _navigateToVisitors() {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (ctx) => VisitorsPage(user: widget.user),
-      ),
-    );
-  }
-
-  void _navigateToVehicles() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => VehiclesPage(user: widget.user),
-      ),
-    );
-  }
-
-  void _navigateToFamily() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => FamilyPage(user: widget.user),
       ),
     );
   }
@@ -228,7 +192,7 @@ class _HomeTabState extends State<HomeTab> {
   bool get _isStaffSchoolOrCollege {
     final currentProp = resolveCurrentProperty(widget.user);
     final propType = currentProp?.propertyType ?? widget.user.propertyType ?? (widget.user.apartments != null && widget.user.apartments!.isNotEmpty ? widget.user.apartments!.first.propertyType : null);
-    return propType == PropertyType.college;
+    return false;
   }
 
   void _showCreatePostSheet() {
@@ -248,15 +212,6 @@ class _HomeTabState extends State<HomeTab> {
           );
         },
       ),
-    );
-  }
-
-  void _showReportKidExitSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => const ReportKidExitSheet(),
     );
   }
 
@@ -521,7 +476,6 @@ class _HomeTabState extends State<HomeTab> {
       _QuickOption('Profile', Icons.person_rounded, _Action.profile),
       _QuickOption('Complaints', Icons.report_problem_rounded, _Action.complaints),
       _QuickOption('Payments', Icons.payment_rounded, _Action.payments),
-      _QuickOption('Amenities', Icons.spa_rounded, _Action.amenities),
       _QuickOption('Security', Icons.security_rounded, _Action.securityList),
       _QuickOption('Gate Approval', Icons.how_to_reg_rounded, _Action.gateApproval),
       _QuickOption('Invite Guest', Icons.person_add_rounded, _Action.inviteGuest),
@@ -529,16 +483,11 @@ class _HomeTabState extends State<HomeTab> {
       _QuickOption('Allowed Delivery', Icons.delivery_dining_rounded, _Action.allowedDelivery),
       _QuickOption('Call Security', Icons.phone_rounded, _Action.securityList),
       _QuickOption('Message Guard', Icons.message_rounded, _Action.messageGuard),
-      _QuickOption('My Family', Icons.family_restroom_rounded, _Action.family),
       _QuickOption('My Daily Help', Icons.cleaning_services_rounded, _Action.dailyHelp),
-      _QuickOption('Monthly Access', Icons.repeat_rounded, _Action.monthlyAccess),
-      _QuickOption('My Vehicles', Icons.directions_car_rounded, _Action.vehicles),
       _QuickOption('Hostel Help & Support', Icons.support_agent_rounded, _Action.hostelHelpDesk),
       _QuickOption('Help and Support', Icons.support_agent_rounded, _Action.helpDesk),
-      _QuickOption('Kid Exit', Icons.child_care_rounded, _Action.kidExit),
       _QuickOption('${AppConstants.appName} Services', Icons.miscellaneous_services_rounded, _Action.accessServices),
       _QuickOption('Terms & Conditions', Icons.description_rounded, _Action.termsAndConditions),
-      _QuickOption('Out pass', Icons.exit_to_app_rounded, _Action.leaveRequest),
       _QuickOption('Hostel ID', Icons.badge_rounded, _Action.hostelId),
       _QuickOption('Events', Icons.event_rounded, _Action.events),
       _QuickOption('History', Icons.history_rounded, _Action.history),
@@ -547,7 +496,7 @@ class _HomeTabState extends State<HomeTab> {
     ];
     final currentProp = resolveCurrentProperty(widget.user);
     final propType = currentProp?.propertyType ?? widget.user.propertyType ?? (widget.user.apartments != null && widget.user.apartments!.isNotEmpty ? widget.user.apartments!.first.propertyType : null);
-    final isStaffSchoolOrCollege = propType == PropertyType.college;
+    final isStaffSchoolOrCollege = false;
     final isEventsProperty = propType == PropertyType.events;
 
     if (isStaffSchoolOrCollege) {
@@ -582,9 +531,6 @@ class _HomeTabState extends State<HomeTab> {
       }
       if (o.action == _Action.termsAndConditions) {
         return widget.isHostel;
-      }
-      if (o.action == _Action.leaveRequest) {
-        return widget.showLeaveRequests;
       }
       if (o.action == _Action.hostelId) {
         return widget.isHostel;
@@ -651,12 +597,7 @@ class _HomeTabState extends State<HomeTab> {
   /// Apartment / society features not shown on the hostel resident dashboard.
   static bool _isApartmentOnlyQuickOption(_Action action) {
     switch (action) {
-      case _Action.amenities:
-      case _Action.family:
       case _Action.dailyHelp:
-      case _Action.monthlyAccess:
-      case _Action.vehicles:
-      case _Action.kidExit:
       case _Action.accessServices:
         return true;
       default:
@@ -672,26 +613,14 @@ class _HomeTabState extends State<HomeTab> {
       case _Action.complaints:
         widget.onSwitchToComplaints?.call();
         break;
-      case _Action.raiseAlert:
-        _showRaiseComplaintDialog();
-        break;
       case _Action.gateApproval:
         _navigateToGateApproval();
         break;
       case _Action.inviteGuest:
         _navigateToVisitors();
         break;
-      case _Action.vehicles:
-        _navigateToVehicles();
-        break;
-      case _Action.family:
-        _navigateToFamily();
-        break;
       case _Action.securityList:
         _navigateToSecurityList();
-        break;
-      case _Action.amenities:
-        Navigator.pushNamed(context, AppRoutes.amenities);
         break;
       case _Action.payments:
         Navigator.pushNamed(context, AppRoutes.payments);
@@ -713,17 +642,6 @@ class _HomeTabState extends State<HomeTab> {
       case _Action.dailyHelp:
         _navigateToDailyHelpList();
         break;
-      case _Action.monthlyAccess:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const MonthlyAccessPage(),
-          ),
-        );
-        break;
-      case _Action.kidExit:
-        _showReportKidExitSheet();
-        break;
       case _Action.messageGuard:
         _navigateToMessageGuard();
         break;
@@ -735,16 +653,6 @@ class _HomeTabState extends State<HomeTab> {
           context,
           MaterialPageRoute(
             builder: (context) => const TermsAndConditionsPage(),
-          ),
-        );
-        break;
-      case _Action.leaveRequest:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LeaveRequestsPage(
-              securityEnabled: widget.securityEnabled,
-            ),
           ),
         );
         break;
@@ -842,25 +750,18 @@ class _HomeTabState extends State<HomeTab> {
 enum _Action {
   profile,
   complaints,
-  raiseAlert,
   gateApproval,
   inviteGuest,
-  vehicles,
-  family,
   securityList,
-  amenities,
   payments,
   helpDesk,
   hostelHelpDesk,
   cabAuto,
   allowedDelivery,
   dailyHelp,
-  monthlyAccess,
-  kidExit,
   messageGuard,
   accessServices,
   termsAndConditions,
-  leaveRequest,
   hostelId,
   comingSoon,
   events,

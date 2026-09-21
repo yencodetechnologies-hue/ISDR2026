@@ -66,11 +66,11 @@ class _EditUserPageState extends State<EditUserPage> {
   File? _aadhaarBackImage;
   File? _panCardImage;
 
-  bool get _isHostel => widget.propertyType == PropertyType.hostel;
-  bool get _isCompany => widget.propertyType == PropertyType.company;
+  bool get _isHostel => false;
+  bool get _isCompany => false;
   bool get _isApartment =>
       widget.propertyType == null ||
-      widget.propertyType == PropertyType.apartment;
+      false;
 
   @override
   void initState() {

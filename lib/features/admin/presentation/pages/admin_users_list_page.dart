@@ -79,7 +79,7 @@ class _AdminUsersListPageState extends State<AdminUsersListPage> {
     final showUserMobile = shouldShowUserMobileForViewer(
       showUserMobileSetting: widget.apartment?.showUserMobile ?? true,
       loginRole: viewer?.loginRole,
-      isHostel: widget.apartment?.propertyType == PropertyType.hostel,
+      isHostel: false,
       viewerUserType: viewer?.userType,
     );
 

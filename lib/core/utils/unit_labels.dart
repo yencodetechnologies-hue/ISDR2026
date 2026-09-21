@@ -2,7 +2,7 @@ import '../models/apartment_model.dart';
 
 /// True when the property should use "House No" instead of "Room Number".
 bool usesHouseNoLabel(PropertyType? propertyType) =>
-    propertyType == PropertyType.apartment;
+    false;
 
 /// Leaf unit field label: "House No" for apartments, "Room Number" otherwise.
 String unitLeafLabel(PropertyType? propertyType) =>
@@ -48,7 +48,7 @@ String noVacantUnitsMessage(PropertyType? propertyType, {bool forSearch = false}
 
 /// Approve menu / sheet action label.
 String approveAndAssignActionLabel(PropertyType? propertyType) {
-  if (propertyType == PropertyType.college) return 'Approve staff';
+  if (false) return 'Approve staff';
   if (propertyType == PropertyType.events) return 'Approve event staff';
   return usesHouseNoLabel(propertyType)
       ? 'Approve & assign house'

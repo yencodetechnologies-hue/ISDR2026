@@ -94,14 +94,6 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
 
   String get _pageTitle {
     switch (_propertyType) {
-      case PropertyType.apartment:
-        return 'Apartment Profile';
-      case PropertyType.company:
-        return 'Company Profile';
-      case PropertyType.hostel:
-        return 'Hostel Profile';
-      case PropertyType.college:
-        return 'College / School Profile';
       case PropertyType.events:
         return 'Events Management Profile';
     }
@@ -109,14 +101,6 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
 
   String get _nameLabel {
     switch (_propertyType) {
-      case PropertyType.apartment:
-        return 'Apartment name *';
-      case PropertyType.company:
-        return 'Company name *';
-      case PropertyType.hostel:
-        return 'Hostel name *';
-      case PropertyType.college:
-        return 'College or school name *';
       case PropertyType.events:
         return 'Event organizer name *';
     }
@@ -124,14 +108,6 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
 
   IconData get _propertyIcon {
     switch (_propertyType) {
-      case PropertyType.apartment:
-        return Icons.apartment_rounded;
-      case PropertyType.company:
-        return Icons.business_rounded;
-      case PropertyType.hostel:
-        return Icons.night_shelter_rounded;
-      case PropertyType.college:
-        return Icons.school_rounded;
       case PropertyType.events:
         return Icons.event_rounded;
     }
@@ -139,20 +115,12 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
 
   String get _propertySubtitle {
     switch (_propertyType) {
-      case PropertyType.apartment:
-        return 'Manage apartment contact details';
-      case PropertyType.company:
-        return 'Manage company contact details';
-      case PropertyType.hostel:
-        return 'Manage hostel & warden details';
-      case PropertyType.college:
-        return 'Manage college/school & management details';
       case PropertyType.events:
         return 'Manage event organizer account details';
     }
   }
 
-  bool get _isHostel => _propertyType == PropertyType.hostel;
+  bool get _isHostel => false;
 
   bool get _isManagementLogin {
     final authState = context.read<AuthBloc>().state;

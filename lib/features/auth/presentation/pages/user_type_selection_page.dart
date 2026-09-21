@@ -140,9 +140,7 @@ class _UserTypeSelectionPageState extends State<UserTypeSelectionPage>
                       const SizedBox(height: 10),
 
                       // Glass Header Card
-                      GestureDetector(
-                        onDoubleTap: () => _navigateToLogin(context, UserType.admin),
-                        child: _GlassContainer(
+                      _GlassContainer(
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                           borderRadius: 22,
                           child: Row(
@@ -164,7 +162,7 @@ class _UserTypeSelectionPageState extends State<UserTypeSelectionPage>
                                 padding: const EdgeInsets.all(4),
                                 clipBehavior: Clip.antiAlias,
                                 child: Image.asset(
-                                  'assets/maccess.png',
+                                  'assets/logo.png',
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -194,7 +192,6 @@ class _UserTypeSelectionPageState extends State<UserTypeSelectionPage>
                             ],
                           ),
                         ),
-                      ),
 
                       const SizedBox(height: 32),
 
@@ -216,7 +213,7 @@ class _UserTypeSelectionPageState extends State<UserTypeSelectionPage>
                                 children: const [
                                   TextSpan(text: 'Welcome to\n'),
                                   TextSpan(
-                                    text: 'M Access',
+                                    text: 'ISDR2026',
                                     style: TextStyle(
                                       color: Color(0xFF2563EB),
                                     ),
@@ -258,17 +255,6 @@ class _UserTypeSelectionPageState extends State<UserTypeSelectionPage>
                         icon: Icons.person_rounded,
                         accentColor: const Color(0xFF0284C7),
                         onTap: () => _navigateToLogin(context, UserType.user),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      _GlassRoleCard(
-                        number: '03',
-                        title: 'Security Gate',
-                        description: 'Gate Verification & Visitor Check-in',
-                        icon: Icons.shield_rounded,
-                        accentColor: const Color(0xFF059669),
-                        onTap: () => _navigateToLogin(context, UserType.security),
                       ),
 
                       const Spacer(),

@@ -12,17 +12,12 @@ import '../../../../core/routes/app_routes.dart';
 import '../../../../core/widgets/logout_confirm_sheet.dart';
 import '../../../../features/notifications/presentation/bloc/notification_bloc.dart';
 import '../bloc/user_bloc.dart';
-import 'widgets/bottom_nav_bar.dart';
 import 'widgets/home_tab.dart';
-import 'widgets/events_tab.dart';
-import 'widgets/complaints_tab.dart';
 import 'widgets/profile_tab.dart';
 import 'visitors_page.dart';
-import 'vehicles_page.dart';
 import 'my_event_tickets_page.dart';
 import 'gate_approval_page.dart';
 import 'terms_and_conditions_page.dart';
-import 'leave_requests_page.dart';
 
 class UserDashboardPage extends StatefulWidget {
   const UserDashboardPage({super.key});
@@ -52,7 +47,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
           );
           final currentProp = resolveCurrentProperty(authState.user);
           final propType = currentProp?.propertyType ?? authState.user.propertyType ?? (authState.user.apartments != null && authState.user.apartments!.isNotEmpty ? authState.user.apartments!.first.propertyType : null);
-          final isStaffSchoolOrCollege = propType == PropertyType.college;
+          final isStaffSchoolOrCollege = false;
           final isEventsProperty = propType == PropertyType.events;
 
           final complaintsEnabled = propertyCtx.complaintsEnabled && !isStaffSchoolOrCollege && !isEventsProperty;
@@ -157,94 +152,33 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
             ),
             body: IndexedStack(
               index: effectiveIndex,
-              children: isEventsProperty
-                  ? [
-                      HomeTab(
-                        user: authState.user,
-                        isHostel: propertyCtx.isHostel,
-                        securityEnabled: propertyCtx.securityEnabled,
-                        assignPaymentEnabled: propertyCtx.assignPaymentEnabled,
-                        showLeaveRequests: false,
-                        complaintsEnabled: false,
-                        adsEnabled: propertyCtx.adsEnabled,
-                        onSwitchToComplaints: null,
-                        onSwitchToProfile: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => Scaffold(
-                                appBar: AppBar(title: const Text('Profile')),
-                                body: ProfileTab(
-                                  user: authState.user,
-                                  isHostel: propertyCtx.isHostel,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+              children: [
+                HomeTab(
+                  user: authState.user,
+                  isHostel: propertyCtx.isHostel,
+                  securityEnabled: propertyCtx.securityEnabled,
+                  assignPaymentEnabled: propertyCtx.assignPaymentEnabled,
+                  showLeaveRequests: false,
+                  complaintsEnabled: false,
+                  adsEnabled: propertyCtx.adsEnabled,
+                  onSwitchToComplaints: null,
+                  onSwitchToProfile: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => Scaffold(
+                          appBar: AppBar(title: const Text('Profile')),
+                          body: ProfileTab(
+                            user: authState.user,
+                            isHostel: propertyCtx.isHostel,
+                          ),
+                        ),
                       ),
-                    ]
-                  : complaintsEnabled
-                  ? [
-                      HomeTab(
-                        user: authState.user,
-                        isHostel: propertyCtx.isHostel,
-                        showLeaveRequests: propertyCtx.isHostel,
-                        securityEnabled: propertyCtx.securityEnabled,
-                        assignPaymentEnabled: propertyCtx.assignPaymentEnabled,
-                        complaintsEnabled: true,
-                        adsEnabled: propertyCtx.adsEnabled,
-                        onSwitchToComplaints: () {
-                          setState(() => _currentIndex = 2);
-                        },
-                        onSwitchToProfile: () {
-                          setState(() => _currentIndex = 3);
-                        },
-                      ),
-                      const EventsTab(),
-                      ComplaintsTab(
-                        userId: authState.user.id,
-                        securityEnabled: propertyCtx.securityEnabled,
-                      ),
-                      ProfileTab(
-                        user: authState.user,
-                        isHostel: propertyCtx.isHostel,
-                      ),
-                    ]
-                  : [
-                      HomeTab(
-                        user: authState.user,
-                        isHostel: propertyCtx.isHostel,
-                        securityEnabled: propertyCtx.securityEnabled,
-                        assignPaymentEnabled: propertyCtx.assignPaymentEnabled,
-                        showLeaveRequests: propertyCtx.isHostel,
-                        complaintsEnabled: false,
-                        adsEnabled: propertyCtx.adsEnabled,
-                        onSwitchToComplaints: null,
-                        onSwitchToProfile: () {
-                          setState(() => _currentIndex = 2);
-                        },
-                      ),
-                      const EventsTab(),
-                      ProfileTab(
-                        user: authState.user,
-                        isHostel: propertyCtx.isHostel,
-                      ),
-                    ],
+                    );
+                  },
+                ),
+              ],
             ),
-            bottomNavigationBar: isEventsProperty
-                ? null
-                : BottomNavBar(
-                    currentIndex: effectiveIndex,
-                    onTap: (index) {
-                      setState(() {
-                        _currentIndex = index;
-                      });
-                    },
-                    showComplaints: complaintsEnabled,
-                    showNotices: true,
-                    showProfile: true,
-                  ),
           );
         }
         return const Scaffold(
@@ -637,36 +571,6 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                       },
                     ),
                   ],
-                  if (!isHostel && !user.isStaff && !isEventsProperty && !isStaffSchoolOrCollege)
-                    _buildDrawerItem(
-                      context,
-                      icon: Icons.directions_car_rounded,
-                      title: 'My Vehicles',
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => VehiclesPage(user: user)),
-                        );
-                      },
-                    ),
-                  if (isHostel)
-                    _buildDrawerItem(
-                      context,
-                      icon: Icons.exit_to_app_rounded,
-                      title: 'Out pass',
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => LeaveRequestsPage(
-                              securityEnabled: securityEnabled,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
                   if (!user.isStaff)
                     _buildDrawerItem(
                       context,

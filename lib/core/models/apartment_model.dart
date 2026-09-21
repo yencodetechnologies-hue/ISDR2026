@@ -1,18 +1,10 @@
 import 'package:equatable/equatable.dart';
 
-enum PropertyType { apartment, company, hostel, college, events }
+enum PropertyType { events }
 
 extension PropertyTypeExt on PropertyType {
   String get displayName {
     switch (this) {
-      case PropertyType.apartment:
-        return 'Apartment';
-      case PropertyType.company:
-        return 'Company';
-      case PropertyType.hostel:
-        return 'Hostel';
-      case PropertyType.college:
-        return 'College / School';
       case PropertyType.events:
         return 'Events Management';
     }
@@ -59,7 +51,7 @@ class ApartmentModel extends Equatable {
     this.wardenFacilityEnabled = false,
     this.supportEnabled = false,
     this.adsEnabled = true,
-    this.propertyType = PropertyType.apartment,
+    this.propertyType = PropertyType.events,
     this.hostelType,
     this.roomType,
     this.bedCountPerRoom,
@@ -100,12 +92,7 @@ class ApartmentModel extends Equatable {
 
   factory ApartmentModel.fromJson(Map<String, dynamic> json) {
     final id = json['id']?.toString() ?? json['_id']?.toString() ?? '';
-    PropertyType pt = PropertyType.apartment;
-    final ptStr = json['propertyType'] as String?;
-    if (ptStr == 'company') pt = PropertyType.company;
-    if (ptStr == 'hostel') pt = PropertyType.hostel;
-    if (ptStr == 'college') pt = PropertyType.college;
-    if (ptStr == 'events') pt = PropertyType.events;
+    const pt = PropertyType.events;
     return ApartmentModel(
       id: id,
       name: json['name'] as String? ?? '',

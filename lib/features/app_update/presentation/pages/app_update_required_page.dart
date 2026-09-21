@@ -153,7 +153,7 @@ class _AppUpdateRequiredPageState extends State<AppUpdateRequiredPage>
           ),
           clipBehavior: Clip.antiAlias,
           child: Image.asset(
-            'assets/maccess.png',
+            'assets/logo.png',
             fit: BoxFit.contain,
           ),
         ),

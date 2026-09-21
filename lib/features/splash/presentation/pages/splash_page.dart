@@ -123,6 +123,8 @@ class _SplashPageState extends State<SplashPage> {
     String route = AppRoutes.login;
     switch (user.userType) {
       case UserType.admin:
+        route = AppRoutes.userTypeSelection;
+        break;
       case UserType.apartment:
         route = AppRoutes.adminDashboard;
         break;
@@ -158,7 +160,7 @@ class _SplashPageState extends State<SplashPage> {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Image.asset(
-                  'assets/maccess.png',
+                  'assets/logo.png',
                   fit: BoxFit.contain,
                 ),
               ),

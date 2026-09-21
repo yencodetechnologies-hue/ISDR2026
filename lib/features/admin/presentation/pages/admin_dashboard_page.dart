@@ -16,28 +16,11 @@ import '../../../notifications/presentation/bloc/notification_bloc.dart';
 import '../../../maintenance/presentation/pages/maintenance_page.dart';
 import '../bloc/admin_bloc.dart';
 import 'apartment_subscription_wall_page.dart';
-import 'tabs/ads_tab.dart';
-import 'tabs/documents_tab.dart';
-import 'tabs/amenities_tab.dart';
-import 'tabs/assign_payments_tab.dart';
-import 'tabs/blocks_tab.dart';
-import 'tabs/complaints_tab.dart';
-import 'tabs/facility_ops_tab.dart';
-import 'tabs/maintenance_tab.dart';
-import 'tabs/notices_tab.dart';
-import 'tabs/overview_tab.dart';
-import 'tabs/security_tab.dart';
 import 'tabs/subscription_tab.dart';
-import 'tabs/support_tab.dart';
 import 'tabs/users_tab.dart';
-import 'tabs/leave_requests_tab.dart';
-import 'tabs/visitors_tab.dart';
 import 'tabs/managed_events_tab.dart';
-import 'property_profile_page.dart';
-import 'create_apartment_page.dart';
 import '../widgets/management_module_grid.dart';
-import 'admin_vacancies_list_page.dart';
-import 'admin_rooms_grid_page.dart';
+import 'property_profile_page.dart';
 import 'admin_users_list_page.dart';
 import 'management_team_page.dart';
 
@@ -306,197 +289,22 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
   List<_PropertyTabItem> _buildPropertyTabItems() {
     final apt = _apartmentModel;
-    final securityOn = apt?.securityEnabled ?? true;
-    final complaintsOn = apt?.complaintsEnabled ?? true;
-    final assignPayOn = apt?.assignPaymentEnabled ?? true;
     final apartmentId = widget.selectedApartmentId;
     final apartmentName = apt?.name;
 
-    final authState = context.read<AuthBloc>().state;
-    final isWarden = authState is AuthAuthenticated && authState.user.loginRole == 'warden';
-    final isHostel = apt?.propertyType == PropertyType.hostel;
-    final isEvents = apt?.propertyType == PropertyType.events;
-    final isOwnerOrAdmin = !isWarden || !isHostel;
-
-    final isCollege = apt?.propertyType == PropertyType.college;
-
-    final tabs = <_PropertyTabItem>[
-      if (!isEvents && !isCollege)
-        _PropertyTabItem(
-          label: 'Blocks',
-          buildContent: (state) => BlocksTab(state: state, apartment: apt),
-        ),
+    return <_PropertyTabItem>[
       _PropertyTabItem(
-        label: apt?.propertyType == PropertyType.college
-            ? 'Staffs'
-            : apt?.propertyType == PropertyType.events
-                ? 'Event Staff'
-                : 'Users',
+        label: 'Events',
+        buildContent: (state) => ManagedEventsTab(
+          state: state,
+          selectedApartmentId: apartmentId,
+          isEventsProperty: true,
+        ),
+      ),
+      _PropertyTabItem(
+        label: 'Event Staff',
         buildContent: (state) => UsersTab(state: state, apartment: apt),
       ),
-    ];
-
-    // BookMyShow-style ticketing — primary for Events Management properties
-    if (isEvents) {
-      tabs.insert(
-        0,
-        _PropertyTabItem(
-          label: 'Events',
-          buildContent: (state) => ManagedEventsTab(
-            state: state,
-            selectedApartmentId: apartmentId,
-            isEventsProperty: true,
-          ),
-        ),
-      );
-    } else if (!isCollege) {
-      tabs.add(
-        _PropertyTabItem(
-          label: 'Events',
-          buildContent: (state) => ManagedEventsTab(
-            state: state,
-            selectedApartmentId: apartmentId,
-          ),
-        ),
-      );
-    }
-
-    if (apt?.propertyType == PropertyType.hostel) {
-      tabs.add(
-        _PropertyTabItem(
-          label: 'Out pass',
-          buildContent: (state) => LeaveRequestsTab(
-            state: state,
-            selectedApartmentId: apartmentId,
-          ),
-        ),
-      );
-    }
-
-    if (securityOn) {
-      // Events Management properties don't have a Security module.
-      if (!isEvents) {
-        tabs.add(
-          _PropertyTabItem(
-            label: 'Security',
-            buildContent: (state) => SecurityTab(state: state),
-          ),
-        );
-      }
-      // Events Management properties don't have a Visitors module (matches web nav).
-      if (!isEvents) {
-        tabs.add(
-          _PropertyTabItem(
-            label: 'Visitors',
-            buildContent: (state) => VisitorsTab(
-              state: state,
-              apartment: apt,
-              securityEnabled: securityOn,
-              complaintsEnabled: complaintsOn,
-            ),
-          ),
-        );
-      }
-    }
-
-    // Events Management: hide Assign Pay, Complaints, Facility, Maintenance, Support
-    if (!isEvents && !isCollege && complaintsOn) {
-      tabs.add(
-        _PropertyTabItem(
-          label: 'Complaints',
-          buildContent: (_) => AdminComplaintsTab(selectedApartmentId: apartmentId),
-        ),
-      );
-    }
-
-    if (!isEvents && !isCollege && assignPayOn) {
-      tabs.add(
-        _PropertyTabItem(
-          label: 'Assign Pay',
-          buildContent: (state) => AssignPaymentsTab(
-            state: state,
-            propertyType: apt?.propertyType,
-          ),
-        ),
-      );
-    }
-
-    if (!isEvents && !isCollege && (isOwnerOrAdmin || !isHostel)) {
-      tabs.add(
-        _PropertyTabItem(
-          label: 'Amenities',
-          buildContent: (state) => AmenitiesTab(state: state),
-        ),
-      );
-    }
-
-    if (!isEvents) {
-      tabs.add(
-        _PropertyTabItem(
-          label: 'Notices',
-          buildContent: (state) => NoticesTab(state: state),
-        ),
-      );
-    }
-
-    if (!isEvents &&
-        !isCollege &&
-        (!isHostel || isOwnerOrAdmin || (apt?.wardenFacilityEnabled ?? false))) {
-      tabs.add(
-        _PropertyTabItem(
-          label: 'Facility',
-          buildContent: (state) => FacilityOpsTab(state: state),
-        ),
-      );
-    }
-
-    // Remove Maintenance for hostels, events, and colleges
-    if (!isHostel && !isEvents && !isCollege) {
-      tabs.add(
-        _PropertyTabItem(
-          label: 'Maintenance',
-          buildContent: (state) => MaintenanceTab(state: state),
-        ),
-      );
-    }
-
-    if (!isEvents &&
-        !isCollege &&
-        (!isHostel || isOwnerOrAdmin || (apt?.supportEnabled ?? false))) {
-      tabs.add(
-        _PropertyTabItem(
-          label: 'Support',
-          buildContent: (_) => SupportTab(selectedApartmentId: apartmentId),
-        ),
-      );
-    }
-
-    if (!isEvents && !isCollege && (isOwnerOrAdmin || !isHostel)) {
-      tabs.add(
-        _PropertyTabItem(
-          label: 'Ads',
-          buildContent: (state) => AdsTab(
-            state: state,
-            selectedApartmentId: apartmentId,
-          ),
-        ),
-      );
-    }
-
-    if (!isEvents && !isCollege) {
-      tabs.add(
-        _PropertyTabItem(
-          label: 'Documents',
-          buildContent: (state) => DocumentsTab(
-            state: state,
-            selectedApartmentId: apartmentId,
-            canManage: isOwnerOrAdmin,
-          ),
-        ),
-      );
-    }
-
-    tabs.add(
       _PropertyTabItem(
         label: 'Subscription',
         buildContent: (_) => SubscriptionTab(
@@ -504,9 +312,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
           apartmentName: apartmentName,
         ),
       ),
-    );
-
-    tabs.add(
       _PropertyTabItem(
         label: 'Management IDs',
         buildContent: (_) => ManagementTeamPage(
@@ -514,31 +319,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
           hideAppBar: true,
         ),
       ),
-    );
-
-    // Events Management properties don't get an Overview/dashboard tab.
-    if (!isEvents) {
-      final moduleLabels = tabs.map((t) => t.label).toList();
-      tabs.insert(
-        0,
-        _PropertyTabItem(
-          label: 'Overview',
-          buildContent: (state) => OverviewTab(
-            state: state,
-            isApartmentAccount: _isApartmentAccount(),
-            apartment: apt,
-            selectedApartmentId: widget.selectedApartmentId,
-            onPropertyUpdated: _hydrateApartmentFromApi,
-            moduleLabels: moduleLabels,
-            showModuleGrid: true,
-            onTabNavigate: _navigateToModule,
-            managedEventsCount: _managedEventsCount,
-          ),
-        ),
-      );
-    }
-
-    return tabs;
+    ];
   }
 
   void _navigateToModule(String label) {
@@ -674,7 +455,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   Widget _buildManagementGridHome(AdminLoaded state) {
     final labels = _propertyTabs.map((t) => t.label).toList();
     final apt = _apartmentModel;
-    final isHostel = apt?.propertyType == PropertyType.hostel;
+    final isHostel = false;
     final totalRooms = totalRoomCountForProperty(blocks: state.blocks);
     final totalVacancies = vacantRoomCountForProperty(
       users: state.regularUsers,
@@ -769,50 +550,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      if (apt?.propertyType != PropertyType.college &&
-                          apt?.propertyType != PropertyType.events) ...[
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => AdminVacanciesListPage(
-                                    propertyType: apt?.propertyType,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.06),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.white.withOpacity(0.12)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '$totalVacancies',
-                                    style: GoogleFonts.sora(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Vacancies',
-                                    style: GoogleFonts.inter(fontSize: 10.5, color: Colors.white.withOpacity(0.6)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                      ],
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
@@ -846,7 +583,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                   apt?.propertyType == PropertyType.college
+                                   false
                                        ? 'Staffs'
                                        : apt?.propertyType == PropertyType.events
                                            ? 'Event Staff'
@@ -858,7 +595,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                           ),
                         ),
                       ),
-                      if (apt?.propertyType == PropertyType.college) ...[
+                      if (false) ...[
                         const SizedBox(width: 10),
                         Expanded(
                           child: GestureDetector(
@@ -958,51 +695,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                           ),
                         ),
                       ],
-                      if (apt?.propertyType != PropertyType.college &&
-                          apt?.propertyType != PropertyType.events) ...[
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: isHostel
-                                ? () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => AdminRoomsGridPage(
-                                          isHostel: true,
-                                          apartment: apt,
-                                        ),
-                                      ),
-                                    )
-                                : () => _navigateToModule('Blocks'),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.06),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.white.withOpacity(0.12)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '$totalRooms',
-                                    style: GoogleFonts.sora(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Rooms',
-                                    style: GoogleFonts.inter(fontSize: 10.5, color: Colors.white.withOpacity(0.6)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ],
@@ -1038,7 +730,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                         children: [
                           GestureDetector(
                             onTap: () => _navigateToModule(
-                              apt?.propertyType == PropertyType.college ? 'Staffs' : 'Users',
+                              false ? 'Staffs' : 'Users',
                             ),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
@@ -1056,7 +748,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                                 ],
                               ),
                               child: Text(
-                                apt?.propertyType == PropertyType.college
+                                false
                                     ? '＋  Add Staff'
                                     : '＋  Add resident',
                                 style: GoogleFonts.inter(
@@ -1327,16 +1019,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     );
   }
 
-  Widget _buildOverviewBody(AdminLoaded state) {
-    return OverviewTab(
-      state: state,
-      isApartmentAccount: _isApartmentAccount(),
-      apartment: _apartmentModel,
-      selectedApartmentId: widget.selectedApartmentId,
-      managedEventsCount: _managedEventsCount,
-    );
-  }
-
   void _onAdminBlocSideEffect(BuildContext context, AdminState state) {
     if (state is AdminLoaded) {
       _lastLoadedState = state;
@@ -1366,7 +1048,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   }
 
   Widget _buildDashboardBody(AdminLoaded state) {
-    return _buildOverviewBody(state);
+    return const SizedBox.shrink();
   }
 
   Widget? _buildLeading(AuthState authState) {
@@ -1512,25 +1194,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     );
     actions.add(const SizedBox(width: 4));
     return actions;
-  }
-
-  Future<void> _openCreateProperty(BuildContext context) async {
-    final created = await Navigator.push<ApartmentModel>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const CreateApartmentPage(),
-      ),
-    );
-    if (!mounted || created == null) return;
-    if (!context.mounted) return;
-    Navigator.pushNamed(
-      context,
-      AppRoutes.adminDashboard,
-      arguments: {
-        'selectedApartmentId': created.id,
-        'apartment': created,
-      },
-    );
   }
 
   @override

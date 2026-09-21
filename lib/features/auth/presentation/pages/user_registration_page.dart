@@ -139,12 +139,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
   int _currentStep = 0;
 
   PropertyType get _propertyType {
-    final pt = widget.propertyType;
-    if (pt == 'company') return PropertyType.company;
-    if (pt == 'hostel') return PropertyType.hostel;
-    if (pt == 'college') return PropertyType.college;
-    if (pt == 'events') return PropertyType.events;
-    return PropertyType.apartment;
+    return PropertyType.events;
   }
 
   /// Public Create Account requires email OTP; staff Add User does not.
@@ -153,12 +148,12 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
   /// Admin adding a resident: minimal fields (apartment & hostel).
   bool get _isAdminApartmentSimplified =>
       widget.fromAdmin &&
-      (_propertyType == PropertyType.apartment ||
-          _propertyType == PropertyType.hostel);
+      (false ||
+          false);
 
   /// Owner/tenant choice applies only when admin adds a user to an apartment.
   bool get _showAdminAccountType =>
-      _isAdminApartmentSimplified && _propertyType == PropertyType.apartment;
+      _isAdminApartmentSimplified && false;
 
   @override
   void initState() {
@@ -312,9 +307,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
   }
 
   void _handleRegister() {
-    final isCompany = _propertyType == PropertyType.company;
-    final isHostel = _propertyType == PropertyType.hostel;
-    final isCollege = _propertyType == PropertyType.college;
+    final isCompany = false;
+    final isHostel = false;
+    final isCollege = false;
     final isEvents = _propertyType == PropertyType.events;
     final noExtraFieldsType = isCollege || isEvents;
     final baseValid = _formKey.currentState!.validate() &&
@@ -428,11 +423,11 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
           totalOccupants: _totalOccupantsController.text.trim().isEmpty
               ? null
               : int.tryParse(_totalOccupantsController.text.trim()),
-          department: _propertyType == PropertyType.college ? _designationController.text.trim() : null,
-          hostelRoom: _propertyType == PropertyType.hostel ? _hostelRoomController.text.trim().isEmpty ? null : _hostelRoomController.text.trim() : null,
-          hostelBed: _propertyType == PropertyType.hostel ? _hostelBedController.text.trim().isEmpty ? null : _hostelBedController.text.trim() : null,
-          occupationCategory: _propertyType == PropertyType.hostel ? _occupationCategory : null,
-          dateOfBirth: _propertyType == PropertyType.hostel ? _dateOfBirth : null,
+          department: false ? _designationController.text.trim() : null,
+          hostelRoom: false ? _hostelRoomController.text.trim().isEmpty ? null : _hostelRoomController.text.trim() : null,
+          hostelBed: false ? _hostelBedController.text.trim().isEmpty ? null : _hostelBedController.text.trim() : null,
+          occupationCategory: false ? _occupationCategory : null,
+          dateOfBirth: false ? _dateOfBirth : null,
           profilePicPath: _profilePicture?.path,
           aadhaarFrontPath: _aadhaarFrontImage?.path,
           aadhaarBackPath: _aadhaarBackImage?.path,
@@ -444,7 +439,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
       String errorMessage = '';
       if (isCompany) {
         // Company creation uses only form validation (no email/logo requirements).
-      } else if (_propertyType == PropertyType.hostel && !_isAdminApartmentSimplified) {
+      } else if (false && !_isAdminApartmentSimplified) {
         if (_occupationCategory == null) {
           errorMessage = 'Please select Occupation';
         } else if (_gender == null) {
@@ -510,7 +505,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     String route = AppRoutes.login;
     switch (user.userType) {
       case UserType.admin:
-        route = AppRoutes.adminDashboard;
+        route = AppRoutes.userTypeSelection;
         break;
       case UserType.apartment:
         route = AppRoutes.adminDashboard;
@@ -593,7 +588,6 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                       rootNav.popUntil((route) {
                         final name = route.settings.name;
                         return name == AppRoutes.adminDashboard ||
-                            name == AppRoutes.adminApartmentList ||
                             route.isFirst;
                       });
                     } else if (user != null) {
@@ -632,10 +626,10 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
             final isBundle = _showAdminAccountType &&
                 _accountType == ResidentAccountType.tenant;
             _showSuccessDialog(
-              title: _propertyType == PropertyType.company
+              title: false
                   ? 'Company Created Successfully!'
                   : (isBundle ? 'Owner & Tenant Created' : 'User Registered Successfully!'),
-              message: _propertyType == PropertyType.company
+              message: false
                   ? 'The company account has been created successfully.'
                   : (isBundle
                       ? 'The owner and tenant accounts have been registered successfully.'
@@ -694,7 +688,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
               elevation: 0,
               flexibleSpace: FlexibleSpaceBar(
                 title: Text(
-                  _propertyType == PropertyType.company
+                  false
                       ? 'Create Company'
                       : (_propertyType == PropertyType.events
                           ? 'Add Event Staff'
@@ -733,7 +727,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                       // const SizedBox(height: 32),
 
                       // Company form OR Personal Information Section
-                      if (_propertyType == PropertyType.company) ...[
+                      if (false) ...[
                         _buildSectionCard(
                           title: 'Company Information',
                           icon: Icons.business_rounded,
@@ -755,7 +749,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                                   ),
                                   const Spacer(),
                                   Text(
-                                    PropertyType.company.displayName,
+                                    PropertyType.events.displayName,
                                     style: const TextStyle(fontWeight: FontWeight.w700),
                                   ),
                                 ],
@@ -850,12 +844,12 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                         ),
                       ] else ...[
                       _buildSectionCard(
-                        title: _propertyType == PropertyType.college
+                        title: false
                             ? 'Add Staff Account'
                             : _propertyType == PropertyType.events
                                 ? 'Add Event Staff Account'
                                 : 'Personal Information',
-                        icon: _propertyType == PropertyType.college ||
+                        icon: false ||
                                 _propertyType == PropertyType.events
                             ? Icons.badge_rounded
                             : Icons.person_outline_rounded,
@@ -908,7 +902,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                                 },
                               ),
                             ),
-                          ] else if (_propertyType == PropertyType.college) ...[
+                          ] else if (false) ...[
                             _buildTextField(
                               controller: _usernameController,
                               label: 'Full Name *',
@@ -1185,14 +1179,14 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                       const SizedBox(height: 24),
 
                       // Tenant / Hostel Details Section (skip for company, college & events - family type/nri not relevant)
-                      if (_propertyType != PropertyType.company &&
-                          _propertyType != PropertyType.college &&
+                      if (true &&
+                          true &&
                           _propertyType != PropertyType.events)
                       _buildSectionCard(
-                        title: _propertyType == PropertyType.hostel
+                        title: false
                             ? 'Hostel Details'
                             : (_isAdminApartmentSimplified ? 'Family Type' : 'Tenant Details'),
-                        icon: _propertyType == PropertyType.hostel
+                        icon: false
                             ? Icons.hotel_rounded
                             : Icons.home_rounded,
                         children: [
@@ -1208,7 +1202,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                             ] else ...[
                               const SizedBox(height: 20),
                             ],
-                            if (_propertyType == PropertyType.hostel) ...[
+                            if (false) ...[
                               _buildOccupationSelection(),
                               const SizedBox(height: 20),
                               _buildDateOfBirthPicker(),
@@ -1235,7 +1229,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                         ],
                       ),
 
-                      if (_propertyType != PropertyType.college &&
+                      if (true &&
                           _propertyType != PropertyType.events) ...[
                         const SizedBox(height: 24),
                         _buildSectionCard(
@@ -1294,17 +1288,17 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                       // Register Button
                       BlocBuilder<AuthBloc, AuthState>(
                         builder: (context, state) {
-                          final isCompany = _propertyType == PropertyType.company;
+                          final isCompany = false;
                           final isLoading = isCompany ? _companySaving : state is AuthLoading;
                           return BrandGradientCtaButton(
-                            label: _propertyType == PropertyType.company
+                            label: false
                                 ? 'Create Company'
                                 : (_propertyType == PropertyType.events
                                     ? 'Add Event Staff'
                                     : (_isAdminApartmentSimplified
                                         ? 'Add User'
                                         : 'Create Account')),
-                            icon: _propertyType == PropertyType.company
+                            icon: false
                                 ? Icons.business_rounded
                                 : Icons.person_add_rounded,
                             onPressed: isLoading ? null : _handleRegister,
