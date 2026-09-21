@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
+const managedEventRoutes = require('./routes/managedEventRoutes');
 
 if (!process.env.JWT_SECRET) {
   console.error('Error: JWT_SECRET is not set in .env');
@@ -24,6 +25,7 @@ app.get('/', (req, res) => res.json({ message: 'ISDR2026 API running' }));
 app.get('/api/health', (req, res) => res.json({ success: true, status: 'ok' }));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/managed-events', managedEventRoutes);
 
 // 404
 app.use((req, res) => {
