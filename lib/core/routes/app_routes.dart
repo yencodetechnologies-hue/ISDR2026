@@ -8,6 +8,7 @@ import '../../features/auth/presentation/pages/waiting_approval_page.dart';
 import '../guards/admin_route_guard.dart';
 import '../../features/user/presentation/pages/user_dashboard_page.dart';
 import '../../features/security/presentation/pages/security_dashboard_page.dart';
+import '../../features/participant/presentation/pages/participant_home_page.dart';
 import '../../features/user/presentation/pages/coming_soon_page.dart';
 import '../../features/user/presentation/pages/owner_details_page.dart';
 import '../../features/user/presentation/pages/payments_page.dart';
@@ -29,6 +30,7 @@ class AppRoutes {
   static const String adminDashboard = '/admin-dashboard';
   static const String userDashboard = '/user-dashboard';
   static const String securityDashboard = '/security-dashboard';
+  static const String participantHome = '/participant-home';
   static const String featureComingSoon = '/feature-coming-soon';
   static const String payments = '/payments';
   static const String support = '/support';
@@ -58,6 +60,7 @@ class AppRoutes {
       adminDashboard: (context) => const AdminRouteGuard(),
       userDashboard: (context) => const UserDashboardPage(),
       securityDashboard: (context) => const SecurityDashboardPage(),
+      participantHome: (context) => const ParticipantHomePage(),
       featureComingSoon: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;
         final featureName = args is Map ? args['featureName'] as String? : null;

@@ -135,6 +135,9 @@ class _SplashPageState extends State<SplashPage> {
       case UserType.security:
         route = AppRoutes.securityDashboard;
         break;
+      case UserType.participant:
+        route = AppRoutes.participantHome;
+        break;
     }
 
     AppNavigation.resetTo(context, route);

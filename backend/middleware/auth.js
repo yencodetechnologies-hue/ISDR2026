@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 const Apartment = require('../models/Apartment');
 const EventStaff = require('../models/EventStaff');
+const EventRegistration = require('../models/EventRegistration');
 
 /**
- * Verifies the Bearer token. The token's userId is either the property (Apartment) id for a
- * management login, or an event staff account id.
+ * Verifies the Bearer token. The token's userId is the property (Apartment) id for a
+ * management login, an event staff account id, or a participant (EventRegistration) id.
  */
 const protect = async (req, res, next) => {
   const header = req.headers.authorization;
@@ -19,12 +20,22 @@ const protect = async (req, res, next) => {
     const apartment = await Apartment.findById(decoded.userId).lean();
     if (!apartment) {
       const staff = await EventStaff.findById(decoded.userId).lean();
-      if (!staff || !staff.isActive || staff.status !== 'approved') {
+      if (staff) {
+        if (!staff.isActive || staff.status !== 'approved') {
+          return res.status(401).json({ error: 'Not authorized, account not found' });
+        }
+        req.userId = decoded.userId;
+        req.userType = 'user';
+        req.apartmentId = staff.apartmentId.toString();
+        return next();
+      }
+      const participant = await EventRegistration.findById(decoded.userId).lean();
+      if (!participant || participant.status === 'cancelled') {
         return res.status(401).json({ error: 'Not authorized, account not found' });
       }
       req.userId = decoded.userId;
-      req.userType = 'user';
-      req.apartmentId = staff.apartmentId.toString();
+      req.userType = 'participant';
+      req.apartmentId = participant.apartmentId.toString();
       return next();
     }
 

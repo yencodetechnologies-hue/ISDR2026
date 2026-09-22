@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const answerSchema = new mongoose.Schema(
   {
@@ -54,6 +55,9 @@ const eventRegistrationSchema = new mongoose.Schema(
     },
     answers: { type: [answerSchema], default: [] },
     userId: { type: mongoose.Schema.Types.ObjectId, default: null },
+    // Login password for the participant app. Every participant is given the same
+    // default ('123456') at creation; select:false keeps it out of normal reads.
+    password: { type: String, default: '', select: false },
     otp: { type: String, required: true },
     qrCode: { type: String, required: true },
     ticketCode: { type: String, required: true, unique: true, index: true },
@@ -77,6 +81,16 @@ const eventRegistrationSchema = new mongoose.Schema(
 );
 
 eventRegistrationSchema.index({ eventId: 1, mobileNumber: 1 }, { unique: true });
+
+eventRegistrationSchema.pre('save', async function hashPassword(next) {
+  if (!this.isModified('password') || !this.password) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
+
+eventRegistrationSchema.methods.comparePassword = function comparePassword(plain) {
+  return bcrypt.compare(plain, this.password || '');
+};
 
 eventRegistrationSchema.set('toJSON', {
   transform(_doc, ret) {

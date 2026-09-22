@@ -257,6 +257,17 @@ class _UserTypeSelectionPageState extends State<UserTypeSelectionPage>
                         onTap: () => _navigateToLogin(context, UserType.user),
                       ),
 
+                      const SizedBox(height: 16),
+
+                      _GlassRoleCard(
+                        number: '03',
+                        title: 'Participant',
+                        description: 'Registered delegates & attendees',
+                        icon: Icons.badge_rounded,
+                        accentColor: const Color(0xFF16A34A),
+                        onTap: () => _navigateToLogin(context, UserType.participant),
+                      ),
+
                       const Spacer(),
 
                       const SizedBox(height: 8),

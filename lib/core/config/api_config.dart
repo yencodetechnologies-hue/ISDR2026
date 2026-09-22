@@ -1,12 +1,13 @@
+import 'package:flutter/foundation.dart';
 
 class ApiConfig {
   /// Local backend URL for Android Emulator (10.0.2.2 points to host PC's localhost)
-  static const String _emulatorBaseUrl = 'http://10.0.2.2:5000/api';
+  static const String _emulatorBaseUrl = 'http://10.0.2.2:7012/api';
 
   /// Local backend URL configuration for physical mobile devices on the same Wi-Fi
-  static const String _localBaseUrl = 'http://192.168.100.247:5000/api';
+  static const String _localBaseUrl = 'http://192.168.100.247:7012/api';
   static const String _productionBaseUrl =
-      'https://maccess.octosofttechnologies.in/api';
+      'https://isdr2026.yencodetechnologies.in/api';
 
   /// Public Razorpay Key ID — same value as backend `RAZORPAY_KEY_ID`.
   /// Override at build time: `--dart-define=RAZORPAY_KEY_ID=rzp_live_...`
@@ -20,12 +21,15 @@ class ApiConfig {
     defaultValue: '',
   );
 
-  /// Base URL: the live server.
-  /// To use the local backend instead, return [_emulatorBaseUrl] (Android emulator,
-  /// 10.0.2.2 -> host PC) or [_localBaseUrl] (physical device on the same Wi-Fi).
+  /// Base URL: the local backend.
+  /// Android emulator -> 10.0.2.2, other devices -> this PC on the local network.
+  /// To use the live server instead, return [_productionBaseUrl].
   static String get baseUrl {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
-    return _productionBaseUrl;
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return _emulatorBaseUrl;
+    }
+    return _localBaseUrl;
   }
 
   static String get authBase => '$baseUrl/auth';

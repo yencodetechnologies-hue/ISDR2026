@@ -4,6 +4,8 @@ const ManagementUser = require('../models/ManagementUser');
 const generateToken = require('../utils/generateToken');
 const EventStaff = require('../models/EventStaff');
 const { buildStaffPayload } = require('./staffController');
+const EventRegistration = require('../models/EventRegistration');
+const ManagedEvent = require('../models/ManagedEvent');
 const { uploadToCloudinary } = require('../middleware/upload');
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
@@ -107,11 +109,65 @@ async function findStaffAccount(rawId) {
   return mobile ? EventStaff.findOne({ mobileNumber: mobile }).select('+password') : null;
 }
 
+/** The `user` object the app expects for a participant login. */
+function buildParticipantPayload(reg, event) {
+  return {
+    id: reg._id.toString(),
+    name: reg.name,
+    username: reg.mobileNumber,
+    email: reg.email || '',
+    mobileNumber: reg.mobileNumber,
+    userType: 'participant',
+    status: 'approved',
+    isActive: reg.status !== 'cancelled',
+    profilePic: reg.photoUrl || null,
+    apartmentId: reg.apartmentId.toString(),
+    eventId: reg.eventId.toString(),
+    eventTitle: event ? event.title : undefined,
+    ticketCode: reg.ticketCode,
+    packageName: reg.packageName || '',
+  };
+}
+
+/** Find a participant account by email or mobile (across every event). */
+async function findParticipantAccount(rawId) {
+  const identifier = String(rawId ?? '').trim();
+  if (!identifier) return null;
+  if (identifier.includes('@')) {
+    return EventRegistration.findOne({ email: identifier.toLowerCase() }).select('+password');
+  }
+  const mobile = normalizeMobile10(identifier);
+  return mobile ? EventRegistration.findOne({ mobileNumber: mobile }).select('+password') : null;
+}
+
+/** Participant login (used when no management or staff account matches). */
+async function loginParticipant(req, res, identifier, passwordStr, fcmToken) {
+  const reg = await findParticipantAccount(identifier);
+  if (!reg) {
+    return res.status(400).json({ error: 'No account found with this email or mobile number' });
+  }
+  if (!(await reg.comparePassword(passwordStr))) {
+    return res.status(401).json({ error: 'Invalid email/mobile number or password' });
+  }
+  if (reg.status === 'cancelled') {
+    return res.status(403).json({ error: 'This registration has been cancelled.' });
+  }
+  await storeFcmToken(reg, fcmToken);
+  const event = await ManagedEvent.findById(reg.eventId).select('title');
+  const token = generateToken(reg._id, reg.apartmentId, { participant: true });
+  return res.json({
+    message: 'Login successful',
+    user: buildParticipantPayload(reg, event),
+    token,
+    success: true,
+  });
+}
+
 /** Event staff login (used when no management account matches). */
 async function loginStaff(req, res, identifier, passwordStr, fcmToken) {
   const staff = await findStaffAccount(identifier);
   if (!staff) {
-    return res.status(400).json({ error: 'No account found with this email or mobile number' });
+    return await loginParticipant(req, res, identifier, passwordStr, fcmToken);
   }
   if (!(await staff.comparePassword(passwordStr))) {
     return res.status(401).json({ error: 'Invalid email/mobile number or password' });
@@ -153,9 +209,9 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ error: 'Password is required' });
     }
 
-    // Event Management is the only login type; it is also the default.
+    // Event Management is the default login type; staff and participants also use this route.
     const normalizedUserType = userType ? String(userType).toLowerCase().trim() : 'apartment';
-    if (normalizedUserType !== 'apartment' && normalizedUserType !== 'user') {
+    if (!['apartment', 'user', 'participant'].includes(normalizedUserType)) {
       return res.status(400).json({ error: 'Unsupported login type' });
     }
 
@@ -211,6 +267,12 @@ const loginUser = async (req, res) => {
 // @access  Private
 const getCurrentUser = async (req, res) => {
   try {
+    if (req.userType === 'participant') {
+      const reg = await EventRegistration.findById(req.userId);
+      if (!reg) return res.status(404).json({ error: 'User not found' });
+      const event = await ManagedEvent.findById(reg.eventId).select('title');
+      return res.json({ user: buildParticipantPayload(reg, event) });
+    }
     if (req.userType === 'user') {
       const staff = await EventStaff.findById(req.userId);
       if (!staff) return res.status(404).json({ error: 'User not found' });

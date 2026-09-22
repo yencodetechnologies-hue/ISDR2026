@@ -576,6 +576,9 @@ async function uploadParticipantPhoto(file) {
   return uploadToCloudinary(file.buffer, 'apartment_management/event_participants');
 }
 
+// Every participant logs in with this password until they change it.
+const DEFAULT_PARTICIPANT_PASSWORD = '123456';
+
 function generateSpotMobilePlaceholder() {
   return `SPOT${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 }
@@ -633,6 +636,7 @@ async function createParticipantRegistration(event, { name, institution, package
     packageId: packageId || '',
     packageName,
     source,
+    password: DEFAULT_PARTICIPANT_PASSWORD,
     otp,
     ticketCode: customTicketCode || generateTicketCode(),
     qrCode: '',

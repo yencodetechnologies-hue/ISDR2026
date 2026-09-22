@@ -150,6 +150,10 @@ class _LoginPageState extends State<LoginPage> {
         route = AppRoutes.securityDashboard;
         debugPrint('Selected route: $route (Security Dashboard)');
         break;
+      case UserType.participant:
+        route = AppRoutes.participantHome;
+        debugPrint('Selected route: $route (Participant Home)');
+        break;
       default:
         debugPrint('WARNING: Unknown userType, defaulting to login');
         route = AppRoutes.login;
@@ -650,6 +654,8 @@ class _LoginPageState extends State<LoginPage> {
         return 'Management';
       case UserType.tenant:
         return 'User';
+      case UserType.participant:
+        return 'Participant';
     }
   }
 }
