@@ -1,0 +1,105 @@
+name: ISDR2026 Backend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to ISDR2026 Server
+        uses: appleboy/ssh-action@v0.1.10
+
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+
+          script: |
+            set -e
+
+            echo "📁 Going to ISDR2026 backend..."
+            cd ~/ISDR2026/ISDR2026/backend
+
+            echo "📥 Updating project..."
+            git fetch origin
+            git reset --hard origin/main
+
+            echo "⚙️ Loading Node.js..."
+
+            export NVM_DIR="$HOME/.nvm"
+
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+              . "$NVM_DIR/nvm.sh"
+              nvm use 20 || nvm install 20
+            elif [ -s "/usr/local/nvm/nvm.sh" ]; then
+              . "/usr/local/nvm/nvm.sh"
+              nvm use 20 || nvm install 20
+            else
+              echo "NVM not found; using system node: $(node -v)"
+            fi
+
+            echo "📦 Installing dependencies..."
+            npm install
+
+            echo "🚀 Restarting PM2..."
+
+            PM2_APP="isdr2026"
+
+            if pm2 describe "$PM2_APP" > /dev/null 2>&1; then
+              pm2 restart "$PM2_APP" --update-env
+            else
+              pm2 start server.js --name "$PM2_APP"
+            fi
+
+            echo "💾 Saving PM2..."
+            pm2 save
+
+            echo "🔍 Checking PM2 Status..."
+
+            pm2 describe "$PM2_APP" | grep -E "script path|exec cwd|node.js version|status" || true
+
+            echo "🔍 Waiting for application startup..."
+            sleep 10
+
+            PORT=YOUR_PORT
+
+            ATTEMPTS=10
+            HEALTH_OK=0
+
+            for i in $(seq 1 $ATTEMPTS); do
+
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+                http://127.0.0.1:$PORT/ || echo "000")
+
+              if [ "$HTTP_CODE" != "000" ]; then
+                echo "✅ Application responding with HTTP $HTTP_CODE (attempt $i)"
+                HEALTH_OK=1
+                break
+              fi
+
+              echo "Attempt $i/$ATTEMPTS failed, retrying in 3s..."
+              sleep 3
+
+            done
+
+            if [ "$HEALTH_OK" != "1" ]; then
+
+              echo "❌ Application failed to start"
+
+              echo "Port listener check:"
+              ss -tlnp | grep ":$PORT" || true
+
+              echo "PM2 logs:"
+              pm2 logs "$PM2_APP" --lines 50 --nostream || true
+
+              exit 1
+
+            fi
+
+            echo "✅ ISDR2026 deployment finished successfully"
