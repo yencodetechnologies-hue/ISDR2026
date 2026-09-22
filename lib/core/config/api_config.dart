@@ -21,15 +21,12 @@ class ApiConfig {
     defaultValue: '',
   );
 
-  /// Base URL: the local backend.
-  /// Android emulator -> 10.0.2.2, other devices -> this PC on the local network.
-  /// To use the live server instead, return [_productionBaseUrl].
+  /// Base URL: the live server.
+  /// To use the local backend instead, return [_emulatorBaseUrl] (Android emulator,
+  /// 10.0.2.2 -> host PC) or [_localBaseUrl] (physical device on the same Wi-Fi).
   static String get baseUrl {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return _emulatorBaseUrl;
-    }
-    return _localBaseUrl;
+    return _productionBaseUrl;
   }
 
   static String get authBase => '$baseUrl/auth';
