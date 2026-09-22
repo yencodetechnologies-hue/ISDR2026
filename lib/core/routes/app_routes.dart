@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/user_registration_page.dart';
-import '../../features/auth/presentation/pages/user_type_selection_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/waiting_approval_page.dart';
 import '../guards/admin_route_guard.dart';
@@ -22,6 +21,9 @@ import '../../core/models/user_model.dart';
 
 class AppRoutes {
   static const String splash = '/';
+  /// The role-selection screen was removed — this now points at the standard
+  /// login page (kept as a separate constant since many logout/redirect call
+  /// sites across the app still navigate to it by name).
   static const String userTypeSelection = '/user-type-selection';
   static const String login = '/login';
   static const String userRegistration = '/user-registration';
@@ -42,7 +44,7 @@ class AppRoutes {
 
   static Map<String, WidgetBuilder> get routes {
     return {
-      userTypeSelection: (context) => const UserTypeSelectionPage(),
+      userTypeSelection: (context) => const LoginPage(),
       login: (context) => const LoginPage(),
       userRegistration: (context) {
         final args = ModalRoute.of(context)?.settings.arguments;

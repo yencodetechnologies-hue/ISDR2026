@@ -2,10 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:screen_protector/screen_protector.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/app_theme.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../widgets/delegate_badge.dart';
 
 /// Shows the details of the account that is currently logged in.
 class MyProfilePage extends StatefulWidget {
@@ -25,7 +27,16 @@ class _MyProfilePageState extends State<MyProfilePage> {
   final _confirmPw = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    ScreenProtector.preventScreenshotOn();
+    ScreenProtector.protectDataLeakageOn();
+  }
+
+  @override
   void dispose() {
+    ScreenProtector.preventScreenshotOff();
+    ScreenProtector.protectDataLeakageOff();
     _currentPw.dispose();
     _newPw.dispose();
     _confirmPw.dispose();
@@ -33,6 +44,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
   }
 
   void _toast(String msg) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
@@ -109,44 +121,108 @@ class _MyProfilePageState extends State<MyProfilePage> {
     final authState = context.watch<AuthBloc>().state;
     final user = authState is AuthAuthenticated ? authState.user : null;
 
+    final isParticipant = user?.userType == UserType.participant;
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: isParticipant ? const Color(0xFF0F172A) : AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: isParticipant ? const Color(0xFF0F172A) : AppTheme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'My Profile',
-          style: TextStyle(
+        title: Text(
+          isParticipant ? 'Delegate Badge' : 'My Profile',
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w800,
-            fontSize: 22,
+            fontSize: 20,
           ),
         ),
       ),
       body: user == null
           ? const Center(child: Text('Not logged in'))
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+          : isParticipant
+              ? _buildParticipantBadgeView(user)
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                  children: [
+                    _idCard(user),
+                    const SizedBox(height: 12),
+                    _tile(Icons.phone_rounded, 'Mobile', user.mobileNumber,
+                        AppTheme.primaryColor),
+                    const SizedBox(height: 8),
+                    _tile(Icons.email_rounded, 'Email address', user.email,
+                        AppTheme.primaryColor),
+                    if ((user.apartmentName ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      _tile(Icons.event_rounded, 'Event', user.apartmentName!,
+                          AppTheme.primaryColor),
+                    ],
+                    const SizedBox(height: 12),
+                    _passwordCard(),
+                  ],
+                ),
+    );
+  }
+
+  Widget _buildParticipantBadgeView(UserModel user) {
+    final qrData = (user.employeeId ?? '').isNotEmpty
+        ? user.employeeId!
+        : (user.apartmentId ?? user.id);
+    final ticketCode = (user.employeeId ?? '').isNotEmpty
+        ? user.employeeId!
+        : user.id.length >= 6
+            ? user.id.substring(user.id.length - 6).toUpperCase()
+            : user.id.toUpperCase();
+
+    final registrationMap = {
+      'name': user.name,
+      'title': '',
+      'participantType': 'DELEGATE',
+      'idNumber': user.employeeId ?? '',
+      'designation': user.department ?? '',
+      'institution': user.apartmentName ?? '',
+      'qrCode': qrData,
+      'ticketCode': ticketCode,
+    };
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+          16, 10, 16, 20 + MediaQuery.of(context).padding.bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: DelegateBadge(registration: registrationMap),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _idCard(user),
-                const SizedBox(height: 12),
-                _tile(Icons.phone_rounded, 'Mobile', user.mobileNumber,
-                    AppTheme.primaryColor),
-                const SizedBox(height: 8),
-                _tile(Icons.email_rounded, 'Email address', user.email,
-                    AppTheme.primaryColor),
-                if ((user.apartmentName ?? '').isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  _tile(Icons.event_rounded, 'Event', user.apartmentName!,
-                      AppTheme.primaryColor),
-                ],
-                const SizedBox(height: 12),
-                _passwordCard(),
+                const Icon(Icons.info_outline_rounded,
+                    size: 16, color: Colors.white70),
+                const SizedBox(width: 8),
+                Text(
+                  'Ticket: $ticketCode   •   ${user.mobileNumber}',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -22,12 +22,12 @@ const {
   bulkImportRegistrations,
 } = require('../controllers/managedEventController');
 
-// Events
-router.get('/', protect, requireManagement, listEvents);
+// Events - GET list and GET by id are readable by any authenticated user/participant/management
+router.get('/', protect, listEvents);
 // Must come before '/:id'.
 router.get('/summary', protect, requireManagement, claimSummary);
 router.post('/', protect, requireManagement, createEvent);
-router.get('/:id', protect, requireManagement, getEvent);
+router.get('/:id', protect, getEvent);
 router.put('/:id', protect, requireManagement, updateEvent);
 router.delete('/:id', protect, requireManagement, deleteEvent);
 
@@ -50,8 +50,8 @@ router.put(
 );
 router.delete('/:id/registrations/:regId', protect, requireManagement, deleteRegistration);
 
-// Schedules (speaker sessions)
-router.get('/:id/schedules', protect, requireManagement, listSchedules);
+// Schedules (speaker sessions) - GET schedules is viewable by participants & management; create/delete require management
+router.get('/:id/schedules', protect, listSchedules);
 router.post(
   '/:id/schedules',
   protect,

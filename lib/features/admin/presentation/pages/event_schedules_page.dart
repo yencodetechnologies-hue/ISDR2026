@@ -7,8 +7,9 @@ import 'event_schedule_list_page.dart';
 /// Lists the events of the management account.
 class EventSchedulesPage extends StatefulWidget {
   final String? apartmentId;
+  final bool isReadOnly;
 
-  const EventSchedulesPage({super.key, this.apartmentId});
+  const EventSchedulesPage({super.key, this.apartmentId, this.isReadOnly = false});
 
   @override
   State<EventSchedulesPage> createState() => _EventSchedulesPageState();
@@ -117,7 +118,12 @@ class _EventSchedulesPageState extends State<EventSchedulesPage> {
       borderRadius: BorderRadius.circular(16),
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => EventScheduleListPage(event: e)),
+        MaterialPageRoute(
+          builder: (_) => EventScheduleListPage(
+            event: e,
+            isReadOnly: widget.isReadOnly,
+          ),
+        ),
       ),
       child: _eventCardBody(e),
     );

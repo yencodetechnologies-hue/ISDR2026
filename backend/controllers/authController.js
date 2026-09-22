@@ -126,6 +126,13 @@ function buildParticipantPayload(reg, event) {
     eventTitle: event ? event.title : undefined,
     ticketCode: reg.ticketCode,
     packageName: reg.packageName || '',
+    qrCode: reg.qrCode || reg.ticketCode || reg._id.toString(),
+    institution: reg.institution || '',
+    designation: reg.designation || '',
+    participantType: reg.participantType || '',
+    idNumber: reg.idNumber || '',
+    department: reg.institution || '',
+    employeeId: reg.idNumber || reg.ticketCode || '',
   };
 }
 

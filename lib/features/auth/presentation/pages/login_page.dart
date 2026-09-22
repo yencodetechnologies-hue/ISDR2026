@@ -1,10 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/app_theme.dart';
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/widgets/brand_gradient_cta_button.dart';
 import '../../../../core/navigation/app_navigation.dart';
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/models/user_model.dart';
@@ -25,6 +22,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordFocusNode = FocusNode();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _rememberMe = true;
   UserType? _selectedUserType;
 
   @override
@@ -47,24 +45,12 @@ class _LoginPageState extends State<LoginPage> {
     // Get user type from route arguments - only set if not already set
     if (_selectedUserType == null) {
       final args = ModalRoute.of(context)?.settings.arguments;
-      print('=== LOGIN PAGE INIT ===');
-      print('Route arguments: $args');
-      print('Arguments type: ${args.runtimeType}');
       if (args is UserType) {
-        print('Setting userType to: $args');
         setState(() {
           _selectedUserType = args;
         });
-        _prefillCredentials(args);
-      } else {
-        print('No UserType in arguments');
       }
     }
-  }
-
-  void _prefillCredentials(UserType userType) {
-    // No longer pre-filling credentials - user can enter any email/password
-    // The credentials are just for display purposes, any email/password will work
   }
 
   @override
@@ -89,26 +75,9 @@ class _LoginPageState extends State<LoginPage> {
         _isLoading = true;
       });
 
-      // Ensure user type is set - if not, try to get it from route arguments
-      UserType? userType = _selectedUserType;
-      if (userType == null) {
-        final args = ModalRoute.of(context)?.settings.arguments;
-        if (args is UserType) {
-          userType = args;
-          setState(() {
-            _selectedUserType = userType;
-          });
-        } else {
-          // Default to user if no type is specified
-          userType = UserType.user;
-        }
-      }
-
-      debugPrint('=== FRONTEND LOGIN ATTEMPT ===');
-      debugPrint('Email: ${_emailController.text.trim()}');
-      debugPrint('UserType: $userType');
-      debugPrint('UserType.name: ${userType.name}');
-      debugPrint('Selected UserType: $_selectedUserType');
+      // No role is picked up-front any more — the backend tries management,
+      // then staff, then participant accounts against whatever was typed.
+      final userType = _selectedUserType;
 
       context.read<AuthBloc>().add(
             LoginEvent(
@@ -121,17 +90,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _navigateToDashboard(UserModel user) {
-    final activeApartment = (user.apartments != null && user.apartments!.isNotEmpty)
-        ? user.apartments!.first.name
-        : (user.apartmentName ?? user.apartmentId ?? 'N/A');
-
-    debugPrint('====================================================');
-    debugPrint('📱 [MOBILE SIGN-IN LOG] 📱');
-    debugPrint('🎭 SIGNING IN ROLE    : ${user.userType.name.toUpperCase()} (loginRole: ${user.loginRole ?? 'N/A'})');
-    debugPrint('🏢 SIGNING IN PROPERTY: $activeApartment (ID: ${user.apartmentId ?? "N/A"})');
-    debugPrint('🏫 PROPERTY TYPE     : ${user.propertyType?.name ?? "N/A"}');
-    debugPrint('====================================================');
-
     String route = AppRoutes.login;
     switch (user.userType) {
       case UserType.admin:
@@ -139,70 +97,32 @@ class _LoginPageState extends State<LoginPage> {
         break;
       case UserType.apartment:
         route = AppRoutes.adminDashboard;
-        debugPrint('Selected route: $route (Apartment Dashboard)');
         break;
       case UserType.user:
       case UserType.tenant:
         route = AppRoutes.userDashboard;
-        debugPrint('Selected route: $route (User/Tenant Dashboard)');
         break;
       case UserType.security:
         route = AppRoutes.securityDashboard;
-        debugPrint('Selected route: $route (Security Dashboard)');
         break;
       case UserType.participant:
         route = AppRoutes.participantHome;
-        debugPrint('Selected route: $route (Participant Home)');
         break;
-      default:
-        debugPrint('WARNING: Unknown userType, defaulting to login');
-        route = AppRoutes.login;
     }
-
-    debugPrint('Navigating to: $route');
-    try {
-      AppNavigation.resetTo(context, route);
-      debugPrint('✓ Navigation successful');
-    } catch (e) {
-      debugPrint('✗ Navigation error: $e');
-    }
+    AppNavigation.resetTo(context, route);
   }
 
   void _navigateToForgotPassword() {
     Navigator.pushNamed(context, AppRoutes.forgotPassword);
   }
 
-  void _showForgotPasswordDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Forgot Password'),
-        content: const Text(
-          'Please contact your administrator to reset your password.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: Colors.white,
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          debugPrint('=== LOGIN PAGE STATE CHANGE ===');
-          debugPrint('State: ${state.runtimeType}');
-
           if (state is AuthAuthenticated) {
-            debugPrint('✓ Login successful!');
             setState(() {
               _isLoading = false;
             });
@@ -226,7 +146,6 @@ class _LoginPageState extends State<LoginPage> {
               _isLoading = false;
             });
           } else if (state is AuthError) {
-            debugPrint('✗ Login error: ${state.message}');
             setState(() {
               _isLoading = false;
             });
@@ -247,384 +166,204 @@ class _LoginPageState extends State<LoginPage> {
             });
           }
         },
-        child: Stack(
+        // No SafeArea here on purpose — the hero photo and footer are meant
+        // to run edge-to-edge, behind the status bar and home indicator.
+        child: SizedBox.expand(
+          // Scales the whole page (never scrolls) to fill the screen edge
+          // to edge, preserving proportions (no stretch) — any excess is
+          // cropped off rather than left as a gap.
+          child: FittedBox(
+            fit: BoxFit.cover,
+            alignment: const Alignment(0, -0.4),
+            clipBehavior: Clip.hardEdge,
+            child: SizedBox(
+              // Fixed canvas size — this, not the card's own content, sets
+              // the page's scale. Shrinking the card just leaves more room
+              // above the footer; it no longer changes how wide the whole
+              // page renders.
+              width: 400,
+              height: 900,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _HeroSection(),
+                  const SizedBox(height: 20),
+                  Transform.translate(
+                    offset: const Offset(0, -30),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 28),
+                      child: _buildLoginCard(),
+                    ),
+                  ),
+                  const Spacer(),
+                  const _FooterWave(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginCard() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.10),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
           children: [
-            // Ambient Glass Orbs
-            Positioned(
-              top: -80,
-              right: -60,
-              child: Container(
-                width: 280,
-                height: 280,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Color(0xFF60A5FA),
-                      Color(0xFF2563EB),
-                      Colors.transparent,
-                    ],
-                    stops: [0.0, 0.5, 1.0],
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(width: 26, height: 1, color: const Color(0xFFCBD5E1)),
+                const SizedBox(width: 10),
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.10),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person_rounded,
+                      color: Color(0xFF2563EB), size: 25),
+                ),
+                const SizedBox(width: 10),
+                Container(width: 26, height: 1, color: const Color(0xFFCBD5E1)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Welcome Back',
+              style: GoogleFonts.outfit(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              'Sign in to access your portal',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 18),
+            _buildTextField(
+              controller: _emailController,
+              focusNode: _emailFocusNode,
+              icon: Icons.mail_outline_rounded,
+              hint: 'Email or mobile number',
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              onSubmitted: (_) =>
+                  FocusScope.of(context).requestFocus(_passwordFocusNode),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter your email or mobile number';
+                }
+                final trimmed = value.trim();
+                if (RegExp(r'^\d{10}$').hasMatch(trimmed)) return null;
+                final emailRegex = RegExp(
+                    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+                if (emailRegex.hasMatch(trimmed)) return null;
+                return 'Please enter a valid email or 10-digit mobile number';
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildTextField(
+              controller: _passwordController,
+              focusNode: _passwordFocusNode,
+              icon: Icons.lock_outline_rounded,
+              hint: 'Password',
+              obscureText: _obscurePassword,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _handleLogin(),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: const Color(0xFF64748B),
+                ),
+                onPressed: _isLoading
+                    ? null
+                    : () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter your password';
+                }
+                if (value.length < 6) {
+                  return 'Password must be at least 6 characters';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: Checkbox(
+                    value: _rememberMe,
+                    activeColor: const Color(0xFF2563EB),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5)),
+                    onChanged: (v) => setState(() => _rememberMe = v ?? true),
                   ),
                 ),
-              ),
-            ),
-            Positioned(
-              bottom: -80,
-              left: -60,
-              child: Container(
-                width: 280,
-                height: 280,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Color(0xFF38BDF8),
-                      Color(0xFF0284C7),
-                      Colors.transparent,
-                    ],
-                    stops: [0.0, 0.5, 1.0],
+                const SizedBox(width: 7),
+                Text(
+                  'Remember me',
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF334155),
                   ),
                 ),
-              ),
-            ),
-
-            // Backdrop Blur
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                child: Container(color: Colors.white.withOpacity(0.4)),
-              ),
-            ),
-
-            SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 10),
-
-                        // Glass Logo Container
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                            child: Container(
-                              height: 90,
-                              width: 90,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.65),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.8),
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF0F172A).withOpacity(0.06),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              padding: const EdgeInsets.all(4),
-                              clipBehavior: Clip.antiAlias,
-                              child: Image.asset(
-                                'assets/logo.png',
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        Text(
-                          AppConstants.appName,
-                          style: GoogleFonts.outfit(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0F172A),
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        Text(
-                          'Welcome Back',
-                          style: GoogleFonts.outfit(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF0F172A),
-                          ),
-                        ),
-                        Text(
-                          'Sign in to access your portal',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: const Color(0xFF475569),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-
-                        if (_selectedUserType != null) ...[
-                          const SizedBox(height: 20),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(30),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2563EB).withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(30),
-                                  border: Border.all(
-                                    color: const Color(0xFF2563EB).withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.shield_outlined,
-                                      color: Color(0xFF2563EB),
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Login Type: ${_getUserTypeName(_selectedUserType!)}',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF2563EB),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-
-                        const SizedBox(height: 32),
-
-                        // Form Container Card
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(28),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                            child: Container(
-                              padding: const EdgeInsets.all(22),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.45),
-                                borderRadius: BorderRadius.circular(28),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.75),
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF0F172A).withOpacity(0.05),
-                                    blurRadius: 24,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                children: [
-                                  TextFormField(
-                                    controller: _emailController,
-                                    focusNode: _emailFocusNode,
-                                    enabled: !_isLoading,
-                                    keyboardType: TextInputType.emailAddress,
-                                    textInputAction: TextInputAction.next,
-                                    style: GoogleFonts.inter(
-                                      color: const Color(0xFF0F172A),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    onFieldSubmitted: (_) {
-                                      FocusScope.of(context).requestFocus(_passwordFocusNode);
-                                    },
-                                    decoration: InputDecoration(
-                                      labelText: 'Email or mobile number',
-                                      labelStyle: GoogleFonts.inter(
-                                        color: const Color(0xFF64748B),
-                                        fontSize: 13,
-                                      ),
-                                      prefixIcon: Icon(
-                                        Icons.person_outline,
-                                        color: const Color(0xFF2563EB),
-                                      ),
-                                      filled: true,
-                                      fillColor: Colors.white.withOpacity(0.7),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                        borderSide: BorderSide(
-                                          color: Colors.white.withOpacity(0.8),
-                                        ),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFFE2E8F0),
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFF2563EB),
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter your email or mobile number';
-                                      }
-                                      if (_selectedUserType != UserType.admin) {
-                                        final trimmed = value.trim();
-                                        if (RegExp(r'^\d{10}$').hasMatch(trimmed)) {
-                                          return null;
-                                        }
-                                        final emailRegex = RegExp(
-                                          r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-                                        );
-                                        if (emailRegex.hasMatch(trimmed)) {
-                                          return null;
-                                        }
-                                        return 'Please enter a valid email or 10-digit mobile number';
-                                      }
-                                      final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-                                      if (!emailRegex.hasMatch(value)) {
-                                        return 'Please enter a valid email address';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-
-                                  const SizedBox(height: 16),
-
-                                  TextFormField(
-                                    controller: _passwordController,
-                                    focusNode: _passwordFocusNode,
-                                    enabled: !_isLoading,
-                                    obscureText: _obscurePassword,
-                                    textInputAction: TextInputAction.done,
-                                    style: GoogleFonts.inter(
-                                      color: const Color(0xFF0F172A),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    onFieldSubmitted: (_) {
-                                      _handleLogin();
-                                    },
-                                    decoration: InputDecoration(
-                                      labelText: 'Password',
-                                      labelStyle: GoogleFonts.inter(
-                                        color: const Color(0xFF64748B),
-                                        fontSize: 13,
-                                      ),
-                                      prefixIcon: const Icon(
-                                        Icons.lock_outlined,
-                                        color: Color(0xFF2563EB),
-                                      ),
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          _obscurePassword
-                                              ? Icons.visibility_outlined
-                                              : Icons.visibility_off_outlined,
-                                          color: const Color(0xFF64748B),
-                                        ),
-                                        onPressed: _isLoading
-                                            ? null
-                                            : () {
-                                                setState(() {
-                                                  _obscurePassword = !_obscurePassword;
-                                                });
-                                              },
-                                      ),
-                                      filled: true,
-                                      fillColor: Colors.white.withOpacity(0.7),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                        borderSide: BorderSide(
-                                          color: Colors.white.withOpacity(0.8),
-                                        ),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFFE2E8F0),
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                        borderSide: const BorderSide(
-                                          color: Color(0xFF2563EB),
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter your password';
-                                      }
-                                      if (value.length < 6) {
-                                        return 'Password must be at least 6 characters';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-
-                                  const SizedBox(height: 24),
-
-                                  BlocBuilder<AuthBloc, AuthState>(
-                                    builder: (context, state) {
-                                      final isLoading = state is AuthLoading || _isLoading;
-                                      return BrandGradientCtaButton(
-                                        label: 'Login',
-                                        icon: Icons.login_rounded,
-                                        onPressed: isLoading ? null : _handleLogin,
-                                        isLoading: isLoading,
-                                      );
-                                    },
-                                  ),
-
-                                  if (_selectedUserType != UserType.admin) ...[
-                                    const SizedBox(height: 12),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: TextButton(
-                                        onPressed: _isLoading ? null : _navigateToForgotPassword,
-                                        child: Text(
-                                          'Forgot Password?',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: const Color(0xFF2563EB),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                const Spacer(),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: _isLoading ? null : _navigateToForgotPassword,
+                  child: Text(
+                    'Forgot Password?',
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF2563EB),
                     ),
                   ),
                 ),
-              ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            BlocBuilder<AuthBloc, AuthState>(
+              builder: (context, state) {
+                final isLoading = state is AuthLoading || _isLoading;
+                return _GradientLoginButton(
+                  isLoading: isLoading,
+                  onPressed: isLoading ? null : _handleLogin,
+                );
+              },
             ),
           ],
         ),
@@ -632,30 +371,365 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildDemoCredential(String role, String email, String password) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Text(
-        '$role: $email / $password',
-        style: const TextStyle(fontSize: 12),
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required IconData icon,
+    required String hint,
+    TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    void Function(String)? onSubmitted,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      enabled: !_isLoading,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      obscureText: obscureText,
+      onFieldSubmitted: onSubmitted,
+      style: GoogleFonts.inter(
+        color: const Color(0xFF0F172A),
+        fontWeight: FontWeight.w500,
+        fontSize: 14,
+      ),
+      decoration: InputDecoration(
+        isDense: true,
+        hintText: hint,
+        hintStyle: GoogleFonts.inter(
+          color: const Color(0xFF94A3B8),
+          fontSize: 14,
+        ),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.all(9),
+          child: Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: const Color(0xFF2563EB).withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 15, color: const Color(0xFF2563EB)),
+          ),
+        ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: const Color(0xFFF8FAFC),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppTheme.errorColor),
+        ),
+      ),
+      validator: validator,
+    );
+  }
+}
+
+/// Gradient blue Login button with stadium pill shape matching the design.
+class _GradientLoginButton extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  const _GradientLoginButton({required this.isLoading, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [Color(0xFF1D6BE8), Color(0xFF1550D0)],
+          ),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1D6BE8).withValues(alpha: 0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 7),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(30),
+            onTap: onPressed,
+            child: Center(
+              child: isLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.login_rounded,
+                          color: Colors.white,
+                          size: 19,
+                        ),
+                        const SizedBox(width: 9),
+                        Text(
+                          'Login',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        const SizedBox(width: 9),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                          size: 19,
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
       ),
     );
   }
+}
 
-  String _getUserTypeName(UserType userType) {
-    switch (userType) {
-      case UserType.admin:
-        return 'Admin';
-      case UserType.security:
-        return 'Security';
-      case UserType.user:
-        return 'User';
-      case UserType.apartment:
-        return 'Management';
-      case UserType.tenant:
-        return 'User';
-      case UserType.participant:
-        return 'Participant';
-    }
+/// Conference hero: background photo + 3 logo badges are placeholders until
+/// the real assets are supplied — swap the gradient/_LogoBadge icons for
+/// Image widgets once available.
+/// The full conference hero graphic (logos, "36th ISDR…" title, dates,
+/// tagline) is one supplied image — nothing is drawn on top of it.
+class _HeroSection extends StatelessWidget {
+  const _HeroSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 1024 / 933,
+      child: ShaderMask(
+        shaderCallback: (Rect bounds) {
+          return const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0.0, 0.94, 0.99],
+            colors: [Colors.black, Colors.black, Colors.transparent],
+          ).createShader(bounds);
+        },
+        blendMode: BlendMode.dstIn,
+        child: Image.asset(
+          'assets/WhatsApp Image 2026-09-22 at 11.46.04 AM.jpeg',
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
+        ),
+      ),
+    );
   }
+}
+
+/// Blue multi-layered wavy footer matching the conference design:
+/// - Layer 1 (back): Light ice-blue wave with a glowing 4-point sparkle highlight on the right.
+/// - Layer 2 (mid): Azure cyan-blue wave.
+/// - Layer 3 (front): Deep conference royal blue wave with "IADR • INDIAN DIVISION" and a rounded indicator pill.
+class _FooterWave extends StatelessWidget {
+  const _FooterWave();
+
+  @override
+  Widget build(BuildContext context) {
+    const double footerHeight = 100;
+
+    return SizedBox(
+      width: double.infinity,
+      height: footerHeight,
+      child: Stack(
+        children: [
+          // The layered background & wave graphics
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _FooterWavesPainter(),
+            ),
+          ),
+          // Content: Bottom rounded indicator pill
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 12,
+            child: Center(
+              child: Container(
+                width: 115,
+                height: 3.5,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FooterWavesPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // =========================================================================
+    // LAYER 1 (BACK): Light Ice / Sky Cyan Wave + Sparkle
+    // =========================================================================
+    final path1 = Path();
+    path1.moveTo(0, h * 0.20);
+    // Gentle trough on left then high sweep across to right
+    path1.cubicTo(
+      w * 0.14, h * 0.34,
+      w * 0.32, h * 0.20,
+      w * 0.60, h * 0.04,
+    );
+    path1.cubicTo(
+      w * 0.76, -h * 0.04,
+      w * 0.88, h * 0.06,
+      w, h * 0.22,
+    );
+    path1.lineTo(w, h);
+    path1.lineTo(0, h);
+    path1.close();
+
+    final paint1 = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFFD6EBFE),
+          Color(0xFFA5D2FD),
+          Color(0xFF70B8F8),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    canvas.drawPath(path1, paint1);
+
+    // Sparkle / Star Highlight on Layer 1 (Top Right)
+    _drawSparkle(canvas, Offset(w * 0.80, h * 0.09), 11);
+
+    // =========================================================================
+    // LAYER 2 (MID): Vibrant Azure / Electric Blue Wave
+    // =========================================================================
+    final path2 = Path();
+    path2.moveTo(0, h * 0.44);
+    // Smooth trough on left and rise under Layer 1
+    path2.cubicTo(
+      w * 0.16, h * 0.52,
+      w * 0.34, h * 0.32,
+      w * 0.62, h * 0.16,
+    );
+    path2.cubicTo(
+      w * 0.78, h * 0.08,
+      w * 0.90, h * 0.22,
+      w, h * 0.40,
+    );
+    path2.lineTo(w, h);
+    path2.lineTo(0, h);
+    path2.close();
+
+    final paint2 = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [
+          Color(0xFF38BDF8),
+          Color(0xFF0284C7),
+          Color(0xFF1D70D8),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    canvas.drawPath(path2, paint2);
+
+    // =========================================================================
+    // LAYER 3 (FOREGROUND): Conference Deep Royal Blue Wave
+    // =========================================================================
+    final path3 = Path();
+    // Starts lower on the left so Layer 1 & Layer 2 are clearly visible
+    path3.moveTo(0, h * 0.66);
+    path3.cubicTo(
+      w * 0.20, h * 0.64,
+      w * 0.36, h * 0.34,
+      w * 0.52, h * 0.28,
+    );
+    path3.cubicTo(
+      w * 0.72, h * 0.22,
+      w * 0.86, h * 0.44,
+      w, h * 0.62,
+    );
+    path3.lineTo(w, h);
+    path3.lineTo(0, h);
+    path3.close();
+
+    final paint3 = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0xFF1565C0),
+          Color(0xFF0D47A1),
+          Color(0xFF0A3470),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    canvas.drawPath(path3, paint3);
+  }
+
+  /// Draws a soft 4-point star / sparkle with a radial glow.
+  void _drawSparkle(Canvas canvas, Offset center, double radius) {
+    // Soft outer glow
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          Colors.white.withValues(alpha: 0.75),
+          Colors.white.withValues(alpha: 0.0),
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: radius * 2.2));
+    canvas.drawCircle(center, radius * 2.2, glowPaint);
+
+    // 4-point diamond star
+    final starPath = Path();
+    starPath.moveTo(center.dx, center.dy - radius);
+    starPath.quadraticBezierTo(
+        center.dx, center.dy, center.dx + radius, center.dy);
+    starPath.quadraticBezierTo(
+        center.dx, center.dy, center.dx, center.dy + radius);
+    starPath.quadraticBezierTo(
+        center.dx, center.dy, center.dx - radius, center.dy);
+    starPath.quadraticBezierTo(
+        center.dx, center.dy, center.dx, center.dy - radius);
+    starPath.close();
+
+    final starPaint = Paint()..color = Colors.white.withValues(alpha: 0.95);
+    canvas.drawPath(starPath, starPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

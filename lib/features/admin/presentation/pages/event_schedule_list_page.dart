@@ -9,8 +9,13 @@ import 'add_event_schedule_page.dart';
 /// Schedules (speaker sessions) of one event, with an "Add Schedule" button.
 class EventScheduleListPage extends StatefulWidget {
   final Map<String, dynamic> event;
+  final bool isReadOnly;
 
-  const EventScheduleListPage({super.key, required this.event});
+  const EventScheduleListPage({
+    super.key,
+    required this.event,
+    this.isReadOnly = false,
+  });
 
   @override
   State<EventScheduleListPage> createState() => _EventScheduleListPageState();
@@ -166,26 +171,27 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton.icon(
-                onPressed: _add,
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Add Schedule',
-                    style: TextStyle(fontWeight: FontWeight.w700)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+          if (!widget.isReadOnly)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: _add,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Add Schedule',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
@@ -295,10 +301,11 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
               ],
             ),
           ),
-          IconButton(
-            onPressed: () => _delete(s),
-            icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.errorColor),
-          ),
+          if (!widget.isReadOnly)
+            IconButton(
+              onPressed: () => _delete(s),
+              icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.errorColor),
+            ),
         ],
       ),
     );

@@ -33,8 +33,10 @@ async function loadOwnedEvent(req, res) {
 // GET /api/managed-events/:id/schedules
 const listSchedules = async (req, res) => {
   try {
-    const event = await loadOwnedEvent(req, res);
-    if (!event) return;
+    const event = await ManagedEvent.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ success: false, error: 'Event not found' });
+    }
     const schedules = await EventSchedule.find({ eventId: event._id }).sort({
       date: 1,
       fromTime: 1,

@@ -5,9 +5,15 @@ const EventRegistration = require('../models/EventRegistration');
 const Apartment = require('../models/Apartment');
 const { uploadToCloudinary } = require('../middleware/upload');
 
-/** Every request is scoped to the logged-in management property (from the token). */
+/** Every request is scoped to the logged-in management property (from the token or query for participants). */
 function resolveApartmentId(req) {
-  return req.apartmentId ? String(req.apartmentId) : null;
+  return req.apartmentId
+    ? String(req.apartmentId)
+    : req.query.apartmentId
+    ? String(req.query.apartmentId)
+    : req.headers['x-apartment-id']
+    ? String(req.headers['x-apartment-id'])
+    : null;
 }
 
 function generateOtp() {
@@ -268,12 +274,10 @@ function registrationDto(reg, event) {
 const listEvents = async (req, res) => {
   try {
     const apartmentId = resolveApartmentId(req);
-    if (!apartmentId) {
-      return res.status(400).json({ success: false, error: 'apartmentId is required' });
-    }
-    const events = await ManagedEvent.find({
-      apartmentId: new mongoose.Types.ObjectId(apartmentId),
-    }).sort({ eventDate: -1 });
+    const filter = apartmentId
+      ? { apartmentId: new mongoose.Types.ObjectId(apartmentId) }
+      : {};
+    const events = await ManagedEvent.find(filter).sort({ eventDate: -1 });
     res.json({
       success: true,
       events: events.map((e) => publicEventDto(e)),
@@ -357,13 +361,9 @@ const createEvent = async (req, res) => {
 // GET /api/managed-events/:id
 const getEvent = async (req, res) => {
   try {
-    const apartmentId = resolveApartmentId(req);
     const event = await ManagedEvent.findById(req.params.id);
     if (!event) {
       return res.status(404).json({ success: false, error: 'Event not found' });
-    }
-    if (apartmentId && event.apartmentId.toString() !== apartmentId) {
-      return res.status(403).json({ success: false, error: 'Not authorized for this event' });
     }
     res.json({ success: true, event: publicEventDto(event) });
   } catch (error) {

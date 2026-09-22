@@ -21,9 +21,7 @@ class ApiConfig {
     defaultValue: '',
   );
 
-  /// Base URL: the live server.
-  /// To use the local backend instead, return [_emulatorBaseUrl] (Android emulator,
-  /// 10.0.2.2 -> host PC) or [_localBaseUrl] (physical device on the same Wi-Fi).
+  /// Base URL: live production backend
   static String get baseUrl {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
     return _productionBaseUrl;

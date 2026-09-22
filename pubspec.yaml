@@ -91,9 +91,14 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - assets/
     - assets/logo.png
     - assets/delegate_badge_template.png
     - "assets/ISDR 36th international conference brochure_compressed.pdf"
+    - assets/isdr-slider.webp
+    - assets/Gemini_Generated_Image_bg38yfbg38yfbg38.png
+    - assets/Gemini_Generated_Image_avabulavabulavab.png
+    - "assets/WhatsApp Image 2026-09-22 at 11.46.04 AM.jpeg"
 
   # assets:
   #   - images/a_dot_burr.jpeg

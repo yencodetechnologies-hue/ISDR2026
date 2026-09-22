@@ -140,22 +140,22 @@ class _BannerCard extends StatelessWidget {
   }
 }
 
-/// Placeholder banner set for the management home page (swap with real
-/// [BannerItem.imagePath] values once images are supplied).
+/// Banner set for the management home page and login screen.
+/// The 3rd slot is a placeholder until its image is supplied.
 const List<BannerItem> defaultManagementBanners = [
   BannerItem(
+    imagePath: 'assets/isdr-slider.webp',
     title: 'ISDR 2026',
     subtitle: '36th International Conference',
-    icon: Icons.event_rounded,
   ),
   BannerItem(
+    imagePath: 'assets/Gemini_Generated_Image_bg38yfbg38yfbg38.png',
     title: 'Manage Your Events',
     subtitle: 'Packages, participants & schedules',
-    icon: Icons.dashboard_customize_rounded,
   ),
   BannerItem(
+    imagePath: 'assets/Gemini_Generated_Image_avabulavabulavab.png',
     title: 'Stay Connected',
     subtitle: 'Notify participants instantly',
-    icon: Icons.campaign_rounded,
   ),
 ];
