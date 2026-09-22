@@ -378,14 +378,6 @@ class _ProfileTabState extends State<ProfileTab> {
                     child: Column(
                       children: [
                         _buildProfileFieldTile(
-                          label: 'Username',
-                          value: user.username,
-                          icon: Icons.alternate_email_rounded,
-                          iconBgColor: const Color(0xFFEFF6FF),
-                          iconColor: const Color(0xFF2563EB),
-                        ),
-                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        _buildProfileFieldTile(
                           label: 'Email Address',
                           value: user.email,
                           icon: Icons.mail_outline_rounded,

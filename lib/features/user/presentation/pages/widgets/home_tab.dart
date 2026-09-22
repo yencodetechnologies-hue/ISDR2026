@@ -513,12 +513,11 @@ class _HomeTabState extends State<HomeTab> {
     }
 
     final options = allOptions.where((o) {
-      // Events Management properties: strictly Profile + Events only.
+      // Events Management properties: strictly Profile, Events, and History.
       if (isEventsProperty) {
-        return o.action == _Action.profile || o.action == _Action.events ||
-            o.action == _Action.history ||
-            o.action == _Action.createPost ||
-            o.action == _Action.myPost;
+        return o.action == _Action.profile ||
+            o.action == _Action.events ||
+            o.action == _Action.history;
       }
       if (o.action == _Action.events || o.action == _Action.history) {
         return false;

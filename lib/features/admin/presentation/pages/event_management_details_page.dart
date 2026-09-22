@@ -579,17 +579,30 @@ class _EventManagementDetailsPageState
                     style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.w600)),
               ),
             Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if ((_event['photoUrl']?.toString() ?? '').isNotEmpty)
+                    Image.network(
+                      _event['photoUrl'].toString(),
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(_event['title']?.toString() ?? 'Event',
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(_event['title']?.toString() ?? 'Event',
+                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                            ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                           decoration: BoxDecoration(
@@ -627,10 +640,12 @@ class _EventManagementDetailsPageState
                       const SizedBox(height: 12),
                       Text(_event['description'].toString()),
                     ],
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
+          ),
             const SizedBox(height: 16),
             Row(
               children: [

@@ -144,6 +144,9 @@ function normalizeInclusions(raw) {
 
 function normalizePackages(raw) {
   if (raw == null) return [];
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw); } catch (_) { raw = []; }
+  }
   if (!Array.isArray(raw)) {
     throw new Error('packages must be an array');
   }
@@ -182,6 +185,7 @@ function publicEventDto(event) {
     title: event.title,
     description: event.description,
     venue: event.venue,
+    photoUrl: event.photoUrl || '',
     eventDate: event.eventDate,
     eventEndDate: event.eventEndDate,
     bookedCount: event.bookedCount,
@@ -330,11 +334,19 @@ const createEvent = async (req, res) => {
       }
     }
 
+    let photoUrl = '';
+    if (req.file) {
+      photoUrl = await uploadToCloudinary(req.file.buffer, 'apartment_management/events');
+    } else if (req.body.photoUrl) {
+      photoUrl = String(req.body.photoUrl).trim();
+    }
+
     const event = await ManagedEvent.create({
       apartmentId,
       title: String(title).trim(),
       description: String(description || '').trim(),
       venue: String(venue || '').trim(),
+      photoUrl,
       eventDate: new Date(eventDate),
       eventEndDate: eventEndDate ? new Date(eventEndDate) : null,
       bookedCount: 0,
@@ -394,6 +406,8 @@ const updateEvent = async (req, res) => {
       isActive,
       formQuestions,
       packages,
+      clearPhoto,
+      photoUrl,
     } = req.body;
     if (title != null) event.title = String(title).trim();
     if (description != null) event.description = String(description).trim();
@@ -401,6 +415,13 @@ const updateEvent = async (req, res) => {
     if (eventDate != null) event.eventDate = new Date(eventDate);
     if (eventEndDate !== undefined) {
       event.eventEndDate = eventEndDate ? new Date(eventEndDate) : null;
+    }
+    if (req.file) {
+      event.photoUrl = await uploadToCloudinary(req.file.buffer, 'apartment_management/events');
+    } else if (clearPhoto === 'true' || clearPhoto === true) {
+      event.photoUrl = '';
+    } else if (photoUrl !== undefined) {
+      event.photoUrl = String(photoUrl || '').trim();
     }
     if (status && ['draft', 'published', 'cancelled', 'completed'].includes(status)) {
       event.status = status;
@@ -905,6 +926,76 @@ const bulkImportRegistrations = async (req, res) => {
   }
 };
 
+/** Claims an event package inclusion (e.g. Lunch, Kit, Dinner) for a participant by QR payload or ticket code */
+const claimInclusion = async (req, res) => {
+  try {
+    const { inclusionName, packageId, qrData, ticketCode } = req.body;
+    if (!inclusionName) {
+      return res.status(400).json({ success: false, error: 'Inclusion name is required' });
+    }
+
+    const codeToFind = (ticketCode || qrData || '').trim();
+    if (!codeToFind) {
+      return res.status(400).json({ success: false, error: 'Ticket code or QR data is required' });
+    }
+
+    // Lookup registration by ticketCode or qrCode
+    const reg = await EventRegistration.findOne({
+      $or: [
+        { ticketCode: codeToFind.toUpperCase() },
+        { ticketCode: codeToFind },
+        { qrCode: codeToFind },
+      ],
+      status: { $ne: 'cancelled' },
+    });
+
+    if (!reg) {
+      return res.status(404).json({ success: false, error: 'Participant registration not found' });
+    }
+
+    const event = await ManagedEvent.findById(reg.eventId);
+    if (!event) {
+      return res.status(404).json({ success: false, error: 'Event not found' });
+    }
+
+    // Check if already claimed today
+    const istDay = (d) => new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const today = istDay(new Date());
+
+    const claimedList = reg.claimedInclusions || [];
+    const alreadyClaimed = claimedList.some(
+      (c) =>
+        String(c.inclusionName).trim().toLowerCase() === String(inclusionName).trim().toLowerCase() &&
+        istDay(c.claimedAt || new Date()) === today
+    );
+
+    if (alreadyClaimed) {
+      return res.json({
+        success: false,
+        alreadyClaimed: true,
+        error: 'This entitlement has already been redeemed for today.',
+        registration: registrationDto(reg, event),
+      });
+    }
+
+    // Register the claim
+    reg.claimedInclusions.push({
+      inclusionName: String(inclusionName).trim(),
+      claimedAt: new Date(),
+      claimedBy: req.user?._id || null,
+    });
+    await reg.save();
+
+    res.json({
+      success: true,
+      message: 'Benefit claim registered successfully',
+      registration: registrationDto(reg, event),
+    });
+  } catch (error) {
+    console.error('claimInclusion error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
 
 module.exports = {
   normalizeInclusions,
@@ -918,4 +1009,5 @@ module.exports = {
   updateRegistration,
   deleteRegistration,
   bulkImportRegistrations,
+  claimInclusion,
 };

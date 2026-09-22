@@ -76,6 +76,8 @@ class _EditManagedEventPageState extends State<EditManagedEventPage> {
       eventEndDate: widget.isEventsProperty ? _form.eventEndDate : null,
       clearEventEndDate: widget.isEventsProperty && _form.eventEndDate == null,
       apartmentId: widget.apartmentId,
+      photoPath: _form.photoPath,
+      clearPhoto: _form.removePhoto && _form.photoPath == null,
     );
     if (!mounted) return;
     setState(() => _busy = false);

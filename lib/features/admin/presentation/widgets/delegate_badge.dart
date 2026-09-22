@@ -94,26 +94,26 @@ class DelegateBadge extends StatelessWidget {
               ),
               if (qrData.isNotEmpty)
                 Positioned(
-                  left: 488,
-                  top: 868,
-                  width: 224,
-                  height: 224,
+                  left: 440,
+                  top: 830,
+                  width: 320,
+                  height: 320,
                   child: Container(
                     color: Colors.white,
-                    padding: const EdgeInsets.all(3),
+                    padding: const EdgeInsets.all(4),
                     child: QrImageView(data: qrData, padding: EdgeInsets.zero, backgroundColor: Colors.white),
                   ),
                 ),
               if (ticketCode.isNotEmpty)
                 Positioned(
                   left: 0,
-                  top: 1112,
+                  top: 1160,
                   width: templateWidth,
                   child: Center(
                     child: Text(
                       ticketCode.split('').join(' '),
                       style: const TextStyle(
-                        fontSize: 50,
+                        fontSize: 52,
                         fontWeight: FontWeight.w800,
                         color: ink,
                         fontFamily: 'monospace',

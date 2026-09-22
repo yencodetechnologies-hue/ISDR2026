@@ -2459,18 +2459,28 @@ class ApiService {
     required DateTime eventDate,
     DateTime? eventEndDate,
     String? apartmentId,
+    String? photoPath,
   }) async {
     try {
+      final map = <String, dynamic>{
+        'title': title,
+        'description': description,
+        'venue': venue,
+        'eventDate': eventDate.toUtc().toIso8601String(),
+        if (eventEndDate != null) 'eventEndDate': eventEndDate.toUtc().toIso8601String(),
+        if (apartmentId != null && apartmentId.isNotEmpty) 'apartmentId': apartmentId,
+      };
+      dynamic requestData;
+      if (photoPath != null && photoPath.isNotEmpty) {
+        final formMap = Map<String, dynamic>.from(map);
+        formMap['photo'] = await MultipartFile.fromFile(photoPath);
+        requestData = FormData.fromMap(formMap);
+      } else {
+        requestData = map;
+      }
       final response = await _dio.post(
         ApiConfig.managedEventsCreate,
-        data: {
-          'title': title,
-          'description': description,
-          'venue': venue,
-          'eventDate': eventDate.toUtc().toIso8601String(),
-          if (eventEndDate != null) 'eventEndDate': eventEndDate.toUtc().toIso8601String(),
-          if (apartmentId != null && apartmentId.isNotEmpty) 'apartmentId': apartmentId,
-        },
+        data: requestData,
         options: apartmentId != null && apartmentId.isNotEmpty
             ? Options(headers: {'X-Apartment-Id': apartmentId})
             : null,
@@ -2508,6 +2518,8 @@ class ApiService {
     List<Map<String, dynamic>>? formQuestions,
     List<Map<String, dynamic>>? packages,
     String? apartmentId,
+    String? photoPath,
+    bool clearPhoto = false,
   }) async {
     try {
       final data = <String, dynamic>{
@@ -2523,10 +2535,19 @@ class ApiService {
         if (formQuestions != null) 'formQuestions': formQuestions,
         if (packages != null) 'packages': packages,
         if (apartmentId != null && apartmentId.isNotEmpty) 'apartmentId': apartmentId,
+        if (clearPhoto) 'clearPhoto': 'true',
       };
+      dynamic requestData;
+      if (photoPath != null && photoPath.isNotEmpty) {
+        final formMap = Map<String, dynamic>.from(data);
+        formMap['photo'] = await MultipartFile.fromFile(photoPath);
+        requestData = FormData.fromMap(formMap);
+      } else {
+        requestData = data;
+      }
       final response = await _dio.put(
         ApiConfig.managedEventById(eventId),
-        data: data,
+        data: requestData,
         options: apartmentId != null && apartmentId.isNotEmpty
             ? Options(headers: {'X-Apartment-Id': apartmentId})
             : null,

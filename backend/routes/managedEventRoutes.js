@@ -20,19 +20,21 @@ const {
   updateRegistration,
   deleteRegistration,
   bulkImportRegistrations,
+  claimInclusion,
 } = require('../controllers/managedEventController');
 
 // Events - GET list and GET by id are readable by any authenticated user/participant/management
 router.get('/', protect, listEvents);
 // Must come before '/:id'.
 router.get('/summary', protect, requireManagement, claimSummary);
-router.post('/', protect, requireManagement, createEvent);
+router.post('/claim-inclusion', protect, claimInclusion);
+router.post('/', protect, requireManagement, uploadSingleImage('photo'), createEvent);
 router.get('/:id', protect, getEvent);
-router.put('/:id', protect, requireManagement, updateEvent);
+router.put('/:id', protect, requireManagement, uploadSingleImage('photo'), updateEvent);
 router.delete('/:id', protect, requireManagement, deleteEvent);
 
-// Registrations (participants)
-router.get('/:id/registrations', protect, requireManagement, listRegistrations);
+// Registrations (participants) - readable by event staff / management
+router.get('/:id/registrations', protect, listRegistrations);
 router.post(
   '/:id/registrations/spot',
   protect,

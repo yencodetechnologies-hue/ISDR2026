@@ -81,6 +81,7 @@ class _CreateManagedEventPageState extends State<CreateManagedEventPage> {
       eventDate: _form.eventDate,
       eventEndDate: widget.isEventsProperty ? _form.eventEndDate : null,
       apartmentId: aptId,
+      photoPath: _form.photoPath,
     );
     if (!mounted) return;
     setState(() => _busy = false);

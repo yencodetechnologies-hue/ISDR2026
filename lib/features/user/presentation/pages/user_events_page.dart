@@ -90,9 +90,11 @@ class _UserEventsListPageState extends State<UserEventsListPage> {
                         itemBuilder: (context, index) {
                           final ev = _events[index];
                           final id = (ev['id'] ?? ev['_id']).toString();
-                                                    return Material(
+                          final photoUrl = (ev['photoUrl'] ?? '').toString();
+                          return Material(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(18),
+                            clipBehavior: Clip.antiAlias,
                             elevation: 1,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(18),
@@ -107,51 +109,64 @@ class _UserEventsListPageState extends State<UserEventsListPage> {
                                   ),
                                 ).then((_) => _load());
                               },
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (photoUrl.isNotEmpty)
+                                    Image.network(
+                                      photoUrl,
+                                      height: 140,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                    ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: (ev['status'] == 'published') ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
-                                          child: Text(
-                                            (ev['status'] ?? 'active').toString().toUpperCase(),
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w800,
-                                              color: (ev['status'] == 'published') ? const Color(0xFF166534) : const Color(0xFF475569),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: (ev['status'] == 'published') ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                                                borderRadius: BorderRadius.circular(20),
+                                              ),
+                                              child: Text(
+                                                (ev['status'] ?? 'active').toString().toUpperCase(),
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: (ev['status'] == 'published') ? const Color(0xFF166534) : const Color(0xFF475569),
+                                                ),
+                                              ),
                                             ),
-                                          ),
+                                            Text(
+                                              '${ev['bookedCount'] ?? 0} registered',
+                                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2563EB)),
+                                            ),
+                                          ],
                                         ),
+                                        const SizedBox(height: 8),
                                         Text(
-                                          '${ev['bookedCount'] ?? 0} registered',
-                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2563EB)),
+                                          (ev['title'] ?? '').toString(),
+                                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                                        ),
+                                        if ((ev['venue'] ?? '').toString().isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text('📍 ${ev['venue']}', style: const TextStyle(fontSize: 13, color: Color(0xFF475569))),
+                                        ],
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _formatDate(ev['eventDate']?.toString()),
+                                          style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      (ev['title'] ?? '').toString(),
-                                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-                                    ),
-                                    if ((ev['venue'] ?? '').toString().isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text('📍 ${ev['venue']}', style: const TextStyle(fontSize: 13, color: Color(0xFF475569))),
-                                    ],
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _formatDate(ev['eventDate']?.toString()),
-                                      style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
@@ -215,17 +230,17 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
   }
 
   void _openClaimSheet(String inclusionName, String packageId) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _ClaimInclusionSheet(
-        inclusionName: inclusionName,
-        packageId: packageId,
-        event: _event ?? const {},
-        apartmentId: widget.apartmentId,
-        api: _api,
-        onClaimed: _loadEvent,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ClaimInclusionScannerPage(
+          inclusionName: inclusionName,
+          packageId: packageId,
+          event: _event ?? const {},
+          apartmentId: widget.apartmentId,
+          api: _api,
+          onClaimed: _loadEvent,
+        ),
       ),
     );
   }
@@ -332,23 +347,40 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
             ],
           ),
         );
+    final photoUrl = (ev['photoUrl'] ?? '').toString();
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [BoxShadow(color: Color(0x0D0F172A), blurRadius: 12, offset: Offset(0, 4))],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (venue.isNotEmpty) metaRow(Icons.location_on_outlined, venue),
-          if (dateText.isNotEmpty) metaRow(Icons.calendar_today_outlined, dateText),
-          if (desc.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(desc, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4)),
-          ],
+          if (photoUrl.isNotEmpty)
+            Image.network(
+              photoUrl,
+              height: 160,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (venue.isNotEmpty) metaRow(Icons.location_on_outlined, venue),
+                if (dateText.isNotEmpty) metaRow(Icons.calendar_today_outlined, dateText),
+                if (desc.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(desc, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4)),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -793,7 +825,7 @@ class _UserClaimHistoryPageState extends State<UserClaimHistoryPage> {
   }
 }
 
-class _ClaimInclusionSheet extends StatefulWidget {
+class ClaimInclusionScannerPage extends StatefulWidget {
   final String inclusionName;
   final String packageId;
   final Map<String, dynamic> event;
@@ -801,7 +833,8 @@ class _ClaimInclusionSheet extends StatefulWidget {
   final ApiService api;
   final VoidCallback onClaimed;
 
-  const _ClaimInclusionSheet({
+  const ClaimInclusionScannerPage({
+    super.key,
     required this.inclusionName,
     required this.packageId,
     required this.event,
@@ -811,20 +844,26 @@ class _ClaimInclusionSheet extends StatefulWidget {
   });
 
   @override
-  State<_ClaimInclusionSheet> createState() => _ClaimInclusionSheetState();
+  State<ClaimInclusionScannerPage> createState() => _ClaimInclusionScannerPageState();
 }
 
-class _ClaimInclusionSheetState extends State<_ClaimInclusionSheet> {
+class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> with SingleTickerProviderStateMixin {
   bool _qrMode = true;
   final TextEditingController _codeController = TextEditingController();
   MobileScannerController? _scannerController;
   bool _submitting = false;
   bool _cameraDenied = false;
-  Map<String, dynamic>? _result; // {success, alreadyClaimed, message, registration}
+  bool _torchOn = false;
+  Map<String, dynamic>? _result;
+  late AnimationController _animController;
 
   @override
   void initState() {
     super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
     _initScanner();
   }
 
@@ -833,7 +872,11 @@ class _ClaimInclusionSheetState extends State<_ClaimInclusionSheet> {
     if (!mounted) return;
     if (status.isGranted) {
       setState(() {
-        _scannerController = MobileScannerController(formats: [BarcodeFormat.qrCode]);
+        _scannerController = MobileScannerController(
+          formats: const [BarcodeFormat.qrCode],
+          detectionSpeed: DetectionSpeed.normal,
+          autoStart: true,
+        );
       });
     } else {
       setState(() => _cameraDenied = true);
@@ -842,14 +885,27 @@ class _ClaimInclusionSheetState extends State<_ClaimInclusionSheet> {
 
   @override
   void dispose() {
+    _animController.dispose();
     _scannerController?.dispose();
     _codeController.dispose();
     super.dispose();
   }
 
+  Future<void> _onDetect(BarcodeCapture capture) async {
+    if (_submitting || _result != null) return;
+    final barcodes = capture.barcodes;
+    if (barcodes.isEmpty) return;
+
+    final barcode = barcodes.first;
+    final code = barcode.rawValue;
+    if (code == null || code.trim().isEmpty) return;
+
+    _submit(qrData: code);
+  }
+
   Future<void> _submit({String? qrData, String? ticketCode}) async {
-    if (_submitting) return;
-    setState(() => _submitting = true);
+    if (_result != null) return;
+    if (!_submitting) setState(() => _submitting = true);
     final res = await widget.api.claimInclusion(
       inclusionName: widget.inclusionName,
       packageId: widget.packageId,
@@ -871,165 +927,404 @@ class _ClaimInclusionSheetState extends State<_ClaimInclusionSheet> {
     setState(() {
       _result = null;
       _qrMode = true;
+      _submitting = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.72,
-      minChildSize: 0.5,
-      maxChildSize: 0.92,
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: ListView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(20),
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F172A),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0F172A),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Claim Benefit',
+              style: TextStyle(fontSize: 13, color: Colors.white60, fontWeight: FontWeight.w600),
+            ),
+            Text(
+              widget.inclusionName,
+              style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+        actions: [
+          if (_qrMode && _scannerController != null)
+            IconButton(
+              icon: Icon(_torchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded, color: Colors.white),
+              onPressed: () {
+                _scannerController?.toggleTorch();
+                setState(() => _torchOn = !_torchOn);
+              },
+            ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Mode Tabs
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _ScannerTabButton(
+                        label: '📷 Scan QR',
+                        selected: _qrMode,
+                        onTap: () {
+                          if (!_qrMode) setState(() => _qrMode = true);
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: _ScannerTabButton(
+                        label: '🎟️ Manual Code',
+                        selected: !_qrMode,
+                        onTap: () {
+                          if (_qrMode) setState(() => _qrMode = false);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Main Content Area
+            Expanded(
+              child: _result != null
+                  ? _buildResultView()
+                  : _qrMode
+                      ? _buildScannerView()
+                      : _buildManualCodeView(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScannerView() {
+    if (_cameraDenied) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(30),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(4)),
-                ),
-              ),
-              Text(
-                'Claim Event Benefit',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF2563EB), letterSpacing: 0.5),
-              ),
-              Text(
-                '✨ ${widget.inclusionName}',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-              ),
+              const Icon(Icons.camera_alt_outlined, size: 56, color: Colors.white38),
               const SizedBox(height: 16),
-              if (_result == null) ...[
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(14)),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _ModeTab(
-                          label: '📷 Scan QR',
-                          selected: _qrMode,
-                          onTap: () => setState(() => _qrMode = true),
-                        ),
-                      ),
-                      Expanded(
-                        child: _ModeTab(
-                          label: '🎟️ Ticket Code',
-                          selected: !_qrMode,
-                          onTap: () => setState(() => _qrMode = false),
-                        ),
-                      ),
-                    ],
+              const Text(
+                'Camera Access Denied',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Please grant camera permissions in app settings to scan badges, or switch to Manual Code.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => openAppSettings(),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white),
+                child: const Text('Open Settings'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_scannerController == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Camera Preview with native sharp sensor focus
+        MobileScanner(
+          controller: _scannerController,
+          onDetect: _onDetect,
+        ),
+
+        // Dark Overlay with Cutout
+        CustomPaint(
+          size: Size.infinite,
+          painter: _ScannerOverlayPainter(),
+        ),
+
+        // Google Pay style Animated Scan Line
+        AnimatedBuilder(
+          animation: _animController,
+          builder: (context, child) {
+            const boxSize = 300.0;
+            final topOffset = (_animController.value * (boxSize - 40)) - (boxSize / 2) + 20;
+            return Transform.translate(
+              offset: Offset(0, topOffset),
+              child: Container(
+                width: boxSize - 20,
+                height: 3,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Colors.transparent, Color(0xFF38BDF8), Color(0xFF2563EB), Colors.transparent],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF38BDF8).withValues(alpha: 0.8),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+
+        // Corner Frame Markers
+        SizedBox(
+          width: 300,
+          height: 300,
+          child: Stack(
+            children: [
+              // Top-Left
+              Positioned(
+                top: 0,
+                left: 0,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Color(0xFF38BDF8), width: 4),
+                      left: BorderSide(color: Color(0xFF38BDF8), width: 4),
+                    ),
+                    borderRadius: BorderRadius.only(topLeft: Radius.circular(16)),
                   ),
                 ),
-                const SizedBox(height: 16),
-                if (_qrMode) ...[
-                  if (_cameraDenied)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: const Color(0xFFFEF2F2), borderRadius: BorderRadius.circular(14)),
-                      child: const Text(
-                        'Camera permission denied. Use "Ticket Code" instead, or grant camera access in app settings.',
-                        style: TextStyle(color: Color(0xFF991B1B), fontWeight: FontWeight.w600),
-                      ),
-                    )
-                  else if (_scannerController == null)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: SizedBox(
-                        height: 260,
-                        child: MobileScanner(
-                          controller: _scannerController,
-                          onDetect: (capture) {
-                            final code = capture.barcodes.isNotEmpty ? capture.barcodes.first.rawValue : null;
-                            if (code != null && !_submitting) {
-                              _submit(qrData: code);
-                            }
-                          },
-                        ),
-                      ),
+              ),
+              // Top-Right
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Color(0xFF38BDF8), width: 4),
+                      right: BorderSide(color: Color(0xFF38BDF8), width: 4),
                     ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Point camera at the participant\'s ticket QR code to claim ${widget.inclusionName}.',
+                    borderRadius: BorderRadius.only(topRight: Radius.circular(16)),
+                  ),
+                ),
+              ),
+              // Bottom-Left
+              Positioned(
+                bottom: 0,
+                left: 0,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Color(0xFF38BDF8), width: 4),
+                      left: BorderSide(color: Color(0xFF38BDF8), width: 4),
+                    ),
+                    borderRadius: BorderRadius.only(bottomLeft: Radius.circular(16)),
+                  ),
+                ),
+              ),
+              // Bottom-Right
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Color(0xFF38BDF8), width: 4),
+                      right: BorderSide(color: Color(0xFF38BDF8), width: 4),
+                    ),
+                    borderRadius: BorderRadius.only(bottomRight: Radius.circular(16)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Bottom instruction banner
+        Positioned(
+          bottom: 30,
+          left: 20,
+          right: 20,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.4)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF38BDF8), size: 20),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    'Align QR code inside frame to claim',
+                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                  ),
-                ] else ...[
-                  Text(
-                    'ENTER 5-CHARACTER TICKET CODE',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: const Color(0xFF475569), letterSpacing: 0.5),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _codeController,
-                    textAlign: TextAlign.center,
-                    textCapitalization: TextCapitalization.characters,
-                    maxLength: 10,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 3),
-                    decoration: InputDecoration(
-                      hintText: 'e.g. ABC12',
-                      counterText: '',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    onChanged: (v) {
-                      final upper = v.toUpperCase();
-                      if (upper != v) {
-                        _codeController.value = _codeController.value.copyWith(
-                          text: upper,
-                          selection: TextSelection.collapsed(offset: upper.length),
-                        );
-                      }
-                      setState(() {});
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: (_submitting || _codeController.text.trim().isEmpty)
-                          ? null
-                          : () => _submit(ticketCode: _codeController.text.trim()),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: Text(_submitting ? 'Processing…' : 'Verify & Claim ${widget.inclusionName}'),
-                    ),
-                  ),
-                ],
-              ] else ...[
-                _buildResultBanner(),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: _resetToScan,
-                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
-                    child: const Text('🔄 Scan / Claim Another Ticket'),
                   ),
                 ),
               ],
-            ],
+            ),
           ),
-        );
-      },
+        ),
+
+        if (_submitting)
+          Container(
+            color: Colors.black54,
+            child: const Center(
+              child: CircularProgressIndicator(color: Color(0xFF38BDF8)),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildManualCodeView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'ENTER TICKET CODE',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF64748B),
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _codeController,
+              textAlign: TextAlign.center,
+              textCapitalization: TextCapitalization.characters,
+              maxLength: 10,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 4,
+                color: Color(0xFF0F172A),
+              ),
+              decoration: InputDecoration(
+                hintText: 'e.g. 77F05',
+                counterText: '',
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                ),
+              ),
+              onChanged: (v) {
+                final upper = v.toUpperCase();
+                if (upper != v) {
+                  _codeController.value = _codeController.value.copyWith(
+                    text: upper,
+                    selection: TextSelection.collapsed(offset: upper.length),
+                  );
+                }
+                setState(() {});
+              },
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: (_submitting || _codeController.text.trim().isEmpty)
+                    ? null
+                    : () => _submit(ticketCode: _codeController.text.trim()),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: Text(
+                  _submitting ? 'Verifying...' : 'Verify & Claim ${widget.inclusionName}',
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          _buildResultBanner(),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: _resetToScan,
+              icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
+              label: const Text('Scan Next Participant', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Done & Go Back', style: TextStyle(color: Colors.white70)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1052,39 +1347,90 @@ class _ClaimInclusionSheetState extends State<_ClaimInclusionSheet> {
     final now = DateTime.now();
     final today = '${now.day} ${months[now.month - 1]} ${now.year}';
     final venue = (widget.event['venue'] ?? '').toString();
-    final green = denied ? const Color(0xFF991B1B) : (used ? const Color(0xFF92400E) : const Color(0xFF166534));
-    const grey = Color(0xFF475569);
+
+    final statusBg = denied
+        ? const Color(0xFFFEF2F2)
+        : (used ? const Color(0xFFFFFBEB) : const Color(0xFFF0FDF4));
+    final statusBorder = denied
+        ? const Color(0xFFFCA5A5)
+        : (used ? const Color(0xFFFCD34D) : const Color(0xFF86EFAC));
+    final statusText = denied
+        ? const Color(0xFF991B1B)
+        : (used ? const Color(0xFF92400E) : const Color(0xFF166534));
+
     Widget line(String label, String value) => value.isEmpty
         ? const SizedBox.shrink()
-        : Text('$label: $value', style: const TextStyle(color: grey, fontSize: 14, height: 1.5));
+        : Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 110,
+                  child: Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w600)),
+                ),
+                Expanded(
+                  child: Text(value, style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+          );
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F8F8),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        borderRadius: BorderRadius.circular(12),
+        color: statusBg,
+        border: Border.all(color: statusBorder, width: 2),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(denied ? '✕ FOOD ACCESS DENIED' : (used ? '◷ ALREADY USED' : '✓ FOOD ACCESS GRANTED'),
-              style: TextStyle(color: green, fontWeight: FontWeight.w800, fontSize: 16)),
-          const SizedBox(height: 6),
-          if ((reg['name'] ?? '').toString().isNotEmpty)
-            Text((reg['name'] ?? '').toString(),
-              style: TextStyle(color: green, fontWeight: FontWeight.w800, fontSize: 14, height: 1.5)),
-          line('Participant ID', (reg['ticketCode'] ?? (reg.isEmpty ? '' : 'Spot')).toString()),
+          Row(
+            children: [
+              Icon(
+                denied ? Icons.cancel_rounded : (used ? Icons.schedule_rounded : Icons.check_circle_rounded),
+                color: statusText,
+                size: 28,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  denied ? 'ACCESS DENIED' : (used ? 'ALREADY CLAIMED' : 'ACCESS GRANTED'),
+                  style: TextStyle(color: statusText, fontWeight: FontWeight.w900, fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 24, color: Colors.black12),
+          if ((reg['name'] ?? '').toString().isNotEmpty) ...[
+            Text(
+              (reg['name'] ?? '').toString(),
+              style: TextStyle(color: statusText, fontWeight: FontWeight.w900, fontSize: 20),
+            ),
+            const SizedBox(height: 8),
+          ],
+          line('Ticket ID', (reg['ticketCode'] ?? (reg.isEmpty ? '' : 'Spot')).toString()),
           line('Type', reg.isEmpty ? '' : (reg['participantType'] ?? 'Delegate').toString()),
           line('Package', packageText),
           line('Date', today),
           line('Venue', venue),
-          line('Meal', widget.inclusionName),
-          Text(
+          line('Benefit', widget.inclusionName),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
               denied
-                  ? ((message ?? '').isEmpty ? 'This participant is not allowed this meal.' : message!)
-                  : (used ? 'This meal entitlement has already been redeemed.' : 'Participant is eligible. Food access granted.'),
-              style: TextStyle(color: green, fontWeight: FontWeight.w800, fontSize: 14, height: 1.5)),
+                  ? ((message ?? '').isEmpty ? 'This participant is not eligible for this benefit.' : message!)
+                  : (used ? 'This entitlement has already been redeemed.' : 'Participant is eligible. Benefit claim registered.'),
+              style: TextStyle(color: statusText, fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+          ),
         ],
       ),
     );
@@ -1103,11 +1449,16 @@ class _ClaimInclusionSheetState extends State<_ClaimInclusionSheet> {
   }
 }
 
-class _ModeTab extends StatelessWidget {
+class _ScannerTabButton extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _ModeTab({required this.label, required this.selected, required this.onTap});
+
+  const _ScannerTabButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1117,9 +1468,8 @@ class _ModeTab extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: selected ? [const BoxShadow(color: Colors.black12, blurRadius: 6)] : null,
+          color: selected ? const Color(0xFF2563EB) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
           label,
@@ -1127,10 +1477,31 @@ class _ModeTab extends StatelessWidget {
           style: TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 13,
-            color: selected ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+            color: selected ? Colors.white : Colors.white60,
           ),
         ),
       ),
     );
   }
+}
+
+class _ScannerOverlayPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const boxSize = 300.0;
+    final left = (size.width - boxSize) / 2;
+    final top = (size.height - boxSize) / 2;
+    final rect = Rect.fromLTWH(left, top, boxSize, boxSize);
+
+    final backgroundPaint = Paint()..color = Colors.black.withValues(alpha: 0.55);
+    final path = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(20)))
+      ..fillType = PathFillType.evenOdd;
+
+    canvas.drawPath(path, backgroundPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

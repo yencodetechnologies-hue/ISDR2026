@@ -49,6 +49,7 @@ const managedEventSchema = new mongoose.Schema(
     title: { type: String, required: true, trim: true },
     description: { type: String, default: '', trim: true },
     venue: { type: String, default: '', trim: true },
+    photoUrl: { type: String, default: '', trim: true },
     eventDate: { type: Date, required: true },
     eventEndDate: { type: Date, default: null },
     bookedCount: { type: Number, default: 0, min: 0 },

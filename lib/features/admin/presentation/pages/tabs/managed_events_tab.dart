@@ -435,20 +435,49 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.center,
                                         children: [
-                                          Container(
-                                            width: 44,
-                                            height: 44,
-                                            decoration: BoxDecoration(
-                                              color: AppTheme.primaryColor
-                                                  .withAlpha(16),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: const Icon(
-                                              Icons.event_outlined,
-                                              size: 22,
-                                              color: AppTheme.primaryColor,
-                                            ),
+                                          ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            child: (e['photoUrl']?.toString() ?? '').isNotEmpty
+                                                ? Image.network(
+                                                    e['photoUrl'].toString(),
+                                                    width: 52,
+                                                    height: 52,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (_, __, ___) =>
+                                                        Container(
+                                                      width: 52,
+                                                      height: 52,
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFFF1F5F9),
+                                                        borderRadius:
+                                                            BorderRadius.circular(12),
+                                                        border: Border.all(
+                                                            color: const Color(0xFFE2E8F0)),
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.calendar_month_rounded,
+                                                        size: 24,
+                                                        color: Color(0xFF1E293B),
+                                                      ),
+                                                    ),
+                                                  )
+                                                : Container(
+                                                    width: 52,
+                                                    height: 52,
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(0xFFF1F5F9),
+                                                      borderRadius:
+                                                          BorderRadius.circular(12),
+                                                      border: Border.all(
+                                                          color: const Color(0xFFE2E8F0)),
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.calendar_month_rounded,
+                                                      size: 24,
+                                                      color: Color(0xFF1E293B),
+                                                    ),
+                                                  ),
                                           ),
                                           const SizedBox(width: 12),
                                           Expanded(

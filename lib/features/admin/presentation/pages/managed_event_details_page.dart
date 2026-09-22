@@ -291,18 +291,31 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
           padding: const EdgeInsets.all(16),
           children: [
             Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _event['title']?.toString() ?? 'Event',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if ((_event['photoUrl']?.toString() ?? '').isNotEmpty)
+                    Image.network(
+                      _event['photoUrl'].toString(),
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _event['title']?.toString() ?? 'Event',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                     const SizedBox(height: 8),
                     if ((_event['venue']?.toString() ?? '').isNotEmpty)
                       Text(
@@ -331,7 +344,9 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
                   ],
                 ),
               ),
-            ),
+            ],
+          ),
+        ),
             const SizedBox(height: 12),
             Card(
               child: Padding(
