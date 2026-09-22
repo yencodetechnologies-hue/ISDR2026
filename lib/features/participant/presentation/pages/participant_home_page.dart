@@ -14,11 +14,14 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../admin/presentation/pages/my_profile_page.dart';
 import '../../../admin/presentation/pages/event_schedule_list_page.dart';
 import '../../../admin/presentation/pages/event_schedules_page.dart';
+import '../../../admin/presentation/widgets/auto_scroll_banner.dart';
 import 'about_isdr_page.dart';
 import 'organizing_committee_page.dart';
 import 'student_conference_page.dart';
 import 'awards_page.dart';
 import 'accommodation_page.dart';
+import 'claimed_inclusion_page.dart';
+import 'available_inclusion_page.dart';
 
 // ---------------------------------------------------------------------------
 // Management Theme Palette
@@ -137,6 +140,20 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       );
       return;
     }
+    if (lower == 'claimed inclusion') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ClaimedInclusionPage()),
+      );
+      return;
+    }
+    if (lower == 'available inclusion') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AvailableInclusionPage()),
+      );
+      return;
+    }
     if (lower == 'about isdr') {
       Navigator.push(
         context,
@@ -243,6 +260,8 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const AutoScrollBanner(items: defaultManagementBanners),
+            const SizedBox(height: 20),
             // =================================================================
             // 1. LIVE & UPCOMING SECTION
             // =================================================================

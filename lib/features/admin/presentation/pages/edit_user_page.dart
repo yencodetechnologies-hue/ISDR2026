@@ -68,9 +68,12 @@ class _EditUserPageState extends State<EditUserPage> {
 
   bool get _isHostel => false;
   bool get _isCompany => false;
+  bool get _isEventsProperty =>
+      widget.propertyType == PropertyType.events ||
+      widget.user.isStaff;
   bool get _isApartment =>
       widget.propertyType == null ||
-      false;
+      (!_isEventsProperty && false);
 
   @override
   void initState() {
@@ -320,6 +323,8 @@ class _EditUserPageState extends State<EditUserPage> {
         (u.block != null && u.block!.isNotEmpty) ||
         (u.roomNumber != null && u.roomNumber!.isNotEmpty);
 
+    final pageTitle = _isEventsProperty ? 'Edit Event Staff' : 'Edit User';
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: Column(
@@ -342,9 +347,9 @@ class _EditUserPageState extends State<EditUserPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Edit User',
-                            style: TextStyle(
+                          Text(
+                            pageTitle,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -371,251 +376,343 @@ class _EditUserPageState extends State<EditUserPage> {
               key: _formKey,
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
-                children: [
-                  if (u.linkedOwner != null) ...[
-                    _sectionCard(
-                      title: 'Linked owner',
-                      icon: Icons.supervisor_account_rounded,
-                      children: [
-                        _readOnlyTile('Owner name', u.linkedOwner!.name),
-                        _readOnlyTile('Owner mobile', u.linkedOwner!.mobileNumber),
-                        if (u.linkedOwner!.block != null)
-                          _readOnlyTile('Owner block', u.linkedOwner!.block!),
-                        if (u.linkedOwner!.roomNumber != null)
-                          _readOnlyTile('Owner room', u.linkedOwner!.roomNumber!),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  if (hasAssignment) ...[
-                    _sectionCard(
-                      title: 'Unit assignment',
-                      icon: Icons.apartment_rounded,
-                      children: [
-                        if (u.block != null && u.block!.isNotEmpty)
-                          _readOnlyTile('Block', u.block!),
-                        if (u.floor != null && u.floor!.isNotEmpty)
-                          _readOnlyTile('Floor', u.floor!),
-                        if (u.roomNumber != null && u.roomNumber!.isNotEmpty)
-                          _readOnlyTile('Room', u.roomNumber!),
-                        const Padding(
-                          padding: EdgeInsets.only(top: 4),
-                          child: Text(
-                            'Use Reassign from the user menu to change unit.',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                children: _isEventsProperty
+                    ? [
+                        _sectionCard(
+                          title: 'Event Staff Information',
+                          icon: Icons.badge_rounded,
+                          children: [
+                            _buildProfilePicturePicker(),
+                            const SizedBox(height: 16),
+                            _field(
+                              _nameController,
+                              label: 'Full Name *',
+                              icon: Icons.person_rounded,
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Full name is required';
+                                }
+                                return null;
+                              },
+                            ),
+                            _field(
+                              _emailController,
+                              label: 'Email *',
+                              icon: Icons.email_outlined,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Email is required';
+                                }
+                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                                    .hasMatch(v.trim())) {
+                                  return 'Enter a valid email';
+                                }
+                                return null;
+                              },
+                            ),
+                            _field(
+                              _mobileController,
+                              label: 'Mobile Number *',
+                              icon: Icons.phone_android_outlined,
+                              keyboardType: TextInputType.phone,
+                              maxLength: 10,
+                              validator: (v) {
+                                if (v == null || v.trim().length != 10) {
+                                  return 'Enter 10-digit mobile number';
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _sectionCard(
+                          title: 'Security',
+                          icon: Icons.lock_outline_rounded,
+                          children: [
+                            _field(
+                              _passwordController,
+                              label: 'New password (optional)',
+                              icon: Icons.lock_outlined,
+                              obscure: true,
+                              isOptional: true,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                  color: Colors.grey[600],
+                                ),
+                                onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword),
+                              ),
+                            ),
+                            _field(
+                              _confirmPasswordController,
+                              label: 'Confirm new password',
+                              icon: Icons.lock_reset_outlined,
+                              obscure: true,
+                              isOptional: true,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureConfirmPassword
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                  color: Colors.grey[600],
+                                ),
+                                onPressed: () => setState(() =>
+                                    _obscureConfirmPassword = !_obscureConfirmPassword),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ]
+                    : [
+                        if (u.linkedOwner != null) ...[
+                          _sectionCard(
+                            title: 'Linked owner',
+                            icon: Icons.supervisor_account_rounded,
+                            children: [
+                              _readOnlyTile('Owner name', u.linkedOwner!.name),
+                              _readOnlyTile('Owner mobile', u.linkedOwner!.mobileNumber),
+                              if (u.linkedOwner!.block != null)
+                                _readOnlyTile('Owner block', u.linkedOwner!.block!),
+                              if (u.linkedOwner!.roomNumber != null)
+                                _readOnlyTile('Owner room', u.linkedOwner!.roomNumber!),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  _sectionCard(
-                    title: 'Personal information',
-                    icon: Icons.person_outline_rounded,
-                    children: [
-                      _buildProfilePicturePicker(),
-                      const SizedBox(height: 16),
-                      _field(_nameController,
-                          label: 'Full name *', icon: Icons.person_rounded),
-                      _field(_usernameController,
-                          label: 'Username *', icon: Icons.alternate_email),
-                      _field(
-                        _emailController,
-                        label: 'Email *',
-                        icon: Icons.email_outlined,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Email is required';
-                          }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                              .hasMatch(v.trim())) {
-                            return 'Enter a valid email';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _sectionCard(
-                    title: 'Contact',
-                    icon: Icons.phone_outlined,
-                    children: [
-                      _field(
-                        _mobileController,
-                        label: 'Mobile number *',
-                        icon: Icons.phone_android_outlined,
-                        keyboardType: TextInputType.phone,
-                        maxLength: 10,
-                        validator: (v) {
-                          if (v == null || v.trim().length != 10) {
-                            return 'Enter 10-digit mobile number';
-                          }
-                          return null;
-                        },
-                      ),
-                      _field(
-                        _secondaryMobileController,
-                        label: 'Secondary mobile (optional)',
-                        icon: Icons.phone_outlined,
-                        keyboardType: TextInputType.phone,
-                        maxLength: 10,
-                        isOptional: true,
-                      ),
-                      _field(
-                        _addressController,
-                        label: 'Address (optional)',
-                        icon: Icons.location_on_outlined,
-                        maxLines: 2,
-                        isOptional: true,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (_isHostel)
-                    _sectionCard(
-                      title: 'Hostel details',
-                      icon: Icons.hotel_rounded,
-                      children: [
-                        _buildGenderSelection(),
-                        const SizedBox(height: 16),
-                        _buildOccupationSelection(),
-                        const SizedBox(height: 16),
-                        _buildDateOfBirthPicker(),
-                      ],
-                    )
-                  else if (_isCompany)
-                    _sectionCard(
-                      title: 'Company details',
-                      icon: Icons.business_outlined,
-                      children: [
-                        _field(_departmentController,
-                            label: 'Department', icon: Icons.business_outlined,
-                            isOptional: true),
-                        _field(_employeeIdController,
-                            label: 'Employee ID', icon: Icons.badge_outlined,
-                            isOptional: true),
-                      ],
-                    )
-                  else
-                    _sectionCard(
-                      title: 'Resident details',
-                      icon: Icons.home_rounded,
-                      children: [
-                        _buildGenderSelection(),
-                        const SizedBox(height: 16),
-                        _buildFamilyTypeSelection(),
-                        const SizedBox(height: 16),
-                        _buildNRIToggle(),
-                        const SizedBox(height: 16),
-                        _field(
-                          _occupantsController,
-                          label: 'Total occupants (optional)',
-                          icon: Icons.people_outline,
-                          keyboardType: TextInputType.number,
-                          isOptional: true,
-                        ),
-                      ],
-                    ),
-                  const SizedBox(height: 16),
-                  _sectionCard(
-                    title: 'Identity documents',
-                    icon: Icons.badge_rounded,
-                    children: [
-                      _field(
-                        _aadhaarController,
-                        label: 'ID card number (optional)',
-                        icon: Icons.credit_card_outlined,
-                        isOptional: true,
-                        validator: (v) {
-                          final trimmed = v?.trim() ?? '';
-                          if (trimmed.isEmpty) return null;
-                          if (trimmed.length < 5) {
-                            return 'ID card number must be at least 5 characters';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      IdentityDocumentPair(
-                        frontImageFile: _aadhaarFrontImage,
-                        backImageFile: _aadhaarBackImage,
-                        frontImageUrl: u.aadhaarCardFrontImage,
-                        backImageUrl: u.aadhaarCardBackImage,
-                        onFrontTap: () =>
-                            _showImageSourceModal(_EditImageType.aadhaarFront),
-                        onBackTap: () =>
-                            _showImageSourceModal(_EditImageType.aadhaarBack),
-                      ),
-                      const SizedBox(height: 16),
-                      _field(
-                        _panController,
-                        label: 'PAN number (optional)',
-                        icon: Icons.account_balance_wallet_outlined,
-                        maxLength: 10,
-                        isOptional: true,
-                        validator: (v) {
-                          final trimmed = v?.trim() ?? '';
-                          if (trimmed.isEmpty) return null;
-                          if (trimmed.length != 10) {
-                            return 'PAN must be 10 characters';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      _buildDocumentImagePicker(
-                        'PAN card image',
-                        _panCardImage,
-                        u.panCardImage,
-                        _EditImageType.panCard,
-                        isFullWidth: true,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _sectionCard(
-                    title: 'Security',
-                    icon: Icons.lock_outline_rounded,
-                    children: [
-                      _field(
-                        _passwordController,
-                        label: 'New password (optional)',
-                        icon: Icons.lock_outlined,
-                        obscure: true,
-                        isOptional: true,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Colors.grey[600],
+                          const SizedBox(height: 16),
+                        ],
+                        if (hasAssignment) ...[
+                          _sectionCard(
+                            title: 'Unit assignment',
+                            icon: Icons.apartment_rounded,
+                            children: [
+                              if (u.block != null && u.block!.isNotEmpty)
+                                _readOnlyTile('Block', u.block!),
+                              if (u.floor != null && u.floor!.isNotEmpty)
+                                _readOnlyTile('Floor', u.floor!),
+                              if (u.roomNumber != null && u.roomNumber!.isNotEmpty)
+                                _readOnlyTile('Room', u.roomNumber!),
+                              const Padding(
+                                padding: EdgeInsets.only(top: 4),
+                                child: Text(
+                                  'Use Reassign from the user menu to change unit.',
+                                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                                ),
+                              ),
+                            ],
                           ),
-                          onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword),
+                          const SizedBox(height: 16),
+                        ],
+                        _sectionCard(
+                          title: 'Personal information',
+                          icon: Icons.person_outline_rounded,
+                          children: [
+                            _buildProfilePicturePicker(),
+                            const SizedBox(height: 16),
+                            _field(_nameController,
+                                label: 'Full name *', icon: Icons.person_rounded),
+                            _field(_usernameController,
+                                label: 'Username *', icon: Icons.alternate_email),
+                            _field(
+                              _emailController,
+                              label: 'Email *',
+                              icon: Icons.email_outlined,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Email is required';
+                                }
+                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                                    .hasMatch(v.trim())) {
+                                  return 'Enter a valid email';
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
                         ),
-                      ),
-                      _field(
-                        _confirmPasswordController,
-                        label: 'Confirm new password',
-                        icon: Icons.lock_reset_outlined,
-                        obscure: true,
-                        isOptional: true,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirmPassword
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Colors.grey[600],
+                        const SizedBox(height: 16),
+                        _sectionCard(
+                          title: 'Contact',
+                          icon: Icons.phone_outlined,
+                          children: [
+                            _field(
+                              _mobileController,
+                              label: 'Mobile number *',
+                              icon: Icons.phone_android_outlined,
+                              keyboardType: TextInputType.phone,
+                              maxLength: 10,
+                              validator: (v) {
+                                if (v == null || v.trim().length != 10) {
+                                  return 'Enter 10-digit mobile number';
+                                }
+                                return null;
+                              },
+                            ),
+                            _field(
+                              _secondaryMobileController,
+                              label: 'Secondary mobile (optional)',
+                              icon: Icons.phone_outlined,
+                              keyboardType: TextInputType.phone,
+                              maxLength: 10,
+                              isOptional: true,
+                            ),
+                            _field(
+                              _addressController,
+                              label: 'Address (optional)',
+                              icon: Icons.location_on_outlined,
+                              maxLines: 2,
+                              isOptional: true,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (_isHostel)
+                          _sectionCard(
+                            title: 'Hostel details',
+                            icon: Icons.hotel_rounded,
+                            children: [
+                              _buildGenderSelection(),
+                              const SizedBox(height: 16),
+                              _buildOccupationSelection(),
+                              const SizedBox(height: 16),
+                              _buildDateOfBirthPicker(),
+                            ],
+                          )
+                        else if (_isCompany)
+                          _sectionCard(
+                            title: 'Company details',
+                            icon: Icons.business_outlined,
+                            children: [
+                              _field(_departmentController,
+                                  label: 'Department', icon: Icons.business_outlined,
+                                  isOptional: true),
+                              _field(_employeeIdController,
+                                  label: 'Employee ID', icon: Icons.badge_outlined,
+                                  isOptional: true),
+                            ],
+                          )
+                        else
+                          _sectionCard(
+                            title: 'Resident details',
+                            icon: Icons.home_rounded,
+                            children: [
+                              _buildGenderSelection(),
+                              const SizedBox(height: 16),
+                              _buildFamilyTypeSelection(),
+                              const SizedBox(height: 16),
+                              _buildNRIToggle(),
+                              const SizedBox(height: 16),
+                              _field(
+                                _occupantsController,
+                                label: 'Total occupants (optional)',
+                                icon: Icons.people_outline,
+                                keyboardType: TextInputType.number,
+                                isOptional: true,
+                              ),
+                            ],
                           ),
-                          onPressed: () => setState(() =>
-                              _obscureConfirmPassword = !_obscureConfirmPassword),
+                        const SizedBox(height: 16),
+                        _sectionCard(
+                          title: 'Identity documents',
+                          icon: Icons.badge_rounded,
+                          children: [
+                            _field(
+                              _aadhaarController,
+                              label: 'ID card number (optional)',
+                              icon: Icons.credit_card_outlined,
+                              isOptional: true,
+                              validator: (v) {
+                                final trimmed = v?.trim() ?? '';
+                                if (trimmed.isEmpty) return null;
+                                if (trimmed.length < 5) {
+                                  return 'ID card number must be at least 5 characters';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            IdentityDocumentPair(
+                              frontImageFile: _aadhaarFrontImage,
+                              backImageFile: _aadhaarBackImage,
+                              frontImageUrl: u.aadhaarCardFrontImage,
+                              backImageUrl: u.aadhaarCardBackImage,
+                              onFrontTap: () =>
+                                  _showImageSourceModal(_EditImageType.aadhaarFront),
+                              onBackTap: () =>
+                                  _showImageSourceModal(_EditImageType.aadhaarBack),
+                            ),
+                            const SizedBox(height: 16),
+                            _field(
+                              _panController,
+                              label: 'PAN number (optional)',
+                              icon: Icons.account_balance_wallet_outlined,
+                              maxLength: 10,
+                              isOptional: true,
+                              validator: (v) {
+                                final trimmed = v?.trim() ?? '';
+                                if (trimmed.isEmpty) return null;
+                                if (trimmed.length != 10) {
+                                  return 'PAN must be 10 characters';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            _buildDocumentImagePicker(
+                              'PAN card image',
+                              _panCardImage,
+                              u.panCardImage,
+                              _EditImageType.panCard,
+                              isFullWidth: true,
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(height: 16),
+                        _sectionCard(
+                          title: 'Security',
+                          icon: Icons.lock_outline_rounded,
+                          children: [
+                            _field(
+                              _passwordController,
+                              label: 'New password (optional)',
+                              icon: Icons.lock_outlined,
+                              obscure: true,
+                              isOptional: true,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                  color: Colors.grey[600],
+                                ),
+                                onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword),
+                              ),
+                            ),
+                            _field(
+                              _confirmPasswordController,
+                              label: 'Confirm new password',
+                              icon: Icons.lock_reset_outlined,
+                              obscure: true,
+                              isOptional: true,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureConfirmPassword
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                  color: Colors.grey[600],
+                                ),
+                                onPressed: () => setState(() =>
+                                    _obscureConfirmPassword = !_obscureConfirmPassword),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
               ),
             ),
           ),

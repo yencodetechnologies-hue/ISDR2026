@@ -1424,12 +1424,14 @@ class _UserListCard extends StatelessWidget {
           color: Color(0xFF13275D),
         ),
       ),
-      const PopupMenuItem(
+      PopupMenuItem(
         value: 'edit',
         child: _MenuRow(
           icon: Icons.edit_rounded,
-          label: 'Edit user',
-          color: Color(0xFF13275D),
+          label: propertyType == PropertyType.events
+              ? 'Edit event staff'
+              : 'Edit user',
+          color: const Color(0xFF13275D),
         ),
       ),
     ];

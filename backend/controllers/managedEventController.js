@@ -997,6 +997,32 @@ const claimInclusion = async (req, res) => {
   }
 };
 
+// GET /api/managed-events/my-registration — the logged-in participant's own ticket
+const getMyRegistration = async (req, res) => {
+  try {
+    if (req.userType !== 'participant') {
+      return res.status(403).json({ success: false, error: 'Only participant accounts can use this route' });
+    }
+    const reg = await EventRegistration.findById(req.userId);
+    if (!reg) {
+      return res.status(404).json({ success: false, error: 'Registration not found' });
+    }
+    const event = await ManagedEvent.findById(reg.eventId);
+    if (!event) {
+      return res.status(404).json({ success: false, error: 'Event not found' });
+    }
+    const pkg = (event.packages || []).find((p) => p.id === reg.packageId);
+    res.json({
+      success: true,
+      registration: registrationDto(reg, event),
+      availableInclusions: pkg ? normalizeInclusions(pkg.inclusions) : [],
+    });
+  } catch (error) {
+    console.error('getMyRegistration error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
 module.exports = {
   normalizeInclusions,
   listEvents,
@@ -1010,4 +1036,5 @@ module.exports = {
   deleteRegistration,
   bulkImportRegistrations,
   claimInclusion,
+  getMyRegistration,
 };

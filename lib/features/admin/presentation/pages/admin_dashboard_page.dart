@@ -17,6 +17,7 @@ import '../bloc/admin_bloc.dart';
 import 'tabs/users_tab.dart';
 import 'tabs/managed_events_tab.dart';
 import '../widgets/management_module_grid.dart';
+import '../widgets/auto_scroll_banner.dart';
 import 'property_profile_page.dart';
 import 'management_team_page.dart';
 import 'brochure_page.dart';
@@ -663,6 +664,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const AutoScrollBanner(items: defaultManagementBanners),
+                    const SizedBox(height: 20),
                     ManagementModuleGrid(
                       moduleLabels: labels,
                       onModuleTap: _navigateToModule,

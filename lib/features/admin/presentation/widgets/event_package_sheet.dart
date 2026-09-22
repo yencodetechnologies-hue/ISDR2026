@@ -170,6 +170,55 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
         ),
       );
 
+  Future<void> _editInclusion(Map<String, dynamic> inc) async {
+    final controller = TextEditingController(text: inc['name']?.toString() ?? '');
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Edit Inclusion', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(
+            labelText: 'Inclusion name',
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              final trimmed = controller.text.trim();
+              if (trimmed.isNotEmpty) {
+                Navigator.pop(ctx, trimmed);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (newName != null && newName.isNotEmpty) {
+      setState(() => inc['name'] = newName);
+    }
+  }
+
   Widget _dayChip(Map<String, dynamic> inc, ({String iso, String label}) d, bool on) {
     return InkWell(
       borderRadius: BorderRadius.circular(8),
@@ -205,7 +254,6 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
 
   Widget _inclusionCard(Map<String, dynamic> inc, List<({String iso, String label})> days) {
     final dates = (inc['dates'] as List).map((d) => d.toString()).toList();
-    final allOn = days.isNotEmpty && days.every((d) => dates.contains(d.iso));
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.fromLTRB(12, 8, 4, 12),
@@ -239,17 +287,15 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                   ],
                 ),
               ),
-              if (days.isNotEmpty)
-                TextButton(
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  onPressed: () => setState(() => inc['dates'] = allOn ? <String>[] : days.map((d) => d.iso).toList()),
-                  child: Text(allOn ? 'Clear' : 'All days', style: const TextStyle(fontSize: 12.5)),
-                ),
               IconButton(
                 visualDensity: VisualDensity.compact,
+                tooltip: 'Edit name',
+                onPressed: () => _editInclusion(inc),
+                icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF2563EB)),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Delete',
                 onPressed: () => setState(() => _inclusions.remove(inc)),
                 icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppTheme.errorColor),
               ),

@@ -2452,6 +2452,29 @@ class ApiService {
     }
   }
 
+  /// The logged-in participant's own registration (ticket, package, claimed inclusions).
+  Future<Map<String, dynamic>> getMyRegistration() async {
+    try {
+      final response = await _dio.get('${ApiConfig.managedEventsList}/my-registration');
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'registration': response.data['registration'],
+          'availableInclusions': response.data['availableInclusions'] ?? [],
+        };
+      }
+      return {'success': false, 'error': response.data['error'] ?? 'Failed'};
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? e.message ?? 'Network error',
+      };
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   Future<Map<String, dynamic>> createManagedEvent({
     required String title,
     String description = '',

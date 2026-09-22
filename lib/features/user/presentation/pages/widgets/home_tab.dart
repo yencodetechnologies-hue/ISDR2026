@@ -23,6 +23,7 @@ import '../security_list_page.dart';
 import '../unit_visitor_list_page.dart';
 import '../terms_and_conditions_page.dart';
 import '../user_events_page.dart';
+import '../../../../admin/presentation/widgets/auto_scroll_banner.dart';
 
 class HomeTab extends StatefulWidget {
   final UserModel user;
@@ -223,6 +224,10 @@ class _HomeTabState extends State<HomeTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_isEventsProperty) ...[
+            const AutoScrollBanner(items: defaultManagementBanners),
+            const SizedBox(height: 20),
+          ],
           if (widget.adsEnabled) ...[
             _buildAdsCarousel(),
             const SizedBox(height: 20),
