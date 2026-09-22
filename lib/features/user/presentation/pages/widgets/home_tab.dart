@@ -220,14 +220,18 @@ class _HomeTabState extends State<HomeTab> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       controller: _scrollController,
-      padding: const EdgeInsets.all(12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (_isEventsProperty) ...[
             const AutoScrollBanner(items: defaultManagementBanners),
             const SizedBox(height: 20),
           ],
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
           if (widget.adsEnabled) ...[
             _buildAdsCarousel(),
             const SizedBox(height: 20),
@@ -249,6 +253,9 @@ class _HomeTabState extends State<HomeTab> {
             const SizedBox(height: 24),
             _buildFeedSection(),
           ],
+              ],
+            ),
+          ),
         ],
       ),
     );

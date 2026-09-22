@@ -656,19 +656,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
             Transform.translate(
               offset: const Offset(0, -16),
               child: Container(
+                clipBehavior: Clip.antiAlias,
                 decoration: const BoxDecoration(
                   color: Color(0xFFFAFAF9),
                   borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
                 ),
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const AutoScrollBanner(items: defaultManagementBanners),
-                    const SizedBox(height: 20),
-                    ManagementModuleGrid(
-                      moduleLabels: labels,
-                      onModuleTap: _navigateToModule,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+                      child: ManagementModuleGrid(
+                        moduleLabels: labels,
+                        onModuleTap: _navigateToModule,
+                      ),
                     ),
                   ],
                 ),

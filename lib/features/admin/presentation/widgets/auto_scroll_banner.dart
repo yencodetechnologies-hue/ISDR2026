@@ -1,27 +1,21 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../../core/app_theme.dart';
 
-/// One banner card: a gradient placeholder with a title/subtitle, or a real
-/// image when [imagePath] is given.
+/// One banner slide: just an image.
 class BannerItem {
   final String? imagePath;
   final String title;
   final String subtitle;
-  final List<Color> gradient;
-  final IconData icon;
 
   const BannerItem({
     this.imagePath,
-    required this.title,
-    required this.subtitle,
-    this.gradient = const [Colors.white, Colors.white],
-    this.icon = Icons.event_rounded,
+    this.title = '',
+    this.subtitle = '',
   });
 }
 
-/// Auto-scrolling banner strip: scrolls right continuously and loops forever.
-/// Duplicates the item list so the loop point is invisible.
+/// Full-width image banner carousel — swipeable by the user, with a gentle
+/// auto-advance animation between slides (PageView, not a scrolling strip).
 class AutoScrollBanner extends StatefulWidget {
   final List<BannerItem> items;
   final double height;
@@ -29,7 +23,7 @@ class AutoScrollBanner extends StatefulWidget {
   const AutoScrollBanner({
     super.key,
     required this.items,
-    this.height = 150,
+    this.height = 170,
   });
 
   @override
@@ -37,36 +31,31 @@ class AutoScrollBanner extends StatefulWidget {
 }
 
 class _AutoScrollBannerState extends State<AutoScrollBanner> {
-  final ScrollController _controller = ScrollController();
-  Timer? _ticker;
-  double _cardWidth = 260;
-  static const double _gap = 12;
+  late final PageController _controller = PageController();
+  Timer? _timer;
+  int _page = 0;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _start());
+    if (widget.items.length > 1) _startAutoAdvance();
   }
 
-  void _start() {
-    if (widget.items.isEmpty || !_controller.hasClients) return;
-    const step = 0.6; // px per tick — slow, smooth auto-scroll
-    _ticker = Timer.periodic(const Duration(milliseconds: 16), (_) {
-      if (!_controller.hasClients) return;
-      final singleSetExtent = (_cardWidth + _gap) * widget.items.length;
-      var next = _controller.offset + step;
-      if (next >= singleSetExtent) {
-        next -= singleSetExtent;
-        _controller.jumpTo(next);
-        return;
-      }
-      _controller.jumpTo(next);
+  void _startAutoAdvance() {
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!_controller.hasClients || widget.items.isEmpty) return;
+      final next = (_page + 1) % widget.items.length;
+      _controller.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOutCubic,
+      );
     });
   }
 
   @override
   void dispose() {
-    _ticker?.cancel();
+    _timer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -74,88 +63,51 @@ class _AutoScrollBannerState extends State<AutoScrollBanner> {
   @override
   Widget build(BuildContext context) {
     if (widget.items.isEmpty) return const SizedBox.shrink();
-    // Duplicate the list so the loop reset is invisible while scrolling.
-    final loopItems = [...widget.items, ...widget.items];
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        _cardWidth = (constraints.maxWidth - _gap) * 0.86;
-        return SizedBox(
-          height: widget.height,
-          child: ListView.separated(
+    return SizedBox(
+      height: widget.height,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          PageView.builder(
             controller: _controller,
-            scrollDirection: Axis.horizontal,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.zero,
-            itemCount: loopItems.length,
-            separatorBuilder: (_, __) => const SizedBox(width: _gap),
-            itemBuilder: (_, i) => SizedBox(
-              width: _cardWidth,
-              child: _BannerCard(item: loopItems[i]),
-            ),
+            itemCount: widget.items.length,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemBuilder: (_, i) {
+              final item = widget.items[i];
+              return item.imagePath != null
+                  ? Image.asset(item.imagePath!, fit: BoxFit.cover, width: double.infinity)
+                  : const ColoredBox(color: Color(0xFFF1F5F9));
+            },
           ),
-        );
-      },
-    );
-  }
-}
-
-class _BannerCard extends StatelessWidget {
-  final BannerItem item;
-  const _BannerCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
-        image: item.imagePath != null
-            ? DecorationImage(
-                image: AssetImage(item.imagePath!),
-                fit: BoxFit.cover,
-              )
-            : null,
-      ),
-      child: item.imagePath != null
-          ? null
-          : const Center(
-              child: Text(
-                'Image',
-                style: TextStyle(
-                  color: AppTheme.textColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
+          if (widget.items.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(widget.items.length, (i) {
+                  final active = i == _page;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: active ? 16 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: active ? 0.95 : 0.5),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                }),
               ),
             ),
+        ],
+      ),
     );
   }
 }
 
 /// Banner set for the management home page and login screen.
-/// The 3rd slot is a placeholder until its image is supplied.
 const List<BannerItem> defaultManagementBanners = [
-  BannerItem(
-    imagePath: 'assets/isdr-slider.webp',
-    title: 'ISDR 2026',
-    subtitle: '36th International Conference',
-  ),
-  BannerItem(
-    imagePath: 'assets/Gemini_Generated_Image_bg38yfbg38yfbg38.png',
-    title: 'Manage Your Events',
-    subtitle: 'Packages, participants & schedules',
-  ),
-  BannerItem(
-    imagePath: 'assets/Gemini_Generated_Image_avabulavabulavab.png',
-    title: 'Stay Connected',
-    subtitle: 'Notify participants instantly',
-  ),
+  BannerItem(imagePath: 'assets/isdr-slider.webp'),
+  BannerItem(imagePath: 'assets/Gemini_Generated_Image_bg38yfbg38yfbg38.png'),
+  BannerItem(imagePath: 'assets/Gemini_Generated_Image_avabulavabulavab.png'),
 ];
