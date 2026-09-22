@@ -10,7 +10,6 @@ import '../../../../core/navigation/app_navigation.dart';
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/logout_confirm_sheet.dart';
-import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../admin/presentation/pages/my_profile_page.dart';
 import '../../../admin/presentation/pages/event_schedule_list_page.dart';
@@ -329,20 +328,134 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _MgmtColors.bg,
-      appBar: buildBrandGradientAppBar(
-        title: Text(
-          'ISDR 2026',
-          style: GoogleFonts.outfit(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
+      drawer: Drawer(
+        child: SafeArea(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              DrawerHeader(
+                decoration: const BoxDecoration(color: _MgmtColors.primaryBlue),
+                child: Text(
+                  'ISDR 2026',
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.person_rounded),
+                title: const Text('Profile'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MyProfilePage()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.notifications_outlined),
+                title: const Text('Notifications'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, AppRoutes.notifications);
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.logout_rounded, color: Colors.red),
+                title: const Text('Logout', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  LogoutConfirmSheet.showLogoutConfirmSheet(context, onLogout: () {
+                    context.read<AuthBloc>().add(LogoutEvent());
+                    AppNavigation.resetTo(context, AppRoutes.login);
+                  });
+                },
+              ),
+            ],
           ),
         ),
+      ),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        actionsIconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        flexibleSpace: Stack(
+          fit: StackFit.expand,
+          children: [
+            Container(
+              decoration: BoxDecoration(gradient: AppTheme.brandHeaderGradient),
+            ),
+            // Same layered wave graphic used at the bottom of the login page,
+            // painted into the app bar's own background — nudged down a bit.
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 78,
+              height: 90,
+              child: CustomPaint(painter: _TopWavesPainter()),
+            ),
+          ],
+        ),
+        leading: Builder(
+          builder: (context) => IconButton(
+            tooltip: 'Menu',
+            icon: const Icon(Icons.menu_rounded, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'ISDR 2026',
+              style: GoogleFonts.outfit(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              'Indian Division  •  AADR',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withValues(alpha: 0.85),
+              ),
+            ),
+          ],
+        ),
         actions: [
-          IconButton(
-            tooltip: 'Notifications',
-            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-            onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                tooltip: 'Notifications',
+                icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
+              ),
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF1E3A8A), width: 1.5),
+                  ),
+                ),
+              ),
+            ],
           ),
           IconButton(
             tooltip: 'Logout',
@@ -361,13 +474,52 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const AutoScrollBanner(items: defaultManagementBanners),
+            // Banner sits in front of the blue fade — no gap between them.
+            Stack(
+              children: [
+                Container(
+                  height: 140,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFF60A5FA),
+                        Color(0x0060A5FA),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const ClipRRect(
+                      borderRadius: BorderRadius.all(Radius.circular(20)),
+                      child: AutoScrollBanner(items: defaultManagementBanners),
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const _NewsTickerStrap(
               text:
                   'Welcome to ISDR 2026 — 36th International Conference  •  IADR Indian Division  •  Register your sessions and claim your inclusions on time  •  ',
             ),
-            // Live Show Hero Banner Card — full-bleed, no side padding
-            _buildLiveShowBanner(),
+            // Live Show Hero Banner Card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: _buildLiveShowBanner(),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
@@ -428,8 +580,8 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
             // =================================================================
             // 3. ACCOMMODATION SECTION
             // =================================================================
-            _buildSectionHeader('ACCOMMODATION & SERVICES'),
-            const SizedBox(height: 8),
+            _buildAccommodationHeader(),
+            const SizedBox(height: 10),
             _buildAccommodationBanner(),
             const SizedBox(height: 24),
 
@@ -457,73 +609,76 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
   }
 
   Widget _buildSocialLinksBar() {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            // Facebook — real logos fetched live from an icon CDN (icons8)
+            _buildSocialIconItem(
+              label: 'Facebook',
+              imageUrl: 'https://img.icons8.com/color/96/facebook-new.png',
+              fallbackIcon: Icons.facebook_rounded,
+              textIcon: 'f',
+              fontSize: 17,
+              isBold: true,
+              color: const Color(0xFF1877F2),
+              onTap: () => _launchSocialUrl('https://www.facebook.com/sbdch.dental'),
+            ),
+            _buildSocialDivider(),
+
+            // Instagram
+            _buildSocialIconItem(
+              label: 'Instagram',
+              imageUrl: 'https://img.icons8.com/color/96/instagram-new.png',
+              fallbackIcon: Icons.camera_alt_rounded,
+              color: const Color(0xFFE1306C),
+              onTap: () => _launchSocialUrl('https://www.instagram.com/sbdch_dental/'),
+            ),
+            _buildSocialDivider(),
+
+            // YouTube
+            _buildSocialIconItem(
+              label: 'YouTube',
+              imageUrl: 'https://img.icons8.com/color/96/youtube-play.png',
+              fallbackIcon: Icons.play_circle_fill_rounded,
+              color: const Color(0xFFFF0000),
+              onTap: () => _launchSocialUrl('https://www.youtube.com/@TheDental-Classroom'),
+            ),
+            _buildSocialDivider(),
+
+            // X (Twitter)
+            _buildSocialIconItem(
+              label: 'X (Twitter)',
+              imageUrl: 'https://img.icons8.com/color/96/twitterx.png',
+              fallbackIcon: Icons.close_rounded,
+              textIcon: '𝕏',
+              fontSize: 15,
+              isBold: true,
+              color: Colors.black,
+              onTap: () => _launchSocialUrl('https://x.com/sbdch_dental'),
+            ),
+            _buildSocialDivider(),
+
+            // LinkedIn
+            _buildSocialIconItem(
+              label: 'LinkedIn',
+              imageUrl: 'https://img.icons8.com/color/96/linkedin.png',
+              fallbackIcon: Icons.business_center_rounded,
+              textIcon: 'in',
+              fontSize: 15,
+              isBold: true,
+              color: const Color(0xFF0A66C2),
+              onTap: () => _launchSocialUrl(
+                'https://www.linkedin.com/school/sree-balaji-dental-college-and-hospital/?originalSubdomain=in',
+              ),
             ),
           ],
-        ),
-        child: IntrinsicHeight(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Facebook
-              _buildSocialIconItem(
-                label: 'Facebook',
-                textIcon: 'f',
-                fontSize: 16,
-                isBold: true,
-                onTap: () => _launchSocialUrl('https://www.facebook.com/sbdch.dental'),
-              ),
-              _buildSocialDivider(),
-
-              // Instagram
-              _buildSocialIconItem(
-                label: 'Instagram',
-                icon: Icons.camera_alt_outlined,
-                onTap: () => _launchSocialUrl('https://www.instagram.com/sbdch_dental/'),
-              ),
-              _buildSocialDivider(),
-
-              // YouTube
-              _buildSocialIconItem(
-                label: 'YouTube',
-                icon: Icons.play_circle_fill_rounded,
-                onTap: () => _launchSocialUrl('https://www.youtube.com/@TheDental-Classroom'),
-              ),
-              _buildSocialDivider(),
-
-              // X (Twitter)
-              _buildSocialIconItem(
-                label: 'X (Twitter)',
-                textIcon: '𝕏',
-                fontSize: 14,
-                isBold: true,
-                onTap: () => _launchSocialUrl('https://x.com/sbdch_dental'),
-              ),
-              _buildSocialDivider(),
-
-              // LinkedIn
-              _buildSocialIconItem(
-                label: 'LinkedIn',
-                textIcon: 'in',
-                fontSize: 14,
-                isBold: true,
-                onTap: () => _launchSocialUrl(
-                  'https://www.linkedin.com/school/sree-balaji-dental-college-and-hospital/?originalSubdomain=in',
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -533,20 +688,21 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     return Container(
       width: 1,
       height: 18,
-      margin: const EdgeInsets.symmetric(horizontal: 10),
       color: const Color(0xFFCBD5E1),
     );
   }
 
   Widget _buildSocialIconItem({
     required String label,
+    required Color color,
     IconData? icon,
     String? textIcon,
+    String? imageUrl,
+    IconData? fallbackIcon,
     double fontSize = 14,
     bool isBold = false,
     required VoidCallback onTap,
   }) {
-    const goldColor = Color(0xFFD97706);
     return Tooltip(
       message: label,
       child: InkWell(
@@ -558,17 +714,26 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
             width: 22,
             height: 22,
             child: Center(
-              child: icon != null
-                  ? Icon(icon, size: 19, color: goldColor)
-                  : Text(
-                      textIcon!,
-                      style: GoogleFonts.outfit(
-                        fontSize: fontSize,
-                        fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-                        color: goldColor,
-                        height: 1.1,
-                      ),
-                    ),
+              child: imageUrl != null
+                  ? Image.network(
+                      imageUrl,
+                      width: 21,
+                      height: 21,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) =>
+                          Icon(fallbackIcon ?? Icons.link_rounded, size: 19, color: color),
+                    )
+                  : icon != null
+                      ? Icon(icon, size: 19, color: color)
+                      : Text(
+                          textIcon!,
+                          style: GoogleFonts.outfit(
+                            fontSize: fontSize,
+                            fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+                            color: color,
+                            height: 1.1,
+                          ),
+                        ),
             ),
           ),
         ),
@@ -585,6 +750,49 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
         letterSpacing: .6,
         color: _MgmtColors.muted,
       ),
+    );
+  }
+
+  /// Header for the Accommodation section: bed icon + title, a divider line,
+  /// then a "More" link.
+  Widget _buildAccommodationHeader() {
+    return Row(
+      children: [
+        const Icon(Icons.bed_rounded, size: 18, color: _MgmtColors.ink),
+        const SizedBox(width: 8),
+        Text(
+          'ACCOMMODATION & SERVICES',
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            letterSpacing: .3,
+            color: _MgmtColors.ink,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(height: 1, color: _MgmtColors.line),
+        ),
+        const SizedBox(width: 10),
+        GestureDetector(
+          onTap: () => _onTileTap('Accommodation'),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'More',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: _MgmtColors.primaryBlue,
+                ),
+              ),
+              const SizedBox(width: 2),
+              const Icon(Icons.arrow_forward_rounded, size: 15, color: _MgmtColors.primaryBlue),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -609,184 +817,231 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       final now = DateTime.now();
       final isLive = !now.isBefore(start) && now.isBefore(end);
 
+      final speakerPhoto = schedule['speakerPhoto']?.toString() ?? '';
       final scheduleName = schedule['scheduleName']?.toString() ?? '';
       final speakerName = schedule['speakerName']?.toString() ?? '';
-      final speakerPhoto = schedule['speakerPhoto']?.toString() ?? '';
       final fromTime = schedule['fromTime']?.toString() ?? '';
       final toTime = schedule['toTime']?.toString() ?? '';
       final scheduleId = schedule['id']?.toString() ?? scheduleName;
+      final accent = isLive ? const Color(0xFF22C55E) : const Color(0xFF93C5FD);
 
-      return Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
+      return GestureDetector(
+        onHorizontalDragEnd: (details) {
+          final velocity = details.primaryVelocity ?? 0;
+          if (velocity.abs() < 100 || _todayItems.length < 2) return;
+          setState(() {
+            _cycleIndex = velocity < 0
+                ? (_cycleIndex + 1) % _todayItems.length
+                : (_cycleIndex - 1 + _todayItems.length) % _todayItems.length;
+          });
+        },
+        child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [Color(0xFF0F172A), Color(0xFF1E3A8A)],
           ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1E3A8A).withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ScheduleDetailPage(
-                    schedule: schedule,
-                    event: event,
-                  ),
-                ),
-              );
-            },
-            child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          clipBehavior: Clip.antiAlias,
-                          decoration: BoxDecoration(
-                            color: (isLive ? const Color(0xFF22C55E) : const Color(0xFF2563EB))
-                                .withValues(alpha: 0.20),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: speakerPhoto.isNotEmpty
-                              ? Image.network(
-                                  speakerPhoto,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Icon(
-                                    isLive
-                                        ? Icons.mic_external_on_rounded
-                                        : Icons.upcoming_rounded,
-                                    color: isLive
-                                        ? const Color(0xFF4ADE80)
-                                        : const Color(0xFF93C5FD),
-                                    size: 20,
-                                  ),
-                                )
-                              : Icon(
-                                  isLive ? Icons.mic_external_on_rounded : Icons.upcoming_rounded,
-                                  color: isLive ? const Color(0xFF4ADE80) : const Color(0xFF93C5FD),
-                                  size: 20,
-                                ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                scheduleName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.outfit(
-                                  fontSize: 17.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              if (speakerName.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  speakerName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFFFBBF24),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (isLive)
-                              const _GlowingDot(color: Color(0xFF22C55E))
-                            else
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF93C5FD),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            const SizedBox(width: 6),
-                            Text(
-                              isLive ? 'LIVE' : 'UPCOMING',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: 0.6,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (fromTime.isNotEmpty && toTime.isNotEmpty)
-                          Row(
-                            children: [
-                              const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF93C5FD)),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${_fmtTimeStr(fromTime)} - ${_fmtTimeStr(toTime)}',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: const Color(0xFF93C5FD),
-                                ),
-                              ),
-                            ],
-                          )
-                        else
-                          const SizedBox.shrink(),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _ReminderBellButton(
-                              scheduleId: scheduleId,
-                              activeColor: const Color(0xFFFBBF24),
-                              inactiveColor: Colors.white.withValues(alpha: 0.75),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'view details',
-                              style: GoogleFonts.inter(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white.withValues(alpha: 0.90),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 14,
-                              color: Colors.white.withValues(alpha: 0.90),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
+        child: Stack(
+          children: [
+            // Decorative tooth graphic in the corner.
+            Positioned(
+              right: -10,
+              top: -10,
+              bottom: -10,
+              child: Opacity(
+                opacity: 0.18,
+                child: Image.asset(
+                  'assets/tooth.png',
+                  width: 140,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                 ),
               ),
             ),
-          ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ScheduleDetailPage(
+                        schedule: schedule,
+                        event: event,
+                      ),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Badge pill
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isLive
+                                ? const [Color(0xFF16A34A), Color(0xFF22C55E)]
+                                : const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isLive)
+                              const _GlowingDot(color: Colors.white)
+                            else
+                              const Icon(Icons.campaign_rounded, size: 10, color: Colors.white),
+                            const SizedBox(width: 3),
+                            Text(
+                              isLive ? 'LIVE NOW' : 'Next Session',
+                              style: GoogleFonts.inter(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 30,
+                            height: 30,
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: accent.withValues(alpha: 0.5), width: 1.5),
+                            ),
+                            child: speakerPhoto.isNotEmpty
+                                ? Image.network(
+                                    speakerPhoto,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        Icon(Icons.person_rounded, color: accent, size: 16),
+                                  )
+                                : Icon(Icons.person_rounded, color: accent, size: 16),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  scheduleName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                if (speakerName.isNotEmpty)
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.person_outline_rounded,
+                                          size: 10, color: Color(0xFFFBBF24)),
+                                      const SizedBox(width: 3),
+                                      Expanded(
+                                        child: Text(
+                                          speakerName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFFFBBF24),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                if (fromTime.isNotEmpty && toTime.isNotEmpty)
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.access_time_rounded,
+                                          size: 10, color: Color(0xFF93C5FD)),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        '${_fmtTimeStr(fromTime)} - ${_fmtTimeStr(toTime)}',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF93C5FD),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          _ReminderBellButton(
+                            scheduleId: scheduleId,
+                            activeColor: const Color(0xFFFBBF24),
+                            inactiveColor: Colors.white.withValues(alpha: 0.75),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'View Details',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: _MgmtColors.ink,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 14,
+                                  color: _MgmtColors.ink,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        ),
       );
     }
 
@@ -865,59 +1120,99 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     return DateFormat('d MMM').format(day);
   }
 
-  /// Header showing the current date label with a dropdown of every date
-  /// that has upcoming programs — picking one jumps straight to that date.
+  static const List<Color> _upcomingAccents = [
+    Color(0xFF2563EB),
+    Color(0xFF16A34A),
+    Color(0xFFF59E0B),
+  ];
+
+  /// Header: calendar badge + bold date label with a dropdown of every date
+  /// that has upcoming programs, and the full date on the right.
   Widget _upcomingDateDropdown(DateTime currentDate) {
     final dates = _upcomingDates;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-      child: PopupMenuButton<DateTime>(
-        tooltip: 'Choose a date',
-        padding: EdgeInsets.zero,
-        position: PopupMenuPosition.under,
-        onSelected: (picked) {
-          setState(() {
-            _selectedUpcomingDate = picked;
-            _upcomingBatchIndex = 0;
-          });
-        },
-        itemBuilder: (context) => dates
-            .map((d) => PopupMenuItem<DateTime>(
-                  value: d,
-                  child: Text(
-                    _upcomingDisplayDate(d),
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          PopupMenuButton<DateTime>(
+            tooltip: 'Choose a date',
+            padding: EdgeInsets.zero,
+            position: PopupMenuPosition.under,
+            onSelected: (picked) {
+              setState(() {
+                _selectedUpcomingDate = picked;
+                _upcomingBatchIndex = 0;
+              });
+            },
+            itemBuilder: (context) => dates
+                .map((d) => PopupMenuItem<DateTime>(
+                      value: d,
+                      child: Text(
+                        _upcomingDisplayDate(d),
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ))
+                .toList(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: _MgmtColors.primaryBlue.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                ))
-            .toList(),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _upcomingDisplayDate(currentDate),
+                  child: const Icon(
+                    Icons.calendar_month_rounded,
+                    color: _MgmtColors.primaryBlue,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  _upcomingDisplayDate(currentDate),
+                  style: GoogleFonts.outfit(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: _MgmtColors.ink,
+                  ),
+                ),
+                if (dates.length > 1) ...[
+                  const SizedBox(width: 2),
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 20,
+                    color: _MgmtColors.ink,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _MgmtColors.primaryBlue.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _MgmtColors.primaryBlue.withValues(alpha: 0.15)),
+            ),
+            child: Text(
+              DateFormat('EEE, d MMM yyyy').format(currentDate),
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: 11.5,
                 fontWeight: FontWeight.w700,
-                letterSpacing: .4,
                 color: _MgmtColors.primaryBlue,
               ),
             ),
-            if (dates.length > 1) ...[
-              const SizedBox(width: 3),
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 16,
-                color: _MgmtColors.primaryBlue,
-              ),
-            ],
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Upcoming Programs card — shows the next 3 (chronologically) at a time,
-  /// morphing to the next batch of 3 every few seconds, looping forever.
+  /// Upcoming Programs — one date at a time, 3 separate cards shown, morphing
+  /// to the next batch of 3 every few seconds, looping forever.
   Widget _buildUpcomingProgramsCard() {
     final batches = _upcomingBatches;
     if (batches.isEmpty) {
@@ -960,32 +1255,34 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     return Container(
       decoration: BoxDecoration(
         color: _MgmtColors.card,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _MgmtColors.line),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _upcomingDateDropdown(batch.first['start'] as DateTime),
-            for (var i = 0; i < batch.length; i++) ...[
-              if (i > 0) const Divider(height: 1, color: _MgmtColors.line),
-              _upcomingRow(batch[i]),
-            ],
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+            child: _upcomingDateDropdown(batch.first['start'] as DateTime),
+          ),
+          for (var i = 0; i < batch.length; i++) ...[
+            if (i > 0) const Divider(height: 1, color: _MgmtColors.line),
+            _upcomingRow(batch[i], _upcomingAccents[i % _upcomingAccents.length]),
           ],
-        ),
+        ],
+      ),
     );
   }
 
-  Widget _upcomingRow(Map<String, dynamic> item) {
+  Widget _upcomingRow(Map<String, dynamic> item, Color accent) {
     final schedule = item['schedule'] as Map<String, dynamic>;
     final event = item['event'] as Map<String, dynamic>;
     final scheduleName = schedule['scheduleName']?.toString() ?? '';
@@ -995,165 +1292,261 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     final toTime = schedule['toTime']?.toString() ?? '';
     final scheduleId = schedule['id']?.toString() ?? scheduleName;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ScheduleDetailPage(schedule: schedule, event: event),
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Container(
+              width: 5,
+              decoration: BoxDecoration(
+                color: accent,
+                borderRadius: BorderRadius.circular(6),
+              ),
             ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: _MgmtColors.primaryBlue.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: speakerPhoto.isNotEmpty
-                    ? Image.network(
-                        speakerPhoto,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.event_available_rounded,
-                          color: _MgmtColors.primaryBlue,
-                          size: 22,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.event_available_rounded,
-                        color: _MgmtColors.primaryBlue,
-                        size: 22,
-                      ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      scheduleName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w700,
-                        color: _MgmtColors.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    if (speakerName.isNotEmpty)
-                      Text(
-                        speakerName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: _MgmtColors.primaryBlue,
-                        ),
-                      ),
-                    if (fromTime.isNotEmpty && toTime.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_fmtTimeStr(fromTime)} - ${_fmtTimeStr(toTime)}',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: _MgmtColors.muted,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 6),
-              _ReminderBellButton(
-                scheduleId: scheduleId,
-                activeColor: _MgmtColors.primaryBlue,
-                inactiveColor: _MgmtColors.muted,
-              ),
-              const SizedBox(width: 6),
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: _MgmtColors.muted,
-              ),
-            ],
           ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ScheduleDetailPage(schedule: schedule, event: event),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 13, 14, 13),
+                  child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.10),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: accent.withValues(alpha: 0.35), width: 2),
+                          ),
+                          child: speakerPhoto.isNotEmpty
+                              ? Image.network(
+                                  speakerPhoto,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Icon(
+                                    Icons.person_rounded,
+                                    color: accent,
+                                    size: 22,
+                                  ),
+                                )
+                              : Icon(Icons.person_rounded, color: accent, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                scheduleName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: _MgmtColors.ink,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              if (speakerName.isNotEmpty)
+                                Row(
+                                  children: [
+                                    const Icon(Icons.person_outline_rounded,
+                                        size: 13, color: _MgmtColors.primaryBlue),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        speakerName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: _MgmtColors.primaryBlue,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              if (fromTime.isNotEmpty && toTime.isNotEmpty) ...[
+                                const SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.access_time_rounded,
+                                        size: 13, color: _MgmtColors.muted),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${_fmtTimeStr(fromTime)} - ${_fmtTimeStr(toTime)}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11.5,
+                                        color: _MgmtColors.muted,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            shape: BoxShape.circle,
+                          ),
+                          child: _ReminderBellButton(
+                            scheduleId: scheduleId,
+                            activeColor: _MgmtColors.primaryBlue,
+                            inactiveColor: _MgmtColors.muted,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 14,
+                          color: _MgmtColors.muted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      ),
     );
   }
 
   /// Accommodation Banner Card
   Widget _buildAccommodationBanner() {
     return Container(
+      height: 72,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1E3A8A), Color(0xFF0F2B66)],
+          colors: [Color(0xFF2563EB), Color(0xFF0F2B66)],
         ),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1E3A8A).withValues(alpha: 0.20),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            color: const Color(0xFF1E3A8A).withValues(alpha: 0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => _onTileTap('Accommodation'),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.hotel_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    'Accommodation',
-                    style: GoogleFonts.outfit(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 18,
-                  color: Colors.white.withValues(alpha: 0.85),
-                ),
-              ],
+      child: Stack(
+        children: [
+          // Decorative soft swoosh, evoking a room-photo backdrop without a real asset.
+          Positioned(
+            right: -30,
+            top: -40,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.07),
+              ),
             ),
           ),
-        ),
+          Positioned(
+            right: 50,
+            bottom: -50,
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.06),
+              ),
+            ),
+          ),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _onTileTap('Accommodation'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                      child: const Icon(
+                        Icons.bed_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Accommodation',
+                            style: GoogleFonts.outfit(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            'Book your stay & explore services',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 16,
+                        color: _MgmtColors.primaryBlue,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1246,7 +1639,7 @@ class _ManagementTileWidgetState extends State<_ManagementTileWidget> {
                   color: iconBg,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(item.icon, size: 20, color: iconColor),
+                child: Icon(item.icon, size: 24, color: iconColor),
               ),
               const SizedBox(height: 6),
               Text(
@@ -1447,4 +1840,89 @@ class _ReminderBellButtonState extends State<_ReminderBellButton> {
       ),
     );
   }
+}
+
+/// The same layered wave graphic used at the bottom of the login page,
+/// painted directly into the participant home page's app bar background.
+class _TopWavesPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // LAYER 1 (BACK): Light Ice / Sky Cyan Wave + Sparkle
+    final path1 = Path();
+    path1.moveTo(0, h * 0.20);
+    path1.cubicTo(w * 0.14, h * 0.34, w * 0.32, h * 0.20, w * 0.60, h * 0.04);
+    path1.cubicTo(w * 0.76, -h * 0.04, w * 0.88, h * 0.06, w, h * 0.22);
+    path1.lineTo(w, h);
+    path1.lineTo(0, h);
+    path1.close();
+
+    final paint1 = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFD6EBFE), Color(0xFFA5D2FD), Color(0xFF70B8F8)],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    canvas.drawPath(path1, paint1);
+
+    _drawSparkle(canvas, Offset(w * 0.80, h * 0.09), 8);
+
+    // LAYER 2 (MID): Vibrant Azure / Electric Blue Wave
+    final path2 = Path();
+    path2.moveTo(0, h * 0.44);
+    path2.cubicTo(w * 0.16, h * 0.52, w * 0.34, h * 0.32, w * 0.62, h * 0.16);
+    path2.cubicTo(w * 0.78, h * 0.08, w * 0.90, h * 0.22, w, h * 0.40);
+    path2.lineTo(w, h);
+    path2.lineTo(0, h);
+    path2.close();
+
+    final paint2 = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF1D70D8)],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    canvas.drawPath(path2, paint2);
+
+    // LAYER 3 (FOREGROUND): Conference Deep Royal Blue Wave
+    final path3 = Path();
+    path3.moveTo(0, h * 0.66);
+    path3.cubicTo(w * 0.20, h * 0.64, w * 0.36, h * 0.34, w * 0.52, h * 0.28);
+    path3.cubicTo(w * 0.72, h * 0.22, w * 0.86, h * 0.44, w, h * 0.62);
+    path3.lineTo(w, h);
+    path3.lineTo(0, h);
+    path3.close();
+
+    final paint3 = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF1565C0), Color(0xFF0D47A1), Color(0xFF0A3470)],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    canvas.drawPath(path3, paint3);
+  }
+
+  void _drawSparkle(Canvas canvas, Offset center, double radius) {
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [Colors.white.withValues(alpha: 0.75), Colors.white.withValues(alpha: 0.0)],
+      ).createShader(Rect.fromCircle(center: center, radius: radius * 2.2));
+    canvas.drawCircle(center, radius * 2.2, glowPaint);
+
+    final starPath = Path();
+    starPath.moveTo(center.dx, center.dy - radius);
+    starPath.quadraticBezierTo(center.dx, center.dy, center.dx + radius, center.dy);
+    starPath.quadraticBezierTo(center.dx, center.dy, center.dx, center.dy + radius);
+    starPath.quadraticBezierTo(center.dx, center.dy, center.dx - radius, center.dy);
+    starPath.quadraticBezierTo(center.dx, center.dy, center.dx, center.dy - radius);
+    starPath.close();
+
+    final starPaint = Paint()..color = Colors.white.withValues(alpha: 0.95);
+    canvas.drawPath(starPath, starPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
