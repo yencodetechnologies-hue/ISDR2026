@@ -21,7 +21,7 @@ class ApiConfig {
     defaultValue: '',
   );
 
-  /// Base URL: live production backend
+  /// Base URL: production (https://isdr2026.yencodetechnologies.in/api)
   static String get baseUrl {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
     return _productionBaseUrl;
@@ -218,6 +218,8 @@ class ApiConfig {
       '$managedEventsBase/$id/registrations/bulk';
   static String managedEventRegistrationById(String id, String regId) =>
       '$managedEventsBase/$id/registrations/$regId';
+  static String managedEventReclaimInclusion(String id, String regId, String claimId) =>
+      '$managedEventsBase/$id/registrations/$regId/claims/$claimId/reclaim';
   static String managedEventPublic(String slug) =>
       '$managedEventsBase/public/$slug';
   static String managedEventRegister(String slug) =>

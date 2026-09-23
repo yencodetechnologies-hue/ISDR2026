@@ -12,7 +12,8 @@ class EventParticipantSheet extends StatefulWidget {
   final String eventId;
   final String? apartmentId;
   final List<Map<String, dynamic>> packages;
-  final Set<String> existingTicketCodes;
+  final Set<String> existingIdNumbers;
+  final String? suggestedIdNumber;
   final Map<String, dynamic>? registration;
   final ApiService api;
 
@@ -21,7 +22,8 @@ class EventParticipantSheet extends StatefulWidget {
     required this.eventId,
     required this.apartmentId,
     required this.packages,
-    required this.existingTicketCodes,
+    required this.existingIdNumbers,
+    this.suggestedIdNumber,
     required this.api,
     this.registration,
   });
@@ -44,7 +46,6 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
   final _mobile = TextEditingController();
   final _email = TextEditingController();
   final _utr = TextEditingController();
-  final _ticket = TextEditingController();
 
   String _title = '';
   String _gender = '';
@@ -94,7 +95,6 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
       _food = v('foodPreference');
       _paymentMode = v('paymentMode');
       _utr.text = v('utrNumber');
-      _ticket.text = v('ticketCode');
       _existingPhotoUrl = v('photoUrl');
       final pid = v('packageId');
       if (pid.isNotEmpty && widget.packages.any((p) => p['id']?.toString() == pid)) {
@@ -104,12 +104,14 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
           if (p['name']?.toString() == v('packageName')) _packageId = p['id']?.toString();
         }
       }
+    } else {
+      _idNumber.text = widget.suggestedIdNumber ?? '';
     }
   }
 
   @override
   void dispose() {
-    for (final c in [_type, _first, _middle, _last, _designation, _institution, _idNumber, _address, _mobile, _email, _utr, _ticket]) {
+    for (final c in [_type, _first, _middle, _last, _designation, _institution, _idNumber, _address, _mobile, _email, _utr]) {
       c.dispose();
     }
     super.dispose();
@@ -130,6 +132,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
       'Designation': _designation.text,
       'Organization': _institution.text,
       'Package': _packageId ?? '',
+      'ID no.': _idNumber.text,
       'Mobile number': _mobile.text,
       'Email': _email.text,
       'Food preference': _food,
@@ -144,12 +147,9 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
     if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(_email.text.trim())) {
       return 'Enter a valid email address';
     }
-    final code = _ticket.text.trim().toUpperCase();
-    if (code.isNotEmpty && !RegExp(r'^[A-Z0-9]{5}$').hasMatch(code)) {
-      return 'Ticket code must be exactly 5 letters/digits';
-    }
-    if (code.isNotEmpty && widget.existingTicketCodes.contains(code)) {
-      return 'This ticket code is already used for this event.';
+    final id = _idNumber.text.trim();
+    if (widget.existingIdNumbers.any((e) => e.toLowerCase() == id.toLowerCase())) {
+      return 'This ID number is already used for this event.';
     }
     return null;
   }
@@ -179,7 +179,6 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
       'mobileNumber': _mobile.text.trim(),
       'email': _email.text.trim(),
       'foodPreference': _food,
-      'ticketCode': _ticket.text.trim().toUpperCase(),
       'paymentMode': _free ? '' : _paymentMode,
       'utrNumber': _utr.text.trim(),
     };
@@ -257,8 +256,8 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final ticketTaken = _ticket.text.trim().length == 5 &&
-        widget.existingTicketCodes.contains(_ticket.text.trim().toUpperCase());
+    final idTaken = _idNumber.text.trim().isNotEmpty &&
+        widget.existingIdNumbers.any((e) => e.toLowerCase() == _idNumber.text.trim().toLowerCase());
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: DraggableScrollableSheet(
@@ -335,7 +334,30 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                         }
                       }),
                     ),
-                    _text(_idNumber, 'ID no.', required: false),
+                    _text(
+                      _idNumber,
+                      'ID no.',
+                      hint: 'e.g. ID1001',
+                      caps: TextCapitalization.characters,
+                      onChanged: (v) {
+                        final upper = v.toUpperCase();
+                        if (upper != v) {
+                          _idNumber.value = _idNumber.value.copyWith(
+                            text: upper,
+                            selection: TextSelection.collapsed(offset: upper.length),
+                          );
+                        }
+                        setState(() {});
+                      },
+                    ),
+                    if (idTaken)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          'This ID number is already used for this event.',
+                          style: TextStyle(color: AppTheme.errorColor, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
                     _text(_mobile, 'Mobile no.', type: TextInputType.phone),
                     _text(_email, 'Email', type: TextInputType.emailAddress),
                     _drop(
@@ -384,34 +406,10 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                         ],
                       ),
                     ),
-                    _text(
-                      _ticket,
-                      'Ticket code',
-                      required: false,
-                      maxLength: 5,
-                      caps: TextCapitalization.characters,
-                      hint: 'Leave blank to auto-generate',
-                      onChanged: (v) {
-                        final upper = v.toUpperCase();
-                        if (upper != v) {
-                          _ticket.value = _ticket.value.copyWith(
-                            text: upper,
-                            selection: TextSelection.collapsed(offset: upper.length),
-                          );
-                        }
-                        setState(() {});
-                      },
-                    ),
-                    if (ticketTaken)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 12),
-                        child: Text('This code is already used for this event.',
-                            style: TextStyle(color: AppTheme.errorColor, fontSize: 12)),
-                      ),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _busy ? null : _submit,
+                        onPressed: (_busy || idTaken) ? null : _submit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.white,

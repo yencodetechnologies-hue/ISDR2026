@@ -956,7 +956,7 @@ class _VerifyVisitorSheetState extends State<_VerifyVisitorSheet> {
         result = await api.verifyEventTicketQr(
           registrationId: map['registrationId']?.toString(),
           otp: map['otp']?.toString(),
-          ticketCode: map['ticketCode']?.toString(),
+          idNumber: map['idNumber']?.toString(),
         );
       } else if (type == 'hostel_leave') {
         result = await api.verifyLeaveByQr(
@@ -1870,7 +1870,7 @@ class _ScanVehicleQRSheetState extends State<_ScanVehicleQRSheet> {
         final result = await apiService.verifyEventTicketQr(
           registrationId: map['registrationId']?.toString(),
           otp: map['otp']?.toString(),
-          ticketCode: map['ticketCode']?.toString(),
+          idNumber: map['idNumber']?.toString(),
         );
         if (!mounted) return;
         _scannerController?.dispose();

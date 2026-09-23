@@ -18,6 +18,7 @@ const eventScheduleSchema = new mongoose.Schema(
     speakerName: { type: String, required: true, trim: true },
     speakerPhoto: { type: String, default: '' },
     scheduleName: { type: String, required: true, trim: true },
+    hall: { type: String, default: '', trim: true },
     date: { type: Date, required: true },
     fromTime: { type: String, required: true, trim: true }, // "HH:mm"
     toTime: { type: String, required: true, trim: true }, // "HH:mm"

@@ -8,7 +8,7 @@ const eventClaimAttemptSchema = new mongoose.Schema(
     apartmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Apartment', index: true },
     registrationId: { type: mongoose.Schema.Types.ObjectId, ref: 'EventRegistration' },
     participantName: { type: String, default: '' },
-    ticketCode: { type: String, default: '' },
+    idNumber: { type: String, default: '' },
     inclusionName: { type: String, default: '' },
     outcome: { type: String, enum: ['denied', 'already_used'], required: true },
     reason: { type: String, default: '' },

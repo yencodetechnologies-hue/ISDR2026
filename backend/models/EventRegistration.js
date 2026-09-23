@@ -40,7 +40,7 @@ const eventRegistrationSchema = new mongoose.Schema(
     gender: { type: String, enum: ['', 'male', 'female', 'other'], default: '' },
     participantType: { type: String, default: '', trim: true, maxlength: 60 },
     designation: { type: String, default: '', trim: true },
-    idNumber: { type: String, default: '', trim: true },
+    idNumber: { type: String, default: '', trim: true, index: true },
     address: { type: String, default: '', trim: true },
     photoUrl: { type: String, default: '' },
     foodPreference: { type: String, enum: ['', 'veg', 'non-veg'], default: '' },
@@ -60,7 +60,6 @@ const eventRegistrationSchema = new mongoose.Schema(
     password: { type: String, default: '', select: false },
     otp: { type: String, required: true },
     qrCode: { type: String, required: true },
-    ticketCode: { type: String, required: true, unique: true, index: true },
     status: {
       type: String,
       enum: ['registered', 'checked_in', 'cancelled'],
@@ -74,6 +73,9 @@ const eventRegistrationSchema = new mongoose.Schema(
         inclusionName: { type: String, required: true, trim: true },
         claimedAt: { type: Date, default: Date.now },
         claimedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+        // True when management manually re-registered this claim (e.g. after a
+        // mis-scan) rather than the participant claiming it themselves.
+        reclaimedByAdmin: { type: Boolean, default: false },
       },
     ],
   },
@@ -81,6 +83,7 @@ const eventRegistrationSchema = new mongoose.Schema(
 );
 
 eventRegistrationSchema.index({ eventId: 1, mobileNumber: 1 }, { unique: true });
+eventRegistrationSchema.index({ eventId: 1, idNumber: 1 });
 
 eventRegistrationSchema.pre('save', async function hashPassword(next) {
   if (!this.isModified('password') || !this.password) return next();

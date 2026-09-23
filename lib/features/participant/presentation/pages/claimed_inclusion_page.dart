@@ -151,6 +151,7 @@ class _ClaimedInclusionPageState extends State<ClaimedInclusionPage> {
                           const SizedBox(height: 8),
                           ..._claimed.map((claim) {
                             final name = claim['inclusionName']?.toString() ?? '';
+                            final byAdmin = claim['reclaimedByAdmin'] == true;
                             return Container(
                               margin: const EdgeInsets.only(bottom: 10),
                               decoration: BoxDecoration(
@@ -187,13 +188,38 @@ class _ClaimedInclusionPageState extends State<ClaimedInclusionPage> {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            name,
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 14.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: _Colors.ink,
-                                            ),
+                                          Row(
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  name,
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 14.5,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: _Colors.ink,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (byAdmin) ...[
+                                                const SizedBox(width: 6),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                      horizontal: 6, vertical: 1.5),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFF2563EB).withValues(alpha: 0.10),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                  ),
+                                                  child: Text(
+                                                    'By Admin',
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 9.5,
+                                                      fontWeight: FontWeight.w800,
+                                                      color: const Color(0xFF2563EB),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
                                           ),
                                           const SizedBox(height: 2),
                                           Text(

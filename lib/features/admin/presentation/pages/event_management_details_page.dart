@@ -18,7 +18,7 @@ import 'edit_managed_event_page.dart';
 
 /// Full management view for an Events Management property's event — mirrors
 /// the web `ManagementEventDetailsPage.jsx`: edit/delete event, packages with a
-/// per-day inclusion matrix, participants with the full profile form, QR + ticket code.
+/// per-day inclusion matrix, participants with the full profile form, QR + ID number.
 class EventManagementDetailsPage extends StatefulWidget {
   final Map<String, dynamic> event;
   final String? apartmentId;
@@ -253,8 +253,26 @@ class _EventManagementDetailsPageState
     await _savePackages(_packages.where((p) => p['id'] != packageId).toList(), 'Package removed');
   }
 
+  String _suggestNextIdNumber() {
+    int maxNum = 1000;
+    for (final r in _registrations) {
+      final raw = (r['idNumber'] ?? '').toString().trim().toUpperCase();
+      final digits = raw.startsWith('ID') ? raw.substring(2) : raw;
+      final n = int.tryParse(digits);
+      if (n != null && n > maxNum && (raw == 'ID$n' || raw == '$n')) {
+        maxNum = n;
+      }
+    }
+    return 'ID${maxNum + 1}';
+  }
+
   Future<void> _openParticipantSheet([Map<String, dynamic>? reg]) async {
     final selfId = reg == null ? null : (reg['id'] ?? reg['_id']);
+    final existingIds = _registrations
+        .where((r) => (r['id'] ?? r['_id']) != selfId)
+        .map((r) => (r['idNumber'] ?? '').toString().trim())
+        .where((s) => s.isNotEmpty)
+        .toSet();
     final saved = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -264,10 +282,8 @@ class _EventManagementDetailsPageState
         apartmentId: widget.apartmentId,
         packages: _packages,
         registration: reg,
-        existingTicketCodes: _registrations
-            .where((r) => (r['id'] ?? r['_id']) != selfId)
-            .map((r) => r['ticketCode']?.toString() ?? '')
-            .toSet(),
+        existingIdNumbers: existingIds,
+        suggestedIdNumber: reg == null ? _suggestNextIdNumber() : null,
         api: _api,
       ),
     );
@@ -426,6 +442,155 @@ class _EventManagementDetailsPageState
     );
   }
 
+  void _showClaimedInclusions(Map<String, dynamic> r) {
+    final name = [r['title'], r['firstName'], r['middleName'], r['lastName']]
+        .map((e) => e?.toString() ?? '')
+        .where((e) => e.isNotEmpty)
+        .join(' ');
+    final regId = (r['id'] ?? r['_id']).toString();
+    final claims = List<Map<String, dynamic>>.from(
+      (r['claimedInclusions'] as List?)?.map((c) => Map<String, dynamic>.from(c as Map)) ?? [],
+    );
+    final fmt = DateFormat('d MMM, h:mm a');
+    String? busyId;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          Future<void> reclaim(Map<String, dynamic> c) async {
+            final claimId = c['id']?.toString();
+            if (claimId == null || claimId.isEmpty) return;
+            setSheetState(() => busyId = claimId);
+            final res = await _api.reclaimInclusion(
+              eventId: _eventId,
+              regId: regId,
+              claimId: claimId,
+            );
+            if (res['success'] == true) {
+              final updated = List<Map<String, dynamic>>.from(
+                (res['registration']?['claimedInclusions'] as List?)
+                        ?.map((e) => Map<String, dynamic>.from(e as Map)) ??
+                    [],
+              );
+              setSheetState(() {
+                claims
+                  ..clear()
+                  ..addAll(updated);
+                busyId = null;
+              });
+              _loadRegistrations();
+            } else {
+              setSheetState(() => busyId = null);
+              if (ctx.mounted) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  SnackBar(content: Text(res['error']?.toString() ?? 'Failed to reclaim')),
+                );
+              }
+            }
+          }
+
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Claimed Inclusions',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                  ),
+                  if (name.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(name, style: const TextStyle(color: Colors.black54, fontSize: 12.5)),
+                    ),
+                  const SizedBox(height: 12),
+                  if (claims.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Text('No inclusions claimed yet', style: TextStyle(color: Colors.black45)),
+                    )
+                  else
+                    ...claims.map((c) {
+                      final inclName = c['inclusionName']?.toString() ?? '';
+                      final claimId = c['id']?.toString() ?? '';
+                      final at = DateTime.tryParse(c['claimedAt']?.toString() ?? '');
+                      final isBusy = busyId == claimId;
+                      final byAdmin = c['reclaimedByAdmin'] == true;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(inclName,
+                                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                                      ),
+                                      if (byAdmin) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.primaryColor.withValues(alpha: 0.10),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            'By Admin',
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w800,
+                                              color: AppTheme.primaryColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  if (at != null)
+                                    Text(
+                                      fmt.format(at.toLocal()),
+                                      style: const TextStyle(fontSize: 11.5, color: Colors.black45),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: isBusy ? null : () => reclaim(c),
+                              icon: isBusy
+                                  ? const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.replay_rounded, size: 16),
+                              label: const Text('Reclaim'),
+                              style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _participantCard(Map<String, dynamic> r) {
     String v(String k) => r[k]?.toString() ?? '';
     final displayName = [v('title'), v('firstName'), v('middleName'), v('lastName')]
@@ -484,8 +649,10 @@ class _EventManagementDetailsPageState
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(6)),
-                  child: Text(v('ticketCode'),
-                      style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w800, fontSize: 13)),
+                  child: Text(
+                    v('idNumber'),
+                    style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
                 ),
                 const SizedBox(width: 4),
                 AnimatedRotation(
@@ -516,7 +683,22 @@ class _EventManagementDetailsPageState
             info('Food', v('foodPreference')),
             info('Payment', [v('paymentMode'), v('utrNumber')].where((e) => e.isNotEmpty).join(' · ')),
             info('Address', v('address')),
-            info('Claimed', claimed == 0 ? '' : '$claimed inclusion${claimed == 1 ? '' : 's'}'),
+            if (claimed > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: OutlinedButton.icon(
+                  onPressed: () => _showClaimedInclusions(r),
+                  icon: const Icon(Icons.verified_rounded, size: 16),
+                  label: Text('Claimed: $claimed inclusion${claimed == 1 ? '' : 's'}'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF16A34A),
+                    side: const BorderSide(color: Color(0xFF16A34A)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
             const SizedBox(height: 6),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -764,7 +946,7 @@ class _ParticipantQrSheetState extends State<_ParticipantQrSheet> {
     try {
       final tempDir = await getTemporaryDirectory();
       final file = File(
-          '${tempDir.path}/badge_${widget.registration['ticketCode'] ?? 'qr'}.png');
+          '${tempDir.path}/badge_${widget.registration['idNumber'] ?? 'qr'}.png');
       await file.writeAsBytes(bytes);
       await Gal.putImage(file.path);
       if (mounted) {

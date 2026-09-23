@@ -21,6 +21,7 @@ const {
   deleteRegistration,
   bulkImportRegistrations,
   claimInclusion,
+  reclaimInclusion,
   getMyRegistration,
 } = require('../controllers/managedEventController');
 
@@ -53,6 +54,12 @@ router.put(
   updateRegistration
 );
 router.delete('/:id/registrations/:regId', protect, requireManagement, deleteRegistration);
+router.post(
+  '/:id/registrations/:regId/claims/:claimId/reclaim',
+  protect,
+  requireManagement,
+  reclaimInclusion
+);
 
 // Schedules (speaker sessions) - GET schedules is viewable by participants & management; create/delete require management
 router.get('/:id/schedules', protect, listSchedules);

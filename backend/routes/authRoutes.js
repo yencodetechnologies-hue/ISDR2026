@@ -8,6 +8,7 @@ const {
   updateFcmToken,
   listManagementUsers,
   createManagementUser,
+  updateManagementUser,
   deleteManagementUser,
 } = require('../controllers/authController');
 const { uploadSingleImage, upload } = require('../middleware/upload');
@@ -51,6 +52,7 @@ router.put('/fcm-token', protect, updateFcmToken);
 // Management IDs (co-management team)
 router.get('/management-users', protect, requireManagement, listManagementUsers);
 router.post('/management-users', protect, requireManagement, createManagementUser);
+router.put('/management-users/:id', protect, requireManagement, updateManagementUser);
 router.delete('/management-users/:id', protect, requireManagement, deleteManagementUser);
 
 // Event staff (added and managed by management)

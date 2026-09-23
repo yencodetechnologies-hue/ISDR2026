@@ -146,7 +146,7 @@ const claimSummary = async (req, res) => {
           id: String(a._id),
           eventTitle: titles.get(String(a.eventId)) || '',
           participantName: a.participantName,
-          ticketCode: a.ticketCode,
+          idNumber: a.idNumber,
           packageName: attemptPackage(a),
           inclusionName: a.inclusionName,
           outcome: a.outcome,

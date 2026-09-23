@@ -137,6 +137,20 @@ class _ManagementTeamPageState extends State<ManagementTeamPage> {
     );
   }
 
+  void _openEditManagementModal(Map<String, dynamic> member) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _EditManagementIdBottomSheet(
+        member: member,
+        onUpdated: () {
+          _loadTeam();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -437,22 +451,44 @@ class _ManagementTeamPageState extends State<ManagementTeamPage> {
                                         ),
                                       ),
                                       if (!isPrimary) ...[
-                                        TextButton(
-                                          onPressed: _busy
-                                              ? null
-                                              : () => _removeManagementUser(id, name),
-                                          style: TextButton.styleFrom(
-                                            foregroundColor: const Color(0xFFDC2626),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            TextButton(
+                                              onPressed: _busy
+                                                  ? null
+                                                  : () => _openEditManagementModal(m),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: AppTheme.primaryColor,
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 4,
+                                                ),
+                                                textStyle: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                              child: const Text('Edit'),
                                             ),
-                                            textStyle: const TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700,
+                                            TextButton(
+                                              onPressed: _busy
+                                                  ? null
+                                                  : () => _removeManagementUser(id, name),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: const Color(0xFFDC2626),
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 4,
+                                                ),
+                                                textStyle: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                              child: const Text('Remove ID'),
                                             ),
-                                          ),
-                                          child: const Text('Remove ID'),
+                                          ],
                                         ),
                                       ] else ...[
                                         Container(
@@ -698,6 +734,269 @@ class __AddManagementIdBottomSheetState
                       )
                     : const Text(
                         'Create Management ID',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(
+    String label,
+    String hint,
+    IconData icon, {
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(icon, size: 20, color: AppTheme.primaryColor),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: const Color(0xFFF8FAFC),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
+      ),
+    );
+  }
+}
+
+class _EditManagementIdBottomSheet extends StatefulWidget {
+  final Map<String, dynamic> member;
+  final VoidCallback onUpdated;
+
+  const _EditManagementIdBottomSheet({
+    required this.member,
+    required this.onUpdated,
+  });
+
+  @override
+  State<_EditManagementIdBottomSheet> createState() =>
+      _EditManagementIdBottomSheetState();
+}
+
+class _EditManagementIdBottomSheetState
+    extends State<_EditManagementIdBottomSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final _nameController = TextEditingController(
+      text: widget.member['name']?.toString() ?? '');
+  late final _mobileController = TextEditingController(
+      text: widget.member['mobileNumber']?.toString() ?? '');
+  late final _emailController = TextEditingController(
+      text: widget.member['email']?.toString() == '—'
+          ? ''
+          : widget.member['email']?.toString() ?? '');
+  final _passwordController = TextEditingController();
+  final ApiService _apiService = ApiService();
+
+  bool _saving = false;
+  bool _obscurePassword = true;
+  String? _error;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _mobileController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() => _error = null);
+    if (!_formKey.currentState!.validate()) return;
+
+    final id = widget.member['_id']?.toString() ??
+        widget.member['id']?.toString() ??
+        '';
+
+    setState(() => _saving = true);
+    final result = await _apiService.updateManagementTeamUser(
+      id: id,
+      name: _nameController.text.trim(),
+      mobileNumber: _mobileController.text.trim(),
+      email: _emailController.text.trim(),
+      roleTitle: widget.member['roleTitle']?.toString(),
+      password: _passwordController.text.trim().isEmpty
+          ? null
+          : _passwordController.text,
+    );
+
+    if (!mounted) return;
+    setState(() => _saving = false);
+
+    if (result['success'] == true) {
+      Navigator.pop(context);
+      widget.onUpdated();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result['message'] as String? ?? 'Management ID updated successfully',
+          ),
+          backgroundColor: AppTheme.secondaryColor,
+        ),
+      );
+    } else {
+      setState(() => _error = result['error'] as String? ?? 'Failed to update ID');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        left: 20,
+        right: 20,
+        top: 20,
+      ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  const Icon(Icons.edit_outlined, color: AppTheme.primaryColor, size: 22),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Edit Management ID',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textColor,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Color(0xFF64748B)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Update this management ID\'s details. Leave the password blank to keep it unchanged.',
+                style: TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.35),
+              ),
+              const SizedBox(height: 16),
+              if (_error != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFECACA)),
+                  ),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Color(0xFFDC2626), fontSize: 13),
+                  ),
+                ),
+              ],
+              TextFormField(
+                controller: _nameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: _inputDecoration('Full Name', 'e.g. Rajesh Kumar', Icons.person_outline),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Full Name is required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _mobileController,
+                keyboardType: TextInputType.phone,
+                maxLength: 10,
+                decoration: _inputDecoration('Login Mobile Phone (10 digits)', '10-digit number for login', Icons.phone_android_outlined),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Mobile number is required';
+                  if (v.trim().length != 10) return 'Enter a valid 10-digit mobile number';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: _inputDecoration('Email Address', 'member@apartment.com', Icons.email_outlined),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Email address is required';
+                  if (!RegExp(r'^\S+@\S+\.\S+$').hasMatch(v.trim())) return 'Enter a valid email address';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                decoration: _inputDecoration(
+                  'New Password (optional)',
+                  'Leave blank to keep current password',
+                  Icons.lock_outline,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      size: 20,
+                      color: const Color(0xFF64748B),
+                    ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                ),
+                validator: (v) {
+                  if (v != null && v.isNotEmpty && v.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _saving ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _saving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text(
+                        'Save Changes',
                         style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                       ),
               ),

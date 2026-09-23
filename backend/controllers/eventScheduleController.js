@@ -10,6 +10,7 @@ const toDto = (s) => ({
   speakerName: s.speakerName,
   speakerPhoto: s.speakerPhoto || '',
   scheduleName: s.scheduleName,
+  hall: s.hall || '',
   date: s.date,
   fromTime: s.fromTime,
   toTime: s.toTime,
@@ -56,6 +57,7 @@ const createSchedule = async (req, res) => {
 
     const speakerName = String(req.body.speakerName || '').trim();
     const scheduleName = String(req.body.scheduleName || '').trim();
+    const hall = String(req.body.hall || '').trim();
     const fromTime = String(req.body.fromTime || '').trim();
     const toTime = String(req.body.toTime || '').trim();
     const description = String(req.body.description || '').trim();
@@ -94,6 +96,7 @@ const createSchedule = async (req, res) => {
       speakerName,
       speakerPhoto,
       scheduleName,
+      hall,
       date,
       fromTime,
       toTime,

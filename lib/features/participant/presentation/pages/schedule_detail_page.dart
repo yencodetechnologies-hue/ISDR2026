@@ -47,6 +47,7 @@ class ScheduleDetailPage extends StatelessWidget {
     final speakerName = schedule['speakerName']?.toString() ?? '';
     final speakerPhoto = schedule['speakerPhoto']?.toString() ?? '';
     final description = schedule['description']?.toString() ?? '';
+    final hall = schedule['hall']?.toString() ?? '';
     final eventTitle = event['title']?.toString() ?? '';
     final venue = event['venue']?.toString() ?? '';
 
@@ -198,6 +199,10 @@ class ScheduleDetailPage extends StatelessWidget {
                 if (timeStr.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   _InfoRow(icon: Icons.access_time_rounded, label: timeStr),
+                ],
+                if (hall.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _InfoRow(icon: Icons.meeting_room_rounded, label: hall),
                 ],
                 if (venue.isNotEmpty) ...[
                   const SizedBox(height: 10),

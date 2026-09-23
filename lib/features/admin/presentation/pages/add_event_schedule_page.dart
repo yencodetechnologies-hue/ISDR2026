@@ -19,6 +19,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   final _formKey = GlobalKey<FormState>();
   final _speaker = TextEditingController();
   final _name = TextEditingController();
+  final _hall = TextEditingController();
   final _description = TextEditingController();
 
   File? _photo;
@@ -34,6 +35,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   void dispose() {
     _speaker.dispose();
     _name.dispose();
+    _hall.dispose();
     _description.dispose();
     super.dispose();
   }
@@ -73,6 +75,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
       eventId: _eventId,
       speakerName: _speaker.text.trim(),
       scheduleName: _name.text.trim(),
+      hall: _hall.text.trim(),
       date: _dateIso!,
       fromTime: _hhmm(_from!),
       toTime: _hhmm(_to!),
@@ -219,6 +222,14 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
               decoration: _dec('Name of the schedule', Icons.event_note_outlined),
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Enter the schedule name' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _hall,
+              textCapitalization: TextCapitalization.words,
+              decoration: _dec('Hall / venue', Icons.meeting_room_outlined),
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Enter the hall' : null,
             ),
             const SizedBox(height: 12),
             _dayChips(),

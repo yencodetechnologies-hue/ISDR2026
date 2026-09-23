@@ -927,6 +927,48 @@ class ApiService {
     }
   }
 
+  /// Update a co-management ID's details (and optionally its password)
+  Future<Map<String, dynamic>> updateManagementTeamUser({
+    required String id,
+    required String name,
+    required String mobileNumber,
+    required String email,
+    String? roleTitle,
+    String? password,
+  }) async {
+    try {
+      final data = <String, dynamic>{
+        'name': name.trim(),
+        'mobileNumber': mobileNumber.trim(),
+        'email': email.trim().toLowerCase(),
+        'roleTitle': roleTitle ?? 'Management Member',
+      };
+      if (password != null && password.isNotEmpty) {
+        data['password'] = password;
+      }
+      final response = await _dio.put(
+        ApiConfig.deleteManagementUserUrl(id),
+        data: data,
+      );
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Management ID updated successfully',
+          'user': response.data['user'],
+        };
+      }
+      return {
+        'success': false,
+        'error': response.data['error'] ?? 'Failed to update management ID',
+      };
+    } on DioException catch (e) {
+      final msg = e.response?.data['error'] ?? e.message ?? 'Network error';
+      return {'success': false, 'error': msg};
+    } catch (e) {
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   /// Remove a co-management ID by ID
   Future<Map<String, dynamic>> deleteManagementTeamUser(String id) async {
     try {
@@ -2343,6 +2385,7 @@ class ApiService {
     required String eventId,
     required String speakerName,
     required String scheduleName,
+    String hall = '',
     required String date, // yyyy-MM-dd
     required String fromTime, // HH:mm
     required String toTime, // HH:mm
@@ -2353,6 +2396,7 @@ class ApiService {
       final formData = FormData.fromMap({
         'speakerName': speakerName,
         'scheduleName': scheduleName,
+        'hall': hall,
         'date': date,
         'fromTime': fromTime,
         'toTime': toTime,
@@ -2384,6 +2428,31 @@ class ApiService {
           await _dio.delete('${ApiConfig.managedEventSchedules(eventId)}/$scheduleId');
       return {
         'success': response.data['success'] == true,
+        'error': response.data['error'],
+      };
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? e.message ?? 'Network error',
+      };
+    }
+  }
+
+  /// Management re-registers a fresh claim for an inclusion (e.g. after a
+  /// mis-scan) — the original claim stays in history, tagged reclaimedByAdmin.
+  Future<Map<String, dynamic>> reclaimInclusion({
+    required String eventId,
+    required String regId,
+    required String claimId,
+  }) async {
+    try {
+      final response = await _dio.post(
+        ApiConfig.managedEventReclaimInclusion(eventId, regId, claimId),
+      );
+      return {
+        'success': response.data['success'] == true,
+        'registration': response.data['registration'],
         'error': response.data['error'],
       };
     } on DioException catch (e) {
@@ -2827,13 +2896,13 @@ class ApiService {
 
   /// Claims an event package "inclusion" (e.g. Breakfast, Lunch) for a
   /// registered participant, identified via a scanned QR payload or a
-  /// manually entered 5-character ticket code. Mirrors the web management
+  /// manually entered ID number (e.g. ID1001 or 1001). Mirrors the web management
   /// "Scan & Claim" flow (POST /managed-events/claim-inclusion).
   Future<Map<String, dynamic>> claimInclusion({
     required String inclusionName,
     String? packageId,
     String? qrData,
-    String? ticketCode,
+    String? idNumber,
     String? apartmentId,
   }) async {
     try {
@@ -2843,7 +2912,7 @@ class ApiService {
           'inclusionName': inclusionName,
           if (packageId != null && packageId.isNotEmpty) 'packageId': packageId,
           if (qrData != null) 'qrData': qrData,
-          if (ticketCode != null) 'ticketCode': ticketCode,
+          if (idNumber != null) 'idNumber': idNumber,
         },
         options: apartmentId != null && apartmentId.isNotEmpty
             ? Options(headers: {'X-Apartment-Id': apartmentId})
@@ -2930,7 +2999,7 @@ class ApiService {
   Future<Map<String, dynamic>> verifyEventTicketQr({
     String? registrationId,
     String? otp,
-    String? ticketCode,
+    String? idNumber,
   }) async {
     try {
       final response = await _dio.post(
@@ -2938,7 +3007,7 @@ class ApiService {
         data: {
           if (registrationId != null) 'registrationId': registrationId,
           if (otp != null) 'otp': otp,
-          if (ticketCode != null) 'ticketCode': ticketCode,
+          if (idNumber != null) 'idNumber': idNumber,
         },
       );
       if (response.statusCode == 200 && response.data['success'] == true) {

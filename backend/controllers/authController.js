@@ -124,15 +124,14 @@ function buildParticipantPayload(reg, event) {
     apartmentId: reg.apartmentId.toString(),
     eventId: reg.eventId.toString(),
     eventTitle: event ? event.title : undefined,
-    ticketCode: reg.ticketCode,
     packageName: reg.packageName || '',
-    qrCode: reg.qrCode || reg.ticketCode || reg._id.toString(),
+    qrCode: reg.qrCode || reg.idNumber || reg._id.toString(),
     institution: reg.institution || '',
     designation: reg.designation || '',
     participantType: reg.participantType || '',
     idNumber: reg.idNumber || '',
     department: reg.institution || '',
-    employeeId: reg.idNumber || reg.ticketCode || '',
+    employeeId: reg.idNumber || '',
   };
 }
 
@@ -559,6 +558,85 @@ const createManagementUser = async (req, res) => {
   }
 };
 
+// @desc    Update a co-management ID
+// @route   PUT /api/auth/management-users/:id
+// @access  Private
+const updateManagementUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (String(id).startsWith('primary_')) {
+      return res.status(400).json({ error: 'The main management account cannot be edited here' });
+    }
+    const user = await ManagementUser.findOne({ _id: id, apartmentId: req.apartmentId });
+    if (!user) {
+      return res.status(404).json({ error: 'Management ID not found' });
+    }
+
+    const { name, mobileNumber, email, roleTitle, password } = req.body;
+
+    if (name !== undefined) {
+      if (!String(name).trim()) {
+        return res.status(400).json({ error: 'Name is required' });
+      }
+      user.name = String(name).trim();
+    }
+    if (mobileNumber !== undefined) {
+      const cleanMobile = String(mobileNumber).trim();
+      if (!/^[0-9]{10}$/.test(cleanMobile)) {
+        return res.status(400).json({ error: 'Mobile number must be a valid 10-digit number' });
+      }
+      const existing = await ManagementUser.findOne({
+        apartmentId: req.apartmentId,
+        mobileNumber: cleanMobile,
+        _id: { $ne: id },
+      });
+      if (existing) {
+        return res
+          .status(400)
+          .json({ error: 'A management ID with this mobile number already exists for this property' });
+      }
+      user.mobileNumber = cleanMobile;
+    }
+    if (email !== undefined) {
+      const cleanEmail = String(email).trim().toLowerCase();
+      if (!cleanEmail) {
+        return res.status(400).json({ error: 'Email address is required' });
+      }
+      user.email = cleanEmail;
+    }
+    if (roleTitle !== undefined) {
+      user.roleTitle = String(roleTitle).trim() || 'Management Member';
+    }
+    if (password) {
+      if (String(password).length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters' });
+      }
+      user.password = await bcrypt.hash(String(password), 10);
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Management ID updated successfully',
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        mobileNumber: user.mobileNumber,
+        email: user.email,
+        roleTitle: user.roleTitle,
+        isActive: user.isActive,
+      },
+    });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+    console.error('updateManagementUser error:', error);
+    res.status(500).json({ error: error.message || 'Server error' });
+  }
+};
+
 // @desc    Delete a co-management ID
 // @route   DELETE /api/auth/management-users/:id
 // @access  Private
@@ -591,5 +669,6 @@ module.exports = {
   updateFcmToken,
   listManagementUsers,
   createManagementUser,
+  updateManagementUser,
   deleteManagementUser,
 };

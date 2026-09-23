@@ -55,11 +55,11 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
     return _registrations.where((r) {
       final name = r['name']?.toString().toLowerCase() ?? '';
       final mobile = r['mobileNumber']?.toString().toLowerCase() ?? '';
-      final ticket = r['ticketCode']?.toString().toLowerCase() ?? '';
+      final idNum = (r['idNumber'] ?? '').toString().toLowerCase();
       final status = r['status']?.toString().toLowerCase() ?? '';
       return name.contains(q) ||
           mobile.contains(q) ||
-          ticket.contains(q) ||
+          idNum.contains(q) ||
           status.contains(q);
     }).toList();
   }
@@ -488,7 +488,7 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
                     title: Text(r['name']?.toString() ?? ''),
                     subtitle: Text(
                       [
-                        '${r['mobileNumber'] ?? ''} · ${r['ticketCode'] ?? ''} · ${r['status'] ?? ''}',
+                        '${r['mobileNumber'] ?? ''} · ${r['idNumber'] ?? ''} · ${r['status'] ?? ''}',
                         if (summary.isNotEmpty) summary,
                       ].join('\n'),
                     ),

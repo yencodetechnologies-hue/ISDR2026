@@ -240,6 +240,7 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
     final date = utc == null ? null : DateTime(utc.year, utc.month, utc.day);
     final banner = _banner(s);
     final desc = s['description']?.toString() ?? '';
+    final hall = s['hall']?.toString() ?? '';
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -294,6 +295,18 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
                   '${_fmtTime(s['fromTime'].toString())} - ${_fmtTime(s['toTime'].toString())}',
                   style: const TextStyle(fontSize: 12.5, color: Colors.black54),
                 ),
+                if (hall.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(Icons.meeting_room_outlined,
+                          size: 13, color: Colors.black45),
+                      const SizedBox(width: 4),
+                      Text(hall,
+                          style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
+                    ],
+                  ),
+                ],
                 if (desc.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(desc, style: const TextStyle(fontSize: 12.5)),

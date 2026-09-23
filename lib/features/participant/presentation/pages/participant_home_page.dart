@@ -835,6 +835,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       final speakerName = schedule['speakerName']?.toString() ?? '';
       final fromTime = schedule['fromTime']?.toString() ?? '';
       final toTime = schedule['toTime']?.toString() ?? '';
+      final hall = schedule['hall']?.toString() ?? '';
       final scheduleId = schedule['id']?.toString() ?? scheduleName;
       final accent = isLive ? const Color(0xFF22C55E) : const Color(0xFF93C5FD);
 
@@ -1003,6 +1004,24 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                                           color: const Color(0xFF93C5FD),
                                         ),
                                       ),
+                                      if (hall.isNotEmpty) ...[
+                                        const SizedBox(width: 6),
+                                        const Icon(Icons.meeting_room_rounded,
+                                            size: 10, color: Color(0xFF93C5FD)),
+                                        const SizedBox(width: 3),
+                                        Expanded(
+                                          child: Text(
+                                            hall,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w500,
+                                              color: const Color(0xFF93C5FD),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                               ],
@@ -1303,6 +1322,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     final speakerPhoto = schedule['speakerPhoto']?.toString() ?? '';
     final fromTime = schedule['fromTime']?.toString() ?? '';
     final toTime = schedule['toTime']?.toString() ?? '';
+    final hall = schedule['hall']?.toString() ?? '';
     final scheduleId = schedule['id']?.toString() ?? scheduleName;
 
     return IntrinsicHeight(
@@ -1407,6 +1427,28 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                                         fontSize: 11.5,
                                         color: _MgmtColors.muted,
                                         fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              if (hall.isNotEmpty) ...[
+                                const SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.meeting_room_outlined,
+                                        size: 13, color: _MgmtColors.muted),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        hall,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 11.5,
+                                          color: _MgmtColors.muted,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ],

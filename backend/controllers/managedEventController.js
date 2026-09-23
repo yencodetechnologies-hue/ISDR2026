@@ -20,14 +20,20 @@ function generateOtp() {
   return crypto.randomInt(100000, 999999).toString();
 }
 
-// Excludes ambiguous characters (0/O, 1/I) for readability on printed badges.
-const TICKET_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-function generateTicketCode() {
-  let code = '';
-  for (let i = 0; i < 5; i += 1) {
-    code += TICKET_CODE_CHARS[crypto.randomInt(TICKET_CODE_CHARS.length)];
+async function generateNextIdNumber(eventId) {
+  const registrations = await EventRegistration.find({ eventId })
+    .select('idNumber')
+    .lean();
+  let maxNumber = 1000;
+  for (const r of registrations) {
+    const raw = String(r.idNumber || '').trim().toUpperCase();
+    const digits = raw.startsWith('ID') ? raw.substring(2) : raw;
+    const num = parseInt(digits, 10);
+    if (!isNaN(num) && num > maxNumber && (raw === `ID${num}` || raw === String(num))) {
+      maxNumber = num;
+    }
   }
-  return code;
+  return `ID${maxNumber + 1}`;
 }
 
 const QUESTION_TYPES = ['short_text', 'long_text', 'single_choice', 'checkboxes'];
@@ -172,7 +178,7 @@ function buildQrPayload(registration, event) {
     type: 'event_ticket',
     registrationId: registration._id.toString(),
     eventId: event._id.toString(),
-    ticketCode: registration.ticketCode,
+    idNumber: registration.idNumber,
     name: registration.name,
     mobileNumber: registration.mobileNumber,
     otp: registration.otp,
@@ -250,15 +256,16 @@ function registrationDto(reg, event) {
           value: a.value,
         }))
       : [],
-    ticketCode: reg.ticketCode,
     otp: reg.otp,
     qrCode: reg.qrCode,
     status: reg.status,
     checkedInAt: reg.checkedInAt,
     claimedInclusions: Array.isArray(reg.claimedInclusions)
       ? reg.claimedInclusions.map((c) => ({
+          id: c._id?.toString(),
           inclusionName: c.inclusionName,
           claimedAt: c.claimedAt,
+          reclaimedByAdmin: !!c.reclaimedByAdmin,
         }))
       : [],
     createdAt: reg.createdAt,
@@ -605,7 +612,7 @@ function generateSpotMobilePlaceholder() {
 }
 
 /** Shared by spot + bulk import: builds and saves one registration for a management-created participant. */
-async function createParticipantRegistration(event, { name, institution, packageId, ticketCode, source, profile = {} }) {
+async function createParticipantRegistration(event, { name, institution, packageId, idNumber, source, profile = {} }) {
   const trimmedName = String(profile.firstName ? composeParticipantName(profile) : name || '').trim();
   if (!trimmedName) {
     throw new Error('Name is required');
@@ -620,17 +627,17 @@ async function createParticipantRegistration(event, { name, institution, package
     packageName = pkg.name;
   }
 
-  let customTicketCode = '';
-  const rawTicketCode = String(ticketCode || '').trim().toUpperCase();
-  if (rawTicketCode) {
-    if (!/^[A-Z0-9]{5}$/.test(rawTicketCode)) {
-      throw new Error(`Ticket code for "${trimmedName}" must be exactly 5 letters/digits`);
-    }
-    const exists = await EventRegistration.findOne({ ticketCode: rawTicketCode }).select('_id').lean();
+  const rawIdNumber = String(profile.idNumber ?? idNumber ?? '').trim();
+  let finalIdNumber = '';
+
+  if (rawIdNumber) {
+    const exists = await EventRegistration.findOne({ eventId: event._id, idNumber: rawIdNumber }).select('_id').lean();
     if (exists) {
-      throw new Error(`Ticket code "${rawTicketCode}" is already in use`);
+      throw new Error(`ID number "${rawIdNumber}" is already in use by another participant`);
     }
-    customTicketCode = rawTicketCode;
+    finalIdNumber = rawIdNumber;
+  } else {
+    finalIdNumber = await generateNextIdNumber(event._id);
   }
 
   const otp = generateOtp();
@@ -648,7 +655,7 @@ async function createParticipantRegistration(event, { name, institution, package
     gender: profile.gender || '',
     participantType: profile.participantType || '',
     designation: profile.designation || '',
-    idNumber: profile.idNumber || '',
+    idNumber: finalIdNumber,
     address: profile.address || '',
     photoUrl: profile.photoUrl || '',
     foodPreference: profile.foodPreference || '',
@@ -659,27 +666,24 @@ async function createParticipantRegistration(event, { name, institution, package
     source,
     password: DEFAULT_PARTICIPANT_PASSWORD,
     otp,
-    ticketCode: customTicketCode || generateTicketCode(),
     qrCode: '',
     status: 'registered',
   });
   registration.qrCode = buildQrPayload(registration, event);
 
-  // Small code space (5 chars) means collisions are possible — retry a few times.
-  // A custom code that turns out to collide (race condition) is not retried —
-  // the caller picked it deliberately, so surface the conflict instead.
-  for (let attempt = 0; attempt < (customTicketCode ? 1 : 5); attempt += 1) {
+  for (let attempt = 0; attempt < (rawIdNumber ? 1 : 5); attempt += 1) {
     try {
       await registration.save();
       break;
     } catch (err) {
-      if (!customTicketCode && err?.code === 11000 && /ticketCode/.test(err.message || '') && attempt < 4) {
-        registration.ticketCode = generateTicketCode();
+      if (!rawIdNumber && err?.code === 11000 && /idNumber/.test(err.message || '') && attempt < 4) {
+        finalIdNumber = await generateNextIdNumber(event._id);
+        registration.idNumber = finalIdNumber;
         registration.qrCode = buildQrPayload(registration, event);
         continue;
       }
-      if (customTicketCode && err?.code === 11000 && /ticketCode/.test(err.message || '')) {
-        throw new Error(`Ticket code "${customTicketCode}" is already in use`);
+      if (rawIdNumber && err?.code === 11000 && /idNumber/.test(err.message || '')) {
+        throw new Error(`ID number "${rawIdNumber}" is already in use`);
       }
       if (err?.code === 11000 && /mobileNumber/.test(err.message || '')) {
         throw new Error('A participant with this mobile number is already registered for this event');
@@ -706,7 +710,7 @@ const createSpotRegistration = async (req, res) => {
       return res.status(403).json({ success: false, error: 'Not authorized for this event' });
     }
 
-    const { packageId, ticketCode } = req.body;
+    const { packageId, idNumber } = req.body;
     let registration;
     try {
       const profile = parseParticipantProfile(req.body, { strict: true });
@@ -719,7 +723,10 @@ const createSpotRegistration = async (req, res) => {
         profile.paymentMode = '';
       }
       if (req.file) profile.photoUrl = await uploadParticipantPhoto(req.file);
-      registration = await createParticipantRegistration(event, { packageId, ticketCode, source: 'spot', profile });
+      if (idNumber) {
+        profile.idNumber = profile.idNumber || idNumber;
+      }
+      registration = await createParticipantRegistration(event, { packageId, idNumber: profile.idNumber, source: 'spot', profile });
     } catch (err) {
       return res.status(400).json({ success: false, error: err.message || 'Failed to register participant' });
     }
@@ -753,7 +760,7 @@ const updateRegistration = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Registration not found' });
     }
 
-    const { name, institution, packageId, ticketCode } = req.body;
+    const { name, institution, packageId, idNumber } = req.body;
     let profile;
     try {
       profile = parseParticipantProfile(req.body, { strict: false });
@@ -761,6 +768,9 @@ const updateRegistration = async (req, res) => {
     } catch (err) {
       return res.status(400).json({ success: false, error: err.message || 'Invalid participant details' });
     }
+    const incomingId = idNumber !== undefined ? idNumber : profile.idNumber;
+    delete profile.idNumber;
+
     Object.entries(profile).forEach(([k, v]) => {
       if (k === 'mobileNumber' && !v) return;
       reg[k] = v;
@@ -795,17 +805,21 @@ const updateRegistration = async (req, res) => {
       }
     }
 
-    if (ticketCode !== undefined) {
-      const rawCode = String(ticketCode || '').trim().toUpperCase();
-      if (rawCode && rawCode !== reg.ticketCode) {
-        if (!/^[A-Z0-9]{5}$/.test(rawCode)) {
-          return res.status(400).json({ success: false, error: 'Ticket code must be exactly 5 letters/digits' });
-        }
-        const exists = await EventRegistration.findOne({ ticketCode: rawCode, _id: { $ne: reg._id } }).select('_id').lean();
+    if (incomingId !== undefined) {
+      const rawId = String(incomingId || '').trim();
+      if (!rawId) {
+        return res.status(400).json({ success: false, error: 'ID number cannot be empty' });
+      }
+      if (rawId !== reg.idNumber) {
+        const exists = await EventRegistration.findOne({
+          eventId: event._id,
+          idNumber: rawId,
+          _id: { $ne: reg._id },
+        }).select('_id').lean();
         if (exists) {
-          return res.status(400).json({ success: false, error: `Ticket code "${rawCode}" is already in use` });
+          return res.status(400).json({ success: false, error: `ID number "${rawId}" is already in use` });
         }
-        reg.ticketCode = rawCode;
+        reg.idNumber = rawId;
         reg.qrCode = buildQrPayload(reg, event);
       }
     }
@@ -819,7 +833,7 @@ const updateRegistration = async (req, res) => {
     });
   } catch (error) {
     if (error?.code === 11000) {
-      return res.status(400).json({ success: false, error: 'Ticket code already in use' });
+      return res.status(400).json({ success: false, error: 'ID number or mobile number already in use' });
     }
     console.error('updateRegistration error:', error);
     res.status(500).json({ success: false, error: error.message || 'Server error' });
@@ -902,9 +916,12 @@ const bulkImportRegistrations = async (req, res) => {
         }
         const photo = String(row.photo || '').trim();
         if (/^https?:\/\//i.test(photo)) profile.photoUrl = photo;
+        if (row.idNumber) {
+          profile.idNumber = profile.idNumber || row.idNumber;
+        }
         const registration = await createParticipantRegistration(event, {
           packageId: chosenPackage.id,
-          ticketCode: row.ticketCode,
+          idNumber: profile.idNumber,
           source: 'bulk',
           profile,
         });
@@ -926,24 +943,30 @@ const bulkImportRegistrations = async (req, res) => {
   }
 };
 
-/** Claims an event package inclusion (e.g. Lunch, Kit, Dinner) for a participant by QR payload or ticket code */
+/** Claims an event package inclusion (e.g. Lunch, Kit, Dinner) for a participant by QR payload or ID number */
 const claimInclusion = async (req, res) => {
   try {
-    const { inclusionName, packageId, qrData, ticketCode } = req.body;
+    const { inclusionName, packageId, qrData, idNumber } = req.body;
     if (!inclusionName) {
       return res.status(400).json({ success: false, error: 'Inclusion name is required' });
     }
 
-    const codeToFind = (ticketCode || qrData || '').trim();
+    const codeToFind = (idNumber || qrData || '').trim();
     if (!codeToFind) {
-      return res.status(400).json({ success: false, error: 'Ticket code or QR data is required' });
+      return res.status(400).json({ success: false, error: 'ID number or QR data is required' });
     }
 
-    // Lookup registration by ticketCode or qrCode
+    const upper = codeToFind.toUpperCase();
+    const withPrefix = upper.startsWith('ID') ? upper : `ID${upper}`;
+    const withoutPrefix = upper.startsWith('ID') ? upper.substring(2) : upper;
+
+    // Lookup registration by idNumber or qrCode
     const reg = await EventRegistration.findOne({
       $or: [
-        { ticketCode: codeToFind.toUpperCase() },
-        { ticketCode: codeToFind },
+        { idNumber: codeToFind },
+        { idNumber: upper },
+        { idNumber: withPrefix },
+        { idNumber: withoutPrefix },
         { qrCode: codeToFind },
       ],
       status: { $ne: 'cancelled' },
@@ -997,6 +1020,35 @@ const claimInclusion = async (req, res) => {
   }
 };
 
+// POST /api/managed-events/:id/registrations/:regId/claims/:claimId/reclaim —
+// management re-registers this exact claim (e.g. after a mis-scan) by
+// updating its own date/time and tagging it as reclaimed by admin — in place,
+// not a new entry. Can be done any number of times.
+const reclaimInclusion = async (req, res) => {
+  try {
+    const event = await ManagedEvent.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ success: false, error: 'Event not found' });
+    }
+    const reg = await EventRegistration.findOne({ _id: req.params.regId, eventId: event._id });
+    if (!reg) {
+      return res.status(404).json({ success: false, error: 'Registration not found' });
+    }
+    const claim = reg.claimedInclusions.id(req.params.claimId);
+    if (!claim) {
+      return res.status(404).json({ success: false, error: 'Claim not found' });
+    }
+    claim.claimedAt = new Date();
+    claim.claimedBy = req.userId || null;
+    claim.reclaimedByAdmin = true;
+    await reg.save();
+    res.json({ success: true, registration: registrationDto(reg, event) });
+  } catch (error) {
+    console.error('reclaimInclusion error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
 // GET /api/managed-events/my-registration — the logged-in participant's own ticket
 const getMyRegistration = async (req, res) => {
   try {
@@ -1036,5 +1088,6 @@ module.exports = {
   deleteRegistration,
   bulkImportRegistrations,
   claimInclusion,
+  reclaimInclusion,
   getMyRegistration,
 };

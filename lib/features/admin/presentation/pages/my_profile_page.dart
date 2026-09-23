@@ -167,24 +167,19 @@ class _MyProfilePageState extends State<MyProfilePage> {
   }
 
   Widget _buildParticipantBadgeView(UserModel user) {
-    final qrData = (user.employeeId ?? '').isNotEmpty
+    final idNumber = (user.employeeId ?? '').isNotEmpty
         ? user.employeeId!
         : (user.apartmentId ?? user.id);
-    final ticketCode = (user.employeeId ?? '').isNotEmpty
-        ? user.employeeId!
-        : user.id.length >= 6
-            ? user.id.substring(user.id.length - 6).toUpperCase()
-            : user.id.toUpperCase();
+    final qrData = idNumber;
 
     final registrationMap = {
       'name': user.name,
       'title': '',
       'participantType': 'DELEGATE',
-      'idNumber': user.employeeId ?? '',
+      'idNumber': idNumber,
       'designation': user.department ?? '',
       'institution': user.apartmentName ?? '',
       'qrCode': qrData,
-      'ticketCode': ticketCode,
     };
 
     return SingleChildScrollView(
@@ -211,7 +206,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                     size: 16, color: Colors.white70),
                 const SizedBox(width: 8),
                 Text(
-                  'Ticket: $ticketCode   •   ${user.mobileNumber}',
+                  'ID: $idNumber   •   ${user.mobileNumber}',
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 13,

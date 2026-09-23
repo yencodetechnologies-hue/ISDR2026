@@ -186,7 +186,7 @@ class _UserEventsListPageState extends State<UserEventsListPage> {
 }
 
 /// Event details with package inclusions — tap an inclusion to scan a
-/// participant's ticket QR or enter their 5-character ticket code to
+/// participant's ticket QR or enter their ID number to
 /// claim that benefit for them. Mirrors `UserEventDetailsPage.jsx`.
 class UserEventDetailsPage extends StatefulWidget {
   final String eventId;
@@ -566,7 +566,7 @@ class _UserClaimHistoryPageState extends State<UserClaimHistoryPage> {
             final claim = Map<String, dynamic>.from(c as Map);
             claims.add({
               'participantName': reg['name'],
-              'ticketCode': reg['ticketCode'],
+              'idNumber': reg['idNumber'],
               'packageName': reg['packageName'],
               'institution': reg['institution'],
               'eventTitle': ev['title'],
@@ -605,7 +605,7 @@ class _UserClaimHistoryPageState extends State<UserClaimHistoryPage> {
     return _claims.where((c) {
       final matchesSearch = term.isEmpty ||
           (c['participantName']?.toString().toLowerCase().contains(term) ?? false) ||
-          (c['ticketCode']?.toString().toLowerCase().contains(term) ?? false) ||
+          (c['idNumber']?.toString().toLowerCase().contains(term) ?? false) ||
           (c['inclusionName']?.toString().toLowerCase().contains(term) ?? false) ||
           (c['packageName']?.toString().toLowerCase().contains(term) ?? false);
       final matchesFilter = _inclusionFilter == 'ALL' ||
@@ -634,7 +634,7 @@ class _UserClaimHistoryPageState extends State<UserClaimHistoryPage> {
                   children: [
                     TextField(
                       decoration: InputDecoration(
-                        hintText: 'Search participant, ticket code, inclusion…',
+                        hintText: 'Search participant, ID number, inclusion…',
                         hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
                         prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(0xFF94A3B8)),
                         isDense: true,
@@ -748,7 +748,7 @@ class _UserClaimHistoryPageState extends State<UserClaimHistoryPage> {
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                                 decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(8)),
                                                 child: Text(
-                                                  '#${c['ticketCode'] ?? 'SPOT'}',
+                                                  '#${c['idNumber'] ?? 'SPOT'}',
                                                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF2563EB)),
                                                 ),
                                               ),
@@ -903,14 +903,14 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
     _submit(qrData: code);
   }
 
-  Future<void> _submit({String? qrData, String? ticketCode}) async {
+  Future<void> _submit({String? qrData, String? idNumber}) async {
     if (_result != null) return;
     if (!_submitting) setState(() => _submitting = true);
     final res = await widget.api.claimInclusion(
       inclusionName: widget.inclusionName,
       packageId: widget.packageId,
       qrData: qrData,
-      ticketCode: ticketCode,
+      idNumber: idNumber,
       apartmentId: widget.apartmentId,
     );
     if (!mounted) return;
@@ -1231,7 +1231,7 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'ENTER TICKET CODE',
+              'ENTER ID NUMBER',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -1244,15 +1244,15 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
               controller: _codeController,
               textAlign: TextAlign.center,
               textCapitalization: TextCapitalization.characters,
-              maxLength: 10,
+              maxLength: 25,
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
-                letterSpacing: 4,
+                letterSpacing: 3,
                 color: Color(0xFF0F172A),
               ),
               decoration: InputDecoration(
-                hintText: 'e.g. 77F05',
+                hintText: 'e.g. 1001',
                 counterText: '',
                 filled: true,
                 fillColor: const Color(0xFFF8FAFC),
@@ -1279,7 +1279,7 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
               child: ElevatedButton(
                 onPressed: (_submitting || _codeController.text.trim().isEmpty)
                     ? null
-                    : () => _submit(ticketCode: _codeController.text.trim()),
+                    : () => _submit(idNumber: _codeController.text.trim()),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2563EB),
                   foregroundColor: Colors.white,
@@ -1411,7 +1411,7 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
             ),
             const SizedBox(height: 8),
           ],
-          line('Ticket ID', (reg['ticketCode'] ?? (reg.isEmpty ? '' : 'Spot')).toString()),
+          line('ID Number', ((reg['idNumber']) ?? (reg.isEmpty ? '' : 'Spot')).toString()),
           line('Type', reg.isEmpty ? '' : (reg['participantType'] ?? 'Delegate').toString()),
           line('Package', packageText),
           line('Date', today),

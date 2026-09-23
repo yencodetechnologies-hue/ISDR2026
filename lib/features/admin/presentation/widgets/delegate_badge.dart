@@ -3,7 +3,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 /// Participant badge built on `assets/delegate_badge_template.png` (1200 x 1465):
 /// name in the green band, ID / designation / institution below it, the QR
-/// inside the template's box and the ticket code under the QR.
+/// inside the template's box and the ID number under the QR.
 class DelegateBadge extends StatelessWidget {
   static const double templateWidth = 1200;
   static const double templateHeight = 1465;
@@ -28,7 +28,6 @@ class DelegateBadge extends StatelessWidget {
     final designation = _v('designation');
     final institution = _v('institution');
     final qrData = _v('qrCode');
-    final ticketCode = _v('ticketCode');
     const ink = Color(0xFF0F172A);
 
     Widget fitted(String text, double size, FontWeight weight, Color color) => FittedBox(
@@ -104,14 +103,14 @@ class DelegateBadge extends StatelessWidget {
                     child: QrImageView(data: qrData, padding: EdgeInsets.zero, backgroundColor: Colors.white),
                   ),
                 ),
-              if (ticketCode.isNotEmpty)
+              if (idNumber.isNotEmpty)
                 Positioned(
                   left: 0,
                   top: 1160,
                   width: templateWidth,
                   child: Center(
                     child: Text(
-                      ticketCode.split('').join(' '),
+                      idNumber.split('').join(' '),
                       style: const TextStyle(
                         fontSize: 52,
                         fontWeight: FontWeight.w800,

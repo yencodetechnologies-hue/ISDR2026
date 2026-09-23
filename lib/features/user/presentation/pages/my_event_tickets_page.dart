@@ -86,7 +86,7 @@ class _MyEventTicketsPageState extends State<MyEventTicketsPage> {
                             leading: const Icon(Icons.confirmation_number),
                             title: Text(event?['title']?.toString() ?? 'Event'),
                             subtitle: Text(
-                              '${t['ticketCode'] ?? ''} · ${t['status'] ?? ''}',
+                              'ID: ${t['idNumber'] ?? ''} · ${t['status'] ?? ''}',
                             ),
                             trailing: TextButton(
                               onPressed: () => setState(() => _selected = t),
@@ -113,7 +113,10 @@ class _MyEventTicketsPageState extends State<MyEventTicketsPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(_selected!['ticketCode']?.toString() ?? ''),
+                    Text(
+                      'ID: ${_selected!['idNumber'] ?? ''}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
                     const SizedBox(height: 12),
                     if (_selected!['qrCode'] != null)
                       QrImageView(
