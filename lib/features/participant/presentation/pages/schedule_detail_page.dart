@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
+import '../widgets/session_content_section.dart';
 
 class _Colors {
   static const ink = Color(0xFF0F172A);
@@ -30,9 +31,15 @@ class ScheduleDetailPage extends StatelessWidget {
     if (d == null) return null;
     DateTime at(String hhmm) {
       final p = hhmm.split(':');
-      return DateTime(d.year, d.month, d.day, int.tryParse(p[0]) ?? 0,
-          p.length > 1 ? int.tryParse(p[1]) ?? 0 : 0);
+      return DateTime(
+        d.year,
+        d.month,
+        d.day,
+        int.tryParse(p[0]) ?? 0,
+        p.length > 1 ? int.tryParse(p[1]) ?? 0 : 0,
+      );
     }
+
     return (
       start: at(schedule['fromTime']?.toString() ?? '0:0'),
       end: at(schedule['toTime']?.toString() ?? '0:0'),
@@ -53,7 +60,8 @@ class ScheduleDetailPage extends StatelessWidget {
 
     final window = _window();
     final now = DateTime.now();
-    final isLive = window != null &&
+    final isLive =
+        window != null &&
         !now.isBefore(window.start) &&
         now.isBefore(window.end);
     final isPast = window != null && now.isAfter(window.end);
@@ -129,7 +137,10 @@ class ScheduleDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -232,6 +243,9 @@ class ScheduleDetailPage extends StatelessWidget {
               ],
             ),
           ),
+          // Files, polls and questions the speaker added to this session.
+          if (schedule['id'] != null)
+            SessionContentSection(scheduleId: schedule['id'].toString()),
         ],
       ),
     );
@@ -245,7 +259,8 @@ class _ReminderBellIconButton extends StatefulWidget {
   const _ReminderBellIconButton({required this.scheduleId});
 
   @override
-  State<_ReminderBellIconButton> createState() => _ReminderBellIconButtonState();
+  State<_ReminderBellIconButton> createState() =>
+      _ReminderBellIconButtonState();
 }
 
 class _ReminderBellIconButtonState extends State<_ReminderBellIconButton> {
@@ -256,7 +271,9 @@ class _ReminderBellIconButtonState extends State<_ReminderBellIconButton> {
     return IconButton(
       tooltip: 'Notifications',
       icon: Icon(
-        _on ? Icons.notifications_active_rounded : Icons.notifications_none_rounded,
+        _on
+            ? Icons.notifications_active_rounded
+            : Icons.notifications_none_rounded,
         color: _on ? const Color(0xFFFBBF24) : Colors.white,
       ),
       onPressed: () => setState(() => _on = !_on),

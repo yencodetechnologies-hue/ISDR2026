@@ -108,6 +108,9 @@ class _LoginPageState extends State<LoginPage> {
       case UserType.participant:
         route = AppRoutes.participantHome;
         break;
+      case UserType.speaker:
+        route = AppRoutes.speakerHome;
+        break;
     }
     AppNavigation.resetTo(context, route);
   }

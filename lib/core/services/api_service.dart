@@ -2381,25 +2381,148 @@ class ApiService {
     }
   }
 
+  /// Speaker login: all of this speaker's sessions (one per date) and the event.
+  Future<Map<String, dynamic>> getMySpeakerSessions() async {
+    try {
+      final response = await _dio.get(ApiConfig.managedEventMySpeakerSessions);
+      return {
+        'success': response.data['success'] == true,
+        'sessions': response.data['sessions'] ?? [],
+        'event': response.data['event'],
+        'error': response.data['error'],
+      };
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? e.message ?? 'Network error',
+      };
+    }
+  }
+
+  // ---- Session content: files / polls / questions a speaker adds to a session ----
+
+  /// Runs a session-content request and flattens the reply to {success, ...data, error}.
+  Future<Map<String, dynamic>> _sessionContentCall(
+    Future<Response<dynamic>> Function() request,
+  ) async {
+    try {
+      final response = await request();
+      final data = response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : <String, dynamic>{};
+      return {...data, 'success': data['success'] == true};
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? e.message ?? 'Network error',
+      };
+    }
+  }
+
+  /// Files, polls and questions of one session. The speaker also gets vote counts
+  /// and answers; a participant gets their own `myVote` / `myAnswer`.
+  Future<Map<String, dynamic>> getSessionContent(String scheduleId) =>
+      _sessionContentCall(() => _dio.get(ApiConfig.sessionContent(scheduleId)));
+
+  Future<Map<String, dynamic>> uploadSessionFile(
+    String scheduleId, {
+    required String filePath,
+    required String fileName,
+    void Function(int sent, int total)? onProgress,
+  }) =>
+      _sessionContentCall(() async => _dio.post(
+            '${ApiConfig.sessionContent(scheduleId)}/files',
+            data: FormData.fromMap({
+              'file': await MultipartFile.fromFile(filePath, filename: fileName),
+            }),
+            options: Options(
+              sendTimeout: const Duration(minutes: 5),
+              receiveTimeout: const Duration(minutes: 2),
+            ),
+            onSendProgress: onProgress,
+          ));
+
+  Future<Map<String, dynamic>> deleteSessionFile(String scheduleId, String fileId) =>
+      _sessionContentCall(
+        () => _dio.delete('${ApiConfig.sessionContent(scheduleId)}/files/$fileId'),
+      );
+
+  Future<Map<String, dynamic>> createSessionPoll(
+    String scheduleId, {
+    required String question,
+    required List<String> options,
+  }) =>
+      _sessionContentCall(() => _dio.post(
+            '${ApiConfig.sessionContent(scheduleId)}/polls',
+            data: {'question': question, 'options': options},
+          ));
+
+  Future<Map<String, dynamic>> deleteSessionPoll(String scheduleId, String pollId) =>
+      _sessionContentCall(
+        () => _dio.delete('${ApiConfig.sessionContent(scheduleId)}/polls/$pollId'),
+      );
+
+  Future<Map<String, dynamic>> voteSessionPoll(
+    String scheduleId,
+    String pollId,
+    int option,
+  ) =>
+      _sessionContentCall(() => _dio.post(
+            '${ApiConfig.sessionContent(scheduleId)}/polls/$pollId/vote',
+            data: {'option': option},
+          ));
+
+  Future<Map<String, dynamic>> createSessionQuestion(
+    String scheduleId,
+    String question,
+  ) =>
+      _sessionContentCall(() => _dio.post(
+            '${ApiConfig.sessionContent(scheduleId)}/questions',
+            data: {'question': question},
+          ));
+
+  Future<Map<String, dynamic>> deleteSessionQuestion(
+    String scheduleId,
+    String questionId,
+  ) =>
+      _sessionContentCall(
+        () => _dio.delete(
+          '${ApiConfig.sessionContent(scheduleId)}/questions/$questionId',
+        ),
+      );
+
+  Future<Map<String, dynamic>> answerSessionQuestion(
+    String scheduleId,
+    String questionId,
+    String text,
+  ) =>
+      _sessionContentCall(() => _dio.post(
+            '${ApiConfig.sessionContent(scheduleId)}/questions/$questionId/answer',
+            data: {'text': text},
+          ));
+
   Future<Map<String, dynamic>> createEventSchedule({
     required String eventId,
     required String speakerName,
+    required String speakerMobile,
+    required String speakerPassword,
     required String scheduleName,
     String hall = '',
-    required String date, // yyyy-MM-dd
-    required String fromTime, // HH:mm
-    required String toTime, // HH:mm
+    // One entry per date: {date: yyyy-MM-dd, fromTime: HH:mm, toTime: HH:mm}
+    required List<Map<String, String>> slots,
     String description = '',
     String? photoPath,
   }) async {
     try {
       final formData = FormData.fromMap({
         'speakerName': speakerName,
+        'speakerMobile': speakerMobile,
+        'speakerPassword': speakerPassword,
         'scheduleName': scheduleName,
         'hall': hall,
-        'date': date,
-        'fromTime': fromTime,
-        'toTime': toTime,
+        'slots': jsonEncode(slots),
         'description': description,
         if (photoPath != null)
           'photo': await MultipartFile.fromFile(photoPath, filename: 'speaker.jpg'),

@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-/** A session on an event's schedule (speaker + time slot). */
+/**
+ * A session on an event's schedule (speaker + time slot). Each schedule also
+ * carries its speaker's own login (mobile + password).
+ */
 const eventScheduleSchema = new mongoose.Schema(
   {
     eventId: {
@@ -17,6 +21,9 @@ const eventScheduleSchema = new mongoose.Schema(
     },
     speakerName: { type: String, required: true, trim: true },
     speakerPhoto: { type: String, default: '' },
+    speakerMobile: { type: String, default: '', trim: true, index: true },
+    speakerPassword: { type: String, default: '', select: false },
+    fcmTokens: { type: [String], default: [] },
     scheduleName: { type: String, required: true, trim: true },
     hall: { type: String, default: '', trim: true },
     date: { type: Date, required: true },
@@ -26,5 +33,16 @@ const eventScheduleSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+eventScheduleSchema.pre('save', async function hashSpeakerPassword(next) {
+  if (!this.isModified('speakerPassword') || !this.speakerPassword) return next();
+  this.speakerPassword = await bcrypt.hash(this.speakerPassword, 10);
+  next();
+});
+
+eventScheduleSchema.methods.comparePassword = function comparePassword(plain) {
+  if (!this.speakerPassword) return Promise.resolve(false);
+  return bcrypt.compare(plain, this.speakerPassword);
+};
 
 module.exports = mongoose.model('EventSchedule', eventScheduleSchema);

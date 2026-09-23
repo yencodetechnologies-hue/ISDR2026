@@ -8,6 +8,7 @@ const {
   listSchedules,
   createSchedule,
   deleteSchedule,
+  mySpeakerSessions,
 } = require('../controllers/eventScheduleController');
 const {
   listEvents,
@@ -30,6 +31,7 @@ router.get('/', protect, listEvents);
 // Must come before '/:id'.
 router.get('/summary', protect, requireManagement, claimSummary);
 router.get('/my-registration', protect, getMyRegistration);
+router.get('/my-speaker-sessions', protect, mySpeakerSessions);
 router.post('/claim-inclusion', protect, claimInclusion);
 router.post('/', protect, requireManagement, uploadSingleImage('photo'), createEvent);
 router.get('/:id', protect, getEvent);

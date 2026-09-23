@@ -149,6 +149,9 @@ class _SplashPageState extends State<SplashPage>
       case UserType.participant:
         route = AppRoutes.participantHome;
         break;
+      case UserType.speaker:
+        route = AppRoutes.speakerHome;
+        break;
     }
 
     AppNavigation.resetTo(context, route);

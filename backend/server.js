@@ -10,6 +10,7 @@ const connectDB = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 const managedEventRoutes = require('./routes/managedEventRoutes');
 const feedPostRoutes = require('./routes/feedPostRoutes');
+const sessionContentRoutes = require('./routes/sessionContentRoutes');
 
 if (!process.env.JWT_SECRET) {
   console.error('Error: JWT_SECRET is not set in .env');
@@ -28,6 +29,7 @@ app.get('/api/health', (req, res) => res.json({ success: true, status: 'ok' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/managed-events', managedEventRoutes);
 app.use('/api/feed-posts', feedPostRoutes);
+app.use('/api/session-content', sessionContentRoutes);
 
 // 404
 app.use((req, res) => {

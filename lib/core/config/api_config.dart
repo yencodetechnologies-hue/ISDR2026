@@ -228,6 +228,12 @@ class ApiConfig {
       '$managedEventsBase/public/ticket/$id';
   static String get managedEventVerifyQr => '$managedEventsBase/verify-qr';
   static String get managedEventMyTickets => '$managedEventsBase/my-tickets';
+  static String get managedEventMySpeakerSessions =>
+      '$managedEventsBase/my-speaker-sessions';
+
+  // Session content: speaker files / polls / questions on one schedule row
+  static String sessionContent(String scheduleId) =>
+      '$baseUrl/session-content/$scheduleId';
   static String get managedEventSecurityToday =>
       '$managedEventsBase/security/today';
   static String get managedEventClaimInclusion =>
