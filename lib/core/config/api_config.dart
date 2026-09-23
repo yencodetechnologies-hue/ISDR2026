@@ -343,4 +343,7 @@ class ApiConfig {
   static String markAsReadUrl(String id) => '$notificationsBase/$id/read';
   static String get markAllAsRead => '$notificationsBase/read-all';
   static String deleteNotificationUrl(String id) => '$notificationsBase/$id';
+
+  // Participant feed (selfies) endpoints
+  static String get feedPostsBase => '$baseUrl/feed-posts';
 }

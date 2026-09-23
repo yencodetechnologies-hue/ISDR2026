@@ -301,22 +301,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                           final propertyLabel = propertyCtx.propertyLabel;
                           
                           if (apartments == null || apartments.isEmpty) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                              ),
-                              child: Text(
-                                propertyLabel,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            );
+                            return const SizedBox.shrink();
                           }
                           
                           if (apartments.length == 1) {

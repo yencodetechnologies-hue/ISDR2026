@@ -138,10 +138,10 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
     return id.length >= 10 ? id.substring(id.length - 10) : id;
   }
 
-  String get _badgeLabel {
+  String? get _badgeLabel {
     if (widget.isHostel) return 'HOSTEL ID';
     if (_isStaff) return 'STAFF ENTRY PASS';
-    return 'RESIDENT ACCESS';
+    return null;
   }
 
   @override
@@ -288,33 +288,34 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
                                 children: [
                                   Row(
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF2563EB),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(
-                                              Icons.verified_user_rounded,
-                                              color: Colors.white,
-                                              size: 13,
-                                            ),
-                                            const SizedBox(width: 5),
-                                            Text(
-                                              _badgeLabel,
-                                              style: const TextStyle(
+                                      if (_badgeLabel != null)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF2563EB),
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.verified_user_rounded,
                                                 color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w800,
-                                                letterSpacing: 0.8,
+                                                size: 13,
                                               ),
-                                            ),
-                                          ],
+                                              const SizedBox(width: 5),
+                                              Text(
+                                                _badgeLabel!,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w800,
+                                                  letterSpacing: 0.8,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
                                     ],
                                   ),
                                   Text(

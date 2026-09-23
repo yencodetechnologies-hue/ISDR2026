@@ -23,6 +23,7 @@ import 'accommodation_page.dart';
 import 'claimed_inclusion_page.dart';
 import 'available_inclusion_page.dart';
 import 'schedule_detail_page.dart';
+import 'participant_feed_page.dart';
 
 // ---------------------------------------------------------------------------
 // Management Theme Palette
@@ -259,6 +260,13 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const AboutISDRPage()),
+      );
+      return;
+    }
+    if (lower == 'feed') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ParticipantFeedPage()),
       );
       return;
     }
@@ -573,6 +581,11 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                 icon: Icons.emoji_events_rounded,
                 accent: true,
                 onTap: () => _onTileTap('Awards'),
+              ),
+              _ParticipantModuleItem(
+                label: 'Feed',
+                icon: Icons.dynamic_feed_rounded,
+                onTap: () => _onTileTap('Feed'),
               ),
             ]),
             const SizedBox(height: 20),

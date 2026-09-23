@@ -2395,6 +2395,45 @@ class ApiService {
     }
   }
 
+  /// Every participant selfie posted to the feed, newest first.
+  Future<Map<String, dynamic>> listFeedPosts() async {
+    try {
+      final response = await _dio.get(ApiConfig.feedPostsBase);
+      return {
+        'success': response.data['success'] == true,
+        'posts': response.data['posts'] ?? [],
+        'error': response.data['error'],
+      };
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? e.message ?? 'Network error',
+      };
+    }
+  }
+
+  /// Posts a selfie (with the event banner baked in) to the participant feed.
+  Future<Map<String, dynamic>> createFeedPost(String imagePath) async {
+    try {
+      final formData = FormData.fromMap({
+        'photo': await MultipartFile.fromFile(imagePath, filename: 'selfie.png'),
+      });
+      final response = await _dio.post(ApiConfig.feedPostsBase, data: formData);
+      return {
+        'success': response.data['success'] == true,
+        'post': response.data['post'],
+        'error': response.data['error'],
+      };
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? e.message ?? 'Network error',
+      };
+    }
+  }
+
   Future<Map<String, dynamic>> listManagedEvents({String? apartmentId}) async {
     try {
       final response = await _dio.get(
