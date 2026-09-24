@@ -2,31 +2,33 @@ const FeedPost = require('../models/FeedPost');
 const EventRegistration = require('../models/EventRegistration');
 const { uploadToCloudinary } = require('../middleware/upload');
 
-const toDto = (p) => ({
+const toDto = (p, viewerId) => ({
   id: p._id.toString(),
   eventId: p.eventId ? p.eventId.toString() : null,
   participantId: p.participantId.toString(),
   participantName: p.participantName,
   participantPhoto: p.participantPhoto || '',
   imageUrl: p.imageUrl,
+  likeCount: (p.likes || []).length,
+  liked: !!viewerId && (p.likes || []).some((id) => String(id) === String(viewerId)),
   createdAt: p.createdAt,
 });
 
-// GET /api/feed-posts — every post for the property, newest first. No filtering
+// GET /api/feed-posts â€” every post for the property, newest first. No filtering
 // by who posted it: every participant sees every other participant's photo.
 const listFeedPosts = async (req, res) => {
   try {
     const posts = await FeedPost.find({ apartmentId: req.apartmentId })
       .sort({ createdAt: -1 })
       .limit(200);
-    res.json({ success: true, posts: posts.map(toDto) });
+    res.json({ success: true, posts: posts.map((p) => toDto(p, req.userId)) });
   } catch (error) {
     console.error('listFeedPosts error:', error);
     res.status(500).json({ success: false, error: error.message || 'Server error' });
   }
 };
 
-// POST /api/feed-posts (multipart, `photo`) — participants only.
+// POST /api/feed-posts (multipart, `photo`) â€” participants only.
 const createFeedPost = async (req, res) => {
   try {
     if (req.userType !== 'participant') {
@@ -50,11 +52,36 @@ const createFeedPost = async (req, res) => {
       imageUrl,
     });
 
-    res.status(201).json({ success: true, post: toDto(post) });
+    res.status(201).json({ success: true, post: toDto(post, req.userId) });
   } catch (error) {
     console.error('createFeedPost error:', error);
     res.status(500).json({ success: false, error: error.message || 'Server error' });
   }
 };
 
-module.exports = { listFeedPosts, createFeedPost };
+// POST /api/feed-posts/:id/like — likes the post, or removes the like if already liked.
+const toggleLike = async (req, res) => {
+  try {
+    const post = await FeedPost.findOne({ _id: req.params.id, apartmentId: req.apartmentId }).select('likes');
+    if (!post) return res.status(404).json({ success: false, error: 'Post not found' });
+    const liked = post.likes.some((id) => String(id) === String(req.userId));
+    const updated = await FeedPost.findByIdAndUpdate(
+      post._id,
+      liked ? { $pull: { likes: req.userId } } : { $addToSet: { likes: req.userId } },
+      { new: true }
+    ).select('likes');
+    res.json({
+      success: true,
+      liked: !liked,
+      likeCount: updated.likes.length,
+    });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
+    console.error('toggleLike error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+module.exports = { listFeedPosts, createFeedPost, toggleLike };

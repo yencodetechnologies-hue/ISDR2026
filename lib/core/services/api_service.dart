@@ -2606,6 +2606,13 @@ class ApiService {
   }
 
   /// Posts a selfie (with the event banner baked in) to the participant feed.
+  /// Likes a feed post, or removes the like if already liked.
+  /// Returns {success, liked, likeCount}.
+  Future<Map<String, dynamic>> toggleFeedPostLike(String postId) =>
+      _sessionContentCall(
+        () => _dio.post('${ApiConfig.feedPostsBase}/$postId/like'),
+      );
+
   Future<Map<String, dynamic>> createFeedPost(String imagePath) async {
     try {
       final formData = FormData.fromMap({

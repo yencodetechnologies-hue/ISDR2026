@@ -639,7 +639,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    'Indian Division  •  AADR',
+                    'Indian Division  •  IADR',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(

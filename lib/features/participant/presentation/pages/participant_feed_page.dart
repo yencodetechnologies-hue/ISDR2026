@@ -13,7 +13,7 @@ class _Colors {
   static const line = Color(0xFFECECEA);
 }
 
-/// Every participant's posted selfie, newest first — no restriction on who
+/// Every participant's posted selfie, newest first â€” no restriction on who
 /// can see whose photo.
 class ParticipantFeedPage extends StatefulWidget {
   const ParticipantFeedPage({super.key});
@@ -53,6 +53,29 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
       MaterialPageRoute(builder: (_) => const SelfieCameraPage()),
     );
     if (posted == true) _load();
+  }
+
+  /// Flips the heart right away, then syncs with the server's count
+  /// (and flips back if the request fails).
+  Future<void> _toggleLike(int index) async {
+    final post = _posts[index];
+    final wasLiked = post['liked'] == true;
+    final count = (post['likeCount'] as num?)?.toInt() ?? 0;
+    setState(() {
+      post['liked'] = !wasLiked;
+      post['likeCount'] = count + (wasLiked ? -1 : 1);
+    });
+    final res = await _api.toggleFeedPostLike(post['id'].toString());
+    if (!mounted) return;
+    setState(() {
+      if (res['success'] == true) {
+        post['liked'] = res['liked'] == true;
+        post['likeCount'] = (res['likeCount'] as num?)?.toInt() ?? 0;
+      } else {
+        post['liked'] = wasLiked;
+        post['likeCount'] = count;
+      }
+    });
   }
 
   String _fmtTime(String? iso) {
@@ -99,16 +122,18 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
                     padding: const EdgeInsets.all(12),
                     itemCount: _posts.length,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 10,
+                      crossAxisCount: 1,
+                      mainAxisSpacing: 12,
                       crossAxisSpacing: 10,
-                      childAspectRatio: 0.8,
+                      childAspectRatio: 1.2,
                     ),
                     itemBuilder: (context, index) {
                       final post = _posts[index];
                       final imageUrl = post['imageUrl']?.toString() ?? '';
                       final name = post['participantName']?.toString() ?? '';
                       final time = _fmtTime(post['createdAt']?.toString());
+                      final liked = post['liked'] == true;
+                      final likeCount = (post['likeCount'] as num?)?.toInt() ?? 0;
                       return Container(
                         decoration: BoxDecoration(
                           color: _Colors.card,
@@ -125,25 +150,36 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
                                   : Container(color: const Color(0xFFF1F5F9)),
                             ),
                             Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
+                              child: Row(
                                 children: [
-                                  Text(
-                                    name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: _Colors.ink,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: _Colors.ink,
+                                          ),
+                                        ),
+                                        if (time.isNotEmpty)
+                                          Text(
+                                            time,
+                                            style: GoogleFonts.inter(fontSize: 10, color: _Colors.muted),
+                                          ),
+                                      ],
                                     ),
                                   ),
-                                  if (time.isNotEmpty)
-                                    Text(
-                                      time,
-                                      style: GoogleFonts.inter(fontSize: 10, color: _Colors.muted),
-                                    ),
+                                  _LikeButton(
+                                    liked: liked,
+                                    count: likeCount,
+                                    onTap: () => _toggleLike(index),
+                                  ),
                                 ],
                               ),
                             ),
@@ -159,7 +195,50 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
   }
 }
 
-/// A creative "take a selfie" button — a gradient pill with a
+/// Heart + like count on a feed card.
+class _LikeButton extends StatelessWidget {
+  final bool liked;
+  final int count;
+  final VoidCallback onTap;
+
+  const _LikeButton({
+    required this.liked,
+    required this.count,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              size: 22,
+              color: liked ? const Color(0xFFEF4444) : _Colors.muted,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$count',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: liked ? const Color(0xFFEF4444) : _Colors.muted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A creative "take a selfie" button â€” a gradient pill with a
 /// camera-and-sparkle icon, instead of a plain camera FAB.
 class _SelfieFab extends StatelessWidget {
   final VoidCallback onTap;

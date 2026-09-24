@@ -10,6 +10,8 @@ const feedPostSchema = new mongoose.Schema(
     participantName: { type: String, default: '' },
     participantPhoto: { type: String, default: '' },
     imageUrl: { type: String, required: true },
+    // Ids of the accounts that liked the post (one like per account).
+    likes: { type: [mongoose.Schema.Types.ObjectId], default: [] },
   },
   { timestamps: true }
 );
