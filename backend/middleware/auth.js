@@ -56,6 +56,7 @@ const protect = async (req, res, next) => {
     req.apartmentId = apartment._id.toString();
     req.loginRole = decoded.loginRole || null;
     req.loginMobile = decoded.loginMobile || null;
+    req.managementUserId = decoded.managementUserId || null;
     next();
   } catch (error) {
     res.status(401).json({ error: 'Not authorized, token failed' });

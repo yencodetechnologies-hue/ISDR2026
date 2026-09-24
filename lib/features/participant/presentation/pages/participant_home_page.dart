@@ -28,6 +28,7 @@ import 'favorites_page.dart';
 import '../widgets/news_ticker_strap.dart';
 import 'speakers_page.dart';
 import 'upcoming_schedules_page.dart';
+import '../../../../core/widgets/change_password_page.dart';
 
 // ---------------------------------------------------------------------------
 // Management Theme Palette
@@ -568,63 +569,6 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A12),
-      drawer: Drawer(
-        child: SafeArea(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              DrawerHeader(
-                decoration: const BoxDecoration(color: _MgmtColors.primaryBlue),
-                child: Text(
-                  'ISDR 2026',
-                  style: GoogleFonts.outfit(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.person_rounded),
-                title: const Text('Profile'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MyProfilePage()),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.notifications_outlined),
-                title: const Text('Notifications'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, AppRoutes.notifications);
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.logout_rounded, color: Colors.red),
-                title: const Text(
-                  'Logout',
-                  style: TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  LogoutConfirmSheet.showLogoutConfirmSheet(
-                    context,
-                    onLogout: () {
-                      context.read<AuthBloc>().add(LogoutEvent());
-                      AppNavigation.resetTo(context, AppRoutes.login);
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -2506,7 +2450,7 @@ class _MoreModulesPage extends StatelessWidget {
   }
 }
 
-/// Participant settings — currently just Logout.
+/// Participant settings — Change Password and Logout.
 class _SettingsPage extends StatelessWidget {
   const _SettingsPage();
 
@@ -2530,6 +2474,48 @@ class _SettingsPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6),
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: const Icon(
+                      Icons.lock_reset_rounded,
+                      size: 19,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      'Change Password',
+                      style: GoogleFonts.inter(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
+                ],
+              ),
+            ),
+          ),
           InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () => LogoutConfirmSheet.showLogoutConfirmSheet(

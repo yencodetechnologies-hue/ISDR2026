@@ -33,6 +33,7 @@ class ApiConfig {
   static String get verifyOtp => '$authBase/verify-otp';
   static String get forgotPassword => '$authBase/forgot-password';
   static String get resetPassword => '$authBase/reset-password';
+  static String get changePassword => '$authBase/change-password';
   static String get getCurrentUser => '$authBase/me';
   static String get updateManagementProfile => '$authBase/management-profile';
   static String get updateManagementProfilePhoto => '$authBase/management-profile-photo';

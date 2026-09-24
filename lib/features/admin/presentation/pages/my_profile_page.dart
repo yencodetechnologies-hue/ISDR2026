@@ -69,7 +69,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
       return;
     }
     setState(() => _savingPassword = true);
-    final result = await ApiService().changeManagementPassword(
+    final result = await ApiService().changePassword(
       currentPassword: current,
       newPassword: next,
     );

@@ -14,6 +14,7 @@ import '../../../../../../core/widgets/property_document_upload_card.dart';
 import '../../../../../../core/utils/current_property_context.dart';
 import 'profile_qr_sheet.dart';
 import '../../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../../../core/widgets/change_password_page.dart';
 
 class ProfileTab extends StatefulWidget {
   final UserModel user;
@@ -767,6 +768,41 @@ class _ProfileTabState extends State<ProfileTab> {
 
                   const SizedBox(height: 28),
 
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ChangePasswordPage(),
+                        ),
+                      ),
+                      icon: const Icon(
+                        Icons.lock_reset_rounded,
+                        color: Color(0xFF60A5FA),
+                        size: 18,
+                      ),
+                      label: const Text(
+                        'Change Password',
+                        style: TextStyle(
+                          color: Color(0xFF60A5FA),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                          color: Color(0x4D3B82F6),
+                          width: 1.5,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   // Account Management Actions
                   Row(
                     children: [

@@ -299,7 +299,11 @@ const loginUser = async (req, res) => {
       userPayload.roleTitle = managementUser.roleTitle || 'Management Member';
     }
 
-    const token = generateToken(apartment._id, apartment._id);
+    const token = generateToken(
+      apartment._id,
+      apartment._id,
+      managementUser ? { managementUserId: managementUser._id.toString() } : {}
+    );
     return res.json({
       message: 'Login successful',
       user: userPayload,
@@ -710,8 +714,67 @@ const deleteManagementUser = async (req, res) => {
   }
 };
 
+// PUT /api/auth/change-password  { currentPassword, newPassword }
+// Any logged-in role changes its own password: management (the property login or
+// a Management ID), event staff, participant or speaker.
+const changePassword = async (req, res) => {
+  try {
+    const currentPassword = String(req.body.currentPassword ?? '');
+    const newPassword = String(req.body.newPassword ?? '').trim();
+    if (!currentPassword) {
+      return res.status(400).json({ success: false, error: 'Current password is required' });
+    }
+    if (newPassword.length < 6) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'New password must be at least 6 characters' });
+    }
+
+    let account = null;
+    let managementUser = null;
+    if (req.userType === 'apartment' && req.managementUserId) {
+      managementUser = await ManagementUser.findOne({
+        _id: req.managementUserId,
+        apartmentId: req.apartmentId,
+      }).select('+password');
+    } else if (req.userType === 'apartment') {
+      account = await Apartment.findById(req.userId).select('+password');
+    } else if (req.userType === 'user') {
+      account = await EventStaff.findById(req.userId).select('+password');
+    } else if (req.userType === 'participant') {
+      account = await EventRegistration.findById(req.userId).select('+password');
+    } else if (req.userType === 'speaker') {
+      account = await Speaker.findById(req.userId).select('+password');
+    }
+    if (!account && !managementUser) {
+      return res.status(404).json({ success: false, error: 'Account not found' });
+    }
+
+    const matches = managementUser
+      ? await bcrypt.compare(currentPassword, managementUser.password)
+      : await account.comparePassword(currentPassword);
+    if (!matches) {
+      return res.status(400).json({ success: false, error: 'Current password is incorrect' });
+    }
+
+    if (managementUser) {
+      // ManagementUser has no save hook — its password is hashed here, as on create.
+      managementUser.password = await bcrypt.hash(newPassword, 10);
+      await managementUser.save();
+    } else {
+      account.password = newPassword; // hashed by the model's pre-save hook
+      await account.save();
+    }
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('changePassword error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
 module.exports = {
   loginUser,
+  changePassword,
   getCurrentUser,
   updateManagementProfile,
   updateManagementProfilePhoto,

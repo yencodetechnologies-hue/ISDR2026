@@ -18,6 +18,7 @@ import 'tabs/users_tab.dart';
 import 'tabs/managed_events_tab.dart';
 import '../widgets/management_module_grid.dart';
 import 'manage_speakers_page.dart';
+import '../../../user/presentation/pages/user_events_page.dart';
 import '../../../participant/presentation/widgets/live_show_card.dart';
 import '../widgets/auto_scroll_banner.dart';
 import 'property_profile_page.dart';
@@ -314,6 +315,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   }
 
   void _navigateToModule(String label) {
+    // Same flow as the event staff: pick an event, tap an inclusion, then
+    // scan the participant's QR or enter their ID number.
+    if (label.trim().toLowerCase() == 'scan inclusion') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => UserEventsListPage(
+            apartmentId: widget.selectedApartmentId ?? _apartmentModel?.id,
+          ),
+        ),
+      );
+      return;
+    }
     if (label.trim().toLowerCase() == 'speakers') {
       Navigator.push(
         context,
@@ -432,6 +446,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'Send Notification',
       'Event Schedules',
       'Speakers',
+      'Scan Inclusion',
     ];
     final apt = _apartmentModel;
     final isHostel = false;

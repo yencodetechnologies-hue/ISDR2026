@@ -682,14 +682,14 @@ class ApiService {
     }
   }
 
-  /// Change the management account password only (name/email/mobile stay untouched).
-  Future<Map<String, dynamic>> changeManagementPassword({
+  /// Change the logged-in account's own password (any role).
+  Future<Map<String, dynamic>> changePassword({
     required String currentPassword,
     required String newPassword,
   }) async {
     try {
       final response = await _dio.put(
-        ApiConfig.updateManagementProfile,
+        ApiConfig.changePassword,
         data: {'currentPassword': currentPassword, 'newPassword': newPassword},
       );
       return {

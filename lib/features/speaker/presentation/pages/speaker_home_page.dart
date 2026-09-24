@@ -14,6 +14,7 @@ import '../../../participant/presentation/widgets/live_show_card.dart';
 import '../widgets/speaker_ui.dart';
 import 'speaker_session_polls_page.dart';
 import 'speaker_session_questions_page.dart';
+import '../../../../core/widgets/change_password_page.dart';
 
 typedef _C = SpeakerColors;
 
@@ -1091,7 +1092,7 @@ class _SessionPickerPage extends StatelessWidget {
   }
 }
 
-/// Opened from the bottom nav's More tab — holds Logout.
+/// Opened from the bottom nav's More tab — Change Password and Logout.
 class _SpeakerMorePage extends StatelessWidget {
   const _SpeakerMorePage();
 
@@ -1115,6 +1116,48 @@ class _SpeakerMorePage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6),
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: const Icon(
+                      Icons.lock_reset_rounded,
+                      size: 19,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      'Change Password',
+                      style: GoogleFonts.inter(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
+                ],
+              ),
+            ),
+          ),
           InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () => LogoutConfirmSheet.showLogoutConfirmSheet(

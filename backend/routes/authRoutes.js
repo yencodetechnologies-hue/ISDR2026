@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   loginUser,
+  changePassword,
   getCurrentUser,
   updateManagementProfile,
   updateManagementProfilePhoto,
@@ -34,6 +35,9 @@ router.post('/login', loginUser);
 
 // @route   GET /api/auth/me
 router.get('/me', protect, getCurrentUser);
+
+// Change own password (every role)
+router.put('/change-password', protect, changePassword);
 
 // @route   PUT /api/auth/management-profile
 router.put('/management-profile', protect, requireManagement, updateManagementProfile);

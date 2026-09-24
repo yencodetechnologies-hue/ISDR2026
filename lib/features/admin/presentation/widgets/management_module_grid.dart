@@ -82,6 +82,11 @@ const List<_ModuleVisual> _predefinedVisuals = [
   ),
   _ModuleVisual('Event Schedules', Icons.event_note_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Speakers', Icons.groups_rounded, group: 'ACCOUNT'),
+  _ModuleVisual(
+    'Scan Inclusion',
+    Icons.qr_code_scanner_rounded,
+    group: 'ACCOUNT',
+  ),
 ];
 
 class _ModuleGroupData {
@@ -119,32 +124,8 @@ class ManagementModuleGrid extends StatelessWidget {
       activeVisuals.add(match);
     }
 
-    // Group items by category
-    const groupOrder = ['OVERVIEW', 'COMMUNITY', 'OPERATIONS', 'ACCOUNT'];
-    final Map<String, List<_ModuleVisual>> groupedMap = {};
-
-    for (final item in activeVisuals) {
-      groupedMap.putIfAbsent(item.group, () => []).add(item);
-    }
-
-    final List<_ModuleGroupData> groups = [];
-    if (activeVisuals.length <= 8) {
-      // Streamlined view for School/College properties: group into a single clean grid
-      groups.add(_ModuleGroupData('MANAGEMENT MODULES', activeVisuals));
-    } else {
-      for (final groupTitle in groupOrder) {
-        if (groupedMap.containsKey(groupTitle) &&
-            groupedMap[groupTitle]!.isNotEmpty) {
-          groups.add(_ModuleGroupData(groupTitle, groupedMap[groupTitle]!));
-          groupedMap.remove(groupTitle);
-        }
-      }
-      groupedMap.forEach((title, items) {
-        if (items.isNotEmpty) {
-          groups.add(_ModuleGroupData(title, items));
-        }
-      });
-    }
+    // Everything in one "MANAGEMENT MODULES" box.
+    final groups = [_ModuleGroupData('MANAGEMENT MODULES', activeVisuals)];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,6 +212,7 @@ Color _moduleColor(String label) {
     'send notification': Color(0xFFEF4444),
     'event schedules': Color(0xFF22C55E),
     'speakers': Color(0xFFEC4899),
+    'scan inclusion': Color(0xFFF59E0B),
   };
   const fallback = [
     Color(0xFF2563EB),
