@@ -2,8 +2,8 @@
 class AppUpdateConfig {
   AppUpdateConfig._();
 
-  static const String androidPackageId = 'com.yencode.macess';
-  static const String iosBundleId = 'com.yencode.macess';
+  static const String androidPackageId = 'com.yencode.isdr';
+  static const String iosBundleId = 'com.yencode.isdr';
 
   static String get playStoreUrl =>
       'https://play.google.com/store/apps/details?id=$androidPackageId';
