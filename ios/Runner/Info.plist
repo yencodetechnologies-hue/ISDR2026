@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>ISDR2026 needs camera access to take photos and selfies for your profile, documents, and the participant feed.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ISDR 2026 needs access to your photo library so you can choose and upload a photo, such as a profile picture or document.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -61,8 +63,6 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>ISDR 2026 needs access to your photo library so you can choose and upload a photo, such as a profile picture or document.</string>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
