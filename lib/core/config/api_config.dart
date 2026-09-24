@@ -189,6 +189,8 @@ class ApiConfig {
       '$managedEventsBase/favorites/$scheduleId';
 
   // Session content: speaker polls / questions on one schedule row
+  // Participant -> speaker questions (private, answered once)
+  static String get speakerQuestions => '$baseUrl/speaker-questions';
   static String sessionContent(String scheduleId) =>
       '$baseUrl/session-content/$scheduleId';
   static String get managedEventClaimInclusion =>

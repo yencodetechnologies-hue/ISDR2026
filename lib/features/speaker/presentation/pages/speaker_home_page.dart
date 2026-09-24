@@ -15,6 +15,7 @@ import '../widgets/speaker_ui.dart';
 import 'speaker_session_polls_page.dart';
 import 'speaker_session_questions_page.dart';
 import '../../../../core/widgets/change_password_page.dart';
+import 'speaker_participant_questions_page.dart';
 
 typedef _C = SpeakerColors;
 
@@ -726,6 +727,12 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
         Color(0xFF0891B2),
       ], picksSession: true),
       _QuickAction(
+        'Questions',
+        'Asked by participants',
+        Icons.forum_rounded,
+        [Color(0xFFF472B6), Color(0xFFDB2777)],
+      ),
+      _QuickAction(
         'My Sessions',
         'Your complete schedule',
         Icons.format_list_bulleted_rounded,
@@ -813,8 +820,16 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () =>
-              a.picksSession ? _openSessionPicker(a.title) : _dummyTap(a.title),
+          onTap: () => a.picksSession
+              ? _openSessionPicker(a.title)
+              : a.title == 'Questions'
+              ? Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SpeakerParticipantQuestionsPage(),
+                  ),
+                )
+              : _dummyTap(a.title),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             child: Column(

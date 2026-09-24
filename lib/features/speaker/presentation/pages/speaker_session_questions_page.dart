@@ -65,6 +65,27 @@ class _SpeakerSessionQuestionsPageState
     }
   }
 
+  /// Only while nobody has answered it (the server checks this too).
+  Future<void> _edit(Map<String, dynamic> q) async {
+    final text = await showDialog<String>(
+      context: context,
+      builder: (_) =>
+          _AddQuestionDialog(initialText: q['question']?.toString() ?? ''),
+    );
+    if (text == null || text.trim().isEmpty || !mounted) return;
+    final res = await _api.updateSessionQuestion(
+      widget.session.id,
+      q['id'].toString(),
+      text.trim(),
+    );
+    if (!mounted) return;
+    if (res['success'] == true) {
+      _load();
+    } else {
+      _toast(res['error']?.toString() ?? 'Could not update the question');
+    }
+  }
+
   Future<void> _delete(Map<String, dynamic> q) async {
     if (!await confirmSpeakerDelete(context, 'question')) return;
     final res = await _api.deleteSessionQuestion(
@@ -156,6 +177,16 @@ class _SpeakerSessionQuestionsPageState
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Editable only until the first answer comes in.
+              if (answers.isEmpty)
+                IconButton(
+                  tooltip: 'Edit',
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    color: SpeakerColors.sub,
+                  ),
+                  onPressed: () => _edit(q),
+                ),
               IconButton(
                 tooltip: 'Delete',
                 icon: const Icon(
@@ -222,16 +253,21 @@ class _SpeakerSessionQuestionsPageState
   }
 }
 
-/// Owns its text controller so it's disposed with the dialog.
+/// Owns its text controller so it's disposed with the dialog. With
+/// [initialText] it edits an existing question.
 class _AddQuestionDialog extends StatefulWidget {
-  const _AddQuestionDialog();
+  final String? initialText;
+
+  const _AddQuestionDialog({this.initialText});
 
   @override
   State<_AddQuestionDialog> createState() => _AddQuestionDialogState();
 }
 
 class _AddQuestionDialogState extends State<_AddQuestionDialog> {
-  final _controller = TextEditingController();
+  late final _controller = TextEditingController(text: widget.initialText);
+
+  bool get _editing => widget.initialText != null;
 
   @override
   void dispose() {
@@ -242,7 +278,7 @@ class _AddQuestionDialogState extends State<_AddQuestionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add question'),
+      title: Text(_editing ? 'Edit question' : 'Add question'),
       content: TextField(
         controller: _controller,
         autofocus: true,
@@ -260,7 +296,7 @@ class _AddQuestionDialogState extends State<_AddQuestionDialog> {
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, _controller.text),
-          child: const Text('Add'),
+          child: Text(_editing ? 'Save' : 'Add'),
         ),
       ],
     );

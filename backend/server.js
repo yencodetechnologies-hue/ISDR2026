@@ -12,6 +12,7 @@ const managedEventRoutes = require('./routes/managedEventRoutes');
 const feedPostRoutes = require('./routes/feedPostRoutes');
 const sessionContentRoutes = require('./routes/sessionContentRoutes');
 const speakerRoutes = require('./routes/speakerRoutes');
+const speakerQuestionRoutes = require('./routes/speakerQuestionRoutes');
 
 if (!process.env.JWT_SECRET) {
   console.error('Error: JWT_SECRET is not set in .env');
@@ -32,6 +33,7 @@ app.use('/api/managed-events', managedEventRoutes);
 app.use('/api/feed-posts', feedPostRoutes);
 app.use('/api/session-content', sessionContentRoutes);
 app.use('/api/speakers', speakerRoutes);
+app.use('/api/speaker-questions', speakerQuestionRoutes);
 
 // 404
 app.use((req, res) => {

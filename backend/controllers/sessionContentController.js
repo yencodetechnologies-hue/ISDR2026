@@ -173,6 +173,53 @@ const deletePoll = async (req, res) => {
   }
 };
 
+// PUT /api/session-content/:scheduleId/polls/:pollId  { question, options?: [String] }
+// The question can always be edited; options only while nobody has voted.
+const updatePoll = async (req, res) => {
+  try {
+    const ctx = await loadSession(req, res);
+    if (!ctx) return;
+    if (!ctx.isSpeaker) return denySpeakerOnly(res);
+    const poll = await SessionPoll.findOne({ _id: req.params.pollId, scheduleId: ctx.schedule._id });
+    if (!poll) return res.status(404).json({ success: false, error: 'Poll not found' });
+
+    const question = String(req.body.question || '').trim();
+    if (!question) return res.status(400).json({ success: false, error: 'Enter the poll question' });
+
+    let options = null;
+    if (Array.isArray(req.body.options)) {
+      options = req.body.options.map((o) => String(o ?? '').trim()).filter(Boolean);
+      if (options.length < 2 || options.length > MAX_POLL_OPTIONS) {
+        return res.status(400).json({
+          success: false,
+          error: `A poll needs 2 to ${MAX_POLL_OPTIONS} options`,
+        });
+      }
+    }
+    const optionsChanged =
+      !!options &&
+      (options.length !== poll.options.length || options.some((o, i) => o !== poll.options[i]));
+    const lockedError = {
+      success: false,
+      error: "Options can't be changed after participants have voted",
+    };
+    if (optionsChanged && poll.votes.length) return res.status(400).json(lockedError);
+
+    // With new options, only update while there are still no votes.
+    const filter = { _id: poll._id };
+    const update = { question };
+    if (optionsChanged) {
+      filter.votes = { $size: 0 };
+      update.options = options;
+    }
+    const updated = await SessionPoll.findOneAndUpdate(filter, update, { new: true });
+    if (!updated) return res.status(400).json(lockedError);
+    res.json({ success: true, poll: pollDto(updated, true, null) });
+  } catch (error) {
+    handleError(res, 'updatePoll', error);
+  }
+};
+
 // POST /api/session-content/:scheduleId/polls/:pollId/vote  { option }
 const votePoll = async (req, res) => {
   try {
@@ -233,6 +280,38 @@ const deleteQuestion = async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     handleError(res, 'deleteQuestion', error);
+  }
+};
+
+// PUT /api/session-content/:scheduleId/questions/:questionId  { question }
+// Editable only until the first participant answers.
+const updateQuestion = async (req, res) => {
+  try {
+    const ctx = await loadSession(req, res);
+    if (!ctx) return;
+    if (!ctx.isSpeaker) return denySpeakerOnly(res);
+    const question = String(req.body.question || '').trim();
+    if (!question) return res.status(400).json({ success: false, error: 'Enter the question' });
+    const updated = await SessionQuestion.findOneAndUpdate(
+      { _id: req.params.questionId, scheduleId: ctx.schedule._id, answers: { $size: 0 } },
+      { question },
+      { new: true }
+    );
+    if (!updated) {
+      const exists = await SessionQuestion.exists({
+        _id: req.params.questionId,
+        scheduleId: ctx.schedule._id,
+      });
+      return exists
+        ? res.status(400).json({
+            success: false,
+            error: "This question can't be edited because participants have answered it",
+          })
+        : res.status(404).json({ success: false, error: 'Question not found' });
+    }
+    res.json({ success: true, question: questionDto(updated, true, null) });
+  } catch (error) {
+    handleError(res, 'updateQuestion', error);
   }
 };
 
@@ -318,9 +397,11 @@ const rateSession = async (req, res) => {
 module.exports = {
   getContent,
   createPoll,
+  updatePoll,
   deletePoll,
   votePoll,
   createQuestion,
+  updateQuestion,
   deleteQuestion,
   answerQuestion,
   rateSession,

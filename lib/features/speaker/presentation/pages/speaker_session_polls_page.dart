@@ -3,8 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/api_service.dart';
 import '../widgets/speaker_ui.dart';
 
-/// Speaker creates polls on one of their sessions and sees the vote counts
-/// (only the speaker sees results; participants just vote).
+/// Speaker creates, edits and deletes polls on one of their sessions and sees
+/// the vote counts (only the speaker sees results; participants just vote).
 class SpeakerSessionPollsPage extends StatefulWidget {
   final SpeakerSessionRef session;
 
@@ -54,6 +54,17 @@ class _SpeakerSessionPollsPageState extends State<SpeakerSessionPollsPage> {
       ),
     );
     if (created == true) _load();
+  }
+
+  Future<void> _edit(Map<String, dynamic> poll) async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            _CreatePollPage(scheduleId: widget.session.id, poll: poll),
+      ),
+    );
+    if (saved == true) _load();
   }
 
   Future<void> _delete(Map<String, dynamic> poll) async {
@@ -141,6 +152,14 @@ class _SpeakerSessionPollsPageState extends State<SpeakerSessionPollsPage> {
                 ),
               ),
               IconButton(
+                tooltip: 'Edit',
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  color: SpeakerColors.sub,
+                ),
+                onPressed: () => _edit(p),
+              ),
+              IconButton(
                 tooltip: 'Delete',
                 icon: const Icon(
                   Icons.delete_outline_rounded,
@@ -221,11 +240,13 @@ class _SpeakerSessionPollsPageState extends State<SpeakerSessionPollsPage> {
   }
 }
 
-/// Question + 2–6 options.
+/// Question + 2–6 options. With [poll] it edits that poll instead; its options
+/// are locked once anyone has voted.
 class _CreatePollPage extends StatefulWidget {
   final String scheduleId;
+  final Map<String, dynamic>? poll;
 
-  const _CreatePollPage({required this.scheduleId});
+  const _CreatePollPage({required this.scheduleId, this.poll});
 
   @override
   State<_CreatePollPage> createState() => _CreatePollPageState();
@@ -237,6 +258,27 @@ class _CreatePollPageState extends State<_CreatePollPage> {
   final _question = TextEditingController();
   final _options = [TextEditingController(), TextEditingController()];
   bool _saving = false;
+
+  bool get _editing => widget.poll != null;
+  bool get _optionsLocked =>
+      ((widget.poll?['totalVotes'] as num?)?.toInt() ?? 0) > 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final poll = widget.poll;
+    if (poll == null) return;
+    _question.text = poll['question']?.toString() ?? '';
+    final options = List<String>.from((poll['options'] as List?) ?? const []);
+    if (options.length >= 2) {
+      for (final c in _options) {
+        c.dispose();
+      }
+      _options
+        ..clear()
+        ..addAll(options.map((o) => TextEditingController(text: o)));
+    }
+  }
 
   @override
   void dispose() {
@@ -259,17 +301,27 @@ class _CreatePollPageState extends State<_CreatePollPage> {
     if (question.isEmpty) return _toast('Enter the poll question');
     if (options.length < 2) return _toast('Add at least 2 options');
     setState(() => _saving = true);
-    final res = await ApiService().createSessionPoll(
-      widget.scheduleId,
-      question: question,
-      options: options,
-    );
+    final res = _editing
+        ? await ApiService().updateSessionPoll(
+            widget.scheduleId,
+            widget.poll!['id'].toString(),
+            question: question,
+            options: _optionsLocked ? null : options,
+          )
+        : await ApiService().createSessionPoll(
+            widget.scheduleId,
+            question: question,
+            options: options,
+          );
     if (!mounted) return;
     setState(() => _saving = false);
     if (res['success'] == true) {
       Navigator.pop(context, true);
     } else {
-      _toast(res['error']?.toString() ?? 'Could not create the poll');
+      _toast(
+        res['error']?.toString() ??
+            (_editing ? 'Could not update the poll' : 'Could not create the poll'),
+      );
     }
   }
 
@@ -303,7 +355,7 @@ class _CreatePollPageState extends State<_CreatePollPage> {
     );
     return Scaffold(
       backgroundColor: SpeakerColors.bg,
-      appBar: speakerAppBar('Create Poll'),
+      appBar: speakerAppBar(_editing ? 'Edit Poll' : 'Create Poll'),
       bottomNavigationBar: SpeakerActionButton(
         label: 'Save Poll',
         icon: Icons.check_rounded,
@@ -327,6 +379,30 @@ class _CreatePollPageState extends State<_CreatePollPage> {
           const SizedBox(height: 18),
           Text('OPTIONS', style: labelStyle),
           const SizedBox(height: 8),
+          if (_optionsLocked)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.lock_outline_rounded,
+                    size: 15,
+                    color: SpeakerColors.sub,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Participants have voted, so the options can’t be changed. '
+                      'You can still edit the question.',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: SpeakerColors.sub,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           for (var i = 0; i < _options.length; i++)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -335,12 +411,13 @@ class _CreatePollPageState extends State<_CreatePollPage> {
                   Expanded(
                     child: TextField(
                       controller: _options[i],
+                      enabled: !_optionsLocked,
                       textCapitalization: TextCapitalization.sentences,
                       style: fieldStyle,
                       decoration: _dec('Option ${i + 1}'),
                     ),
                   ),
-                  if (_options.length > 2)
+                  if (_options.length > 2 && !_optionsLocked)
                     IconButton(
                       tooltip: 'Remove',
                       icon: const Icon(
@@ -359,7 +436,7 @@ class _CreatePollPageState extends State<_CreatePollPage> {
                 ],
               ),
             ),
-          if (_options.length < _maxOptions)
+          if (_options.length < _maxOptions && !_optionsLocked)
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(

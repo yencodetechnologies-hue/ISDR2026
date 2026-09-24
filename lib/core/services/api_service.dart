@@ -1698,6 +1698,75 @@ class ApiService {
         ),
       );
 
+  /// Speaker edits a poll. Pass [options] only when changing them (allowed
+  /// while nobody has voted).
+  Future<Map<String, dynamic>> updateSessionPoll(
+    String scheduleId,
+    String pollId, {
+    required String question,
+    List<String>? options,
+  }) =>
+      _sessionContentCall(() => _dio.put(
+            '${ApiConfig.sessionContent(scheduleId)}/polls/$pollId',
+            data: {'question': question, if (options != null) 'options': options},
+          ));
+
+  /// Speaker edits a question (allowed until someone answers it).
+  Future<Map<String, dynamic>> updateSessionQuestion(
+    String scheduleId,
+    String questionId,
+    String question,
+  ) =>
+      _sessionContentCall(() => _dio.put(
+            '${ApiConfig.sessionContent(scheduleId)}/questions/$questionId',
+            data: {'question': question},
+          ));
+
+  /// Every speaker's session poll, with this participant's own vote.
+  Future<Map<String, dynamic>> getAllSessionPolls() => _sessionContentCall(
+        () => _dio.get('${ApiConfig.speakerQuestions}/session-polls'),
+      );
+
+  /// Speakers a participant can ask a question (A–Z).
+  Future<Map<String, dynamic>> listAskableSpeakers() => _sessionContentCall(
+        () => _dio.get('${ApiConfig.speakerQuestions}/speakers'),
+      );
+
+  /// Participant asks [speakerId] a question.
+  Future<Map<String, dynamic>> askSpeakerQuestion(
+    String speakerId,
+    String question,
+  ) =>
+      _sessionContentCall(() => _dio.post(
+            ApiConfig.speakerQuestions,
+            data: {'speakerId': speakerId, 'question': question},
+          ));
+
+  /// The participant's own questions to speakers, with any answers.
+  Future<Map<String, dynamic>> getMySpeakerQuestions() => _sessionContentCall(
+        () => _dio.get('${ApiConfig.speakerQuestions}/mine'),
+      );
+
+  /// Every speaker's session question, with this participant's own answer.
+  Future<Map<String, dynamic>> getAllSessionQuestions() => _sessionContentCall(
+        () => _dio.get('${ApiConfig.speakerQuestions}/session-questions'),
+      );
+
+  /// Speaker: questions participants asked them.
+  Future<Map<String, dynamic>> getSpeakerInbox() => _sessionContentCall(
+        () => _dio.get('${ApiConfig.speakerQuestions}/inbox'),
+      );
+
+  /// Speaker answers a participant's question (one time).
+  Future<Map<String, dynamic>> answerParticipantQuestion(
+    String questionId,
+    String answer,
+  ) =>
+      _sessionContentCall(() => _dio.post(
+            '${ApiConfig.speakerQuestions}/$questionId/answer',
+            data: {'answer': answer},
+          ));
+
   Future<Map<String, dynamic>> answerSessionQuestion(
     String scheduleId,
     String questionId,

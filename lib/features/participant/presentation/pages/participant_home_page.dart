@@ -29,6 +29,8 @@ import '../widgets/news_ticker_strap.dart';
 import 'speakers_page.dart';
 import 'upcoming_schedules_page.dart';
 import '../../../../core/widgets/change_password_page.dart';
+import 'participant_qa_page.dart';
+import 'participant_polls_page.dart';
 
 // ---------------------------------------------------------------------------
 // Management Theme Palette
@@ -391,13 +393,19 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       label: 'Q/A',
       icon: Icons.question_answer_rounded,
       color: const Color(0xFF3B82F6),
-      onTap: () => _dummyTap('Q/A'),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ParticipantQaPage()),
+      ),
     ),
     _ParticipantModuleItem(
       label: 'Polls',
       icon: Icons.poll_rounded,
       color: const Color(0xFF8B5CF6),
-      onTap: () => _dummyTap('Polls'),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ParticipantPollsPage()),
+      ),
     ),
     _ParticipantModuleItem(
       label: 'About',
@@ -829,7 +837,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                   const SizedBox(height: 24),
 
                   // =================================================================
-                  // 4. SOCIAL MEDIA LINKS (Golden Icons matching web design)
+                  // 4. SOCIAL MEDIA LINKS (Follow us chips)
                   // =================================================================
                   _buildSocialLinksBar(),
                   const SizedBox(height: 16),
@@ -902,134 +910,108 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
   }
 
   Widget _buildSocialLinksBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(30),
+    // Real logos fetched live from an icon CDN (icons8).
+    final links = <_SocialLink>[
+      const _SocialLink(
+        'Facebook',
+        'https://img.icons8.com/color/96/facebook-new.png',
+        Icons.facebook_rounded,
+        Color(0xFF1877F2),
+        'https://www.facebook.com/sbdch.dental',
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      const _SocialLink(
+        'Instagram',
+        'https://img.icons8.com/color/96/instagram-new.png',
+        Icons.camera_alt_rounded,
+        Color(0xFFE1306C),
+        'https://www.instagram.com/sbdch_dental/',
+      ),
+      const _SocialLink(
+        'YouTube',
+        'https://img.icons8.com/color/96/youtube-play.png',
+        Icons.play_circle_fill_rounded,
+        Color(0xFFFF0000),
+        'https://www.youtube.com/@TheDental-Classroom',
+      ),
+      const _SocialLink(
+        'X',
+        'https://img.icons8.com/color/96/twitterx.png',
+        Icons.close_rounded,
+        Colors.black,
+        'https://x.com/sbdch_dental',
+      ),
+      const _SocialLink(
+        'LinkedIn',
+        'https://img.icons8.com/color/96/linkedin.png',
+        Icons.business_center_rounded,
+        Color(0xFF0A66C2),
+        'https://www.linkedin.com/school/sree-balaji-dental-college-and-hospital/?originalSubdomain=in',
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            // Facebook — real logos fetched live from an icon CDN (icons8)
-            _buildSocialIconItem(
-              label: 'Facebook',
-              imageUrl: 'https://img.icons8.com/color/96/facebook-new.png',
-              fallbackIcon: Icons.facebook_rounded,
-              textIcon: 'f',
-              fontSize: 17,
-              isBold: true,
-              color: const Color(0xFF1877F2),
-              onTap: () =>
-                  _launchSocialUrl('https://www.facebook.com/sbdch.dental'),
+            Icon(
+              Icons.share_rounded,
+              size: 17,
+              color: Colors.white.withValues(alpha: 0.85),
             ),
-            _buildSocialDivider(),
-
-            // Instagram
-            _buildSocialIconItem(
-              label: 'Instagram',
-              imageUrl: 'https://img.icons8.com/color/96/instagram-new.png',
-              fallbackIcon: Icons.camera_alt_rounded,
-              color: const Color(0xFFE1306C),
-              onTap: () =>
-                  _launchSocialUrl('https://www.instagram.com/sbdch_dental/'),
-            ),
-            _buildSocialDivider(),
-
-            // YouTube
-            _buildSocialIconItem(
-              label: 'YouTube',
-              imageUrl: 'https://img.icons8.com/color/96/youtube-play.png',
-              fallbackIcon: Icons.play_circle_fill_rounded,
-              color: const Color(0xFFFF0000),
-              onTap: () => _launchSocialUrl(
-                'https://www.youtube.com/@TheDental-Classroom',
-              ),
-            ),
-            _buildSocialDivider(),
-
-            // X (Twitter)
-            _buildSocialIconItem(
-              label: 'X (Twitter)',
-              imageUrl: 'https://img.icons8.com/color/96/twitterx.png',
-              fallbackIcon: Icons.close_rounded,
-              textIcon: '𝕏',
-              fontSize: 15,
-              isBold: true,
-              color: Colors.black,
-              onTap: () => _launchSocialUrl('https://x.com/sbdch_dental'),
-            ),
-            _buildSocialDivider(),
-
-            // LinkedIn
-            _buildSocialIconItem(
-              label: 'LinkedIn',
-              imageUrl: 'https://img.icons8.com/color/96/linkedin.png',
-              fallbackIcon: Icons.business_center_rounded,
-              textIcon: 'in',
-              fontSize: 15,
-              isBold: true,
-              color: const Color(0xFF0A66C2),
-              onTap: () => _launchSocialUrl(
-                'https://www.linkedin.com/school/sree-balaji-dental-college-and-hospital/?originalSubdomain=in',
+            const SizedBox(width: 8),
+            Text(
+              'FOLLOW US',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: .3,
+                color: Colors.white.withValues(alpha: 0.85),
               ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < links.length; i++) ...[
+              if (i > 0) const SizedBox(width: 12),
+              _buildSocialChip(links[i]),
+            ],
+          ],
+        ),
+      ],
     );
   }
 
-  Widget _buildSocialDivider() {
-    return Container(width: 1, height: 18, color: const Color(0xFFCBD5E1));
-  }
-
-  Widget _buildSocialIconItem({
-    required String label,
-    required Color color,
-    IconData? icon,
-    String? textIcon,
-    String? imageUrl,
-    IconData? fallbackIcon,
-    double fontSize = 14,
-    bool isBold = false,
-    required VoidCallback onTap,
-  }) {
-    return Tooltip(
-      message: label,
+  /// One network: its logo on a small white circle inside a dark round chip.
+  Widget _buildSocialChip(_SocialLink link) {
+    return Material(
+      color: const Color(0xFF14141F),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: const BorderSide(color: Color(0x14FFFFFF)),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
+        onTap: () => _launchSocialUrl(link.url),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          child: SizedBox(
-            width: 22,
-            height: 22,
-            child: Center(
-              child: imageUrl != null
-                  ? Image.network(
-                      imageUrl,
-                      width: 21,
-                      height: 21,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Icon(
-                        fallbackIcon ?? Icons.link_rounded,
-                        size: 19,
-                        color: color,
-                      ),
-                    )
-                  : icon != null
-                  ? Icon(icon, size: 19, color: color)
-                  : Text(
-                      textIcon!,
-                      style: GoogleFonts.outfit(
-                        fontSize: fontSize,
-                        fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-                        color: color,
-                        height: 1.1,
-                      ),
-                    ),
+          padding: const EdgeInsets.all(6),
+          child: Container(
+            width: 30,
+            height: 30,
+            padding: const EdgeInsets.all(5),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Image.network(
+              link.imageUrl,
+              fit: BoxFit.contain,
+              semanticLabel: link.label,
+              errorBuilder: (_, __, ___) =>
+                  Icon(link.fallbackIcon, size: 17, color: link.color),
             ),
           ),
         ),
@@ -2784,4 +2766,21 @@ class _ReminderBellButtonState extends State<_ReminderBellButton> {
       ),
     );
   }
+}
+
+/// A social network link on the home page's "Follow us" row.
+class _SocialLink {
+  final String label;
+  final String imageUrl;
+  final IconData fallbackIcon;
+  final Color color;
+  final String url;
+
+  const _SocialLink(
+    this.label,
+    this.imageUrl,
+    this.fallbackIcon,
+    this.color,
+    this.url,
+  );
 }
