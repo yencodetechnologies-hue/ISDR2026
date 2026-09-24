@@ -65,11 +65,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
-  /// Participants see this page in their black theme; everyone else keeps it light.
-  bool get _dark {
-    final s = context.read<AuthBloc>().state;
-    return s is AuthAuthenticated && s.user.userType == UserType.participant;
-  }
+  /// Every logged-in role now uses the black theme.
+  bool get _dark => true;
 
   Color get _ink => _dark ? Colors.white : const Color(0xFF0F172A);
   Color get _accent =>

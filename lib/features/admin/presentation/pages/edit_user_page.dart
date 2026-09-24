@@ -12,22 +12,13 @@ import '../../../../core/widgets/brand_gradient_cta_button.dart';
 import '../../../../core/widgets/identity_document_card.dart';
 import '../bloc/admin_bloc.dart';
 
-enum _EditImageType {
-  profilePicture,
-  aadhaarFront,
-  aadhaarBack,
-  panCard,
-}
+enum _EditImageType { profilePicture, aadhaarFront, aadhaarBack, panCard }
 
 class EditUserPage extends StatefulWidget {
   final UserModel user;
   final PropertyType? propertyType;
 
-  const EditUserPage({
-    super.key,
-    required this.user,
-    this.propertyType,
-  });
+  const EditUserPage({super.key, required this.user, this.propertyType});
 
   @override
   State<EditUserPage> createState() => _EditUserPageState();
@@ -69,11 +60,9 @@ class _EditUserPageState extends State<EditUserPage> {
   bool get _isHostel => false;
   bool get _isCompany => false;
   bool get _isEventsProperty =>
-      widget.propertyType == PropertyType.events ||
-      widget.user.isStaff;
+      widget.propertyType == PropertyType.events || widget.user.isStaff;
   bool get _isApartment =>
-      widget.propertyType == null ||
-      (!_isEventsProperty && false);
+      widget.propertyType == null || (!_isEventsProperty && false);
 
   @override
   void initState() {
@@ -83,8 +72,9 @@ class _EditUserPageState extends State<EditUserPage> {
     _usernameController = TextEditingController(text: u.username);
     _emailController = TextEditingController(text: u.email);
     _mobileController = TextEditingController(text: u.mobileNumber);
-    _secondaryMobileController =
-        TextEditingController(text: u.secondaryMobileNumber ?? '');
+    _secondaryMobileController = TextEditingController(
+      text: u.secondaryMobileNumber ?? '',
+    );
     _addressController = TextEditingController(text: u.address ?? '');
     _aadhaarController = TextEditingController(text: u.aadhaarCard ?? '');
     _panController = TextEditingController(text: u.panCard ?? '');
@@ -126,7 +116,7 @@ class _EditUserPageState extends State<EditUserPage> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF14141F),
           borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
         ),
         padding: const EdgeInsets.all(15),
@@ -273,8 +263,7 @@ class _EditUserPageState extends State<EditUserPage> {
       isNRI: _isNRI,
       department: _isCompany ? _departmentController.text.trim() : null,
       employeeId: _isCompany ? _employeeIdController.text.trim() : null,
-      occupationCategory:
-          _isHostel ? _occupationCategory?.name : null,
+      occupationCategory: _isHostel ? _occupationCategory?.name : null,
       dateOfBirth: _dateOfBirthIso(),
       password: password.isEmpty ? null : password,
       profilePic: _profilePicture,
@@ -294,9 +283,7 @@ class _EditUserPageState extends State<EditUserPage> {
       }
       context.read<AdminBloc>().add(LoadAllUsersEvent());
       if (!mounted) return;
-      _showSnack(
-        response['message'] as String? ?? 'User updated successfully',
-      );
+      _showSnack(response['message'] as String? ?? 'User updated successfully');
       Navigator.pop(context, updatedUser ?? true);
     } else {
       _showSnack(
@@ -310,7 +297,9 @@ class _EditUserPageState extends State<EditUserPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? AppTheme.errorColor : AppTheme.secondaryColor,
+        backgroundColor: isError
+            ? AppTheme.errorColor
+            : AppTheme.secondaryColor,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -326,7 +315,7 @@ class _EditUserPageState extends State<EditUserPage> {
     final pageTitle = _isEventsProperty ? 'Edit Event Staff' : 'Edit User';
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFF0A0A12),
       body: Column(
         children: [
           Container(
@@ -340,8 +329,11 @@ class _EditUserPageState extends State<EditUserPage> {
                   children: [
                     IconButton(
                       onPressed: _saving ? null : () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white, size: 20),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                     Expanded(
                       child: Column(
@@ -404,8 +396,9 @@ class _EditUserPageState extends State<EditUserPage> {
                                 if (v == null || v.trim().isEmpty) {
                                   return 'Email is required';
                                 }
-                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                    .hasMatch(v.trim())) {
+                                if (!RegExp(
+                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                ).hasMatch(v.trim())) {
                                   return 'Enter a valid email';
                                 }
                                 return null;
@@ -442,10 +435,11 @@ class _EditUserPageState extends State<EditUserPage> {
                                   _obscurePassword
                                       ? Icons.visibility
                                       : Icons.visibility_off,
-                                  color: Colors.grey[600],
+                                  color: const Color(0xFF9CA3AF),
                                 ),
                                 onPressed: () => setState(
-                                    () => _obscurePassword = !_obscurePassword),
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
                               ),
                             ),
                             _field(
@@ -459,10 +453,12 @@ class _EditUserPageState extends State<EditUserPage> {
                                   _obscureConfirmPassword
                                       ? Icons.visibility
                                       : Icons.visibility_off,
-                                  color: Colors.grey[600],
+                                  color: const Color(0xFF9CA3AF),
                                 ),
-                                onPressed: () => setState(() =>
-                                    _obscureConfirmPassword = !_obscureConfirmPassword),
+                                onPressed: () => setState(
+                                  () => _obscureConfirmPassword =
+                                      !_obscureConfirmPassword,
+                                ),
                               ),
                             ),
                           ],
@@ -475,11 +471,20 @@ class _EditUserPageState extends State<EditUserPage> {
                             icon: Icons.supervisor_account_rounded,
                             children: [
                               _readOnlyTile('Owner name', u.linkedOwner!.name),
-                              _readOnlyTile('Owner mobile', u.linkedOwner!.mobileNumber),
+                              _readOnlyTile(
+                                'Owner mobile',
+                                u.linkedOwner!.mobileNumber,
+                              ),
                               if (u.linkedOwner!.block != null)
-                                _readOnlyTile('Owner block', u.linkedOwner!.block!),
+                                _readOnlyTile(
+                                  'Owner block',
+                                  u.linkedOwner!.block!,
+                                ),
                               if (u.linkedOwner!.roomNumber != null)
-                                _readOnlyTile('Owner room', u.linkedOwner!.roomNumber!),
+                                _readOnlyTile(
+                                  'Owner room',
+                                  u.linkedOwner!.roomNumber!,
+                                ),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -493,13 +498,17 @@ class _EditUserPageState extends State<EditUserPage> {
                                 _readOnlyTile('Block', u.block!),
                               if (u.floor != null && u.floor!.isNotEmpty)
                                 _readOnlyTile('Floor', u.floor!),
-                              if (u.roomNumber != null && u.roomNumber!.isNotEmpty)
+                              if (u.roomNumber != null &&
+                                  u.roomNumber!.isNotEmpty)
                                 _readOnlyTile('Room', u.roomNumber!),
                               const Padding(
                                 padding: EdgeInsets.only(top: 4),
                                 child: Text(
                                   'Use Reassign from the user menu to change unit.',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ),
                             ],
@@ -512,10 +521,16 @@ class _EditUserPageState extends State<EditUserPage> {
                           children: [
                             _buildProfilePicturePicker(),
                             const SizedBox(height: 16),
-                            _field(_nameController,
-                                label: 'Full name *', icon: Icons.person_rounded),
-                            _field(_usernameController,
-                                label: 'Username *', icon: Icons.alternate_email),
+                            _field(
+                              _nameController,
+                              label: 'Full name *',
+                              icon: Icons.person_rounded,
+                            ),
+                            _field(
+                              _usernameController,
+                              label: 'Username *',
+                              icon: Icons.alternate_email,
+                            ),
                             _field(
                               _emailController,
                               label: 'Email *',
@@ -525,8 +540,9 @@ class _EditUserPageState extends State<EditUserPage> {
                                 if (v == null || v.trim().isEmpty) {
                                   return 'Email is required';
                                 }
-                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                    .hasMatch(v.trim())) {
+                                if (!RegExp(
+                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                ).hasMatch(v.trim())) {
                                   return 'Enter a valid email';
                                 }
                                 return null;
@@ -587,12 +603,18 @@ class _EditUserPageState extends State<EditUserPage> {
                             title: 'Company details',
                             icon: Icons.business_outlined,
                             children: [
-                              _field(_departmentController,
-                                  label: 'Department', icon: Icons.business_outlined,
-                                  isOptional: true),
-                              _field(_employeeIdController,
-                                  label: 'Employee ID', icon: Icons.badge_outlined,
-                                  isOptional: true),
+                              _field(
+                                _departmentController,
+                                label: 'Department',
+                                icon: Icons.business_outlined,
+                                isOptional: true,
+                              ),
+                              _field(
+                                _employeeIdController,
+                                label: 'Employee ID',
+                                icon: Icons.badge_outlined,
+                                isOptional: true,
+                              ),
                             ],
                           )
                         else
@@ -640,10 +662,12 @@ class _EditUserPageState extends State<EditUserPage> {
                               backImageFile: _aadhaarBackImage,
                               frontImageUrl: u.aadhaarCardFrontImage,
                               backImageUrl: u.aadhaarCardBackImage,
-                              onFrontTap: () =>
-                                  _showImageSourceModal(_EditImageType.aadhaarFront),
-                              onBackTap: () =>
-                                  _showImageSourceModal(_EditImageType.aadhaarBack),
+                              onFrontTap: () => _showImageSourceModal(
+                                _EditImageType.aadhaarFront,
+                              ),
+                              onBackTap: () => _showImageSourceModal(
+                                _EditImageType.aadhaarBack,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             _field(
@@ -687,10 +711,11 @@ class _EditUserPageState extends State<EditUserPage> {
                                   _obscurePassword
                                       ? Icons.visibility
                                       : Icons.visibility_off,
-                                  color: Colors.grey[600],
+                                  color: const Color(0xFF9CA3AF),
                                 ),
                                 onPressed: () => setState(
-                                    () => _obscurePassword = !_obscurePassword),
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
                               ),
                             ),
                             _field(
@@ -704,10 +729,12 @@ class _EditUserPageState extends State<EditUserPage> {
                                   _obscureConfirmPassword
                                       ? Icons.visibility
                                       : Icons.visibility_off,
-                                  color: Colors.grey[600],
+                                  color: const Color(0xFF9CA3AF),
                                 ),
-                                onPressed: () => setState(() =>
-                                    _obscureConfirmPassword = !_obscureConfirmPassword),
+                                onPressed: () => setState(
+                                  () => _obscureConfirmPassword =
+                                      !_obscureConfirmPassword,
+                                ),
                               ),
                             ),
                           ],
@@ -743,7 +770,7 @@ class _EditUserPageState extends State<EditUserPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -761,10 +788,10 @@ class _EditUserPageState extends State<EditUserPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  color: const Color(0xFF3B82F6).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, size: 20, color: AppTheme.primaryColor),
+                child: Icon(icon, size: 20, color: const Color(0xFF3B82F6)),
               ),
               const SizedBox(width: 10),
               Text(
@@ -772,7 +799,7 @@ class _EditUserPageState extends State<EditUserPage> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textColor,
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -794,7 +821,7 @@ class _EditUserPageState extends State<EditUserPage> {
             width: 110,
             child: Text(
               label,
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 13, color: const Color(0xFF9CA3AF)),
             ),
           ),
           Expanded(
@@ -803,7 +830,7 @@ class _EditUserPageState extends State<EditUserPage> {
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textColor,
+                color: Colors.white,
               ),
             ),
           ),
@@ -815,17 +842,17 @@ class _EditUserPageState extends State<EditUserPage> {
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 22),
+      prefixIcon: Icon(icon, color: const Color(0xFF3B82F6), size: 22),
       filled: true,
-      fillColor: Colors.grey.shade50,
+      fillColor: const Color(0xFF1E1E2A),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: AppTheme.dividerColor.withOpacity(0.8)),
+        borderSide: BorderSide(color: const Color(0x1AFFFFFF).withOpacity(0.8)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+        borderSide: const BorderSide(color: const Color(0xFF3B82F6), width: 2),
       ),
     );
   }
@@ -850,7 +877,8 @@ class _EditUserPageState extends State<EditUserPage> {
         maxLines: maxLines,
         maxLength: maxLength,
         obscureText: obscure,
-        validator: validator ??
+        validator:
+            validator ??
             (v) {
               if (!isOptional && !label.toLowerCase().contains('optional')) {
                 if (v == null || v.trim().isEmpty) {
@@ -859,9 +887,10 @@ class _EditUserPageState extends State<EditUserPage> {
               }
               return null;
             },
-        decoration: _inputDecoration(label, icon).copyWith(
-          suffixIcon: suffixIcon,
-        ),
+        decoration: _inputDecoration(
+          label,
+          icon,
+        ).copyWith(suffixIcon: suffixIcon),
       ),
     );
   }
@@ -887,23 +916,30 @@ class _EditUserPageState extends State<EditUserPage> {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: (_profilePicture != null || existingUrl != null)
-                          ? AppTheme.primaryColor
-                          : Colors.grey.shade300,
+                          ? const Color(0xFF3B82F6)
+                          : const Color(0x33FFFFFF),
                       width: 3,
                     ),
-                    color: Colors.grey.shade100,
+                    color: const Color(0xFF1E1E2A),
                   ),
                   child: ClipOval(
                     child: _profilePicture != null
                         ? Image.file(_profilePicture!, fit: BoxFit.cover)
                         : (existingUrl != null && existingUrl.isNotEmpty)
-                            ? Image.network(existingUrl, fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.person_rounded,
-                                    size: 48,
-                                    color: Colors.grey))
-                            : const Icon(Icons.person_rounded,
-                                size: 48, color: Colors.grey),
+                        ? Image.network(
+                            existingUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.person_rounded,
+                              size: 48,
+                              color: Colors.grey,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.person_rounded,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
                   ),
                 ),
                 if (_profilePicture != null)
@@ -916,8 +952,11 @@ class _EditUserPageState extends State<EditUserPage> {
                         color: AppTheme.secondaryColor,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.check_circle,
-                          color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.check_circle,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
               ],
@@ -945,13 +984,15 @@ class _EditUserPageState extends State<EditUserPage> {
     _EditImageType type, {
     bool isFullWidth = false,
   }) {
-    final hasImage = localFile != null ||
-        (existingUrl != null && existingUrl.isNotEmpty);
+    final hasImage =
+        localFile != null || (existingUrl != null && existingUrl.isNotEmpty);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        ),
         const SizedBox(height: 8),
         InkWell(
           onTap: () => _showImageSourceModal(type),
@@ -959,30 +1000,37 @@ class _EditUserPageState extends State<EditUserPage> {
             height: isFullWidth ? 150 : 130,
             width: isFullWidth ? double.infinity : null,
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: const Color(0xFF1E1E2A),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: hasImage ? AppTheme.primaryColor : Colors.grey.shade300,
+                color: hasImage
+                    ? const Color(0xFF3B82F6)
+                    : const Color(0x33FFFFFF),
                 width: hasImage ? 2 : 1,
               ),
             ),
             child: localFile != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.file(localFile, fit: BoxFit.cover,
-                        width: double.infinity, height: double.infinity),
+                    child: Image.file(
+                      localFile,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
                   )
                 : (existingUrl != null && existingUrl.isNotEmpty)
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.network(existingUrl,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            errorBuilder: (_, __, ___) =>
-                                _uploadPlaceholder()),
-                      )
-                    : _uploadPlaceholder(),
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      existingUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (_, __, ___) => _uploadPlaceholder(),
+                    ),
+                  )
+                : _uploadPlaceholder(),
           ),
         ),
       ],
@@ -993,10 +1041,16 @@ class _EditUserPageState extends State<EditUserPage> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.cloud_upload_rounded, size: 36, color: Colors.grey[400]),
+        Icon(
+          Icons.cloud_upload_rounded,
+          size: 36,
+          color: const Color(0x33FFFFFF),
+        ),
         const SizedBox(height: 6),
-        Text('Tap to upload',
-            style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+        Text(
+          'Tap to upload',
+          style: TextStyle(color: const Color(0xFF9CA3AF), fontSize: 12),
+        ),
       ],
     );
   }
@@ -1005,21 +1059,32 @@ class _EditUserPageState extends State<EditUserPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Gender',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        const Text(
+          'Gender',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
-                child: _genderOption('Male', Gender.male, Icons.male_rounded)),
+              child: _genderOption('Male', Gender.male, Icons.male_rounded),
+            ),
             const SizedBox(width: 8),
             Expanded(
-                child: _genderOption(
-                    'Female', Gender.female, Icons.female_rounded)),
+              child: _genderOption(
+                'Female',
+                Gender.female,
+                Icons.female_rounded,
+              ),
+            ),
             const SizedBox(width: 8),
             Expanded(
-                child: _genderOption(
-                    'Other', Gender.other, Icons.transgender_rounded)),
+              child: _genderOption(
+                'Other',
+                Gender.other,
+                Icons.transgender_rounded,
+              ),
+            ),
           ],
         ),
       ],
@@ -1034,25 +1099,33 @@ class _EditUserPageState extends State<EditUserPage> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: selected
-              ? AppTheme.primaryColor.withOpacity(0.1)
-              : Colors.grey.shade100,
+              ? const Color(0xFF3B82F6).withOpacity(0.1)
+              : const Color(0xFF1E1E2A),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? AppTheme.primaryColor : Colors.transparent,
+            color: selected ? const Color(0xFF3B82F6) : Colors.transparent,
             width: 2,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon,
-                color: selected ? AppTheme.primaryColor : Colors.grey.shade600),
+            Icon(
+              icon,
+              color: selected
+                  ? const Color(0xFF3B82F6)
+                  : const Color(0xFF9CA3AF),
+            ),
             const SizedBox(height: 4),
-            Text(label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                  color: selected ? AppTheme.primaryColor : Colors.grey.shade700,
-                )),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                color: selected
+                    ? const Color(0xFF3B82F6)
+                    : const Color(0xFF9CA3AF),
+              ),
+            ),
           ],
         ),
       ),
@@ -1063,19 +1136,27 @@ class _EditUserPageState extends State<EditUserPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Family type *',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        const Text(
+          'Family type *',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
               child: _familyOption(
-                  'Family', FamilyType.family, Icons.family_restroom_rounded),
+                'Family',
+                FamilyType.family,
+                Icons.family_restroom_rounded,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _familyOption(
-                  'Bachelor', FamilyType.bachelor, Icons.person_rounded),
+                'Bachelor',
+                FamilyType.bachelor,
+                Icons.person_rounded,
+              ),
             ),
           ],
         ),
@@ -1091,26 +1172,33 @@ class _EditUserPageState extends State<EditUserPage> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: selected
-              ? AppTheme.primaryColor.withOpacity(0.1)
-              : Colors.grey.shade100,
+              ? const Color(0xFF3B82F6).withOpacity(0.1)
+              : const Color(0xFF1E1E2A),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? AppTheme.primaryColor : Colors.transparent,
+            color: selected ? const Color(0xFF3B82F6) : Colors.transparent,
             width: 2,
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon,
-                color: selected ? AppTheme.primaryColor : Colors.grey.shade600),
+            Icon(
+              icon,
+              color: selected
+                  ? const Color(0xFF3B82F6)
+                  : const Color(0xFF9CA3AF),
+            ),
             const SizedBox(width: 8),
-            Text(label,
-                style: TextStyle(
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                  color:
-                      selected ? AppTheme.primaryColor : Colors.grey.shade700,
-                )),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                color: selected
+                    ? const Color(0xFF3B82F6)
+                    : const Color(0xFF9CA3AF),
+              ),
+            ),
           ],
         ),
       ),
@@ -1121,24 +1209,35 @@ class _EditUserPageState extends State<EditUserPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Occupation *',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        const Text(
+          'Occupation *',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
               child: _occupationOption(
-                  'Working', OccupationCategory.working, Icons.work_rounded),
+                'Working',
+                OccupationCategory.working,
+                Icons.work_rounded,
+              ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: _occupationOption(
-                  'Student', OccupationCategory.student, Icons.school_rounded),
+                'Student',
+                OccupationCategory.student,
+                Icons.school_rounded,
+              ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _occupationOption('Others', OccupationCategory.others,
-                  Icons.more_horiz_rounded),
+              child: _occupationOption(
+                'Others',
+                OccupationCategory.others,
+                Icons.more_horiz_rounded,
+              ),
             ),
           ],
         ),
@@ -1147,7 +1246,10 @@ class _EditUserPageState extends State<EditUserPage> {
   }
 
   Widget _occupationOption(
-      String label, OccupationCategory value, IconData icon) {
+    String label,
+    OccupationCategory value,
+    IconData icon,
+  ) {
     final selected = _occupationCategory == value;
     return InkWell(
       onTap: () => setState(() => _occupationCategory = value),
@@ -1155,26 +1257,34 @@ class _EditUserPageState extends State<EditUserPage> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: selected
-              ? AppTheme.primaryColor.withOpacity(0.1)
-              : Colors.grey.shade100,
+              ? const Color(0xFF3B82F6).withOpacity(0.1)
+              : const Color(0xFF1E1E2A),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? AppTheme.primaryColor : Colors.transparent,
+            color: selected ? const Color(0xFF3B82F6) : Colors.transparent,
             width: 2,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon,
-                color: selected ? AppTheme.primaryColor : Colors.grey.shade600),
+            Icon(
+              icon,
+              color: selected
+                  ? const Color(0xFF3B82F6)
+                  : const Color(0xFF9CA3AF),
+            ),
             const SizedBox(height: 4),
-            Text(label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                  color: selected ? AppTheme.primaryColor : Colors.grey.shade700,
-                )),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                color: selected
+                    ? const Color(0xFF3B82F6)
+                    : const Color(0xFF9CA3AF),
+              ),
+            ),
           ],
         ),
       ),
@@ -1185,14 +1295,17 @@ class _EditUserPageState extends State<EditUserPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Date of birth',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        const Text(
+          'Date of birth',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 10),
         InkWell(
           onTap: () async {
             final picked = await showDatePicker(
               context: context,
-              initialDate: _dateOfBirth ??
+              initialDate:
+                  _dateOfBirth ??
                   DateTime.now().subtract(const Duration(days: 365 * 18)),
               firstDate: DateTime(1950),
               lastDate: DateTime.now(),
@@ -1202,13 +1315,16 @@ class _EditUserPageState extends State<EditUserPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade400),
+              border: Border.all(color: const Color(0x33FFFFFF)),
               borderRadius: BorderRadius.circular(12),
-              color: Colors.grey.shade50,
+              color: const Color(0xFF1E1E2A),
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today, color: AppTheme.primaryColor),
+                const Icon(
+                  Icons.calendar_today,
+                  color: const Color(0xFF3B82F6),
+                ),
                 const SizedBox(width: 12),
                 Text(
                   _dateOfBirth != null
@@ -1216,8 +1332,8 @@ class _EditUserPageState extends State<EditUserPage> {
                       : 'Select date of birth',
                   style: TextStyle(
                     color: _dateOfBirth != null
-                        ? Colors.black87
-                        : Colors.grey.shade600,
+                        ? Colors.white
+                        : const Color(0xFF9CA3AF),
                   ),
                 ),
               ],
@@ -1232,22 +1348,24 @@ class _EditUserPageState extends State<EditUserPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: const Color(0xFF1E1E2A),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: const Color(0x33FFFFFF)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.public_rounded, color: AppTheme.primaryColor),
+          const Icon(Icons.public_rounded, color: const Color(0xFF3B82F6)),
           const SizedBox(width: 12),
           const Expanded(
-            child: Text('Non-Resident Indian (NRI)',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+            child: Text(
+              'Non-Resident Indian (NRI)',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            ),
           ),
           Switch(
             value: _isNRI,
             onChanged: (v) => setState(() => _isNRI = v),
-            activeColor: AppTheme.primaryColor,
+            activeColor: const Color(0xFF3B82F6),
           ),
         ],
       ),
@@ -1273,19 +1391,21 @@ class _ImageSourceOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withOpacity(0.08),
+          color: const Color(0xFF3B82F6).withOpacity(0.08),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppTheme.primaryColor.withOpacity(0.25)),
+          border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.25)),
         ),
         child: Column(
           children: [
-            Icon(icon, color: AppTheme.primaryColor, size: 32),
+            Icon(icon, color: const Color(0xFF3B82F6), size: 32),
             const SizedBox(height: 6),
-            Text(label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.primaryColor,
-                )),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF3B82F6),
+              ),
+            ),
           ],
         ),
       ),

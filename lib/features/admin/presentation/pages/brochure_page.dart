@@ -120,7 +120,7 @@ class _BrochurePageState extends State<BrochurePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: const Color(0xFF0A0A12),
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
@@ -260,7 +260,7 @@ class _BrochureFullShimmerScreenState extends State<_BrochureFullShimmerScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
+                  color: const Color(0xFFE2E8F0),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: Colors.white.withValues(alpha: 0.08),
@@ -320,9 +320,9 @@ class _BrochureFullShimmerScreenState extends State<_BrochureFullShimmerScreen>
                           begin: Alignment(-1.5 + (val * 3), -0.5),
                           end: Alignment(0.5 + (val * 3), 0.5),
                           colors: const [
-                            Color(0xFF1E293B),
-                            Color(0xFF334155),
-                            Color(0xFF1E293B),
+                            Color(0xFFE2E8F0),
+                            Color(0xFFCBD5E1),
+                            Color(0xFFE2E8F0),
                           ],
                         ),
                         boxShadow: const [

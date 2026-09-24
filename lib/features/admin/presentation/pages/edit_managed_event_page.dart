@@ -48,7 +48,10 @@ class _EditManagedEventPageState extends State<EditManagedEventPage> {
   }
 
   Future<void> _pickEndDate() async {
-    final next = await pickManagedEventDateTime(context, _form.eventEndDate ?? _form.eventDate);
+    final next = await pickManagedEventDateTime(
+      context,
+      _form.eventEndDate ?? _form.eventDate,
+    );
     if (next == null || !mounted) return;
     setState(() => _form.eventEndDate = next);
   }
@@ -94,10 +97,10 @@ class _EditManagedEventPageState extends State<EditManagedEventPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFF0A0A12),
       appBar: AppBar(
         title: const Text('Edit event'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: const Color(0xFF0A0A12),
         foregroundColor: Colors.white,
       ),
       body: ListView(
@@ -118,7 +121,7 @@ class _EditManagedEventPageState extends State<EditManagedEventPage> {
           ElevatedButton(
             onPressed: _busy ? null : _save,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: const Color(0xFF3B82F6),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),

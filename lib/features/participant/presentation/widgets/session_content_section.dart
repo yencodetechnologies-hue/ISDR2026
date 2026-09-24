@@ -32,6 +32,10 @@ class _SessionContentSectionState extends State<SessionContentSection> {
   List<Map<String, dynamic>> _files = [];
   List<Map<String, dynamic>> _polls = [];
   List<Map<String, dynamic>> _questions = [];
+  bool _isSpeaker = false;
+  Map<String, dynamic>? _myRating; // this participant's rating, if given
+  List<Map<String, dynamic>> _ratings = []; // speaker only
+  Map<String, dynamic>? _ratingSummary; // speaker only: {count, average}
 
   @override
   void initState() {
@@ -54,6 +58,14 @@ class _SessionContentSectionState extends State<SessionContentSection> {
         _files = _list(res['files']);
         _polls = _list(res['polls']);
         _questions = _list(res['questions']);
+        _isSpeaker = res['isSpeaker'] == true;
+        _myRating = res['myRating'] is Map
+            ? Map<String, dynamic>.from(res['myRating'] as Map)
+            : null;
+        _ratings = _list(res['ratings']);
+        _ratingSummary = res['ratingSummary'] is Map
+            ? Map<String, dynamic>.from(res['ratingSummary'] as Map)
+            : null;
       } else {
         _error = res['error']?.toString() ?? 'Could not load session materials';
       }
@@ -65,7 +77,12 @@ class _SessionContentSectionState extends State<SessionContentSection> {
     if (_loading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white)),
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2.4,
+            color: Colors.white,
+          ),
+        ),
       );
     }
     if (_error != null) {
@@ -77,7 +94,12 @@ class _SessionContentSectionState extends State<SessionContentSection> {
         ),
       );
     }
-    if (_files.isEmpty && _polls.isEmpty && _questions.isEmpty) {
+    // Participants always get the rating card; the speaker the ratings list.
+    if (_files.isEmpty &&
+        _polls.isEmpty &&
+        _questions.isEmpty &&
+        !_canRespond &&
+        !_isSpeaker) {
       return const SizedBox.shrink();
     }
     return Column(
@@ -114,6 +136,25 @@ class _SessionContentSectionState extends State<SessionContentSection> {
                   canRespond: _canRespond,
                   onUpdated: (q) => setState(() => _questions[i] = q),
                 ),
+            ],
+          ),
+        if (_canRespond)
+          _Group(
+            title: 'RATE THIS SESSION',
+            children: [
+              _RateCard(
+                scheduleId: widget.scheduleId,
+                myRating: _myRating,
+                onRated: (r) => setState(() => _myRating = r),
+              ),
+            ],
+          ),
+        if (_isSpeaker)
+          _Group(
+            title: 'RATINGS & COMMENTS',
+            children: [
+              _RatingsSummary(summary: _ratingSummary),
+              for (final r in _ratings) _RatingTile(rating: r),
             ],
           ),
       ],
@@ -519,6 +560,282 @@ class _QuestionCardState extends State<_QuestionCard> {
                         ),
                       )
                     : const Text('Submit answer'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Five tappable stars.
+class _StarRow extends StatelessWidget {
+  final int value;
+  final double size;
+  final ValueChanged<int>? onChanged;
+
+  const _StarRow({required this.value, this.size = 30, this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 1; i <= 5; i++)
+          GestureDetector(
+            onTap: onChanged == null ? null : () => onChanged!(i),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Icon(
+                i <= value ? Icons.star_rounded : Icons.star_border_rounded,
+                size: size,
+                color: i <= value
+                    ? const Color(0xFFFBBF24)
+                    : _Colors.muted.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Participant's one-time rating: stars + optional comment, then "Submit".
+/// After submitting it shows what they gave.
+class _RateCard extends StatefulWidget {
+  final String scheduleId;
+  final Map<String, dynamic>? myRating;
+  final ValueChanged<Map<String, dynamic>> onRated;
+
+  const _RateCard({
+    required this.scheduleId,
+    required this.myRating,
+    required this.onRated,
+  });
+
+  @override
+  State<_RateCard> createState() => _RateCardState();
+}
+
+class _RateCardState extends State<_RateCard> {
+  final _comment = TextEditingController();
+  int _stars = 0;
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _comment.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_stars == 0) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _sending = true);
+    final res = await ApiService().rateSession(
+      widget.scheduleId,
+      stars: _stars,
+      comment: _comment.text.trim(),
+    );
+    if (!mounted) return;
+    setState(() => _sending = false);
+    if (res['success'] == true && res['rating'] is Map) {
+      widget.onRated(Map<String, dynamic>.from(res['rating'] as Map));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res['error']?.toString() ?? 'Could not send rating'),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mine = widget.myRating;
+    if (mine != null) {
+      final comment = mine['comment']?.toString() ?? '';
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _StarRow(value: (mine['stars'] as num?)?.toInt() ?? 0, size: 26),
+          if (comment.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              comment,
+              style: GoogleFonts.inter(
+                fontSize: 13.5,
+                color: _Colors.ink,
+                height: 1.45,
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            'Thanks for rating this session',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: _Colors.green,
+            ),
+          ),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _StarRow(value: _stars, onChanged: (v) => setState(() => _stars = v)),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _comment,
+          minLines: 2,
+          maxLines: 5,
+          maxLength: 1000,
+          textCapitalization: TextCapitalization.sentences,
+          style: GoogleFonts.inter(fontSize: 13.5, color: _Colors.ink),
+          decoration: InputDecoration(
+            hintText: 'Add a comment (optional)',
+            filled: true,
+            fillColor: const Color(0xFF1E1E2A),
+            counterText: '',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: _Colors.line),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: _Colors.line),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'You can rate a session only once.',
+                style: GoogleFonts.inter(fontSize: 11, color: _Colors.muted),
+              ),
+            ),
+            FilledButton(
+              onPressed: _stars == 0 || _sending ? null : _submit,
+              style: FilledButton.styleFrom(
+                backgroundColor: _Colors.primaryBlue,
+              ),
+              child: _sending
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Submit rating'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Speaker's view: the average and how many participants rated.
+class _RatingsSummary extends StatelessWidget {
+  final Map<String, dynamic>? summary;
+
+  const _RatingsSummary({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    final count = (summary?['count'] as num?)?.toInt() ?? 0;
+    final average = (summary?['average'] as num?)?.toDouble() ?? 0;
+    if (count == 0) {
+      return Text(
+        'No ratings yet',
+        style: GoogleFonts.inter(fontSize: 13, color: _Colors.muted),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Text(
+            average.toStringAsFixed(1),
+            style: GoogleFonts.outfit(
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              color: _Colors.ink,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _StarRow(value: average.round(), size: 18),
+              const SizedBox(height: 2),
+              Text(
+                count == 1 ? '1 rating' : '$count ratings',
+                style: GoogleFonts.inter(fontSize: 11.5, color: _Colors.muted),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One participant's rating, with their name, for the speaker.
+class _RatingTile extends StatelessWidget {
+  final Map<String, dynamic> rating;
+
+  const _RatingTile({required this.rating});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = rating['name']?.toString() ?? '';
+    final comment = rating['comment']?.toString() ?? '';
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E2A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _Colors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  name.isEmpty ? 'Participant' : name,
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: _Colors.ink,
+                  ),
+                ),
+              ),
+              _StarRow(
+                value: (rating['stars'] as num?)?.toInt() ?? 0,
+                size: 15,
+              ),
+            ],
+          ),
+          if (comment.isNotEmpty) ...[
+            const SizedBox(height: 5),
+            Text(
+              comment,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: _Colors.ink.withValues(alpha: 0.85),
+                height: 1.4,
               ),
             ),
           ],

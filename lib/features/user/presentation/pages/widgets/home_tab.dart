@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../../participant/presentation/widgets/live_show_card.dart';
+import '../../../../participant/presentation/widgets/news_ticker_strap.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../../../core/app_theme.dart';
 import '../../../../../../core/constants/app_constants.dart';
@@ -130,27 +133,21 @@ class _HomeTabState extends State<HomeTab> {
   void _navigateToVisitors() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (ctx) => VisitorsPage(user: widget.user),
-      ),
+      MaterialPageRoute(builder: (ctx) => VisitorsPage(user: widget.user)),
     );
   }
 
   void _navigateToGateApproval() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (ctx) => const GateApprovalPage(),
-      ),
+      MaterialPageRoute(builder: (ctx) => const GateApprovalPage()),
     );
   }
 
   void _navigateToSecurityList() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (ctx) => const SecurityListPage(),
-      ),
+      MaterialPageRoute(builder: (ctx) => const SecurityListPage()),
     );
   }
 
@@ -192,7 +189,12 @@ class _HomeTabState extends State<HomeTab> {
 
   bool get _isStaffSchoolOrCollege {
     final currentProp = resolveCurrentProperty(widget.user);
-    final propType = currentProp?.propertyType ?? widget.user.propertyType ?? (widget.user.apartments != null && widget.user.apartments!.isNotEmpty ? widget.user.apartments!.first.propertyType : null);
+    final propType =
+        currentProp?.propertyType ??
+        widget.user.propertyType ??
+        (widget.user.apartments != null && widget.user.apartments!.isNotEmpty
+            ? widget.user.apartments!.first.propertyType
+            : null);
     return false;
   }
 
@@ -225,34 +227,50 @@ class _HomeTabState extends State<HomeTab> {
         children: [
           if (_isEventsProperty) ...[
             const AutoScrollBanner(items: defaultManagementBanners),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            // Same news ticker as the participant home.
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: NewsTickerStrap(),
+            ),
+            const SizedBox(height: 12),
+            // Same live-show card as the participant and speaker homes.
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: LiveShowCard(),
+            ),
+            const SizedBox(height: 8),
           ],
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-          if (widget.adsEnabled) ...[
-            _buildAdsCarousel(),
-            const SizedBox(height: 20),
-          ],
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text(
-              widget.isHostel ? 'Hostel Services' : 'Quick Options',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textColor,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _buildQuickOptionsGrid(),
-          if (!widget.isHostel && !_isStaffSchoolOrCollege && !_isEventsProperty) ...[
-            const SizedBox(height: 24),
-            _buildFeedSection(),
-          ],
+                if (widget.adsEnabled) ...[
+                  _buildAdsCarousel(),
+                  const SizedBox(height: 20),
+                ],
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Text(
+                    widget.isHostel ? 'Hostel Services' : 'Quick Options',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: _isEventsProperty
+                          ? Colors.white
+                          : AppTheme.textColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildQuickOptionsGrid(),
+                if (!widget.isHostel &&
+                    !_isStaffSchoolOrCollege &&
+                    !_isEventsProperty) ...[
+                  const SizedBox(height: 24),
+                  _buildFeedSection(),
+                ],
               ],
             ),
           ),
@@ -263,9 +281,12 @@ class _HomeTabState extends State<HomeTab> {
 
   bool get _isEventsProperty {
     final currentProp = resolveCurrentProperty(widget.user);
-    final propType = currentProp?.propertyType ??
+    final propType =
+        currentProp?.propertyType ??
         widget.user.propertyType ??
-        (widget.user.apartments != null && widget.user.apartments!.isNotEmpty ? widget.user.apartments!.first.propertyType : null);
+        (widget.user.apartments != null && widget.user.apartments!.isNotEmpty
+            ? widget.user.apartments!.first.propertyType
+            : null);
     return propType == PropertyType.events;
   }
 
@@ -340,58 +361,58 @@ class _HomeTabState extends State<HomeTab> {
               ),
             ),
             if (!_isEventsProperty) ...[
-            const SizedBox(width: 8),
-            Expanded(
-              child: _FeedActionCard(
-                title: 'Create poll',
-                icon: Icons.poll_rounded,
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (ctx) => CreatePollSheet(
-                      user: widget.user,
-                      onSuccess: () {
-                        Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Poll created'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
+              const SizedBox(width: 8),
+              Expanded(
+                child: _FeedActionCard(
+                  title: 'Create poll',
+                  icon: Icons.poll_rounded,
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (ctx) => CreatePollSheet(
+                        user: widget.user,
+                        onSuccess: () {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Poll created'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _FeedActionCard(
-                title: 'Host events',
-                icon: Icons.event_rounded,
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (ctx) => CreateEventSheet(
-                      user: widget.user,
-                      onSuccess: () {
-                        Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Event created'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
+              const SizedBox(width: 8),
+              Expanded(
+                child: _FeedActionCard(
+                  title: 'Host events',
+                  icon: Icons.event_rounded,
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (ctx) => CreateEventSheet(
+                        user: widget.user,
+                        onSuccess: () {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Event created'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
             ],
             const SizedBox(width: 8),
             Expanded(
@@ -486,20 +507,60 @@ class _HomeTabState extends State<HomeTab> {
   Widget _buildQuickOptionsGrid() {
     const allOptions = [
       _QuickOption('Profile', Icons.person_rounded, _Action.profile),
-      _QuickOption('Complaints', Icons.report_problem_rounded, _Action.complaints),
+      _QuickOption(
+        'Complaints',
+        Icons.report_problem_rounded,
+        _Action.complaints,
+      ),
       _QuickOption('Payments', Icons.payment_rounded, _Action.payments),
       _QuickOption('Security', Icons.security_rounded, _Action.securityList),
-      _QuickOption('Gate Approval', Icons.how_to_reg_rounded, _Action.gateApproval),
-      _QuickOption('Invite Guest', Icons.person_add_rounded, _Action.inviteGuest),
+      _QuickOption(
+        'Gate Approval',
+        Icons.how_to_reg_rounded,
+        _Action.gateApproval,
+      ),
+      _QuickOption(
+        'Invite Guest',
+        Icons.person_add_rounded,
+        _Action.inviteGuest,
+      ),
       _QuickOption('Cab/Auto', Icons.local_taxi_rounded, _Action.cabAuto),
-      _QuickOption('Allowed Delivery', Icons.delivery_dining_rounded, _Action.allowedDelivery),
+      _QuickOption(
+        'Allowed Delivery',
+        Icons.delivery_dining_rounded,
+        _Action.allowedDelivery,
+      ),
       _QuickOption('Call Security', Icons.phone_rounded, _Action.securityList),
-      _QuickOption('Message Guard', Icons.message_rounded, _Action.messageGuard),
-      _QuickOption('My Daily Help', Icons.cleaning_services_rounded, _Action.dailyHelp),
-      _QuickOption('Hostel Help & Support', Icons.support_agent_rounded, _Action.hostelHelpDesk),
-      _QuickOption('Help and Support', Icons.support_agent_rounded, _Action.helpDesk),
-      _QuickOption('${AppConstants.appName} Services', Icons.miscellaneous_services_rounded, _Action.accessServices),
-      _QuickOption('Terms & Conditions', Icons.description_rounded, _Action.termsAndConditions),
+      _QuickOption(
+        'Message Guard',
+        Icons.message_rounded,
+        _Action.messageGuard,
+      ),
+      _QuickOption(
+        'My Daily Help',
+        Icons.cleaning_services_rounded,
+        _Action.dailyHelp,
+      ),
+      _QuickOption(
+        'Hostel Help & Support',
+        Icons.support_agent_rounded,
+        _Action.hostelHelpDesk,
+      ),
+      _QuickOption(
+        'Help and Support',
+        Icons.support_agent_rounded,
+        _Action.helpDesk,
+      ),
+      _QuickOption(
+        '${AppConstants.appName} Services',
+        Icons.miscellaneous_services_rounded,
+        _Action.accessServices,
+      ),
+      _QuickOption(
+        'Terms & Conditions',
+        Icons.description_rounded,
+        _Action.termsAndConditions,
+      ),
       _QuickOption('Hostel ID', Icons.badge_rounded, _Action.hostelId),
       _QuickOption('Events', Icons.event_rounded, _Action.events),
       _QuickOption('History', Icons.history_rounded, _Action.history),
@@ -507,7 +568,12 @@ class _HomeTabState extends State<HomeTab> {
       _QuickOption('My post', Icons.article_rounded, _Action.myPost),
     ];
     final currentProp = resolveCurrentProperty(widget.user);
-    final propType = currentProp?.propertyType ?? widget.user.propertyType ?? (widget.user.apartments != null && widget.user.apartments!.isNotEmpty ? widget.user.apartments!.first.propertyType : null);
+    final propType =
+        currentProp?.propertyType ??
+        widget.user.propertyType ??
+        (widget.user.apartments != null && widget.user.apartments!.isNotEmpty
+            ? widget.user.apartments!.first.propertyType
+            : null);
     final isStaffSchoolOrCollege = false;
     final isEventsProperty = propType == PropertyType.events;
 
@@ -515,7 +581,9 @@ class _HomeTabState extends State<HomeTab> {
       final byAction = {for (final o in allOptions) o.action: o};
       final ordered = <_QuickOption>[
         byAction[_Action.profile]!,
-        allOptions.firstWhere((o) => o.action == _Action.securityList && o.title == 'Security'),
+        allOptions.firstWhere(
+          (o) => o.action == _Action.securityList && o.title == 'Security',
+        ),
         byAction[_Action.termsAndConditions]!,
         byAction[_Action.accessServices]!,
         byAction[_Action.createPost]!,
@@ -572,7 +640,55 @@ class _HomeTabState extends State<HomeTab> {
     return _buildQuickOptionsGridFor(options);
   }
 
+  /// Colour of each module button on the event staff dashboard (same palette
+  /// as the participant homepage's module grid).
+  static Color _eventsTileColor(_Action action) {
+    switch (action) {
+      case _Action.profile:
+        return const Color(0xFF6366F1);
+      case _Action.events:
+        return const Color(0xFFF97316);
+      case _Action.history:
+        return const Color(0xFF14B8A6);
+      default:
+        return const Color(0xFF64748B);
+    }
+  }
+
   Widget _buildQuickOptionsGridFor(List<_QuickOption> options) {
+    // Event staff: the participant homepage's boxed 6-column module grid.
+    if (_isEventsProperty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF14141F),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          itemCount: options.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 6,
+            mainAxisSpacing: 2,
+            crossAxisSpacing: 2,
+            childAspectRatio: 0.72,
+          ),
+          itemBuilder: (context, index) {
+            final o = options[index];
+            return _ModuleTile(
+              title: o.title,
+              icon: o.icon,
+              color: _eventsTileColor(o.action),
+              onTap: () => _handleQuickOptionTap(o),
+            );
+          },
+        ),
+      );
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         const crossAxisCount = 4;
@@ -736,9 +852,9 @@ class _HomeTabState extends State<HomeTab> {
     final token = await _apiService.getToken();
     if (token == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please login again')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Please login again')));
       }
       return;
     }
@@ -788,6 +904,72 @@ class _QuickOption {
   const _QuickOption(this.title, this.icon, this.action);
 }
 
+/// Solid coloured icon square with a label under it, shrinking a little
+/// while pressed — the participant homepage's module button.
+class _ModuleTile extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ModuleTile({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  State<_ModuleTile> createState() => _ModuleTileState();
+}
+
+class _ModuleTileState extends State<_ModuleTile> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Column(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: widget.color,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(widget.icon, size: 22, color: Colors.white),
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 24,
+              child: Text(
+                widget.title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.9),
+                  height: 1.15,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _QuickOptionTile extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -833,11 +1015,7 @@ class _QuickOptionTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Center(
-                    child: Icon(
-                      icon,
-                      color: const Color(0xFF13275D),
-                      size: 24,
-                    ),
+                    child: Icon(icon, color: const Color(0xFF13275D), size: 24),
                   ),
                 ),
                 const SizedBox(height: 8),

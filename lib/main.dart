@@ -64,12 +64,19 @@ class MyApp extends StatelessWidget {
             create: (context) => NotificationBloc(),
           ),
         ],
-        child: MaterialApp(
-          title: AppConstants.appName,
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          home: const SplashPage(),
-          routes: AppRoutes.routes,
+        // Every logged-in screen uses the black theme; splash/login stay light.
+        child: BlocBuilder<AuthBloc, AuthState>(
+          buildWhen: (previous, current) =>
+              (previous is AuthAuthenticated) != (current is AuthAuthenticated),
+          builder: (context, authState) => MaterialApp(
+            title: AppConstants.appName,
+            debugShowCheckedModeBanner: false,
+            theme: authState is AuthAuthenticated
+                ? AppDarkTheme.theme
+                : AppTheme.lightTheme,
+            home: const SplashPage(),
+            routes: AppRoutes.routes,
+          ),
         ),
       ),
     );

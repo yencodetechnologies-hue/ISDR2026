@@ -1,11 +1,14 @@
-import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import '../../../../core/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/widgets/brand_gradient_app_bar.dart';
+import '../../../../core/widgets/dark_ui.dart';
 import '../widgets/event_package_sheet.dart' show eventDays;
+import 'manage_speakers_page.dart';
 
-/// Form to add a schedule (speaker session) to an event.
+/// Form to add a schedule (speaker session) to an event. The speaker is picked
+/// from the Speakers list (added on the Speakers page).
 class AddEventSchedulePage extends StatefulWidget {
   final Map<String, dynamic> event;
 
@@ -17,14 +20,14 @@ class AddEventSchedulePage extends StatefulWidget {
 
 class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   final _formKey = GlobalKey<FormState>();
-  final _speaker = TextEditingController();
-  final _mobile = TextEditingController();
-  final _password = TextEditingController();
   final _name = TextEditingController();
   final _hall = TextEditingController();
   final _description = TextEditingController();
 
-  File? _photo;
+  List<Map<String, dynamic>> _speakers = [];
+  bool _loadingSpeakers = true;
+  String? _speakerId;
+
   final Set<String> _dates = {}; // picked event days (yyyy-MM-dd)
   bool _sameTime = true; // one From/To for every picked date
   TimeOfDay? _from; // used when _sameTime
@@ -33,7 +36,6 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   final Map<String, TimeOfDay> _fromByDate = {};
   final Map<String, TimeOfDay> _toByDate = {};
   bool _saving = false;
-  bool _showPassword = false;
 
   /// Separate times per date only makes sense with more than one date picked.
   bool get _perDate => !_sameTime && _dates.length > 1;
@@ -46,27 +48,44 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
       widget.event['id']?.toString() ?? widget.event['_id']?.toString() ?? '';
 
   @override
+  void initState() {
+    super.initState();
+    _loadSpeakers();
+  }
+
+  @override
   void dispose() {
-    _speaker.dispose();
-    _mobile.dispose();
-    _password.dispose();
     _name.dispose();
     _hall.dispose();
     _description.dispose();
     super.dispose();
   }
 
+  Future<void> _loadSpeakers() async {
+    final res = await ApiService().listSpeakers();
+    if (!mounted) return;
+    setState(() {
+      _loadingSpeakers = false;
+      if (res['success'] == true) {
+        _speakers = ((res['speakers'] as List?) ?? [])
+            .map((s) => Map<String, dynamic>.from(s as Map))
+            .toList();
+        if (_speakers.every((s) => s['id'] != _speakerId)) _speakerId = null;
+      }
+    });
+  }
+
+  Future<void> _openSpeakers() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ManageSpeakersPage()),
+    );
+    // Speakers may have been added there.
+    _loadSpeakers();
+  }
+
   String _hhmm(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
-
-  Future<void> _pickPhoto() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-      maxWidth: 1200,
-    );
-    if (picked != null) setState(() => _photo = File(picked.path));
-  }
 
   /// Picks the shared From/To time, or the one for [dateIso] when given.
   Future<void> _pickTime(bool isFrom, [String? dateIso]) async {
@@ -92,6 +111,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_speakerId == null) return _toast('Select a speaker');
     if (_dates.isEmpty) return _toast('Select at least one event day');
     final slots = <Map<String, String>>[];
     for (final day in _pickedDays) {
@@ -113,14 +133,11 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
     setState(() => _saving = true);
     final res = await ApiService().createEventSchedule(
       eventId: _eventId,
-      speakerName: _speaker.text.trim(),
-      speakerMobile: _mobile.text.trim(),
-      speakerPassword: _password.text,
+      speakerId: _speakerId!,
       scheduleName: _name.text.trim(),
       hall: _hall.text.trim(),
       slots: slots,
       description: _description.text.trim(),
-      photoPath: _photo?.path,
     );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -130,18 +147,6 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
       _toast(res['error']?.toString() ?? 'Failed to add schedule');
     }
   }
-
-  InputDecoration _dec(String label, IconData icon) => InputDecoration(
-    labelText: label,
-    prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 20),
-    filled: true,
-    fillColor: Colors.white,
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-    ),
-  );
 
   Widget _picker(
     String label,
@@ -153,11 +158,11 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: InputDecorator(
-        decoration: _dec(label, icon),
+        decoration: darkInputDecoration(label, icon),
         child: Text(
           value ?? 'Select',
           style: TextStyle(
-            color: value == null ? Colors.black45 : AppTheme.textColor,
+            color: value == null ? DarkColors.muted : Colors.white,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -192,15 +197,93 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
     );
   }
 
+  /// The speaker dropdown (speakers come from the Speakers page).
+  Widget _speakerField() {
+    if (_loadingSpeakers) {
+      return InputDecorator(
+        decoration: darkInputDecoration('Speaker', Icons.person_outline),
+        child: const Text(
+          'Loading speakers…',
+          style: TextStyle(color: DarkColors.muted),
+        ),
+      );
+    }
+    if (_speakers.isEmpty) {
+      return InkWell(
+        onTap: _openSpeakers,
+        borderRadius: BorderRadius.circular(14),
+        child: InputDecorator(
+          decoration: darkInputDecoration('Speaker', Icons.person_outline),
+          child: const Text(
+            'No speakers yet — tap to add them on the Speakers page',
+            style: TextStyle(color: DarkColors.accentLight),
+          ),
+        ),
+      );
+    }
+    return DropdownButtonFormField<String>(
+      initialValue: _speakerId,
+      isExpanded: true,
+      dropdownColor: DarkColors.field,
+      style: const TextStyle(color: Colors.white, fontSize: 15),
+      iconEnabledColor: DarkColors.muted,
+      decoration: darkInputDecoration('Speaker', Icons.person_outline),
+      hint: const Text(
+        'Select speaker',
+        style: TextStyle(color: DarkColors.muted),
+      ),
+      items: [
+        for (final s in _speakers)
+          DropdownMenuItem(
+            value: s['id'].toString(),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 13,
+                  backgroundColor: const Color(0xFF1E3A8A),
+                  backgroundImage: (s['photo']?.toString() ?? '').isNotEmpty
+                      ? CachedNetworkImageProvider(s['photo'].toString())
+                      : null,
+                  child: (s['photo']?.toString() ?? '').isEmpty
+                      ? Text(
+                          (s['name']?.toString() ?? '?').trim().isEmpty
+                              ? '?'
+                              : s['name'].toString().trim()[0].toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.white,
+                          ),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    s['name']?.toString() ?? '',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+      onChanged: (v) => setState(() => _speakerId = v),
+      validator: (v) => v == null ? 'Select a speaker' : null,
+    );
+  }
+
   /// The event's own days — the speaker can be on any number of these.
   Widget _dayChips() {
     final days = eventDays(widget.event);
     return InputDecorator(
-      decoration: _dec('Date (event days)', Icons.calendar_month_outlined),
+      decoration: darkInputDecoration(
+        'Date (event days)',
+        Icons.calendar_month_outlined,
+      ),
       child: days.isEmpty
           ? const Text(
               'This event has no dates',
-              style: TextStyle(color: Colors.black45),
+              style: TextStyle(color: DarkColors.muted),
             )
           : Wrap(
               spacing: 8,
@@ -211,9 +294,11 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
                   label: Text(d.label),
                   selected: selected,
                   showCheckmark: false,
-                  selectedColor: AppTheme.primaryColor,
+                  selectedColor: DarkColors.accent,
+                  backgroundColor: DarkColors.card,
+                  side: const BorderSide(color: DarkColors.line),
                   labelStyle: TextStyle(
-                    color: selected ? Colors.white : AppTheme.textColor,
+                    color: selected ? Colors.white : DarkColors.muted,
                     fontWeight: FontWeight.w600,
                   ),
                   onSelected: (_) => setState(() {
@@ -231,19 +316,16 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
 
   @override
   Widget build(BuildContext context) {
+    const fieldStyle = TextStyle(color: Colors.white);
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 0,
-        title: const Text(
+      backgroundColor: DarkColors.bg,
+      appBar: buildDarkAppBar(
+        title: Text(
           'Add Schedule',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+          style: GoogleFonts.outfit(
             fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
           ),
         ),
       ),
@@ -252,101 +334,13 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Center(
-              child: GestureDetector(
-                onTap: _pickPhoto,
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 48,
-                      backgroundColor: AppTheme.primaryColor.withValues(
-                        alpha: 0.09,
-                      ),
-                      backgroundImage: _photo != null
-                          ? FileImage(_photo!)
-                          : null,
-                      child: _photo == null
-                          ? const Icon(
-                              Icons.person_rounded,
-                              size: 44,
-                              color: AppTheme.primaryColor,
-                            )
-                          : null,
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: const BoxDecoration(
-                          color: AppTheme.primaryColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt_rounded,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Center(
-              child: Text(
-                'Speaker photo',
-                style: TextStyle(fontSize: 12, color: Colors.black54),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _speaker,
-              textCapitalization: TextCapitalization.words,
-              decoration: _dec('Name of the speaker', Icons.person_outline),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Enter the speaker name'
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _mobile,
-              keyboardType: TextInputType.phone,
-              maxLength: 10,
-              decoration: _dec(
-                'Speaker mobile number',
-                Icons.phone_outlined,
-              ).copyWith(counterText: ''),
-              validator: (v) => RegExp(r'^\d{10}$').hasMatch(v?.trim() ?? '')
-                  ? null
-                  : 'Enter a valid 10-digit mobile number',
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _password,
-              obscureText: !_showPassword,
-              decoration: _dec('Speaker password', Icons.lock_outline).copyWith(
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _showPassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    size: 20,
-                  ),
-                  onPressed: () =>
-                      setState(() => _showPassword = !_showPassword),
-                ),
-              ),
-              validator: (v) => (v == null || v.trim().length < 6)
-                  ? 'Password must be at least 6 characters'
-                  : null,
-            ),
+            _speakerField(),
             const SizedBox(height: 12),
             TextFormField(
               controller: _name,
+              style: fieldStyle,
               textCapitalization: TextCapitalization.sentences,
-              decoration: _dec(
+              decoration: darkInputDecoration(
                 'Name of the schedule',
                 Icons.event_note_outlined,
               ),
@@ -357,8 +351,12 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _hall,
+              style: fieldStyle,
               textCapitalization: TextCapitalization.words,
-              decoration: _dec('Hall / venue', Icons.meeting_room_outlined),
+              decoration: darkInputDecoration(
+                'Hall / venue',
+                Icons.meeting_room_outlined,
+              ),
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Enter the hall' : null,
             ),
@@ -368,10 +366,14 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
               SwitchListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                 value: _sameTime,
-                activeThumbColor: AppTheme.primaryColor,
+                activeThumbColor: DarkColors.accent,
                 title: const Text(
                   'Same time for all dates',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
                 ),
                 onChanged: (v) => setState(() => _sameTime = v),
               )
@@ -385,7 +387,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
                     day.label,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textColor,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -395,10 +397,14 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
             else ...[_timeRow(), const SizedBox(height: 12)],
             TextFormField(
               controller: _description,
+              style: fieldStyle,
               minLines: 3,
               maxLines: 5,
               textCapitalization: TextCapitalization.sentences,
-              decoration: _dec('Description', Icons.notes_rounded),
+              decoration: darkInputDecoration(
+                'Description',
+                Icons.notes_rounded,
+              ),
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -406,7 +412,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
               child: ElevatedButton(
                 onPressed: _saving ? null : _save,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: DarkColors.accent,
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(

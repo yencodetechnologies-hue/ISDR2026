@@ -36,7 +36,9 @@ class _UserEventsListPageState extends State<UserEventsListPage> {
     if (res['success'] == true) {
       setState(() {
         _events = List<Map<String, dynamic>>.from(
-          (res['events'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)),
+          (res['events'] as List? ?? []).map(
+            (e) => Map<String, dynamic>.from(e as Map),
+          ),
         );
         _loading = false;
       });
@@ -51,10 +53,10 @@ class _UserEventsListPageState extends State<UserEventsListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFF0A0A12),
       appBar: AppBar(
         title: const Text('Events'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: const Color(0xFF0A0A12),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -63,115 +65,148 @@ class _UserEventsListPageState extends State<UserEventsListPage> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? ListView(
-                    children: [
-                      const SizedBox(height: 120),
-                      Center(
-                        child: Text(_error!, style: const TextStyle(color: AppTheme.errorColor)),
-                      ),
-                    ],
-                  )
-                : _events.isEmpty
-                    ? ListView(
-                        children: const [
-                          SizedBox(height: 140),
-                          Center(
-                            child: Text(
-                              'No events created yet for this property.',
-                              style: TextStyle(color: Colors.black54),
+            ? ListView(
+                children: [
+                  const SizedBox(height: 120),
+                  Center(
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(color: AppTheme.errorColor),
+                    ),
+                  ),
+                ],
+              )
+            : _events.isEmpty
+            ? ListView(
+                children: const [
+                  SizedBox(height: 140),
+                  Center(
+                    child: Text(
+                      'No events created yet for this property.',
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  ),
+                ],
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: _events.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final ev = _events[index];
+                  final id = (ev['id'] ?? ev['_id']).toString();
+                  final photoUrl = (ev['photoUrl'] ?? '').toString();
+                  return Material(
+                    color: const Color(0xFF14141F),
+                    borderRadius: BorderRadius.circular(18),
+                    clipBehavior: Clip.antiAlias,
+                    elevation: 1,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => UserEventDetailsPage(
+                              eventId: id,
+                              apartmentId: widget.apartmentId,
                             ),
                           ),
-                        ],
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _events.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final ev = _events[index];
-                          final id = (ev['id'] ?? ev['_id']).toString();
-                          final photoUrl = (ev['photoUrl'] ?? '').toString();
-                          return Material(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            clipBehavior: Clip.antiAlias,
-                            elevation: 1,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(18),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => UserEventDetailsPage(
-                                      eventId: id,
-                                      apartmentId: widget.apartmentId,
+                        ).then((_) => _load());
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (photoUrl.isNotEmpty)
+                            Image.network(
+                              photoUrl,
+                              height: 140,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const SizedBox.shrink(),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: (ev['status'] == 'published')
+                                            ? const Color(0x2622C55E)
+                                            : const Color(0xFF1E1E2A),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        (ev['status'] ?? 'active')
+                                            .toString()
+                                            .toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: (ev['status'] == 'published')
+                                              ? const Color(0xFF86EFAC)
+                                              : const Color(0xFFCBD5E1),
+                                        ),
+                                      ),
                                     ),
+                                    Text(
+                                      '${ev['bookedCount'] ?? 0} registered',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF2563EB),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  (ev['title'] ?? '').toString(),
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
                                   ),
-                                ).then((_) => _load());
-                              },
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (photoUrl.isNotEmpty)
-                                    Image.network(
-                                      photoUrl,
-                                      height: 140,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                    ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                              decoration: BoxDecoration(
-                                                color: (ev['status'] == 'published') ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
-                                                borderRadius: BorderRadius.circular(20),
-                                              ),
-                                              child: Text(
-                                                (ev['status'] ?? 'active').toString().toUpperCase(),
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: (ev['status'] == 'published') ? const Color(0xFF166534) : const Color(0xFF475569),
-                                                ),
-                                              ),
-                                            ),
-                                            Text(
-                                              '${ev['bookedCount'] ?? 0} registered',
-                                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2563EB)),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          (ev['title'] ?? '').toString(),
-                                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-                                        ),
-                                        if ((ev['venue'] ?? '').toString().isNotEmpty) ...[
-                                          const SizedBox(height: 4),
-                                          Text('📍 ${ev['venue']}', style: const TextStyle(fontSize: 13, color: Color(0xFF475569))),
-                                        ],
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          _formatDate(ev['eventDate']?.toString()),
-                                          style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-                                        ),
-                                      ],
+                                ),
+                                if ((ev['venue'] ?? '')
+                                    .toString()
+                                    .isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '📍 ${ev['venue']}',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFFCBD5E1),
                                     ),
                                   ),
                                 ],
-                              ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _formatDate(ev['eventDate']?.toString()),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF9CA3AF),
+                                  ),
+                                ),
+                              ],
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       ),
+                    ),
+                  );
+                },
+              ),
       ),
     );
   }
@@ -191,7 +226,11 @@ class _UserEventsListPageState extends State<UserEventsListPage> {
 class UserEventDetailsPage extends StatefulWidget {
   final String eventId;
   final String? apartmentId;
-  const UserEventDetailsPage({super.key, required this.eventId, this.apartmentId});
+  const UserEventDetailsPage({
+    super.key,
+    required this.eventId,
+    this.apartmentId,
+  });
 
   @override
   State<UserEventDetailsPage> createState() => _UserEventDetailsPageState();
@@ -214,7 +253,10 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
       _loading = true;
       _error = null;
     });
-    final res = await _api.getManagedEvent(widget.eventId, apartmentId: widget.apartmentId);
+    final res = await _api.getManagedEvent(
+      widget.eventId,
+      apartmentId: widget.apartmentId,
+    );
     if (!mounted) return;
     if (res['success'] == true) {
       setState(() {
@@ -261,10 +303,10 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFF0A0A12),
       appBar: AppBar(
         title: Text(_event?['title']?.toString() ?? 'Event'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: const Color(0xFF0A0A12),
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -278,53 +320,98 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null || _event == null
-              ? Center(child: Text(_error ?? 'Event not found', style: const TextStyle(color: AppTheme.errorColor)))
-              : RefreshIndicator(
-                  onRefresh: _loadEvent,
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      _buildEventHeader(),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'Packages & Inclusions',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
-                      ),
-                      const SizedBox(height: 12),
-                      if ((_event!['packages'] as List? ?? []).isEmpty)
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFCBD5E1), style: BorderStyle.solid),
-                          ),
-                          child: const Text('No packages configured for this event.', style: TextStyle(color: Color(0xFF64748B))),
-                        )
-                      else
-                        ...List<Map<String, dynamic>>.from(
-                          (_event!['packages'] as List).map((p) => Map<String, dynamic>.from(p as Map)),
-                        ).map((pkg) => _buildPackageCard(pkg)),
-                    ],
+          ? Center(
+              child: Text(
+                _error ?? 'Event not found',
+                style: const TextStyle(color: AppTheme.errorColor),
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadEvent,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildEventHeader(),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Packages & Inclusions',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  if ((_event!['packages'] as List? ?? []).isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0A0A12),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFFCBD5E1),
+                          style: BorderStyle.solid,
+                        ),
+                      ),
+                      child: const Text(
+                        'No packages configured for this event.',
+                        style: TextStyle(color: Color(0xFF9CA3AF)),
+                      ),
+                    )
+                  else
+                    ...List<Map<String, dynamic>>.from(
+                      (_event!['packages'] as List).map(
+                        (p) => Map<String, dynamic>.from(p as Map),
+                      ),
+                    ).map((pkg) => _buildPackageCard(pkg)),
+                ],
+              ),
+            ),
     );
   }
 
   String _formatScheduleDates(List<String> dates) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     final sorted = [...dates]..sort();
-    return sorted.map((d) {
-      final parts = d.split('-');
-      if (parts.length != 3) return d;
-      final month = int.tryParse(parts[1]);
-      if (month == null || month < 1 || month > 12) return d;
-      return '${int.tryParse(parts[2]) ?? parts[2]} ${months[month - 1]}';
-    }).join(', ');
+    return sorted
+        .map((d) {
+          final parts = d.split('-');
+          if (parts.length != 3) return d;
+          final month = int.tryParse(parts[1]);
+          if (month == null || month < 1 || month > 12) return d;
+          return '${int.tryParse(parts[2]) ?? parts[2]} ${months[month - 1]}';
+        })
+        .join(', ');
   }
 
   String _formatDay(dynamic raw) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     final d = DateTime.tryParse(raw?.toString() ?? '')?.toLocal();
     if (d == null) return '';
     return '${d.day} ${months[d.month - 1]} ${d.year}';
@@ -338,22 +425,37 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
     final end = _formatDay(ev['eventEndDate']);
     final dateText = end.isNotEmpty && end != start ? '$start - $end' : start;
     Widget metaRow(IconData icon, String text) => Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Row(
-            children: [
-              Icon(icon, size: 16, color: const Color(0xFF2563EB)),
-              const SizedBox(width: 8),
-              Expanded(child: Text(text, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF334155)))),
-            ],
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: const Color(0xFF2563EB)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFCBD5E1),
+              ),
+            ),
           ),
-        );
+        ],
+      ),
+    );
     final photoUrl = (ev['photoUrl'] ?? '').toString();
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Color(0x0D0F172A), blurRadius: 12, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0DFFFFFF),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -372,11 +474,20 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (venue.isNotEmpty) metaRow(Icons.location_on_outlined, venue),
-                if (dateText.isNotEmpty) metaRow(Icons.calendar_today_outlined, dateText),
+                if (venue.isNotEmpty)
+                  metaRow(Icons.location_on_outlined, venue),
+                if (dateText.isNotEmpty)
+                  metaRow(Icons.calendar_today_outlined, dateText),
                 if (desc.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(desc, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4)),
+                  Text(
+                    desc,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF9CA3AF),
+                      height: 1.4,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -392,8 +503,12 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
     // Every inclusion is listed; ones not scheduled for today are greyed out and explain why when tapped.
     final entries = <Map<String, dynamic>>[];
     for (final e in rawInclusions) {
-      final inc = e is Map ? Map<String, dynamic>.from(e) : {'name': e.toString(), 'dates': const []};
-      final dates = (inc['dates'] as List? ?? []).map((d) => d.toString()).toList();
+      final inc = e is Map
+          ? Map<String, dynamic>.from(e)
+          : {'name': e.toString(), 'dates': const []};
+      final dates = (inc['dates'] as List? ?? [])
+          .map((d) => d.toString())
+          .toList();
       entries.add({'name': inc['name'].toString(), 'dates': dates});
     }
     final rate = pkg['rate'];
@@ -402,9 +517,15 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Color(0x0D0F172A), blurRadius: 12, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0DFFFFFF),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,14 +535,23 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
               Expanded(
                 child: Text(
                   pkg['name']?.toString() ?? '',
-                  style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                  style: const TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: isFree ? const Color(0xFFDCFCE7) : const Color(0xFFEFF6FF),
+                  color: isFree
+                      ? const Color(0x2622C55E)
+                      : const Color(0x263B82F6),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -429,7 +559,9 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: isFree ? const Color(0xFF166534) : const Color(0xFF2563EB),
+                    color: isFree
+                        ? const Color(0xFF86EFAC)
+                        : const Color(0xFF2563EB),
                   ),
                 ),
               ),
@@ -438,7 +570,10 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
           if (entries.isEmpty)
             const Padding(
               padding: EdgeInsets.only(top: 8),
-              child: Text('No inclusions listed.', style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8))),
+              child: Text(
+                'No inclusions listed.',
+                style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+              ),
             )
           else ...[
             const SizedBox(height: 6),
@@ -449,53 +584,68 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
               return Container(
                 margin: const EdgeInsets.only(bottom: 6),
                 decoration: BoxDecoration(
-                  color: availableToday ? const Color(0xFFF1F6FF) : const Color(0xFFF8FAFC),
+                  color: availableToday
+                      ? const Color(0xFF1E1E2A)
+                      : const Color(0xFF0A0A12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: () {
-                  if (availableToday) {
-                    _openClaimSheet(name, pkg['id']?.toString() ?? '');
-                    return;
-                  }
-                  ScaffoldMessenger.of(context)
-                    ..hideCurrentSnackBar()
-                    ..showSnackBar(
-                      SnackBar(
-                        backgroundColor: AppTheme.errorColor,
-                        behavior: SnackBarBehavior.floating,
-                        content: Text('"$name" is not available today. Scheduled for: ${_formatScheduleDates(dates)}.'),
-                      ),
-                    );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.restaurant_rounded,
-                        size: 16,
-                        color: availableToday ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          name,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: availableToday ? const Color(0xFF0F172A) : const Color(0xFFA0AEC0),
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () {
+                    if (availableToday) {
+                      _openClaimSheet(name, pkg['id']?.toString() ?? '');
+                      return;
+                    }
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(
+                          backgroundColor: AppTheme.errorColor,
+                          behavior: SnackBarBehavior.floating,
+                          content: Text(
+                            '"$name" is not available today. Scheduled for: ${_formatScheduleDates(dates)}.',
                           ),
                         ),
-                      ),
-                      Icon(
-                        availableToday ? Icons.chevron_right_rounded : Icons.lock_outline_rounded,
-                        size: 18,
-                        color: availableToday ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1),
-                      ),
-                    ],
+                      );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 11,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.restaurant_rounded,
+                          size: 16,
+                          color: availableToday
+                              ? const Color(0xFF2563EB)
+                              : const Color(0xFFCBD5E1),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: availableToday
+                                  ? Colors.white
+                                  : const Color(0xFF9CA3AF),
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          availableToday
+                              ? Icons.chevron_right_rounded
+                              : Icons.lock_outline_rounded,
+                          size: 18,
+                          color: availableToday
+                              ? const Color(0xFF2563EB)
+                              : const Color(0xFFCBD5E1),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 ),
               );
             }),
@@ -544,7 +694,9 @@ class _UserClaimHistoryPageState extends State<UserClaimHistoryPage> {
     if (widget.eventId != null) {
       events.add({'id': widget.eventId, 'title': ''});
     } else {
-      final list = await _api.listManagedEvents(apartmentId: widget.apartmentId);
+      final list = await _api.listManagedEvents(
+        apartmentId: widget.apartmentId,
+      );
       if (list['success'] == true) {
         for (final e in (list['events'] as List? ?? [])) {
           events.add(Map<String, dynamic>.from(e as Map));
@@ -580,8 +732,10 @@ class _UserClaimHistoryPageState extends State<UserClaimHistoryPage> {
     if (!mounted) return;
     {
       claims.sort((a, b) {
-        final da = DateTime.tryParse(a['claimedAt']?.toString() ?? '') ?? DateTime(0);
-        final db = DateTime.tryParse(b['claimedAt']?.toString() ?? '') ?? DateTime(0);
+        final da =
+            DateTime.tryParse(a['claimedAt']?.toString() ?? '') ?? DateTime(0);
+        final db =
+            DateTime.tryParse(b['claimedAt']?.toString() ?? '') ?? DateTime(0);
         return db.compareTo(da);
       });
     }
@@ -603,13 +757,18 @@ class _UserClaimHistoryPageState extends State<UserClaimHistoryPage> {
   List<Map<String, dynamic>> get _filtered {
     final term = _search.toLowerCase().trim();
     return _claims.where((c) {
-      final matchesSearch = term.isEmpty ||
-          (c['participantName']?.toString().toLowerCase().contains(term) ?? false) ||
+      final matchesSearch =
+          term.isEmpty ||
+          (c['participantName']?.toString().toLowerCase().contains(term) ??
+              false) ||
           (c['idNumber']?.toString().toLowerCase().contains(term) ?? false) ||
-          (c['inclusionName']?.toString().toLowerCase().contains(term) ?? false) ||
+          (c['inclusionName']?.toString().toLowerCase().contains(term) ??
+              false) ||
           (c['packageName']?.toString().toLowerCase().contains(term) ?? false);
-      final matchesFilter = _inclusionFilter == 'ALL' ||
-          (c['inclusionName']?.toString().toLowerCase() == _inclusionFilter.toLowerCase());
+      final matchesFilter =
+          _inclusionFilter == 'ALL' ||
+          (c['inclusionName']?.toString().toLowerCase() ==
+              _inclusionFilter.toLowerCase());
       return matchesSearch && matchesFilter;
     }).toList();
   }
@@ -618,209 +777,319 @@ class _UserClaimHistoryPageState extends State<UserClaimHistoryPage> {
   Widget build(BuildContext context) {
     final filtered = _filtered;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF0A0A12),
       appBar: AppBar(
         title: const Text('Scan & Claim History'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: const Color(0xFF0A0A12),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: Column(
-            children: [
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                child: Column(
-                  children: [
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search participant, ID number, inclusion…',
-                        hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(0xFF94A3B8)),
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                        filled: true,
-                        fillColor: const Color(0xFFF1F5F9),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      ),
-                      onChanged: (v) => setState(() => _search = v),
+        children: [
+          Container(
+            color: const Color(0xFF14141F),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            child: Column(
+              children: [
+                TextField(
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Search participant, ID number, inclusion…',
+                    hintStyle: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF94A3B8),
                     ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Icon(Icons.filter_list_rounded, size: 16, color: Color(0xFF64748B)),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(10),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      size: 20,
+                      color: Color(0xFF94A3B8),
+                    ),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    filled: true,
+                    fillColor: const Color(0xFF1E1E2A),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onChanged: (v) => setState(() => _search = v),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.filter_list_rounded,
+                      size: 16,
+                      color: Color(0xFF9CA3AF),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1E2A),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _inclusionFilter,
+                            dropdownColor: const Color(0xFF1E1E2A),
+                            isDense: true,
+                            isExpanded: true,
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 20,
                             ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _inclusionFilter,
-                                isDense: true,
-                                isExpanded: true,
-                                icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
-                                items: [
-                                  DropdownMenuItem(value: 'ALL', child: Text('All Inclusions (${_claims.length})')),
-                                  ..._uniqueInclusions.map((inc) => DropdownMenuItem(value: inc, child: Text(inc))),
-                                ],
-                                onChanged: (v) => setState(() => _inclusionFilter = v ?? 'ALL'),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                            items: [
+                              DropdownMenuItem(
+                                value: 'ALL',
+                                child: Text(
+                                  'All Inclusions (${_claims.length})',
+                                ),
                               ),
-                            ),
+                              ..._uniqueInclusions.map(
+                                (inc) => DropdownMenuItem(
+                                  value: inc,
+                                  child: Text(inc),
+                                ),
+                              ),
+                            ],
+                            onChanged: (v) =>
+                                setState(() => _inclusionFilter = v ?? 'ALL'),
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-              Expanded(
-                child: _loading
-                    ? const Center(child: CircularProgressIndicator())
-                    : filtered.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(32),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : filtered.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('📭', style: TextStyle(fontSize: 40)),
+                          const SizedBox(height: 10),
+                          Text(
+                            _claims.isEmpty
+                                ? 'No inclusions claimed yet'
+                                : 'No matching claim history found',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final c = filtered[index];
+                      final claimedAt = DateTime.tryParse(
+                        c['claimedAt']?.toString() ?? '',
+                      );
+                      final name = c['participantName']?.toString() ?? '?';
+                      return Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF14141F),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0x1AFFFFFF)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x08000000),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: const Color(0x263B82F6),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF93C5FD),
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
                               child: Column(
-                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('📭', style: TextStyle(fontSize: 40)),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    _claims.isEmpty ? 'No inclusions claimed yet' : 'No matching claim history found',
-                                    style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0x263B82F6),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '#${c['idNumber'] ?? 'SPOT'}',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xFF2563EB),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (widget.eventId == null &&
+                                      (c['eventTitle'] ?? '')
+                                          .toString()
+                                          .isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: Text(
+                                        c['eventTitle'].toString(),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF2563EB),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  if ((c['institution'] ?? '')
+                                      .toString()
+                                      .isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: Text(
+                                        c['institution'].toString(),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 9,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [
+                                              Color(0x263B82F6),
+                                              Color(0x263B82F6),
+                                            ],
+                                          ),
+                                          border: Border.all(
+                                            color: const Color(0xFF93C5FD),
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            5,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '✨ ${c['inclusionName'] ?? ''}',
+                                          style: const TextStyle(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xFF93C5FD),
+                                          ),
+                                        ),
+                                      ),
+                                      if ((c['packageName'] ?? '')
+                                          .toString()
+                                          .isNotEmpty)
+                                        Text(
+                                          c['packageName'].toString(),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Color(0xFFCBD5E1),
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.access_time_rounded,
+                                        size: 13,
+                                        color: Color(0xFF94A3B8),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        claimedAt != null
+                                            ? '${claimedAt.toLocal().day}/${claimedAt.toLocal().month}/${claimedAt.toLocal().year} · ${claimedAt.toLocal().hour.toString().padLeft(2, '0')}:${claimedAt.toLocal().minute.toString().padLeft(2, '0')}'
+                                            : '—',
+                                        style: const TextStyle(
+                                          fontSize: 11.5,
+                                          color: Color(0xFF94A3B8),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                            itemCount: filtered.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 10),
-                            itemBuilder: (context, index) {
-                              final c = filtered[index];
-                              final claimedAt = DateTime.tryParse(c['claimedAt']?.toString() ?? '');
-                              final name = c['participantName']?.toString() ?? '?';
-                              return Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                                  boxShadow: const [BoxShadow(color: Color(0x08000000), blurRadius: 8, offset: Offset(0, 2))],
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: 38,
-                                      height: 38,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFEFF6FF),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                        style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1E3A8A), fontSize: 15),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  name,
-                                                  style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF0F172A), fontSize: 14),
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                                decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(8)),
-                                                child: Text(
-                                                  '#${c['idNumber'] ?? 'SPOT'}',
-                                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF2563EB)),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          if (widget.eventId == null && (c['eventTitle'] ?? '').toString().isNotEmpty)
-                                            Padding(
-                                              padding: const EdgeInsets.only(top: 2),
-                                              child: Text(
-                                                c['eventTitle'].toString(),
-                                                style: const TextStyle(fontSize: 12, color: Color(0xFF2563EB), fontWeight: FontWeight.w700),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          if ((c['institution'] ?? '').toString().isNotEmpty)
-                                            Padding(
-                                              padding: const EdgeInsets.only(top: 2),
-                                              child: Text(
-                                                c['institution'].toString(),
-                                                style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          const SizedBox(height: 8),
-                                          Wrap(
-                                            spacing: 6,
-                                            runSpacing: 4,
-                                            crossAxisAlignment: WrapCrossAlignment.center,
-                                            children: [
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                                                decoration: BoxDecoration(
-                                                  gradient: const LinearGradient(colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)]),
-                                                  border: Border.all(color: const Color(0xFF93C5FD)),
-                                                  borderRadius: BorderRadius.circular(5),
-                                                ),
-                                                child: Text(
-                                                  '✨ ${c['inclusionName'] ?? ''}',
-                                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF1E3A8A)),
-                                                ),
-                                              ),
-                                              if ((c['packageName'] ?? '').toString().isNotEmpty)
-                                                Text(
-                                                  c['packageName'].toString(),
-                                                  style: const TextStyle(fontSize: 12, color: Color(0xFF475569), fontWeight: FontWeight.w700),
-                                                ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Row(
-                                            children: [
-                                              const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF94A3B8)),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                claimedAt != null
-                                                    ? '${claimedAt.toLocal().day}/${claimedAt.toLocal().month}/${claimedAt.toLocal().year} · ${claimedAt.toLocal().hour.toString().padLeft(2, '0')}:${claimedAt.toLocal().minute.toString().padLeft(2, '0')}'
-                                                    : '—',
-                                                style: const TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-              ),
-            ],
+                          ],
+                        ),
+                      );
+                    },
+                  ),
           ),
+        ],
+      ),
     );
   }
 }
@@ -844,10 +1113,12 @@ class ClaimInclusionScannerPage extends StatefulWidget {
   });
 
   @override
-  State<ClaimInclusionScannerPage> createState() => _ClaimInclusionScannerPageState();
+  State<ClaimInclusionScannerPage> createState() =>
+      _ClaimInclusionScannerPageState();
 }
 
-class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> with SingleTickerProviderStateMixin {
+class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage>
+    with SingleTickerProviderStateMixin {
   bool _qrMode = true;
   final TextEditingController _codeController = TextEditingController();
   MobileScannerController? _scannerController;
@@ -945,18 +1216,29 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
           children: [
             const Text(
               'Claim Benefit',
-              style: TextStyle(fontSize: 13, color: Colors.white60, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.white60,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             Text(
               widget.inclusionName,
-              style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w800),
+              style: const TextStyle(
+                fontSize: 18,
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ],
         ),
         actions: [
           if (_qrMode && _scannerController != null)
             IconButton(
-              icon: Icon(_torchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded, color: Colors.white),
+              icon: Icon(
+                _torchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                color: Colors.white,
+              ),
               onPressed: () {
                 _scannerController?.toggleTorch();
                 setState(() => _torchOn = !_torchOn);
@@ -1006,8 +1288,8 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
               child: _result != null
                   ? _buildResultView()
                   : _qrMode
-                      ? _buildScannerView()
-                      : _buildManualCodeView(),
+                  ? _buildScannerView()
+                  : _buildManualCodeView(),
             ),
           ],
         ),
@@ -1023,11 +1305,19 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.camera_alt_outlined, size: 56, color: Colors.white38),
+              const Icon(
+                Icons.camera_alt_outlined,
+                size: 56,
+                color: Colors.white38,
+              ),
               const SizedBox(height: 16),
               const Text(
                 'Camera Access Denied',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -1038,7 +1328,10 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () => openAppSettings(),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                ),
                 child: const Text('Open Settings'),
               ),
             ],
@@ -1057,23 +1350,18 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
       alignment: Alignment.center,
       children: [
         // Camera Preview with native sharp sensor focus
-        MobileScanner(
-          controller: _scannerController,
-          onDetect: _onDetect,
-        ),
+        MobileScanner(controller: _scannerController, onDetect: _onDetect),
 
         // Dark Overlay with Cutout
-        CustomPaint(
-          size: Size.infinite,
-          painter: _ScannerOverlayPainter(),
-        ),
+        CustomPaint(size: Size.infinite, painter: _ScannerOverlayPainter()),
 
         // Google Pay style Animated Scan Line
         AnimatedBuilder(
           animation: _animController,
           builder: (context, child) {
             const boxSize = 300.0;
-            final topOffset = (_animController.value * (boxSize - 40)) - (boxSize / 2) + 20;
+            final topOffset =
+                (_animController.value * (boxSize - 40)) - (boxSize / 2) + 20;
             return Transform.translate(
               offset: Offset(0, topOffset),
               child: Container(
@@ -1081,7 +1369,12 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
                 height: 3,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Colors.transparent, Color(0xFF38BDF8), Color(0xFF2563EB), Colors.transparent],
+                    colors: [
+                      Colors.transparent,
+                      Color(0xFF38BDF8),
+                      Color(0xFF2563EB),
+                      Colors.transparent,
+                    ],
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -1114,7 +1407,9 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
                       top: BorderSide(color: Color(0xFF38BDF8), width: 4),
                       left: BorderSide(color: Color(0xFF38BDF8), width: 4),
                     ),
-                    borderRadius: BorderRadius.only(topLeft: Radius.circular(16)),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                    ),
                   ),
                 ),
               ),
@@ -1130,7 +1425,9 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
                       top: BorderSide(color: Color(0xFF38BDF8), width: 4),
                       right: BorderSide(color: Color(0xFF38BDF8), width: 4),
                     ),
-                    borderRadius: BorderRadius.only(topRight: Radius.circular(16)),
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(16),
+                    ),
                   ),
                 ),
               ),
@@ -1146,7 +1443,9 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
                       bottom: BorderSide(color: Color(0xFF38BDF8), width: 4),
                       left: BorderSide(color: Color(0xFF38BDF8), width: 4),
                     ),
-                    borderRadius: BorderRadius.only(bottomLeft: Radius.circular(16)),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                    ),
                   ),
                 ),
               ),
@@ -1162,7 +1461,9 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
                       bottom: BorderSide(color: Color(0xFF38BDF8), width: 4),
                       right: BorderSide(color: Color(0xFF38BDF8), width: 4),
                     ),
-                    borderRadius: BorderRadius.only(bottomRight: Radius.circular(16)),
+                    borderRadius: BorderRadius.only(
+                      bottomRight: Radius.circular(16),
+                    ),
                   ),
                 ),
               ),
@@ -1180,7 +1481,9 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.75),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.4)),
+              border: Border.all(
+                color: const Color(0xFF38BDF8).withValues(alpha: 0.4),
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.4),
@@ -1193,12 +1496,20 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFF38BDF8), size: 20),
+                const Icon(
+                  Icons.qr_code_scanner_rounded,
+                  color: Color(0xFF38BDF8),
+                  size: 20,
+                ),
                 const SizedBox(width: 10),
                 Flexible(
                   child: Text(
                     'Align QR code inside frame to claim',
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -1224,7 +1535,7 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF14141F),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -1235,7 +1546,7 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF64748B),
+                color: Color(0xFF9CA3AF),
                 letterSpacing: 1,
               ),
             ),
@@ -1249,13 +1560,13 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 3,
-                color: Color(0xFF0F172A),
+                color: Colors.white,
               ),
               decoration: InputDecoration(
                 hintText: 'e.g. 1001',
                 counterText: '',
                 filled: true,
-                fillColor: const Color(0xFFF8FAFC),
+                fillColor: const Color(0xFF0A0A12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
@@ -1283,11 +1594,18 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2563EB),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 child: Text(
-                  _submitting ? 'Verifying...' : 'Verify & Claim ${widget.inclusionName}',
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                  _submitting
+                      ? 'Verifying...'
+                      : 'Verify & Claim ${widget.inclusionName}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
                 ),
               ),
             ),
@@ -1310,31 +1628,58 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
             child: ElevatedButton.icon(
               onPressed: _resetToScan,
               icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
-              label: const Text('Scan Next Participant', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              label: const Text(
+                'Scan Next Participant',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2563EB),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 10),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Done & Go Back', style: TextStyle(color: Colors.white70)),
+            child: const Text(
+              'Done & Go Back',
+              style: TextStyle(color: Colors.white70),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAccessGranted(Map<String, dynamic>? registration, {bool used = false, bool denied = false, String? message}) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  Widget _buildAccessGranted(
+    Map<String, dynamic>? registration, {
+    bool used = false,
+    bool denied = false,
+    String? message,
+  }) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     final reg = registration ?? const <String, dynamic>{};
     Map<String, dynamic>? pkg;
     for (final p in (widget.event['packages'] as List? ?? [])) {
       final m = Map<String, dynamic>.from(p as Map);
-      if (m['id']?.toString() == reg['packageId']?.toString() || m['name']?.toString() == reg['packageName']?.toString()) {
+      if (m['id']?.toString() == reg['packageId']?.toString() ||
+          m['name']?.toString() == reg['packageName']?.toString()) {
         pkg = m;
         break;
       }
@@ -1343,20 +1688,22 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
     final packageName = (reg['packageName'] ?? '').toString();
     final packageText = packageName.isEmpty
         ? ''
-        : (pkg == null ? packageName : '$packageName — ${rate == 0 ? 'Free' : '₹$rate'}');
+        : (pkg == null
+              ? packageName
+              : '$packageName — ${rate == 0 ? 'Free' : '₹$rate'}');
     final now = DateTime.now();
     final today = '${now.day} ${months[now.month - 1]} ${now.year}';
     final venue = (widget.event['venue'] ?? '').toString();
 
     final statusBg = denied
-        ? const Color(0xFFFEF2F2)
-        : (used ? const Color(0xFFFFFBEB) : const Color(0xFFF0FDF4));
+        ? const Color(0x26EF4444)
+        : (used ? const Color(0x26F59E0B) : const Color(0x2622C55E));
     final statusBorder = denied
         ? const Color(0xFFFCA5A5)
         : (used ? const Color(0xFFFCD34D) : const Color(0xFF86EFAC));
     final statusText = denied
-        ? const Color(0xFF991B1B)
-        : (used ? const Color(0xFF92400E) : const Color(0xFF166534));
+        ? const Color(0xFFFCA5A5)
+        : (used ? const Color(0xFFFCD34D) : const Color(0xFF86EFAC));
 
     Widget line(String label, String value) => value.isEmpty
         ? const SizedBox.shrink()
@@ -1367,10 +1714,24 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
               children: [
                 SizedBox(
                   width: 110,
-                  child: Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w600)),
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Color(0xFF9CA3AF),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
                 Expanded(
-                  child: Text(value, style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.w700)),
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1390,15 +1751,25 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
           Row(
             children: [
               Icon(
-                denied ? Icons.cancel_rounded : (used ? Icons.schedule_rounded : Icons.check_circle_rounded),
+                denied
+                    ? Icons.cancel_rounded
+                    : (used
+                          ? Icons.schedule_rounded
+                          : Icons.check_circle_rounded),
                 color: statusText,
                 size: 28,
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  denied ? 'ACCESS DENIED' : (used ? 'ALREADY CLAIMED' : 'ACCESS GRANTED'),
-                  style: TextStyle(color: statusText, fontWeight: FontWeight.w900, fontSize: 18),
+                  denied
+                      ? 'ACCESS DENIED'
+                      : (used ? 'ALREADY CLAIMED' : 'ACCESS GRANTED'),
+                  style: TextStyle(
+                    color: statusText,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                  ),
                 ),
               ),
             ],
@@ -1407,12 +1778,24 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
           if ((reg['name'] ?? '').toString().isNotEmpty) ...[
             Text(
               (reg['name'] ?? '').toString(),
-              style: TextStyle(color: statusText, fontWeight: FontWeight.w900, fontSize: 20),
+              style: TextStyle(
+                color: statusText,
+                fontWeight: FontWeight.w900,
+                fontSize: 20,
+              ),
             ),
             const SizedBox(height: 8),
           ],
-          line('ID Number', ((reg['idNumber']) ?? (reg.isEmpty ? '' : 'Spot')).toString()),
-          line('Type', reg.isEmpty ? '' : (reg['participantType'] ?? 'Delegate').toString()),
+          line(
+            'ID Number',
+            ((reg['idNumber']) ?? (reg.isEmpty ? '' : 'Spot')).toString(),
+          ),
+          line(
+            'Type',
+            reg.isEmpty
+                ? ''
+                : (reg['participantType'] ?? 'Delegate').toString(),
+          ),
           line('Package', packageText),
           line('Date', today),
           line('Venue', venue),
@@ -1426,9 +1809,17 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
             ),
             child: Text(
               denied
-                  ? ((message ?? '').isEmpty ? 'This participant is not eligible for this benefit.' : message!)
-                  : (used ? 'This entitlement has already been redeemed.' : 'Participant is eligible. Benefit claim registered.'),
-              style: TextStyle(color: statusText, fontWeight: FontWeight.w700, fontSize: 13),
+                  ? ((message ?? '').isEmpty
+                        ? 'This participant is not eligible for this benefit.'
+                        : message!)
+                  : (used
+                        ? 'This entitlement has already been redeemed.'
+                        : 'Participant is eligible. Benefit claim registered.'),
+              style: TextStyle(
+                color: statusText,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
             ),
           ),
         ],
@@ -1438,9 +1829,12 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage> w
 
   Widget _buildResultBanner() {
     final success = _result?['success'] == true;
-    final regMap = _result?['registration'] is Map ? Map<String, dynamic>.from(_result!['registration'] as Map) : null;
+    final regMap = _result?['registration'] is Map
+        ? Map<String, dynamic>.from(_result!['registration'] as Map)
+        : null;
     if (success) return _buildAccessGranted(regMap);
-    if (_result?['alreadyClaimed'] == true && regMap != null) return _buildAccessGranted(regMap, used: true);
+    if (_result?['alreadyClaimed'] == true && regMap != null)
+      return _buildAccessGranted(regMap, used: true);
     return _buildAccessGranted(
       regMap,
       denied: true,
@@ -1493,7 +1887,8 @@ class _ScannerOverlayPainter extends CustomPainter {
     final top = (size.height - boxSize) / 2;
     final rect = Rect.fromLTWH(left, top, boxSize, boxSize);
 
-    final backgroundPaint = Paint()..color = Colors.black.withValues(alpha: 0.55);
+    final backgroundPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.55);
     final path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
       ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(20)))

@@ -48,10 +48,10 @@ class _ImageSourceOption extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withOpacity(0.1),
+          color: const Color(0xFF3B82F6).withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppTheme.primaryColor.withOpacity(0.3),
+            color: const Color(0xFF3B82F6).withOpacity(0.3),
             width: 1.5,
           ),
         ),
@@ -60,14 +60,10 @@ class _ImageSourceOption extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: const BoxDecoration(
-                color: AppTheme.primaryColor,
+                color: const Color(0xFF3B82F6),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                color: Colors.white,
-                size: 32,
-              ),
+              child: Icon(icon, color: Colors.white, size: 32),
             ),
             const SizedBox(height: 5),
             Text(
@@ -75,7 +71,7 @@ class _ImageSourceOption extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.primaryColor,
+                color: const Color(0xFF3B82F6),
               ),
             ),
           ],
@@ -85,12 +81,7 @@ class _ImageSourceOption extends StatelessWidget {
   }
 }
 
-enum ImageType {
-  profilePicture,
-  aadhaarFront,
-  aadhaarBack,
-  panCard,
-}
+enum ImageType { profilePicture, aadhaarFront, aadhaarBack, panCard }
 
 enum ResidentAccountType { owner, tenant }
 
@@ -146,14 +137,10 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
   bool get _requireEmailOtp => !widget.fromAdmin;
 
   /// Admin adding a resident: minimal fields (apartment & hostel).
-  bool get _isAdminApartmentSimplified =>
-      widget.fromAdmin &&
-      (false ||
-          false);
+  bool get _isAdminApartmentSimplified => widget.fromAdmin && (false || false);
 
   /// Owner/tenant choice applies only when admin adds a user to an apartment.
-  bool get _showAdminAccountType =>
-      _isAdminApartmentSimplified && false;
+  bool get _showAdminAccountType => _isAdminApartmentSimplified && false;
 
   @override
   void initState() {
@@ -163,7 +150,8 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     if (authState is AuthAuthenticated) {
       _currentUserType = authState.user.userType;
       // If apartmentId is provided via widget (from admin), use it; otherwise use current user's apartmentId
-      _currentUserApartmentId = widget.apartmentId ?? authState.user.apartmentId;
+      _currentUserApartmentId =
+          widget.apartmentId ?? authState.user.apartmentId;
     } else if (widget.apartmentId != null) {
       // If no auth state but apartmentId provided, use it
       _currentUserApartmentId = widget.apartmentId;
@@ -198,7 +186,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF14141F),
           borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
         ),
         padding: const EdgeInsets.all(15),
@@ -209,17 +197,14 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: const Color(0x33FFFFFF),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 24),
             const Text(
               'Choose Image Source',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             Row(
@@ -289,7 +274,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     setState(() {
       _isOtpSent = true;
     });
-    context.read<AuthBloc>().add(SendOtpEvent(email: _emailController.text.trim()));
+    context.read<AuthBloc>().add(
+      SendOtpEvent(email: _emailController.text.trim()),
+    );
   }
 
   void _verifyOtp() {
@@ -299,11 +286,11 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
       return;
     }
     context.read<AuthBloc>().add(
-          VerifyOtpEvent(
-            email: _emailController.text.trim(),
-            otp: _otpController.text.trim(),
-          ),
-        );
+      VerifyOtpEvent(
+        email: _emailController.text.trim(),
+        otp: _otpController.text.trim(),
+      ),
+    );
   }
 
   void _handleRegister() {
@@ -312,19 +299,22 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     final isCollege = false;
     final isEvents = _propertyType == PropertyType.events;
     final noExtraFieldsType = isCollege || isEvents;
-    final baseValid = _formKey.currentState!.validate() &&
-        (isCompany || noExtraFieldsType ? true : (!_requireEmailOtp || _isEmailVerified));
+    final baseValid =
+        _formKey.currentState!.validate() &&
+        (isCompany || noExtraFieldsType
+            ? true
+            : (!_requireEmailOtp || _isEmailVerified));
     final companyValid = baseValid;
     final hostelValid = _isAdminApartmentSimplified
         ? (baseValid && _familyType != null)
         : (baseValid && _gender != null && _occupationCategory != null);
-    final isTenantAccount = _showAdminAccountType &&
-        _accountType == ResidentAccountType.tenant;
+    final isTenantAccount =
+        _showAdminAccountType && _accountType == ResidentAccountType.tenant;
     final userValid = noExtraFieldsType
         ? baseValid
         : (_isAdminApartmentSimplified
-            ? (baseValid && _familyType != null)
-            : (baseValid && _familyType != null && _gender != null));
+              ? (baseValid && _familyType != null)
+              : (baseValid && _familyType != null && _gender != null));
 
     if (isTenantAccount) {
       final ownerName = _ownerNameController.text.trim();
@@ -335,20 +325,31 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
         return;
       }
       if (ownerMobile.length != 10) {
-        _showSnackBar('Please enter valid 10-digit owner mobile number', isError: true);
+        _showSnackBar(
+          'Please enter valid 10-digit owner mobile number',
+          isError: true,
+        );
         return;
       }
       if (ownerPassword.length < 6) {
-        _showSnackBar('Owner password must be at least 6 characters', isError: true);
+        _showSnackBar(
+          'Owner password must be at least 6 characters',
+          isError: true,
+        );
         return;
       }
       if (ownerMobile == _mobileController.text.trim()) {
-        _showSnackBar('Owner and tenant mobile numbers must be different', isError: true);
+        _showSnackBar(
+          'Owner and tenant mobile numbers must be different',
+          isError: true,
+        );
         return;
       }
     }
 
-    if ((isCompany || noExtraFieldsType ? baseValid : (isHostel ? hostelValid : userValid))) {
+    if ((isCompany || noExtraFieldsType
+        ? baseValid
+        : (isHostel ? hostelValid : userValid))) {
       if (isCompany) {
         final pass = _passwordController.text.trim();
         final confirm = _confirmPasswordController.text.trim();
@@ -380,7 +381,8 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
             ownerName: _ownerNameController.text.trim(),
             ownerMobile: _ownerMobileController.text.trim(),
             ownerPassword: _ownerPasswordController.text,
-            secondaryMobileNumber: _secondaryMobileController.text.trim().isEmpty
+            secondaryMobileNumber:
+                _secondaryMobileController.text.trim().isEmpty
                 ? null
                 : _secondaryMobileController.text.trim(),
             familyType: _familyType,
@@ -424,8 +426,16 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
               ? null
               : int.tryParse(_totalOccupantsController.text.trim()),
           department: false ? _designationController.text.trim() : null,
-          hostelRoom: false ? _hostelRoomController.text.trim().isEmpty ? null : _hostelRoomController.text.trim() : null,
-          hostelBed: false ? _hostelBedController.text.trim().isEmpty ? null : _hostelBedController.text.trim() : null,
+          hostelRoom: false
+              ? _hostelRoomController.text.trim().isEmpty
+                    ? null
+                    : _hostelRoomController.text.trim()
+              : null,
+          hostelBed: false
+              ? _hostelBedController.text.trim().isEmpty
+                    ? null
+                    : _hostelBedController.text.trim()
+              : null,
           occupationCategory: false ? _occupationCategory : null,
           dateOfBirth: false ? _dateOfBirth : null,
           profilePicPath: _profilePicture?.path,
@@ -471,7 +481,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     setState(() => _companySaving = true);
     final result = await _apiService.createCompanyPublic(
       name: _usernameController.text.trim(),
-      address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+      address: _addressController.text.trim().isEmpty
+          ? null
+          : _addressController.text.trim(),
       contactPhone: _mobileController.text.trim(),
       password: _passwordController.text.trim(),
       email: _emailController.text.trim(),
@@ -486,7 +498,10 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
         fromAdmin: widget.fromAdmin,
       );
     } else {
-      _showSnackBar(result['error'] as String? ?? 'Failed to create company', isError: true);
+      _showSnackBar(
+        result['error'] as String? ?? 'Failed to create company',
+        isError: true,
+      );
     }
   }
 
@@ -494,7 +509,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? AppTheme.errorColor : AppTheme.secondaryColor,
+        backgroundColor: isError
+            ? AppTheme.errorColor
+            : AppTheme.secondaryColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -523,7 +540,12 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     AppNavigation.resetTo(context, route);
   }
 
-  void _showSuccessDialog({required String title, required String message, bool fromAdmin = false, UserModel? user}) {
+  void _showSuccessDialog({
+    required String title,
+    required String message,
+    bool fromAdmin = false,
+    UserModel? user,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -536,7 +558,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              color: Colors.white,
+              color: const Color(0xFF14141F),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -560,7 +582,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textColor,
+                    color: Colors.white,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -569,7 +591,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                   message,
                   style: TextStyle(
                     fontSize: 16,
-                    color: AppTheme.textColor.withOpacity(0.7),
+                    color: Colors.white.withOpacity(0.7),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -584,7 +606,10 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                       context.read<AdminBloc>().add(LoadBlocksEvent());
 
                       // Pop dialog + registration page safely (avoid blank/white screen).
-                      final rootNav = Navigator.of(context, rootNavigator: true);
+                      final rootNav = Navigator.of(
+                        context,
+                        rootNavigator: true,
+                      );
                       rootNav.popUntil((route) {
                         final name = route.settings.name;
                         return name == AppRoutes.adminDashboard ||
@@ -594,12 +619,18 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                       Navigator.of(context).pop(); // Close dialog
                       // For regular registration, navigate based on user status
                       if (user.status == AccountStatus.pending) {
-                        Navigator.pushReplacementNamed(context, AppRoutes.waitingApproval);
+                        Navigator.pushReplacementNamed(
+                          context,
+                          AppRoutes.waitingApproval,
+                        );
                       } else if (user.status == AccountStatus.approved) {
                         _navigateToDashboard(user);
                       } else {
                         // If rejected or other status, go to login
-                        Navigator.pushReplacementNamed(context, AppRoutes.login);
+                        Navigator.pushReplacementNamed(
+                          context,
+                          AppRoutes.login,
+                        );
                       }
                     } else {
                       Navigator.of(context).pop(); // Close dialog
@@ -619,21 +650,24 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFF1E1E2A),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is UserRegisteredSuccess && widget.fromAdmin) {
-            final isBundle = _showAdminAccountType &&
+            final isBundle =
+                _showAdminAccountType &&
                 _accountType == ResidentAccountType.tenant;
             _showSuccessDialog(
               title: false
                   ? 'Company Created Successfully!'
-                  : (isBundle ? 'Owner & Tenant Created' : 'User Registered Successfully!'),
+                  : (isBundle
+                        ? 'Owner & Tenant Created'
+                        : 'User Registered Successfully!'),
               message: false
                   ? 'The company account has been created successfully.'
                   : (isBundle
-                      ? 'The owner and tenant accounts have been registered successfully.'
-                      : 'The user has been registered successfully.'),
+                        ? 'The owner and tenant accounts have been registered successfully.'
+                        : 'The user has been registered successfully.'),
               fromAdmin: true,
             );
           } else if (state is AuthAuthenticated && !widget.fromAdmin) {
@@ -642,7 +676,8 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
               // Show success message then navigate to waiting approval
               _showSuccessDialog(
                 title: 'Account Created Successfully!',
-                message: 'Your account is pending approval. You will be notified once it\'s approved.',
+                message:
+                    'Your account is pending approval. You will be notified once it\'s approved.',
                 fromAdmin: false,
                 user: state.user,
               );
@@ -658,7 +693,8 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
               // Rejected or other status
               _showSuccessDialog(
                 title: 'Account Created',
-                message: 'Your account has been created. Please contact administrator for approval.',
+                message:
+                    'Your account has been created. Please contact administrator for approval.',
                 fromAdmin: false,
                 user: state.user,
               );
@@ -684,15 +720,17 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
               // expandedHeight: 120,
               floating: false,
               pinned: true,
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: const Color(0xFF3B82F6),
               elevation: 0,
               flexibleSpace: FlexibleSpaceBar(
                 title: Text(
                   false
                       ? 'Create Company'
                       : (_propertyType == PropertyType.events
-                          ? 'Add Event Staff'
-                          : (_isAdminApartmentSimplified ? 'Add User' : 'Create Account')),
+                            ? 'Add Event Staff'
+                            : (_isAdminApartmentSimplified
+                                  ? 'Add User'
+                                  : 'Create Account')),
                   style: GoogleFonts.sora(
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
@@ -706,8 +744,8 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        AppTheme.primaryColor,
-                        AppTheme.primaryColor.withOpacity(0.8),
+                        const Color(0xFF3B82F6),
+                        const Color(0xFF3B82F6).withOpacity(0.8),
                       ],
                     ),
                   ),
@@ -733,24 +771,36 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                           icon: Icons.business_rounded,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
-                                color: Colors.grey[50],
+                                color: const Color(0xFF1E1E2A),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.grey[300]!),
+                                border: Border.all(
+                                  color: const Color(0x33FFFFFF),
+                                ),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.apartment_rounded, color: AppTheme.primaryColor),
+                                  const Icon(
+                                    Icons.apartment_rounded,
+                                    color: const Color(0xFF3B82F6),
+                                  ),
                                   const SizedBox(width: 10),
                                   const Text(
                                     'Property Type',
-                                    style: TextStyle(fontWeight: FontWeight.w600),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   const Spacer(),
                                   Text(
                                     PropertyType.events.displayName,
-                                    style: const TextStyle(fontWeight: FontWeight.w700),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -760,8 +810,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                               controller: _usernameController,
                               label: 'Company Name',
                               icon: Icons.person_rounded,
-                              validator: (value) =>
-                                  value?.isEmpty ?? true ? 'Please enter company name' : null,
+                              validator: (value) => value?.isEmpty ?? true
+                                  ? 'Please enter company name'
+                                  : null,
                             ),
                             const SizedBox(height: 16),
                             _buildTextField(
@@ -778,8 +829,11 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                               icon: Icons.email_rounded,
                               keyboardType: TextInputType.emailAddress,
                               validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Please enter email';
-                                if (!RegExp(r'^\S+@\S+\.\S+$').hasMatch(value!.trim())) {
+                                if (value?.isEmpty ?? true)
+                                  return 'Please enter email';
+                                if (!RegExp(
+                                  r'^\S+@\S+\.\S+$',
+                                ).hasMatch(value!.trim())) {
                                   return 'Enter a valid email address';
                                 }
                                 return null;
@@ -792,17 +846,23 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                               icon: Icons.lock_rounded,
                               obscureText: _obscurePassword,
                               validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Please enter password';
-                                if (value!.length < 6) return 'Password must be at least 6 characters';
+                                if (value?.isEmpty ?? true)
+                                  return 'Please enter password';
+                                if (value!.length < 6)
+                                  return 'Password must be at least 6 characters';
                                 return null;
                               },
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                                  color: Colors.grey[600],
+                                  _obscurePassword
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                  color: const Color(0xFF9CA3AF),
                                 ),
                                 onPressed: () {
-                                  setState(() => _obscurePassword = !_obscurePassword);
+                                  setState(
+                                    () => _obscurePassword = !_obscurePassword,
+                                  );
                                 },
                               ),
                             ),
@@ -813,17 +873,24 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                               icon: Icons.lock_outline_rounded,
                               obscureText: _obscureConfirmPassword,
                               validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Please confirm password';
-                                if (value != _passwordController.text) return 'Passwords do not match';
+                                if (value?.isEmpty ?? true)
+                                  return 'Please confirm password';
+                                if (value != _passwordController.text)
+                                  return 'Passwords do not match';
                                 return null;
                               },
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                                  color: Colors.grey[600],
+                                  _obscureConfirmPassword
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                  color: const Color(0xFF9CA3AF),
                                 ),
                                 onPressed: () {
-                                  setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                                  setState(
+                                    () => _obscureConfirmPassword =
+                                        !_obscureConfirmPassword,
+                                  );
                                 },
                               ),
                             ),
@@ -835,452 +902,496 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                               keyboardType: TextInputType.phone,
                               maxLength: 10,
                               validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Please enter mobile number';
-                                if (value!.length != 10) return 'Enter valid 10-digit number';
+                                if (value?.isEmpty ?? true)
+                                  return 'Please enter mobile number';
+                                if (value!.length != 10)
+                                  return 'Enter valid 10-digit number';
                                 return null;
                               },
                             ),
                           ],
                         ),
                       ] else ...[
-                      _buildSectionCard(
-                        title: false
-                            ? 'Add Staff Account'
-                            : _propertyType == PropertyType.events
-                                ? 'Add Event Staff Account'
-                                : 'Personal Information',
-                        icon: false ||
-                                _propertyType == PropertyType.events
-                            ? Icons.badge_rounded
-                            : Icons.person_outline_rounded,
-                        children: [
-                          if (_propertyType == PropertyType.events) ...[
-                            _buildTextField(
-                              controller: _usernameController,
-                              label: 'Full Name *',
-                              icon: Icons.person_rounded,
-                              validator: (value) =>
-                                  value?.isEmpty ?? true ? 'Please enter full name' : null,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _mobileController,
-                              label: 'Mobile Number *',
-                              icon: Icons.phone_rounded,
-                              keyboardType: TextInputType.phone,
-                              maxLength: 10,
-                              validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Please enter mobile number';
-                                if (value!.length != 10) return 'Enter valid 10-digit number';
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            _buildEmailWithOtp(),
-                            if (_requireEmailOtp && _isOtpSent && !_isEmailVerified) ...[
-                              const SizedBox(height: 20),
-                              _buildOtpField(),
-                            ],
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _passwordController,
-                              label: 'Password *',
-                              icon: Icons.lock_rounded,
-                              obscureText: _obscurePassword,
-                              validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Please enter password';
-                                if (value!.length < 6) return 'Password must be at least 6 characters';
-                                return null;
-                              },
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                                  color: Colors.grey[600],
-                                ),
-                                onPressed: () {
-                                  setState(() => _obscurePassword = !_obscurePassword);
-                                },
+                        _buildSectionCard(
+                          title: false
+                              ? 'Add Staff Account'
+                              : _propertyType == PropertyType.events
+                              ? 'Add Event Staff Account'
+                              : 'Personal Information',
+                          icon: false || _propertyType == PropertyType.events
+                              ? Icons.badge_rounded
+                              : Icons.person_outline_rounded,
+                          children: [
+                            if (_propertyType == PropertyType.events) ...[
+                              _buildTextField(
+                                controller: _usernameController,
+                                label: 'Full Name *',
+                                icon: Icons.person_rounded,
+                                validator: (value) => value?.isEmpty ?? true
+                                    ? 'Please enter full name'
+                                    : null,
                               ),
-                            ),
-                          ] else if (false) ...[
-                            _buildTextField(
-                              controller: _usernameController,
-                              label: 'Full Name *',
-                              icon: Icons.person_rounded,
-                              validator: (value) =>
-                                  value?.isEmpty ?? true ? 'Please enter full name' : null,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _designationController,
-                              label: 'Designation *',
-                              icon: Icons.work_outline_rounded,
-                              validator: (value) =>
-                                  value?.isEmpty ?? true ? 'Please enter designation' : null,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _mobileController,
-                              label: 'Mobile Number *',
-                              icon: Icons.phone_rounded,
-                              keyboardType: TextInputType.phone,
-                              maxLength: 10,
-                              validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Please enter mobile number';
-                                if (value!.length != 10) return 'Enter valid 10-digit number';
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            _buildEmailWithOtp(),
-                            if (_requireEmailOtp && _isOtpSent && !_isEmailVerified) ...[
-                              const SizedBox(height: 20),
-                              _buildOtpField(),
-                            ],
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _passwordController,
-                              label: 'Password *',
-                              icon: Icons.lock_rounded,
-                              obscureText: _obscurePassword,
-                              validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Please enter password';
-                                if (value!.length < 6) return 'Password must be at least 6 characters';
-                                return null;
-                              },
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                                  color: Colors.grey[600],
-                                ),
-                                onPressed: () {
-                                  setState(() => _obscurePassword = !_obscurePassword);
-                                },
-                              ),
-                            ),
-                          ] else ...[
-                            if (!_isAdminApartmentSimplified) ...[
-                              _buildProfilePicturePicker(),
-                              const SizedBox(height: 24),
-                            ],
-                            if (_showAdminAccountType) ...[
-                              DropdownButtonFormField<ResidentAccountType>(
-                                value: _accountType,
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: const Color(0xFF0F172A),
-                                ),
-                                decoration: InputDecoration(
-                                  labelText: 'Account Type',
-                                  labelStyle: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    color: const Color(0xFF64748B),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  floatingLabelStyle: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    color: AppTheme.primaryColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  prefixIcon: const Icon(
-                                    Icons.account_circle_outlined,
-                                    color: AppTheme.primaryColor,
-                                    size: 20,
-                                  ),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF8FAFC),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 14,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFFECECEA),
-                                    ),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFFECECEA),
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                      color: AppTheme.primaryColor,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                ),
-                                items: [
-                                  DropdownMenuItem(
-                                    value: ResidentAccountType.owner,
-                                    child: Text(
-                                      'Owner',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: const Color(0xFF0F172A),
-                                      ),
-                                    ),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: ResidentAccountType.tenant,
-                                    child: Text(
-                                      'Tenant',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: const Color(0xFF0F172A),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                                onChanged: (v) {
-                                  if (v != null) setState(() => _accountType = v);
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: _mobileController,
+                                label: 'Mobile Number *',
+                                icon: Icons.phone_rounded,
+                                keyboardType: TextInputType.phone,
+                                maxLength: 10,
+                                validator: (value) {
+                                  if (value?.isEmpty ?? true)
+                                    return 'Please enter mobile number';
+                                  if (value!.length != 10)
+                                    return 'Enter valid 10-digit number';
+                                  return null;
                                 },
                               ),
                               const SizedBox(height: 16),
-                            ],
-                            _buildTextField(
-                              controller: _usernameController,
-                              label: _showAdminAccountType &&
-                                      _accountType == ResidentAccountType.tenant
-                                  ? 'Tenant Name'
-                                  : 'Full Name',
-                              icon: Icons.person_rounded,
-                              validator: (value) =>
-                                  value?.isEmpty ?? true ? 'Please enter your name' : null,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildEmailWithOtp(),
-                            if (_requireEmailOtp && _isOtpSent && !_isEmailVerified) ...[
-                              const SizedBox(height: 20),
-                              _buildOtpField(),
-                            ],
-                            if (_requireEmailOtp && _isEmailVerified) ...[
-                              const SizedBox(height: 12),
-                            ],
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _passwordController,
-                              label: 'Password',
-                              icon: Icons.lock_rounded,
-                              obscureText: _obscurePassword,
-                              validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Please enter password';
-                                if (value!.length < 6) return 'Password must be at least 6 characters';
-                                return null;
-                              },
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                                  color: Colors.grey[600],
+                              _buildEmailWithOtp(),
+                              if (_requireEmailOtp &&
+                                  _isOtpSent &&
+                                  !_isEmailVerified) ...[
+                                const SizedBox(height: 20),
+                                _buildOtpField(),
+                              ],
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: _passwordController,
+                                label: 'Password *',
+                                icon: Icons.lock_rounded,
+                                obscureText: _obscurePassword,
+                                validator: (value) {
+                                  if (value?.isEmpty ?? true)
+                                    return 'Please enter password';
+                                  if (value!.length < 6)
+                                    return 'Password must be at least 6 characters';
+                                  return null;
+                                },
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                    color: const Color(0xFF9CA3AF),
+                                  ),
+                                  onPressed: () {
+                                    setState(
+                                      () =>
+                                          _obscurePassword = !_obscurePassword,
+                                    );
+                                  },
                                 ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
+                              ),
+                            ] else if (false) ...[
+                              _buildTextField(
+                                controller: _usernameController,
+                                label: 'Full Name *',
+                                icon: Icons.person_rounded,
+                                validator: (value) => value?.isEmpty ?? true
+                                    ? 'Please enter full name'
+                                    : null,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: _designationController,
+                                label: 'Designation *',
+                                icon: Icons.work_outline_rounded,
+                                validator: (value) => value?.isEmpty ?? true
+                                    ? 'Please enter designation'
+                                    : null,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: _mobileController,
+                                label: 'Mobile Number *',
+                                icon: Icons.phone_rounded,
+                                keyboardType: TextInputType.phone,
+                                maxLength: 10,
+                                validator: (value) {
+                                  if (value?.isEmpty ?? true)
+                                    return 'Please enter mobile number';
+                                  if (value!.length != 10)
+                                    return 'Enter valid 10-digit number';
+                                  return null;
                                 },
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _mobileController,
-                              label: 'Mobile Number',
-                              icon: Icons.phone_rounded,
-                              keyboardType: TextInputType.phone,
-                              maxLength: 10,
-                              validator: (value) {
-                                if (value?.isEmpty ?? true) return 'Please enter mobile number';
-                                if (value!.length != 10) return 'Enter valid 10-digit number';
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _secondaryMobileController,
-                              label: 'Secondary Mobile (Optional)',
-                              icon: Icons.phone_outlined,
-                              keyboardType: TextInputType.phone,
-                              maxLength: 10,
-                              isOptional: true,
-                            ),
-                            if (_showAdminAccountType &&
-                                _accountType == ResidentAccountType.tenant) ...[
-                              const SizedBox(height: 24),
-                              _buildSectionCard(
-                                title: 'Owner Details',
-                                icon: Icons.supervisor_account_rounded,
-                                children: [
-                                  _buildTextField(
-                                    controller: _ownerNameController,
-                                    label: 'Owner Name',
-                                    icon: Icons.person_rounded,
-                                    validator: (value) =>
-                                        value?.isEmpty ?? true ? 'Please enter owner name' : null,
+                              const SizedBox(height: 16),
+                              _buildEmailWithOtp(),
+                              if (_requireEmailOtp &&
+                                  _isOtpSent &&
+                                  !_isEmailVerified) ...[
+                                const SizedBox(height: 20),
+                                _buildOtpField(),
+                              ],
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: _passwordController,
+                                label: 'Password *',
+                                icon: Icons.lock_rounded,
+                                obscureText: _obscurePassword,
+                                validator: (value) {
+                                  if (value?.isEmpty ?? true)
+                                    return 'Please enter password';
+                                  if (value!.length < 6)
+                                    return 'Password must be at least 6 characters';
+                                  return null;
+                                },
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                    color: const Color(0xFF9CA3AF),
                                   ),
-                                  const SizedBox(height: 16),
-                                  _buildTextField(
-                                    controller: _ownerMobileController,
-                                    label: 'Owner Mobile Number',
-                                    icon: Icons.phone_rounded,
-                                    keyboardType: TextInputType.phone,
-                                    maxLength: 10,
-                                    validator: (value) {
-                                      if (value?.isEmpty ?? true) {
-                                        return 'Please enter owner mobile number';
-                                      }
-                                      if (value!.length != 10) {
-                                        return 'Enter valid 10-digit number';
-                                      }
-                                      return null;
-                                    },
+                                  onPressed: () {
+                                    setState(
+                                      () =>
+                                          _obscurePassword = !_obscurePassword,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ] else ...[
+                              if (!_isAdminApartmentSimplified) ...[
+                                _buildProfilePicturePicker(),
+                                const SizedBox(height: 24),
+                              ],
+                              if (_showAdminAccountType) ...[
+                                DropdownButtonFormField<ResidentAccountType>(
+                                  value: _accountType,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
                                   ),
-                                  const SizedBox(height: 16),
-                                  _buildTextField(
-                                    controller: _ownerPasswordController,
-                                    label: 'Owner Password',
-                                    icon: Icons.lock_rounded,
-                                    obscureText: _obscureOwnerPassword,
-                                    validator: (value) {
-                                      if (value?.isEmpty ?? true) {
-                                        return 'Please enter owner password';
-                                      }
-                                      if (value!.length < 6) {
-                                        return 'Password must be at least 6 characters';
-                                      }
-                                      return null;
-                                    },
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _obscureOwnerPassword
-                                            ? Icons.visibility
-                                            : Icons.visibility_off,
-                                        color: Colors.grey[600],
+                                  decoration: InputDecoration(
+                                    labelText: 'Account Type',
+                                    labelStyle: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: const Color(0xFF9CA3AF),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    floatingLabelStyle: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: const Color(0xFF3B82F6),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    prefixIcon: const Icon(
+                                      Icons.account_circle_outlined,
+                                      color: const Color(0xFF3B82F6),
+                                      size: 20,
+                                    ),
+                                    filled: true,
+                                    fillColor: const Color(0xFF0A0A12),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 14,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: Color(0x14FFFFFF),
                                       ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _obscureOwnerPassword = !_obscureOwnerPassword;
-                                        });
-                                      },
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: Color(0x14FFFFFF),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: const Color(0xFF3B82F6),
+                                        width: 1.5,
+                                      ),
                                     ),
                                   ),
-                                ],
+                                  items: [
+                                    DropdownMenuItem(
+                                      value: ResidentAccountType.owner,
+                                      child: Text(
+                                        'Owner',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: ResidentAccountType.tenant,
+                                      child: Text(
+                                        'Tenant',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  onChanged: (v) {
+                                    if (v != null)
+                                      setState(() => _accountType = v);
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                              _buildTextField(
+                                controller: _usernameController,
+                                label:
+                                    _showAdminAccountType &&
+                                        _accountType ==
+                                            ResidentAccountType.tenant
+                                    ? 'Tenant Name'
+                                    : 'Full Name',
+                                icon: Icons.person_rounded,
+                                validator: (value) => value?.isEmpty ?? true
+                                    ? 'Please enter your name'
+                                    : null,
                               ),
+                              const SizedBox(height: 16),
+                              _buildEmailWithOtp(),
+                              if (_requireEmailOtp &&
+                                  _isOtpSent &&
+                                  !_isEmailVerified) ...[
+                                const SizedBox(height: 20),
+                                _buildOtpField(),
+                              ],
+                              if (_requireEmailOtp && _isEmailVerified) ...[
+                                const SizedBox(height: 12),
+                              ],
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: _passwordController,
+                                label: 'Password',
+                                icon: Icons.lock_rounded,
+                                obscureText: _obscurePassword,
+                                validator: (value) {
+                                  if (value?.isEmpty ?? true)
+                                    return 'Please enter password';
+                                  if (value!.length < 6)
+                                    return 'Password must be at least 6 characters';
+                                  return null;
+                                },
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                    color: const Color(0xFF9CA3AF),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: _mobileController,
+                                label: 'Mobile Number',
+                                icon: Icons.phone_rounded,
+                                keyboardType: TextInputType.phone,
+                                maxLength: 10,
+                                validator: (value) {
+                                  if (value?.isEmpty ?? true)
+                                    return 'Please enter mobile number';
+                                  if (value!.length != 10)
+                                    return 'Enter valid 10-digit number';
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: _secondaryMobileController,
+                                label: 'Secondary Mobile (Optional)',
+                                icon: Icons.phone_outlined,
+                                keyboardType: TextInputType.phone,
+                                maxLength: 10,
+                                isOptional: true,
+                              ),
+                              if (_showAdminAccountType &&
+                                  _accountType ==
+                                      ResidentAccountType.tenant) ...[
+                                const SizedBox(height: 24),
+                                _buildSectionCard(
+                                  title: 'Owner Details',
+                                  icon: Icons.supervisor_account_rounded,
+                                  children: [
+                                    _buildTextField(
+                                      controller: _ownerNameController,
+                                      label: 'Owner Name',
+                                      icon: Icons.person_rounded,
+                                      validator: (value) =>
+                                          value?.isEmpty ?? true
+                                          ? 'Please enter owner name'
+                                          : null,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildTextField(
+                                      controller: _ownerMobileController,
+                                      label: 'Owner Mobile Number',
+                                      icon: Icons.phone_rounded,
+                                      keyboardType: TextInputType.phone,
+                                      maxLength: 10,
+                                      validator: (value) {
+                                        if (value?.isEmpty ?? true) {
+                                          return 'Please enter owner mobile number';
+                                        }
+                                        if (value!.length != 10) {
+                                          return 'Enter valid 10-digit number';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildTextField(
+                                      controller: _ownerPasswordController,
+                                      label: 'Owner Password',
+                                      icon: Icons.lock_rounded,
+                                      obscureText: _obscureOwnerPassword,
+                                      validator: (value) {
+                                        if (value?.isEmpty ?? true) {
+                                          return 'Please enter owner password';
+                                        }
+                                        if (value!.length < 6) {
+                                          return 'Password must be at least 6 characters';
+                                        }
+                                        return null;
+                                      },
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _obscureOwnerPassword
+                                              ? Icons.visibility
+                                              : Icons.visibility_off,
+                                          color: const Color(0xFF9CA3AF),
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _obscureOwnerPassword =
+                                                !_obscureOwnerPassword;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           ],
-                        ],
-                      ),
+                        ),
                       ],
 
                       const SizedBox(height: 24),
 
                       // Tenant / Hostel Details Section (skip for company, college & events - family type/nri not relevant)
-                      if (true &&
-                          true &&
-                          _propertyType != PropertyType.events)
-                      _buildSectionCard(
-                        title: false
-                            ? 'Hostel Details'
-                            : (_isAdminApartmentSimplified ? 'Family Type' : 'Tenant Details'),
-                        icon: false
-                            ? Icons.hotel_rounded
-                            : Icons.home_rounded,
-                        children: [
-                          if (_isAdminApartmentSimplified) ...[
-                            _buildFamilyTypeSelection(),
-                            const SizedBox(height: 20),
-                            _buildNRIToggle(),
-                          ] else ...[
-                            _buildGenderSelection(),
-                            if (widget.fromAdmin) ...[
-                              const SizedBox(height: 20),
-                              const SizedBox(height: 20),
-                            ] else ...[
-                              const SizedBox(height: 20),
-                            ],
-                            if (false) ...[
-                              _buildOccupationSelection(),
-                              const SizedBox(height: 20),
-                              _buildDateOfBirthPicker(),
-                              const SizedBox(height: 20),
-                            ] else ...[
+                      if (true && true && _propertyType != PropertyType.events)
+                        _buildSectionCard(
+                          title: false
+                              ? 'Hostel Details'
+                              : (_isAdminApartmentSimplified
+                                    ? 'Family Type'
+                                    : 'Tenant Details'),
+                          icon: false
+                              ? Icons.hotel_rounded
+                              : Icons.home_rounded,
+                          children: [
+                            if (_isAdminApartmentSimplified) ...[
                               _buildFamilyTypeSelection(),
                               const SizedBox(height: 20),
                               _buildNRIToggle(),
-                              const SizedBox(height: 16),
-                              _buildTextField(
-                                controller: _totalOccupantsController,
-                                label: 'Total Occupants',
-                                icon: Icons.people_rounded,
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  if (value?.isEmpty ?? true) return 'Please enter total occupants';
-                                  final num = int.tryParse(value!);
-                                  if (num == null || num < 1) return 'Enter valid number';
-                                  return null;
-                                },
-                              ),
+                            ] else ...[
+                              _buildGenderSelection(),
+                              if (widget.fromAdmin) ...[
+                                const SizedBox(height: 20),
+                                const SizedBox(height: 20),
+                              ] else ...[
+                                const SizedBox(height: 20),
+                              ],
+                              if (false) ...[
+                                _buildOccupationSelection(),
+                                const SizedBox(height: 20),
+                                _buildDateOfBirthPicker(),
+                                const SizedBox(height: 20),
+                              ] else ...[
+                                _buildFamilyTypeSelection(),
+                                const SizedBox(height: 20),
+                                _buildNRIToggle(),
+                                const SizedBox(height: 16),
+                                _buildTextField(
+                                  controller: _totalOccupantsController,
+                                  label: 'Total Occupants',
+                                  icon: Icons.people_rounded,
+                                  keyboardType: TextInputType.number,
+                                  validator: (value) {
+                                    if (value?.isEmpty ?? true)
+                                      return 'Please enter total occupants';
+                                    final num = int.tryParse(value!);
+                                    if (num == null || num < 1)
+                                      return 'Enter valid number';
+                                    return null;
+                                  },
+                                ),
+                              ],
                             ],
                           ],
-                        ],
-                      ),
+                        ),
 
-                      if (true &&
-                          _propertyType != PropertyType.events) ...[
+                      if (true && _propertyType != PropertyType.events) ...[
                         const SizedBox(height: 24),
                         _buildSectionCard(
                           title: 'Identity Documents',
                           icon: Icons.badge_rounded,
-                        children: [
-                          _buildTextField(
-                            controller: _aadhaarController,
-                            label: 'ID Card Number (Optional)',
-                            icon: Icons.credit_card_rounded,
-                            keyboardType: TextInputType.text,
-                            validator: (value) {
-                              final v = value?.trim() ?? '';
-                              if (v.isEmpty) return null;
-                              if (v.length < 5) {
-                                return 'ID card number must be at least 5 characters';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                          IdentityDocumentPair(
-                            frontImageFile: _aadhaarFrontImage,
-                            backImageFile: _aadhaarBackImage,
-                            onFrontTap: () =>
-                                _showImageSourceModal(ImageType.aadhaarFront),
-                            onBackTap: () =>
-                                _showImageSourceModal(ImageType.aadhaarBack),
-                          ),
-                          const SizedBox(height: 20),
-                          _buildTextField(
-                            controller: _panController,
-                            label: 'PAN Number (Optional)',
-                            icon: Icons.account_balance_wallet_rounded,
-                            maxLength: 10,
-                            validator: (value) {
-                              final v = value?.trim() ?? '';
-                              if (v.isEmpty) return null;
-                              if (v.length != 10) return 'PAN must be 10 characters';
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                          _buildImagePicker(
-                            'PAN Card Image',
-                            _panCardImage,
-                            ImageType.panCard,
-                            isFullWidth: true,
-                          ),
-                        ],
-                      ),
+                          children: [
+                            _buildTextField(
+                              controller: _aadhaarController,
+                              label: 'ID Card Number (Optional)',
+                              icon: Icons.credit_card_rounded,
+                              keyboardType: TextInputType.text,
+                              validator: (value) {
+                                final v = value?.trim() ?? '';
+                                if (v.isEmpty) return null;
+                                if (v.length < 5) {
+                                  return 'ID card number must be at least 5 characters';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            IdentityDocumentPair(
+                              frontImageFile: _aadhaarFrontImage,
+                              backImageFile: _aadhaarBackImage,
+                              onFrontTap: () =>
+                                  _showImageSourceModal(ImageType.aadhaarFront),
+                              onBackTap: () =>
+                                  _showImageSourceModal(ImageType.aadhaarBack),
+                            ),
+                            const SizedBox(height: 20),
+                            _buildTextField(
+                              controller: _panController,
+                              label: 'PAN Number (Optional)',
+                              icon: Icons.account_balance_wallet_rounded,
+                              maxLength: 10,
+                              validator: (value) {
+                                final v = value?.trim() ?? '';
+                                if (v.isEmpty) return null;
+                                if (v.length != 10)
+                                  return 'PAN must be 10 characters';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            _buildImagePicker(
+                              'PAN Card Image',
+                              _panCardImage,
+                              ImageType.panCard,
+                              isFullWidth: true,
+                            ),
+                          ],
+                        ),
                       ],
 
                       const SizedBox(height: 32),
@@ -1289,15 +1400,17 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                       BlocBuilder<AuthBloc, AuthState>(
                         builder: (context, state) {
                           final isCompany = false;
-                          final isLoading = isCompany ? _companySaving : state is AuthLoading;
+                          final isLoading = isCompany
+                              ? _companySaving
+                              : state is AuthLoading;
                           return BrandGradientCtaButton(
                             label: false
                                 ? 'Create Company'
                                 : (_propertyType == PropertyType.events
-                                    ? 'Add Event Staff'
-                                    : (_isAdminApartmentSimplified
-                                        ? 'Add User'
-                                        : 'Create Account')),
+                                      ? 'Add Event Staff'
+                                      : (_isAdminApartmentSimplified
+                                            ? 'Add User'
+                                            : 'Create Account')),
                             icon: false
                                 ? Icons.business_rounded
                                 : Icons.person_add_rounded,
@@ -1323,7 +1436,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1356,14 +1469,14 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: isActive ? AppTheme.primaryColor : Colors.grey[300],
+            color: isActive ? const Color(0xFF3B82F6) : const Color(0x33FFFFFF),
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               '$step',
               style: TextStyle(
-                color: isActive ? Colors.white : Colors.grey[600],
+                color: isActive ? Colors.white : const Color(0xFF9CA3AF),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1374,7 +1487,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
           label,
           style: TextStyle(
             fontSize: 11,
-            color: isActive ? AppTheme.primaryColor : Colors.grey[600],
+            color: isActive ? const Color(0xFF3B82F6) : const Color(0xFF9CA3AF),
             fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
@@ -1386,7 +1499,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     return Container(
       height: 2,
       margin: const EdgeInsets.only(bottom: 20),
-      color: isActive ? AppTheme.primaryColor : Colors.grey[300],
+      color: isActive ? const Color(0xFF3B82F6) : const Color(0x33FFFFFF),
     );
   }
 
@@ -1398,9 +1511,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFECECEA)),
+        border: Border.all(color: const Color(0x14FFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(6),
@@ -1417,14 +1530,10 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withAlpha(18),
+                  color: const Color(0xFF3B82F6).withAlpha(18),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: AppTheme.primaryColor,
-                  size: 22,
-                ),
+                child: Icon(icon, color: const Color(0xFF3B82F6), size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1433,7 +1542,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                   style: GoogleFonts.sora(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0F172A),
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -1471,39 +1580,42 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
       style: GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w500,
-        color: const Color(0xFF0F172A),
+        color: Colors.white,
       ),
       decoration: InputDecoration(
         labelText: displayLabel,
         labelStyle: GoogleFonts.inter(
           fontSize: 13,
-          color: const Color(0xFF64748B),
+          color: const Color(0xFF9CA3AF),
           fontWeight: FontWeight.w500,
         ),
         floatingLabelStyle: GoogleFonts.inter(
           fontSize: 13,
-          color: AppTheme.primaryColor,
+          color: const Color(0xFF3B82F6),
           fontWeight: FontWeight.w600,
         ),
-        prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 20),
+        prefixIcon: Icon(icon, color: const Color(0xFF3B82F6), size: 20),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: const Color(0xFFF8FAFC),
+        fillColor: const Color(0xFF0A0A12),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 14,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFECECEA)),
+          borderSide: const BorderSide(color: Color(0x14FFFFFF)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFECECEA)),
+          borderSide: const BorderSide(color: Color(0x14FFFFFF)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
+          borderSide: const BorderSide(
+            color: const Color(0xFF3B82F6),
+            width: 1.5,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1542,7 +1654,10 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
           enabled: !_isEmailVerified,
           decoration: InputDecoration(
             labelText: 'Email',
-            prefixIcon: const Icon(Icons.email_rounded, color: AppTheme.primaryColor),
+            prefixIcon: const Icon(
+              Icons.email_rounded,
+              color: const Color(0xFF3B82F6),
+            ),
             suffixIcon: _isEmailVerified
                 ? Container(
                     margin: const EdgeInsets.all(8),
@@ -1570,22 +1685,28 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                     ),
                   ),
             filled: true,
-            fillColor: _isEmailVerified ? Colors.green[50] : Colors.grey[50],
+            fillColor: _isEmailVerified
+                ? Colors.green[50]
+                : const Color(0xFF1E1E2A),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: BorderSide(color: const Color(0x33FFFFFF)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: _isEmailVerified ? Colors.green : Colors.grey[300]!,
+                color: _isEmailVerified
+                    ? Colors.green
+                    : const Color(0x33FFFFFF),
                 width: _isEmailVerified ? 2 : 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: _isEmailVerified ? Colors.green : AppTheme.primaryColor,
+                color: _isEmailVerified
+                    ? Colors.green
+                    : const Color(0xFF3B82F6),
                 width: 2,
               ),
             ),
@@ -1607,11 +1728,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.check_circle,
-                  color: Colors.green[700],
-                  size: 18,
-                ),
+                Icon(Icons.check_circle, color: Colors.green[700], size: 18),
                 const SizedBox(width: 8),
                 Text(
                   'Email verified successfully',
@@ -1636,10 +1753,10 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.05),
+            color: const Color(0xFF3B82F6).withOpacity(0.05),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppTheme.primaryColor.withOpacity(0.2),
+              color: const Color(0xFF3B82F6).withOpacity(0.2),
               width: 1.5,
             ),
           ),
@@ -1650,7 +1767,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                 children: [
                   Icon(
                     Icons.email_outlined,
-                    color: AppTheme.primaryColor,
+                    color: const Color(0xFF3B82F6),
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -1659,7 +1776,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                       'OTP sent to ${_emailController.text}',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppTheme.textColor.withOpacity(0.7),
+                        color: Colors.white.withOpacity(0.7),
                         fontWeight: FontWeight.w500,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -1676,21 +1793,27 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                 enabled: !isLoading,
                 decoration: InputDecoration(
                   labelText: 'Enter OTP',
-                  prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppTheme.primaryColor),
+                  prefixIcon: const Icon(
+                    Icons.lock_outline_rounded,
+                    color: const Color(0xFF3B82F6),
+                  ),
                   hintText: 'Enter 6-digit code',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: const Color(0xFF1E1E2A),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(color: const Color(0x33FFFFFF)),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(color: const Color(0x33FFFFFF)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                    borderSide: const BorderSide(
+                      color: const Color(0xFF3B82F6),
+                      width: 2,
+                    ),
                   ),
                   counterText: '',
                 ),
@@ -1705,17 +1828,19 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
               const SizedBox(height: 12),
               Center(
                 child: TextButton(
-                  onPressed: isLoading ? null : () {
-                    setState(() {
-                      _isOtpSent = false;
-                      _otpController.clear();
-                    });
-                    _sendOtp();
-                  },
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          setState(() {
+                            _isOtpSent = false;
+                            _otpController.clear();
+                          });
+                          _sendOtp();
+                        },
                   child: Text(
                     'Resend OTP',
                     style: TextStyle(
-                      color: AppTheme.primaryColor,
+                      color: const Color(0xFF3B82F6),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1734,24 +1859,33 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
       children: [
         const Text(
           'Gender',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
-              child: _buildGenderOption('Male', Gender.male, Icons.male_rounded),
+              child: _buildGenderOption(
+                'Male',
+                Gender.male,
+                Icons.male_rounded,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildGenderOption('Female', Gender.female, Icons.female_rounded),
+              child: _buildGenderOption(
+                'Female',
+                Gender.female,
+                Icons.female_rounded,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildGenderOption('Other', Gender.other, Icons.transgender_rounded),
+              child: _buildGenderOption(
+                'Other',
+                Gender.other,
+                Icons.transgender_rounded,
+              ),
             ),
           ],
         ),
@@ -1766,10 +1900,12 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : Colors.grey[100],
+          color: isSelected
+              ? const Color(0xFF3B82F6).withOpacity(0.1)
+              : const Color(0xFF1E1E2A),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+            color: isSelected ? const Color(0xFF3B82F6) : Colors.transparent,
             width: 2,
           ),
         ),
@@ -1777,7 +1913,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppTheme.primaryColor : Colors.grey[600],
+              color: isSelected
+                  ? const Color(0xFF3B82F6)
+                  : const Color(0xFF9CA3AF),
               size: 28,
             ),
             const SizedBox(height: 6),
@@ -1786,7 +1924,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? AppTheme.primaryColor : Colors.grey[700],
+                color: isSelected
+                    ? const Color(0xFF3B82F6)
+                    : const Color(0xFF9CA3AF),
               ),
             ),
           ],
@@ -1801,24 +1941,33 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
       children: [
         const Text(
           'Occupation',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
-              child: _buildOccupationOption('Working', OccupationCategory.working, Icons.work_rounded),
+              child: _buildOccupationOption(
+                'Working',
+                OccupationCategory.working,
+                Icons.work_rounded,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildOccupationOption('Student', OccupationCategory.student, Icons.school_rounded),
+              child: _buildOccupationOption(
+                'Student',
+                OccupationCategory.student,
+                Icons.school_rounded,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildOccupationOption('Others', OccupationCategory.others, Icons.more_horiz_rounded),
+              child: _buildOccupationOption(
+                'Others',
+                OccupationCategory.others,
+                Icons.more_horiz_rounded,
+              ),
             ),
           ],
         ),
@@ -1826,29 +1975,43 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     );
   }
 
-  Widget _buildOccupationOption(String label, OccupationCategory value, IconData icon) {
+  Widget _buildOccupationOption(
+    String label,
+    OccupationCategory value,
+    IconData icon,
+  ) {
     final isSelected = _occupationCategory == value;
     return InkWell(
       onTap: () => setState(() => _occupationCategory = value),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor.withOpacity(0.1) : Colors.grey.shade100,
+          color: isSelected
+              ? const Color(0xFF3B82F6).withOpacity(0.1)
+              : const Color(0xFF1E1E2A),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+            color: isSelected ? const Color(0xFF3B82F6) : Colors.transparent,
             width: 2,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 28, color: isSelected ? AppTheme.primaryColor : Colors.grey.shade600),
+            Icon(
+              icon,
+              size: 28,
+              color: isSelected
+                  ? const Color(0xFF3B82F6)
+                  : const Color(0xFF9CA3AF),
+            ),
             const SizedBox(height: 6),
             Text(
               label,
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? AppTheme.primaryColor : Colors.grey.shade700,
+                color: isSelected
+                    ? const Color(0xFF3B82F6)
+                    : const Color(0xFF9CA3AF),
               ),
             ),
           ],
@@ -1863,17 +2026,16 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
       children: [
         const Text(
           'Date of Birth',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         InkWell(
           onTap: () async {
             final picked = await showDatePicker(
               context: context,
-              initialDate: _dateOfBirth ?? DateTime.now().subtract(const Duration(days: 365 * 18)),
+              initialDate:
+                  _dateOfBirth ??
+                  DateTime.now().subtract(const Duration(days: 365 * 18)),
               firstDate: DateTime(1950),
               lastDate: DateTime.now(),
             );
@@ -1882,12 +2044,12 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade400),
+              border: Border.all(color: const Color(0x33FFFFFF)),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                Icon(Icons.calendar_today, color: AppTheme.primaryColor),
+                Icon(Icons.calendar_today, color: const Color(0xFF3B82F6)),
                 const SizedBox(width: 12),
                 Text(
                   _dateOfBirth != null
@@ -1895,7 +2057,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                       : 'Select date of birth',
                   style: TextStyle(
                     fontSize: 16,
-                    color: _dateOfBirth != null ? Colors.black87 : Colors.grey.shade600,
+                    color: _dateOfBirth != null
+                        ? Colors.white
+                        : const Color(0xFF9CA3AF),
                   ),
                 ),
               ],
@@ -1915,18 +2079,26 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
           style: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF475569),
+            color: const Color(0xFFCBD5E1),
           ),
         ),
         const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
-              child: _buildFamilyOption('Family', FamilyType.family, Icons.family_restroom_rounded),
+              child: _buildFamilyOption(
+                'Family',
+                FamilyType.family,
+                Icons.family_restroom_rounded,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildFamilyOption('Bachelor', FamilyType.bachelor, Icons.person_rounded),
+              child: _buildFamilyOption(
+                'Bachelor',
+                FamilyType.bachelor,
+                Icons.person_rounded,
+              ),
             ),
           ],
         ),
@@ -1947,11 +2119,13 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppTheme.primaryColor.withAlpha(16)
-                : const Color(0xFFF8FAFC),
+                ? const Color(0xFF3B82F6).withAlpha(16)
+                : const Color(0xFF0A0A12),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? AppTheme.primaryColor : const Color(0xFFECECEA),
+              color: isSelected
+                  ? const Color(0xFF3B82F6)
+                  : const Color(0x14FFFFFF),
               width: isSelected ? 1.5 : 1.0,
             ),
           ),
@@ -1960,7 +2134,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
             children: [
               Icon(
                 icon,
-                color: isSelected ? AppTheme.primaryColor : const Color(0xFF64748B),
+                color: isSelected
+                    ? const Color(0xFF3B82F6)
+                    : const Color(0xFF9CA3AF),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -1969,7 +2145,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                 style: GoogleFonts.sora(
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? AppTheme.primaryColor : const Color(0xFF334155),
+                  color: isSelected
+                      ? const Color(0xFF3B82F6)
+                      : const Color(0xFFCBD5E1),
                 ),
               ),
             ],
@@ -1983,21 +2161,21 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: const Color(0xFF0A0A12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFECECEA)),
+        border: Border.all(color: const Color(0x14FFFFFF)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withAlpha(16),
+              color: const Color(0xFF3B82F6).withAlpha(16),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
               Icons.public_rounded,
-              color: AppTheme.primaryColor,
+              color: const Color(0xFF3B82F6),
               size: 20,
             ),
           ),
@@ -2012,7 +2190,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                   style: GoogleFonts.sora(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0F172A),
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -2020,7 +2198,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                   'Select if you are an NRI',
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: const Color(0xFF64748B),
+                    color: const Color(0xFF9CA3AF),
                   ),
                 ),
               ],
@@ -2034,7 +2212,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                 _isNRI = value;
               });
             },
-            activeThumbColor: AppTheme.primaryColor,
+            activeThumbColor: const Color(0xFF3B82F6),
           ),
         ],
       ),
@@ -2052,10 +2230,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
         InkWell(
@@ -2064,10 +2239,12 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
             height: isFullWidth ? 160 : 140,
             width: isFullWidth ? double.infinity : 150,
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: const Color(0xFF1E1E2A),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: image != null ? AppTheme.primaryColor : Colors.grey[300]!,
+                color: image != null
+                    ? const Color(0xFF3B82F6)
+                    : const Color(0x33FFFFFF),
                 width: 2,
                 style: image != null ? BorderStyle.solid : BorderStyle.none,
               ),
@@ -2078,17 +2255,14 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.file(
-                          image,
-                          fit: BoxFit.cover,
-                        ),
+                        Image.file(image, fit: BoxFit.cover),
                         Positioned(
                           top: 8,
                           right: 8,
                           child: Container(
                             padding: const EdgeInsets.all(6),
                             decoration: const BoxDecoration(
-                              color: Colors.white,
+                              color: const Color(0xFF14141F),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -2107,13 +2281,13 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                       Icon(
                         Icons.cloud_upload_rounded,
                         size: 40,
-                        color: Colors.grey[400],
+                        color: const Color(0x33FFFFFF),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Tap to upload',
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: const Color(0xFF9CA3AF),
                           fontSize: 13,
                         ),
                       ),
@@ -2131,10 +2305,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
         children: [
           const Text(
             'Profile Picture (Optional)',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
           GestureDetector(
@@ -2148,11 +2319,11 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: _profilePicture != null
-                          ? AppTheme.primaryColor
-                          : Colors.grey[300]!,
+                          ? const Color(0xFF3B82F6)
+                          : const Color(0x33FFFFFF),
                       width: 3,
                     ),
-                    color: Colors.grey[100],
+                    color: const Color(0xFF1E1E2A),
                   ),
                   child: _profilePicture != null
                       ? ClipOval(
@@ -2192,14 +2363,13 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
             onPressed: () => _showImageSourceModal(ImageType.profilePicture),
             icon: const Icon(Icons.add_photo_alternate_rounded),
             label: Text(
-              _profilePicture != null ? 'Change Profile Picture' : 'Add Profile Picture',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              _profilePicture != null
+                  ? 'Change Profile Picture'
+                  : 'Add Profile Picture',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             style: TextButton.styleFrom(
-              foregroundColor: AppTheme.primaryColor,
+              foregroundColor: const Color(0xFF3B82F6),
             ),
           ),
         ],

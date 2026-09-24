@@ -12,6 +12,7 @@ const {
   createQuestion,
   deleteQuestion,
   answerQuestion,
+  rateSession,
 } = require('../controllers/sessionContentController');
 
 /** Multer's errors (wrong type, too large) as a friendly 400 instead of a 500. */
@@ -34,5 +35,6 @@ router.post('/:scheduleId/polls/:pollId/vote', protect, votePoll);
 router.post('/:scheduleId/questions', protect, createQuestion);
 router.delete('/:scheduleId/questions/:questionId', protect, deleteQuestion);
 router.post('/:scheduleId/questions/:questionId/answer', protect, answerQuestion);
+router.post('/:scheduleId/rating', protect, rateSession);
 
 module.exports = router;

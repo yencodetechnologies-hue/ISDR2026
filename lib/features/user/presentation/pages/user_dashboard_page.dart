@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/foundation.dart';
@@ -27,6 +28,9 @@ class UserDashboardPage extends StatefulWidget {
 }
 
 class _UserDashboardPageState extends State<UserDashboardPage> {
+  // Set while building the drawer: dark theme for event staff.
+  bool _darkDrawer = false;
+
   int _currentIndex = 0;
 
   @override
@@ -46,14 +50,27 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
             selectedApartmentId: authState.selectedApartmentId,
           );
           final currentProp = resolveCurrentProperty(authState.user);
-          final propType = currentProp?.propertyType ?? authState.user.propertyType ?? (authState.user.apartments != null && authState.user.apartments!.isNotEmpty ? authState.user.apartments!.first.propertyType : null);
+          final propType =
+              currentProp?.propertyType ??
+              authState.user.propertyType ??
+              (authState.user.apartments != null &&
+                      authState.user.apartments!.isNotEmpty
+                  ? authState.user.apartments!.first.propertyType
+                  : null);
           final isStaffSchoolOrCollege = false;
           final isEventsProperty = propType == PropertyType.events;
 
-          final complaintsEnabled = propertyCtx.complaintsEnabled && !isStaffSchoolOrCollege && !isEventsProperty;
+          final complaintsEnabled =
+              propertyCtx.complaintsEnabled &&
+              !isStaffSchoolOrCollege &&
+              !isEventsProperty;
           final tabCount = isEventsProperty ? 1 : (complaintsEnabled ? 4 : 3);
-          final effectiveIndex = _currentIndex >= tabCount ? tabCount - 1 : _currentIndex;
+          final effectiveIndex = _currentIndex >= tabCount
+              ? tabCount - 1
+              : _currentIndex;
           return Scaffold(
+            // Event staff get the dark theme of the participant screens.
+            backgroundColor: isEventsProperty ? const Color(0xFF0A0A12) : null,
             drawer: _buildDrawer(
               context,
               authState.user,
@@ -66,7 +83,9 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
               isStaffSchoolOrCollege: isStaffSchoolOrCollege,
             ),
             appBar: AppBar(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: isEventsProperty
+                  ? const Color(0xFF0A0A12)
+                  : AppTheme.primaryColor,
               foregroundColor: Colors.white,
               iconTheme: const IconThemeData(color: Colors.white),
               elevation: 0,
@@ -94,26 +113,37 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                           unreadCount = state.unreadCount;
                         } else {
                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                            context.read<NotificationBloc>().add(const LoadUnreadCount());
+                            context.read<NotificationBloc>().add(
+                              const LoadUnreadCount(),
+                            );
                           });
                         }
                         return Stack(
                           alignment: Alignment.center,
                           children: [
                             IconButton(
-                              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                              constraints: const BoxConstraints(
+                                minWidth: 44,
+                                minHeight: 44,
+                              ),
                               padding: const EdgeInsets.all(8),
                               icon: SvgPicture.asset(
                                 'assets/notification.svg',
                                 width: 22,
                                 height: 22,
                                 colorFilter: ColorFilter.mode(
-                                  Theme.of(context).appBarTheme.iconTheme?.color ?? Colors.white,
+                                  Theme.of(
+                                        context,
+                                      ).appBarTheme.iconTheme?.color ??
+                                      Colors.white,
                                   BlendMode.srcIn,
                                 ),
                               ),
                               onPressed: () {
-                                Navigator.pushNamed(context, AppRoutes.notifications);
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.notifications,
+                                );
                               },
                             ),
                             if (unreadCount > 0)
@@ -167,7 +197,8 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => Scaffold(
-                          appBar: AppBar(title: const Text('Profile')),
+                          backgroundColor: const Color(0xFF0A0A12),
+                          appBar: buildDarkAppBar(title: const Text('Profile')),
                           body: ProfileTab(
                             user: authState.user,
                             isHostel: propertyCtx.isHostel,
@@ -181,9 +212,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
             ),
           );
         }
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }
@@ -201,6 +230,8 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
   }) {
     final isHostel = propertyCtx.isHostel;
     final primaryColor = Theme.of(context).primaryColor;
+    // Event staff get the dark theme; _buildDrawerItem reads this too.
+    _darkDrawer = isEventsProperty;
 
     return Drawer(
       width: 275,
@@ -208,7 +239,7 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
         borderRadius: BorderRadius.horizontal(right: Radius.circular(28)),
       ),
       child: Container(
-        color: const Color(0xFFF8FAFC),
+        color: _darkDrawer ? const Color(0xFF0A0A12) : const Color(0xFFF8FAFC),
         child: Column(
           children: [
             // Top Gradient Header
@@ -297,20 +328,26 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                       Builder(
                         builder: (context) {
                           final apartments = user.apartments;
-                          final selectedId = selectedApartmentId ?? user.apartmentId;
+                          final selectedId =
+                              selectedApartmentId ?? user.apartmentId;
                           final propertyLabel = propertyCtx.propertyLabel;
-                          
+
                           if (apartments == null || apartments.isEmpty) {
                             return const SizedBox.shrink();
                           }
-                          
+
                           if (apartments.length == 1) {
                             return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 5,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                ),
                               ),
                               child: Text(
                                 apartments.first.name,
@@ -324,17 +361,27 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                           }
 
                           final currentName = selectedId != null
-                              ? (apartments.firstWhere((a) => a.id == selectedId, orElse: () => apartments.first).name)
+                              ? (apartments
+                                    .firstWhere(
+                                      (a) => a.id == selectedId,
+                                      orElse: () => apartments.first,
+                                    )
+                                    .name)
                               : apartments.first.name;
 
                           return PopupMenuButton<String>(
                             tooltip: 'Switch $propertyLabel',
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 5,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.35),
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -348,19 +395,27 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                                     ),
                                   ),
                                   const SizedBox(width: 4),
-                                  const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 16),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
                                 ],
                               ),
                             ),
                             onSelected: (String id) {
-                              context.read<AuthBloc>().add(SelectUserApartmentEvent(apartmentId: id));
+                              context.read<AuthBloc>().add(
+                                SelectUserApartmentEvent(apartmentId: id),
+                              );
                               context.read<UserBloc>().add(LoadUserDataEvent());
                             },
                             itemBuilder: (context) => apartments
-                                .map((a) => PopupMenuItem<String>(
-                                      value: a.id,
-                                      child: Text(a.name),
-                                    ))
+                                .map(
+                                  (a) => PopupMenuItem<String>(
+                                    value: a.id,
+                                    child: Text(a.name),
+                                  ),
+                                )
                                 .toList(),
                           );
                         },
@@ -373,7 +428,10 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                         runSpacing: 6,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(14),
@@ -381,7 +439,11 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.phone_outlined, color: Colors.white70, size: 12),
+                                const Icon(
+                                  Icons.phone_outlined,
+                                  color: Colors.white70,
+                                  size: 12,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   user.mobileNumber,
@@ -395,19 +457,26 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                             ),
                           ),
                           if (isHostel &&
-                              ((user.hostelRoom != null && user.hostelRoom!.isNotEmpty) ||
-                                  (user.hostelBed != null && user.hostelBed!.isNotEmpty)))
+                              ((user.hostelRoom != null &&
+                                      user.hostelRoom!.isNotEmpty) ||
+                                  (user.hostelBed != null &&
+                                      user.hostelBed!.isNotEmpty)))
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Text(
                                 [
-                                  if (user.hostelRoom != null && user.hostelRoom!.isNotEmpty)
+                                  if (user.hostelRoom != null &&
+                                      user.hostelRoom!.isNotEmpty)
                                     'Room ${user.hostelRoom}',
-                                  if (user.hostelBed != null && user.hostelBed!.isNotEmpty)
+                                  if (user.hostelBed != null &&
+                                      user.hostelBed!.isNotEmpty)
                                     'Bed ${user.hostelBed}',
                                 ].join(' • '),
                                 style: const TextStyle(
@@ -417,9 +486,14 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                                 ),
                               ),
                             )
-                          else if (!isHostel && user.block != null && user.roomNumber != null)
+                          else if (!isHostel &&
+                              user.block != null &&
+                              user.roomNumber != null)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(14),
@@ -443,7 +517,10 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
             // Menu Items List
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
                 children: [
                   _buildDrawerItem(
                     context,
@@ -493,14 +570,21 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => Scaffold(
-                              appBar: AppBar(title: const Text('Profile')),
+                              backgroundColor: const Color(0xFF0A0A12),
+                              appBar: buildDarkAppBar(
+                                title: const Text('Profile'),
+                              ),
                               body: ProfileTab(user: user, isHostel: isHostel),
                             ),
                           ),
                         );
                         return;
                       }
-                      setState(() => _currentIndex = complaintsEnabled ? (user.isStaff ? 1 : 3) : 2);
+                      setState(
+                        () => _currentIndex = complaintsEnabled
+                            ? (user.isStaff ? 1 : 3)
+                            : 2,
+                      );
                     },
                   ),
                   const Padding(
@@ -518,7 +602,10 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                       },
                     ),
                   ],
-                  if (securityEnabled && !user.isStaff && !isEventsProperty && !isStaffSchoolOrCollege) ...[
+                  if (securityEnabled &&
+                      !user.isStaff &&
+                      !isEventsProperty &&
+                      !isStaffSchoolOrCollege) ...[
                     _buildDrawerItem(
                       context,
                       icon: Icons.person_add_alt_1_rounded,
@@ -527,7 +614,9 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                         Navigator.pop(context);
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const GateApprovalPage()),
+                          MaterialPageRoute(
+                            builder: (context) => const GateApprovalPage(),
+                          ),
                         );
                       },
                     ),
@@ -539,7 +628,9 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                         Navigator.pop(context);
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => VisitorsPage(user: user)),
+                          MaterialPageRoute(
+                            builder: (context) => VisitorsPage(user: user),
+                          ),
                         );
                       },
                     ),
@@ -551,7 +642,9 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                         Navigator.pop(context);
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const MyEventTicketsPage()),
+                          MaterialPageRoute(
+                            builder: (context) => const MyEventTicketsPage(),
+                          ),
                         );
                       },
                     ),
@@ -566,7 +659,8 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const TermsAndConditionsPage(),
+                            builder: (context) =>
+                                const TermsAndConditionsPage(),
                           ),
                         );
                       },
@@ -584,10 +678,16 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                 isLogout: true,
                 onTap: () {
                   Navigator.pop(context);
-                  LogoutConfirmSheet.showLogoutConfirmSheet(context, onLogout: () {
-                    context.read<AuthBloc>().add(LogoutEvent());
-                    AppNavigation.resetTo(context, AppRoutes.userTypeSelection);
-                  });
+                  LogoutConfirmSheet.showLogoutConfirmSheet(
+                    context,
+                    onLogout: () {
+                      context.read<AuthBloc>().add(LogoutEvent());
+                      AppNavigation.resetTo(
+                        context,
+                        AppRoutes.userTypeSelection,
+                      );
+                    },
+                  );
                 },
               ),
             ),
@@ -608,11 +708,14 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
   }) {
     final effectiveCurrent = currentIndex ?? _currentIndex;
     final isSelected = index != null && effectiveCurrent == index;
-    final primaryColor = Theme.of(context).primaryColor;
+    // Navy is too dark to read on the black drawer, so use a lighter blue.
+    final primaryColor = _darkDrawer
+        ? const Color(0xFF3B82F6)
+        : Theme.of(context).primaryColor;
 
     if (isLogout) {
       return Material(
-        color: const Color(0xFFFEF2F2),
+        color: _darkDrawer ? const Color(0x26EF4444) : const Color(0xFFFEF2F2),
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
@@ -621,14 +724,18 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFFCA5A5).withValues(alpha: 0.5)),
+              border: Border.all(
+                color: const Color(0xFFFCA5A5).withValues(alpha: 0.5),
+              ),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEE2E2),
+                    color: _darkDrawer
+                        ? const Color(0x33EF4444)
+                        : const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -656,7 +763,9 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       child: Material(
-        color: isSelected ? primaryColor.withValues(alpha: 0.08) : Colors.transparent,
+        color: isSelected
+            ? primaryColor.withValues(alpha: 0.08)
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
@@ -666,7 +775,10 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: isSelected
-                  ? Border.all(color: primaryColor.withValues(alpha: 0.25), width: 1)
+                  ? Border.all(
+                      color: primaryColor.withValues(alpha: 0.25),
+                      width: 1,
+                    )
                   : null,
             ),
             child: Row(
@@ -676,7 +788,9 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? primaryColor
-                        : const Color(0xFFF1F5F9),
+                        : (_darkDrawer
+                              ? const Color(0xFF1E1E2A)
+                              : const Color(0xFFF1F5F9)),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: isSelected
                         ? [
@@ -684,13 +798,17 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                               color: primaryColor.withValues(alpha: 0.3),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
-                            )
+                            ),
                           ]
                         : null,
                   ),
                   child: Icon(
                     icon,
-                    color: isSelected ? Colors.white : const Color(0xFF64748B),
+                    color: isSelected
+                        ? Colors.white
+                        : (_darkDrawer
+                              ? const Color(0xFF9CA3AF)
+                              : const Color(0xFF64748B)),
                     size: 18,
                   ),
                 ),
@@ -699,9 +817,17 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                   child: Text(
                     title,
                     style: TextStyle(
-                      color: isSelected ? primaryColor : const Color(0xFF334155),
+                      color: isSelected
+                          ? (_darkDrawer
+                                ? const Color(0xFF60A5FA)
+                                : primaryColor)
+                          : (_darkDrawer
+                                ? const Color(0xFFE2E8F0)
+                                : const Color(0xFF334155)),
                       fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w600,
                     ),
                   ),
                 ),
@@ -722,7 +848,11 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
     );
   }
 
-  String _getAppBarTitle(int index, bool complaintsEnabled, {bool isHostel = false}) {
+  String _getAppBarTitle(
+    int index,
+    bool complaintsEnabled, {
+    bool isHostel = false,
+  }) {
     final homeTitle = isHostel ? 'Hostel' : 'Dashboard';
     if (complaintsEnabled) {
       switch (index) {
@@ -751,4 +881,3 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
     }
   }
 }
-

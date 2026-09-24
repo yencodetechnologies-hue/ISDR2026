@@ -50,8 +50,9 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
       _loading = false;
       if (res['success'] == true) {
         _events = List<Map<String, dynamic>>.from(
-          (res['events'] as List?)
-                  ?.map((e) => Map<String, dynamic>.from(e as Map)) ??
+          (res['events'] as List?)?.map(
+                (e) => Map<String, dynamic>.from(e as Map),
+              ) ??
               [],
         );
       } else {
@@ -87,7 +88,8 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
 
   Future<void> _send() async {
     if (_event == null) return _toast('Select an event');
-    if (_content.text.trim().isEmpty) return _toast('Write the notification content');
+    if (_content.text.trim().isEmpty)
+      return _toast('Write the notification content');
     setState(() => _sending = true);
     final res = await _api.sendEventNotification(
       eventId: _idOf(_event!),
@@ -107,23 +109,23 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
   }
 
   InputDecoration _dec(String label, IconData icon) => InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 20),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-        ),
-      );
+    labelText: label,
+    prefixIcon: Icon(icon, color: const Color(0xFF3B82F6), size: 20),
+    filled: true,
+    fillColor: const Color(0xFF1E1E2A),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFF0A0A12),
       appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: const Color(0xFF0A0A12),
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
@@ -139,109 +141,140 @@ class _SendNotificationPageState extends State<SendNotificationPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _loadError != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_loadError!),
-                      const SizedBox(height: 10),
-                      OutlinedButton(onPressed: _load, child: const Text('Retry')),
-                    ],
-                  ),
-                )
-              : ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    DropdownButtonFormField<String>(
-                      value: _event == null ? null : _idOf(_event!),
-                      isExpanded: true,
-                      decoration: _dec('Event *', Icons.event_rounded),
-                      hint: const Text('Select event'),
-                      items: _events
-                          .map((e) => DropdownMenuItem(
-                                value: _idOf(e),
-                                child: Text(e['title']?.toString() ?? 'Event',
-                                    overflow: TextOverflow.ellipsis),
-                              ))
-                          .toList(),
-                      onChanged: (id) => setState(() {
-                        _event = _events.firstWhere((e) => _idOf(e) == id);
-                        _packageId = null;
-                        _inclusion = null;
-                      }),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String?>(
-                      value: _packageId,
-                      isExpanded: true,
-                      decoration: _dec('Package (optional)', Icons.inventory_2_outlined),
-                      items: [
-                        const DropdownMenuItem<String?>(
-                            value: null, child: Text('All packages')),
-                        ..._packages.map((p) => DropdownMenuItem<String?>(
-                              value: p['id']?.toString(),
-                              child: Text(p['name']?.toString() ?? '',
-                                  overflow: TextOverflow.ellipsis),
-                            )),
-                      ],
-                      onChanged: _event == null
-                          ? null
-                          : (v) => setState(() {
-                                _packageId = v;
-                                _inclusion = null;
-                              }),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String?>(
-                      value: _inclusion,
-                      isExpanded: true,
-                      decoration: _dec('Inclusion (optional)', Icons.checklist_rounded),
-                      items: [
-                        const DropdownMenuItem<String?>(
-                            value: null, child: Text('All inclusions')),
-                        ..._inclusionNames.map((n) => DropdownMenuItem<String?>(
-                              value: n,
-                              child: Text(n, overflow: TextOverflow.ellipsis),
-                            )),
-                      ],
-                      onChanged:
-                          _event == null ? null : (v) => setState(() => _inclusion = v),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _content,
-                      minLines: 4,
-                      maxLines: 8,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: _dec('Notification content *', Icons.notes_rounded),
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        onPressed: _sending ? null : _send,
-                        icon: _sending
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2.5, color: Colors.white),
-                              )
-                            : const Icon(Icons.send_rounded, size: 18),
-                        label: const Text('Send Notification',
-                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_loadError!),
+                  const SizedBox(height: 10),
+                  OutlinedButton(onPressed: _load, child: const Text('Retry')),
+                ],
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                DropdownButtonFormField<String>(
+                  value: _event == null ? null : _idOf(_event!),
+                  isExpanded: true,
+                  decoration: _dec('Event *', Icons.event_rounded),
+                  hint: const Text('Select event'),
+                  items: _events
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: _idOf(e),
+                          child: Text(
+                            e['title']?.toString() ?? 'Event',
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (id) => setState(() {
+                    _event = _events.firstWhere((e) => _idOf(e) == id);
+                    _packageId = null;
+                    _inclusion = null;
+                  }),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String?>(
+                  value: _packageId,
+                  isExpanded: true,
+                  decoration: _dec(
+                    'Package (optional)',
+                    Icons.inventory_2_outlined,
+                  ),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('All packages'),
+                    ),
+                    ..._packages.map(
+                      (p) => DropdownMenuItem<String?>(
+                        value: p['id']?.toString(),
+                        child: Text(
+                          p['name']?.toString() ?? '',
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
                   ],
+                  onChanged: _event == null
+                      ? null
+                      : (v) => setState(() {
+                          _packageId = v;
+                          _inclusion = null;
+                        }),
                 ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String?>(
+                  value: _inclusion,
+                  isExpanded: true,
+                  decoration: _dec(
+                    'Inclusion (optional)',
+                    Icons.checklist_rounded,
+                  ),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('All inclusions'),
+                    ),
+                    ..._inclusionNames.map(
+                      (n) => DropdownMenuItem<String?>(
+                        value: n,
+                        child: Text(n, overflow: TextOverflow.ellipsis),
+                      ),
+                    ),
+                  ],
+                  onChanged: _event == null
+                      ? null
+                      : (v) => setState(() => _inclusion = v),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _content,
+                  minLines: 4,
+                  maxLines: 8,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: _dec(
+                    'Notification content *',
+                    Icons.notes_rounded,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: _sending ? null : _send,
+                    icon: _sending
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.send_rounded, size: 18),
+                    label: const Text(
+                      'Send Notification',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3B82F6),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

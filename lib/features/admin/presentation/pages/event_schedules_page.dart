@@ -9,7 +9,11 @@ class EventSchedulesPage extends StatefulWidget {
   final String? apartmentId;
   final bool isReadOnly;
 
-  const EventSchedulesPage({super.key, this.apartmentId, this.isReadOnly = false});
+  const EventSchedulesPage({
+    super.key,
+    this.apartmentId,
+    this.isReadOnly = false,
+  });
 
   @override
   State<EventSchedulesPage> createState() => _EventSchedulesPageState();
@@ -41,8 +45,9 @@ class _EventSchedulesPageState extends State<EventSchedulesPage> {
       _loading = false;
       if (res['success'] == true) {
         _events = List<Map<String, dynamic>>.from(
-          (res['events'] as List?)
-                  ?.map((e) => Map<String, dynamic>.from(e as Map)) ??
+          (res['events'] as List?)?.map(
+                (e) => Map<String, dynamic>.from(e as Map),
+              ) ??
               [],
         );
       } else {
@@ -60,9 +65,9 @@ class _EventSchedulesPageState extends State<EventSchedulesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFF0A0A12),
       appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: const Color(0xFF0A0A12),
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
@@ -78,38 +83,43 @@ class _EventSchedulesPageState extends State<EventSchedulesPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        OutlinedButton(onPressed: _load, child: const Text('Retry')),
-                      ],
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: _load,
+                      child: const Text('Retry'),
                     ),
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: _events.isEmpty
-                      ? ListView(
-                          children: const [
-                            SizedBox(height: 160),
-                            Center(
-                              child: Text('No events yet',
-                                  style: TextStyle(color: Colors.black54)),
-                            ),
-                          ],
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _events.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (_, i) => _eventCard(_events[i]),
-                        ),
+                  ],
                 ),
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: _events.isEmpty
+                  ? ListView(
+                      children: const [
+                        SizedBox(height: 160),
+                        Center(
+                          child: Text(
+                            'No events yet',
+                            style: TextStyle(color: const Color(0xFF9CA3AF)),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _events.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (_, i) => _eventCard(_events[i]),
+                    ),
+            ),
     );
   }
 
@@ -119,10 +129,8 @@ class _EventSchedulesPageState extends State<EventSchedulesPage> {
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => EventScheduleListPage(
-            event: e,
-            isReadOnly: widget.isReadOnly,
-          ),
+          builder: (_) =>
+              EventScheduleListPage(event: e, isReadOnly: widget.isReadOnly),
         ),
       ),
       child: _eventCardBody(e),
@@ -136,9 +144,9 @@ class _EventSchedulesPageState extends State<EventSchedulesPage> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
       ),
       child: Row(
         children: [
@@ -146,11 +154,14 @@ class _EventSchedulesPageState extends State<EventSchedulesPage> {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withValues(alpha: 0.09),
+              color: const Color(0xFF3B82F6).withValues(alpha: 0.09),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.event_note_rounded,
-                color: AppTheme.primaryColor, size: 22),
+            child: const Icon(
+              Icons.event_note_rounded,
+              color: const Color(0xFF3B82F6),
+              size: 22,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -162,20 +173,28 @@ class _EventSchedulesPageState extends State<EventSchedulesPage> {
                   style: const TextStyle(
                     fontSize: 15.5,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.textColor,
+                    color: Colors.white,
                   ),
                 ),
                 if (start != null) ...[
                   const SizedBox(height: 3),
                   Text(
                     '${_dateFmt.format(start)} · ${_timeFmt.format(start)}',
-                    style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: const Color(0xFF9CA3AF),
+                    ),
                   ),
                 ],
                 if (venue.isNotEmpty) ...[
                   const SizedBox(height: 2),
-                  Text(venue,
-                      style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
+                  Text(
+                    venue,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: const Color(0xFF9CA3AF),
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -183,7 +202,9 @@ class _EventSchedulesPageState extends State<EventSchedulesPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
             decoration: BoxDecoration(
-              color: cancelled ? const Color(0xFFFEE2E2) : const Color(0xFFDCFCE7),
+              color: cancelled
+                  ? const Color(0x26EF4444)
+                  : const Color(0x2622C55E),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -191,7 +212,9 @@ class _EventSchedulesPageState extends State<EventSchedulesPage> {
               style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w800,
-                color: cancelled ? const Color(0xFF991B1B) : const Color(0xFF166534),
+                color: cancelled
+                    ? const Color(0xFFFCA5A5)
+                    : const Color(0xFF86EFAC),
               ),
             ),
           ),

@@ -97,11 +97,13 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
       _utr.text = v('utrNumber');
       _existingPhotoUrl = v('photoUrl');
       final pid = v('packageId');
-      if (pid.isNotEmpty && widget.packages.any((p) => p['id']?.toString() == pid)) {
+      if (pid.isNotEmpty &&
+          widget.packages.any((p) => p['id']?.toString() == pid)) {
         _packageId = pid;
       } else if (v('packageName').isNotEmpty) {
         for (final p in widget.packages) {
-          if (p['name']?.toString() == v('packageName')) _packageId = p['id']?.toString();
+          if (p['name']?.toString() == v('packageName'))
+            _packageId = p['id']?.toString();
         }
       }
     } else {
@@ -111,14 +113,29 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
 
   @override
   void dispose() {
-    for (final c in [_type, _first, _middle, _last, _designation, _institution, _idNumber, _address, _mobile, _email, _utr]) {
+    for (final c in [
+      _type,
+      _first,
+      _middle,
+      _last,
+      _designation,
+      _institution,
+      _idNumber,
+      _address,
+      _mobile,
+      _email,
+      _utr,
+    ]) {
       c.dispose();
     }
     super.dispose();
   }
 
   Future<void> _pickPhoto() async {
-    final file = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
     if (file != null) setState(() => _photoPath = file.path);
   }
 
@@ -141,14 +158,18 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
       if (e.value.trim().isEmpty) return '${e.key} is required';
     }
     if (_paid && _paymentMode.isEmpty) return 'Payment mode is required';
-    if (!RegExp(r'^\+?\d{10,13}$').hasMatch(_mobile.text.replaceAll(RegExp(r'[\s-]'), ''))) {
+    if (!RegExp(
+      r'^\+?\d{10,13}$',
+    ).hasMatch(_mobile.text.replaceAll(RegExp(r'[\s-]'), ''))) {
       return 'Enter a valid mobile number';
     }
     if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(_email.text.trim())) {
       return 'Enter a valid email address';
     }
     final id = _idNumber.text.trim();
-    if (widget.existingIdNumbers.any((e) => e.toLowerCase() == id.toLowerCase())) {
+    if (widget.existingIdNumbers.any(
+      (e) => e.toLowerCase() == id.toLowerCase(),
+    )) {
       return 'This ID number is already used for this event.';
     }
     return null;
@@ -185,7 +206,9 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
     final res = _editing
         ? await widget.api.updateEventRegistration(
             eventId: widget.eventId,
-            registrationId: (widget.registration!['id'] ?? widget.registration!['_id']).toString(),
+            registrationId:
+                (widget.registration!['id'] ?? widget.registration!['_id'])
+                    .toString(),
             fields: fields,
             photoPath: _photoPath,
             apartmentId: widget.apartmentId,
@@ -201,15 +224,29 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
     if (res['success'] == true) {
       Navigator.pop(
         context,
-        res['registration'] is Map ? Map<String, dynamic>.from(res['registration'] as Map) : <String, dynamic>{},
+        res['registration'] is Map
+            ? Map<String, dynamic>.from(res['registration'] as Map)
+            : <String, dynamic>{},
       );
     } else {
-      setState(() => _error = res['error']?.toString() ?? 'Failed to save participant');
+      setState(
+        () => _error = res['error']?.toString() ?? 'Failed to save participant',
+      );
     }
   }
 
-  Widget _text(TextEditingController c, String label,
-      {bool required = true, TextInputType? type, int maxLines = 1, ValueChanged<String>? onChanged, int? maxLength, TextCapitalization caps = TextCapitalization.none, String? hint, bool enabled = true}) {
+  Widget _text(
+    TextEditingController c,
+    String label, {
+    bool required = true,
+    TextInputType? type,
+    int maxLines = 1,
+    ValueChanged<String>? onChanged,
+    int? maxLength,
+    TextCapitalization caps = TextCapitalization.none,
+    String? hint,
+    bool enabled = true,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
@@ -256,10 +293,15 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final idTaken = _idNumber.text.trim().isNotEmpty &&
-        widget.existingIdNumbers.any((e) => e.toLowerCase() == _idNumber.text.trim().toLowerCase());
+    final idTaken =
+        _idNumber.text.trim().isNotEmpty &&
+        widget.existingIdNumbers.any(
+          (e) => e.toLowerCase() == _idNumber.text.trim().toLowerCase(),
+        );
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: DraggableScrollableSheet(
         initialChildSize: 0.92,
         minChildSize: 0.5,
@@ -267,7 +309,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
         expand: false,
         builder: (context, scrollController) => Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFF14141F),
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -277,10 +319,18 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(_editing ? 'Edit participant' : 'Create participants',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                      child: Text(
+                        _editing ? 'Edit participant' : 'Create participants',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
-                    IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(context),
+                    ),
                   ],
                 ),
               ),
@@ -290,14 +340,29 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                   children: [
                     if (_error != null) ...[
-                      Text(_error!, style: const TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.w600)),
+                      Text(
+                        _error!,
+                        style: const TextStyle(
+                          color: AppTheme.errorColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       const SizedBox(height: 10),
                     ],
-                    _text(_type, 'Participant type', maxLength: 60, hint: 'e.g. Delegate, Speaker, Organizer'),
+                    _text(
+                      _type,
+                      'Participant type',
+                      maxLength: 60,
+                      hint: 'e.g. Delegate, Speaker, Organizer',
+                    ),
                     _drop(
                       label: 'Title',
                       value: _title,
-                      items: _titles.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                      items: _titles
+                          .map(
+                            (t) => DropdownMenuItem(value: t, child: Text(t)),
+                          )
+                          .toList(),
                       onChanged: (v) => setState(() => _title = v ?? ''),
                     ),
                     _text(_first, 'First name'),
@@ -308,7 +373,10 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                       value: _gender,
                       items: const [
                         DropdownMenuItem(value: 'male', child: Text('Male')),
-                        DropdownMenuItem(value: 'female', child: Text('Female')),
+                        DropdownMenuItem(
+                          value: 'female',
+                          child: Text('Female'),
+                        ),
                         DropdownMenuItem(value: 'other', child: Text('Other')),
                       ],
                       onChanged: (v) => setState(() => _gender = v ?? ''),
@@ -319,13 +387,15 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                       label: 'Package',
                       value: _packageId ?? '',
                       items: widget.packages
-                          .map((p) => DropdownMenuItem(
-                                value: p['id'].toString(),
-                                child: Text(
-                                  '${p['name']} (${(num.tryParse(p['rate']?.toString() ?? '') ?? 0) == 0 ? 'Free' : '₹${p['rate']}'})',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ))
+                          .map(
+                            (p) => DropdownMenuItem(
+                              value: p['id'].toString(),
+                              child: Text(
+                                '${p['name']} (${(num.tryParse(p['rate']?.toString() ?? '') ?? 0) == 0 ? 'Free' : '₹${p['rate']}'})',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
                           .toList(),
                       onChanged: (v) => setState(() {
                         _packageId = v;
@@ -344,7 +414,9 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                         if (upper != v) {
                           _idNumber.value = _idNumber.value.copyWith(
                             text: upper,
-                            selection: TextSelection.collapsed(offset: upper.length),
+                            selection: TextSelection.collapsed(
+                              offset: upper.length,
+                            ),
                           );
                         }
                         setState(() {});
@@ -355,7 +427,11 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                         padding: EdgeInsets.only(bottom: 12),
                         child: Text(
                           'This ID number is already used for this event.',
-                          style: TextStyle(color: AppTheme.errorColor, fontSize: 12, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: AppTheme.errorColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     _text(_mobile, 'Mobile no.', type: TextInputType.phone),
@@ -365,7 +441,10 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                       value: _food,
                       items: const [
                         DropdownMenuItem(value: 'veg', child: Text('Veg')),
-                        DropdownMenuItem(value: 'non-veg', child: Text('Non-veg')),
+                        DropdownMenuItem(
+                          value: 'non-veg',
+                          child: Text('Non-veg'),
+                        ),
                       ],
                       onChanged: (v) => setState(() => _food = v ?? ''),
                     ),
@@ -389,18 +468,29 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                         children: [
                           CircleAvatar(
                             radius: 28,
-                            backgroundColor: const Color(0xFFF1F5F9),
+                            backgroundColor: const Color(0xFF1E1E2A),
                             backgroundImage: _photoPath != null
                                 ? FileImage(File(_photoPath!))
-                                : (_existingPhotoUrl.isNotEmpty ? NetworkImage(_existingPhotoUrl) as ImageProvider : null),
-                            child: (_photoPath == null && _existingPhotoUrl.isEmpty)
-                                ? const Icon(Icons.person, color: Colors.black38)
+                                : (_existingPhotoUrl.isNotEmpty
+                                      ? NetworkImage(_existingPhotoUrl)
+                                            as ImageProvider
+                                      : null),
+                            child:
+                                (_photoPath == null &&
+                                    _existingPhotoUrl.isEmpty)
+                                ? const Icon(
+                                    Icons.person,
+                                    color: const Color(0xFF9CA3AF),
+                                  )
                                 : null,
                           ),
                           const SizedBox(width: 12),
                           OutlinedButton.icon(
                             onPressed: _pickPhoto,
-                            icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                            icon: const Icon(
+                              Icons.photo_camera_outlined,
+                              size: 18,
+                            ),
                             label: const Text('Photo (optional)'),
                           ),
                         ],
@@ -411,11 +501,17 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                       child: ElevatedButton(
                         onPressed: (_busy || idTaken) ? null : _submit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
+                          backgroundColor: const Color(0xFF3B82F6),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        child: Text(_busy ? 'Saving…' : (_editing ? 'Save changes' : 'Create participant & QR')),
+                        child: Text(
+                          _busy
+                              ? 'Saving…'
+                              : (_editing
+                                    ? 'Save changes'
+                                    : 'Create participant & QR'),
+                        ),
                       ),
                     ),
                   ],

@@ -19,11 +19,7 @@ class ProfileTab extends StatefulWidget {
   final UserModel user;
   final bool isHostel;
 
-  const ProfileTab({
-    super.key,
-    required this.user,
-    this.isHostel = false,
-  });
+  const ProfileTab({super.key, required this.user, this.isHostel = false});
 
   @override
   State<ProfileTab> createState() => _ProfileTabState();
@@ -40,7 +36,7 @@ class _ProfileTabState extends State<ProfileTab> {
   Future<void> _pickAndUploadProfilePic() async {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF14141F),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -48,16 +44,28 @@ class _ProfileTabState extends State<ProfileTab> {
         child: Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_camera_rounded, color: AppTheme.primaryColor),
-              title: const Text('Take a photo'),
+              leading: const Icon(
+                Icons.photo_camera_rounded,
+                color: AppTheme.primaryColor,
+              ),
+              title: const Text(
+                'Take a photo',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(sheetContext);
                 _handleImageSource(ImageSource.camera);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library_rounded, color: AppTheme.primaryColor),
-              title: const Text('Choose from gallery'),
+              leading: const Icon(
+                Icons.photo_library_rounded,
+                color: AppTheme.primaryColor,
+              ),
+              title: const Text(
+                'Choose from gallery',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(sheetContext);
                 _handleImageSource(ImageSource.gallery);
@@ -70,7 +78,10 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Future<void> _handleImageSource(ImageSource source) async {
-    final XFile? picked = await _picker.pickImage(source: source, imageQuality: 85);
+    final XFile? picked = await _picker.pickImage(
+      source: source,
+      imageQuality: 85,
+    );
     if (picked == null || !mounted) return;
 
     setState(() => _uploadingPhoto = true);
@@ -82,19 +93,23 @@ class _ProfileTabState extends State<ProfileTab> {
       if (!mounted) return;
       if (result['success'] == true) {
         context.read<AuthBloc>().add(RefreshCurrentUserEvent());
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile photo updated')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Profile photo updated')));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['error']?.toString() ?? 'Failed to update photo')),
+          SnackBar(
+            content: Text(
+              result['error']?.toString() ?? 'Failed to update photo',
+            ),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update photo: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update photo: $e')));
       }
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
@@ -104,7 +119,7 @@ class _ProfileTabState extends State<ProfileTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF0A0A12),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -118,7 +133,11 @@ class _ProfileTabState extends State<ProfileTab> {
                   height: 180,
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF2563EB)],
+                      colors: [
+                        Color(0xFF0F172A),
+                        Color(0xFF1E293B),
+                        Color(0xFF2563EB),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -151,12 +170,15 @@ class _ProfileTabState extends State<ProfileTab> {
                   child: Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: const Color(0xFF14141F),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+                      border: Border.all(
+                        color: const Color(0x1AFFFFFF),
+                        width: 1.5,
+                      ),
                       boxShadow: const [
                         BoxShadow(
-                          color: Color(0x140F172A),
+                          color: Color(0x14FFFFFF),
                           blurRadius: 24,
                           offset: Offset(0, 8),
                         ),
@@ -169,7 +191,9 @@ class _ProfileTabState extends State<ProfileTab> {
                           children: [
                             // Profile Avatar
                             GestureDetector(
-                              onTap: _uploadingPhoto ? null : _pickAndUploadProfilePic,
+                              onTap: _uploadingPhoto
+                                  ? null
+                                  : _pickAndUploadProfilePic,
                               child: Stack(
                                 clipBehavior: Clip.none,
                                 children: [
@@ -177,10 +201,15 @@ class _ProfileTabState extends State<ProfileTab> {
                                     padding: const EdgeInsets.all(3),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: const Color(0xFF2563EB), width: 2),
+                                      border: Border.all(
+                                        color: const Color(0xFF2563EB),
+                                        width: 2,
+                                      ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: const Color(0xFF2563EB).withValues(alpha: 0.15),
+                                          color: const Color(
+                                            0xFF2563EB,
+                                          ).withValues(alpha: 0.15),
                                           blurRadius: 10,
                                           offset: const Offset(0, 4),
                                         ),
@@ -188,27 +217,30 @@ class _ProfileTabState extends State<ProfileTab> {
                                     ),
                                     child: CircleAvatar(
                                       radius: 34,
-                                      backgroundColor: const Color(0xFFF1F5F9),
+                                      backgroundColor: const Color(0xFF1E1E2A),
                                       child: _uploadingPhoto
                                           ? const SizedBox(
                                               width: 22,
                                               height: 22,
-                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
                                             )
-                                          : (user.profilePic != null && user.profilePic!.isNotEmpty
-                                              ? ClipOval(
-                                                  child: Image.network(
-                                                    user.profilePic!,
-                                                    fit: BoxFit.cover,
-                                                    width: 68,
-                                                    height: 68,
-                                                  ),
-                                                )
-                                              : const Icon(
-                                                  Icons.person_rounded,
-                                                  size: 38,
-                                                  color: Color(0xFF0F172A),
-                                                )),
+                                          : (user.profilePic != null &&
+                                                    user.profilePic!.isNotEmpty
+                                                ? ClipOval(
+                                                    child: Image.network(
+                                                      user.profilePic!,
+                                                      fit: BoxFit.cover,
+                                                      width: 68,
+                                                      height: 68,
+                                                    ),
+                                                  )
+                                                : const Icon(
+                                                    Icons.person_rounded,
+                                                    size: 38,
+                                                    color: Colors.white,
+                                                  )),
                                     ),
                                   ),
                                   Positioned(
@@ -219,7 +251,10 @@ class _ProfileTabState extends State<ProfileTab> {
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF2563EB),
                                         shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white, width: 2),
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 2,
+                                        ),
                                       ),
                                       child: const Icon(
                                         Icons.camera_alt_rounded,
@@ -241,7 +276,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                     style: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w800,
-                                      color: Color(0xFF0F172A),
+                                      color: Colors.white,
                                       letterSpacing: -0.3,
                                     ),
                                     maxLines: 1,
@@ -252,7 +287,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                     user.email,
                                     style: const TextStyle(
                                       fontSize: 12,
-                                      color: Color(0xFF64748B),
+                                      color: Color(0xFF9CA3AF),
                                       fontWeight: FontWeight.w500,
                                     ),
                                     maxLines: 1,
@@ -260,13 +295,17 @@ class _ProfileTabState extends State<ProfileTab> {
                                   ),
                                   const SizedBox(height: 8),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: user.status == AccountStatus.approved
-                                          ? const Color(0xFFDCFCE7)
+                                      color:
+                                          user.status == AccountStatus.approved
+                                          ? const Color(0x2622C55E)
                                           : user.status == AccountStatus.pending
-                                              ? const Color(0xFFFEF3C7)
-                                              : const Color(0xFFFEE2E2),
+                                          ? const Color(0x26F59E0B)
+                                          : const Color(0x26EF4444),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Row(
@@ -277,17 +316,21 @@ class _ProfileTabState extends State<ProfileTab> {
                                               ? Icons.check_circle_rounded
                                               : Icons.pending_rounded,
                                           size: 13,
-                                          color: user.status == AccountStatus.approved
-                                              ? const Color(0xFF166534)
-                                              : const Color(0xFFB45309),
+                                          color:
+                                              user.status ==
+                                                  AccountStatus.approved
+                                              ? const Color(0xFF86EFAC)
+                                              : const Color(0xFFFBBF24),
                                         ),
                                         const SizedBox(width: 5),
                                         Text(
                                           user.status.name.toUpperCase(),
                                           style: TextStyle(
-                                            color: user.status == AccountStatus.approved
-                                                ? const Color(0xFF166534)
-                                                : const Color(0xFFB45309),
+                                            color:
+                                                user.status ==
+                                                    AccountStatus.approved
+                                                ? const Color(0xFF86EFAC)
+                                                : const Color(0xFFFBBF24),
                                             fontWeight: FontWeight.w800,
                                             fontSize: 10,
                                             letterSpacing: 0.5,
@@ -303,22 +346,35 @@ class _ProfileTabState extends State<ProfileTab> {
                         ),
                         if (user.status == AccountStatus.approved) ...[
                           const SizedBox(height: 16),
-                          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                          const Divider(height: 1, color: Color(0xFF1E1E2A)),
                           const SizedBox(height: 12),
                           Builder(
                             builder: (context) {
                               final currentProp = resolveCurrentProperty(user);
-                              final propType = currentProp?.propertyType ?? user.propertyType ?? (user.apartments != null && user.apartments!.isNotEmpty ? user.apartments!.first.propertyType : null);
+                              final propType =
+                                  currentProp?.propertyType ??
+                                  user.propertyType ??
+                                  (user.apartments != null &&
+                                          user.apartments!.isNotEmpty
+                                      ? user.apartments!.first.propertyType
+                                      : null);
                               final isStaffSchoolOrCollege = false;
                               final btnLabel = isHostel
                                   ? 'Digital Hostel ID'
-                                  : (isStaffSchoolOrCollege ? 'View Staff Entry Pass' : 'View Digital Access Pass');
+                                  : (isStaffSchoolOrCollege
+                                        ? 'View Staff Entry Pass'
+                                        : 'View Digital Access Pass');
 
                               return SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton.icon(
-                                  onPressed: () => _showQrCodeBottomSheet(context, user),
-                                  icon: const Icon(Icons.qr_code_2_rounded, color: Colors.white, size: 20),
+                                  onPressed: () =>
+                                      _showQrCodeBottomSheet(context, user),
+                                  icon: const Icon(
+                                    Icons.qr_code_2_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                   label: Text(
                                     btnLabel,
                                     style: const TextStyle(
@@ -331,9 +387,16 @@ class _ProfileTabState extends State<ProfileTab> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF0F172A),
                                     elevation: 0,
-                                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                                    minimumSize: const Size(double.infinity, 48),
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                      horizontal: 16,
+                                    ),
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      48,
+                                    ),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),
@@ -359,66 +422,77 @@ class _ProfileTabState extends State<ProfileTab> {
                   const SizedBox(height: 8),
 
                   // Personal Details Card Group
-                  _buildSectionHeader('Personal Information', Icons.person_rounded),
+                  _buildSectionHeader(
+                    'Personal Information',
+                    Icons.person_rounded,
+                  ),
                   const SizedBox(height: 10),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: const Color(0xFF14141F),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                      border: Border.all(
+                        color: const Color(0x1AFFFFFF),
+                        width: 1.2,
+                      ),
                       boxShadow: const [
                         BoxShadow(
-                          color: Color(0x080F172A),
+                          color: Color(0x0DFFFFFF),
                           blurRadius: 16,
                           offset: Offset(0, 4),
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: Column(
                       children: [
                         _buildProfileFieldTile(
                           label: 'Email Address',
                           value: user.email,
                           icon: Icons.mail_outline_rounded,
-                          iconBgColor: const Color(0xFFEFF6FF),
+                          iconBgColor: const Color(0x263B82F6),
                           iconColor: const Color(0xFF2563EB),
                         ),
-                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        const Divider(height: 1, color: Color(0xFF1E1E2A)),
                         _buildProfileFieldTile(
                           label: 'Mobile Number',
                           value: user.mobileNumber,
                           icon: Icons.phone_enabled_rounded,
-                          iconBgColor: const Color(0xFFECFDF5),
+                          iconBgColor: const Color(0x2622C55E),
                           iconColor: const Color(0xFF10B981),
                         ),
-                        if (user.secondaryMobileNumber != null && user.secondaryMobileNumber!.isNotEmpty) ...[
-                          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        if (user.secondaryMobileNumber != null &&
+                            user.secondaryMobileNumber!.isNotEmpty) ...[
+                          const Divider(height: 1, color: Color(0xFF1E1E2A)),
                           _buildProfileFieldTile(
                             label: 'Secondary Contact',
                             value: user.secondaryMobileNumber!,
                             icon: Icons.phone_iphone_rounded,
-                            iconBgColor: const Color(0xFFECFDF5),
+                            iconBgColor: const Color(0x2622C55E),
                             iconColor: const Color(0xFF10B981),
                           ),
                         ],
                         if (user.gender != null) ...[
-                          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                          const Divider(height: 1, color: Color(0xFF1E1E2A)),
                           _buildProfileFieldTile(
                             label: 'Gender',
                             value: user.gender!.name.toUpperCase(),
                             icon: Icons.person_search_rounded,
-                            iconBgColor: const Color(0xFFFFFBEB),
+                            iconBgColor: const Color(0x26F59E0B),
                             iconColor: const Color(0xFFD97706),
                           ),
                         ],
-                        if (user.address != null && user.address!.isNotEmpty) ...[
-                          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        if (user.address != null &&
+                            user.address!.isNotEmpty) ...[
+                          const Divider(height: 1, color: Color(0xFF1E1E2A)),
                           _buildProfileFieldTile(
                             label: 'Residential Address',
                             value: user.address!,
                             icon: Icons.home_rounded,
-                            iconBgColor: const Color(0xFFFFFBEB),
+                            iconBgColor: const Color(0x26F59E0B),
                             iconColor: const Color(0xFFD97706),
                           ),
                         ],
@@ -427,44 +501,61 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
 
                   // Company Details Section
-                  if ((user.department != null && user.department!.isNotEmpty) ||
-                      (user.employeeId != null && user.employeeId!.isNotEmpty)) ...[
+                  if ((user.department != null &&
+                          user.department!.isNotEmpty) ||
+                      (user.employeeId != null &&
+                          user.employeeId!.isNotEmpty)) ...[
                     const SizedBox(height: 20),
-                    _buildSectionHeader('Work / Company Information', Icons.work_rounded),
+                    _buildSectionHeader(
+                      'Work / Company Information',
+                      Icons.work_rounded,
+                    ),
                     const SizedBox(height: 10),
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: const Color(0xFF14141F),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                        border: Border.all(
+                          color: const Color(0x1AFFFFFF),
+                          width: 1.2,
+                        ),
                         boxShadow: const [
                           BoxShadow(
-                            color: Color(0x080F172A),
+                            color: Color(0x0DFFFFFF),
                             blurRadius: 16,
                             offset: Offset(0, 4),
                           ),
                         ],
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       child: Column(
                         children: [
-                          if (user.department != null && user.department!.isNotEmpty)
+                          if (user.department != null &&
+                              user.department!.isNotEmpty)
                             _buildProfileFieldTile(
                               label: 'Department',
                               value: user.department!,
                               icon: Icons.corporate_fare_rounded,
-                              iconBgColor: const Color(0xFFF1F5F9),
-                              iconColor: const Color(0xFF0F172A),
+                              iconBgColor: const Color(0xFF1E1E2A),
+                              iconColor: Colors.white,
                             ),
-                          if (user.employeeId != null && user.employeeId!.isNotEmpty) ...[
-                            if (user.department != null && user.department!.isNotEmpty)
-                              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                          if (user.employeeId != null &&
+                              user.employeeId!.isNotEmpty) ...[
+                            if (user.department != null &&
+                                user.department!.isNotEmpty)
+                              const Divider(
+                                height: 1,
+                                color: Color(0xFF1E1E2A),
+                              ),
                             _buildProfileFieldTile(
                               label: 'Employee ID',
                               value: user.employeeId!,
                               icon: Icons.badge_rounded,
-                              iconBgColor: const Color(0xFFF1F5F9),
-                              iconColor: const Color(0xFF0F172A),
+                              iconBgColor: const Color(0xFF1E1E2A),
+                              iconColor: Colors.white,
                             ),
                           ],
                         ],
@@ -473,36 +564,53 @@ class _ProfileTabState extends State<ProfileTab> {
                   ],
 
                   // Hostel Details Section
-                  if ((user.hostelRoom != null && user.hostelRoom!.isNotEmpty) ||
-                      (user.hostelBed != null && user.hostelBed!.isNotEmpty)) ...[
+                  if ((user.hostelRoom != null &&
+                          user.hostelRoom!.isNotEmpty) ||
+                      (user.hostelBed != null &&
+                          user.hostelBed!.isNotEmpty)) ...[
                     const SizedBox(height: 20),
-                    _buildSectionHeader('Hostel Room Info', Icons.hotel_rounded),
+                    _buildSectionHeader(
+                      'Hostel Room Info',
+                      Icons.hotel_rounded,
+                    ),
                     const SizedBox(height: 10),
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: const Color(0xFF14141F),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                        border: Border.all(
+                          color: const Color(0x1AFFFFFF),
+                          width: 1.2,
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       child: Column(
                         children: [
-                          if (user.hostelRoom != null && user.hostelRoom!.isNotEmpty)
+                          if (user.hostelRoom != null &&
+                              user.hostelRoom!.isNotEmpty)
                             _buildProfileFieldTile(
                               label: 'Room Number',
                               value: user.hostelRoom!,
                               icon: Icons.door_front_door_rounded,
-                              iconBgColor: const Color(0xFFEFF6FF),
+                              iconBgColor: const Color(0x263B82F6),
                               iconColor: const Color(0xFF2563EB),
                             ),
-                          if (user.hostelBed != null && user.hostelBed!.isNotEmpty) ...[
-                            if (user.hostelRoom != null && user.hostelRoom!.isNotEmpty)
-                              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                          if (user.hostelBed != null &&
+                              user.hostelBed!.isNotEmpty) ...[
+                            if (user.hostelRoom != null &&
+                                user.hostelRoom!.isNotEmpty)
+                              const Divider(
+                                height: 1,
+                                color: Color(0xFF1E1E2A),
+                              ),
                             _buildProfileFieldTile(
                               label: 'Bed Allocated',
                               value: user.hostelBed!,
                               icon: Icons.single_bed_rounded,
-                              iconBgColor: const Color(0xFFECFDF5),
+                              iconBgColor: const Color(0x2622C55E),
                               iconColor: const Color(0xFF10B981),
                             ),
                           ],
@@ -515,14 +623,22 @@ class _ProfileTabState extends State<ProfileTab> {
                   Builder(
                     builder: (context) {
                       final currentProp = resolveCurrentProperty(user);
-                      final propType = currentProp?.propertyType ?? user.propertyType ?? (user.apartments != null && user.apartments!.isNotEmpty ? user.apartments!.first.propertyType : null);
+                      final propType =
+                          currentProp?.propertyType ??
+                          user.propertyType ??
+                          (user.apartments != null &&
+                                  user.apartments!.isNotEmpty
+                              ? user.apartments!.first.propertyType
+                              : null);
                       final isStaffSchoolOrCollege = false;
 
-                      if (isStaffSchoolOrCollege || propType == PropertyType.events) {
+                      if (isStaffSchoolOrCollege ||
+                          propType == PropertyType.events) {
                         return const SizedBox.shrink();
                       }
 
-                      final showHeader = !isHostel &&
+                      final showHeader =
+                          !isHostel &&
                           (user.familyType != null ||
                               user.totalOccupants != null ||
                               user.block != null ||
@@ -535,42 +651,60 @@ class _ProfileTabState extends State<ProfileTab> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 20),
-                          _buildSectionHeader('Property Unit Info', Icons.other_houses_rounded),
+                          _buildSectionHeader(
+                            'Property Unit Info',
+                            Icons.other_houses_rounded,
+                          ),
                           const SizedBox(height: 10),
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: const Color(0xFF14141F),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                              border: Border.all(
+                                color: const Color(0x1AFFFFFF),
+                                width: 1.2,
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             child: Column(
                               children: [
-                                if (user.block != null && user.block!.isNotEmpty)
+                                if (user.block != null &&
+                                    user.block!.isNotEmpty)
                                   _buildProfileFieldTile(
                                     label: 'Block',
                                     value: user.block!,
                                     icon: Icons.apartment_rounded,
-                                    iconBgColor: const Color(0xFFECFDF5),
+                                    iconBgColor: const Color(0x2622C55E),
                                     iconColor: const Color(0xFF10B981),
                                   ),
-                                if (user.floor != null && user.floor!.isNotEmpty) ...[
-                                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                                if (user.floor != null &&
+                                    user.floor!.isNotEmpty) ...[
+                                  const Divider(
+                                    height: 1,
+                                    color: Color(0xFF1E1E2A),
+                                  ),
                                   _buildProfileFieldTile(
                                     label: 'Floor',
                                     value: user.floor!,
                                     icon: Icons.stairs_rounded,
-                                    iconBgColor: const Color(0xFFFFFBEB),
+                                    iconBgColor: const Color(0x26F59E0B),
                                     iconColor: const Color(0xFFD97706),
                                   ),
                                 ],
-                                if (user.roomNumber != null && user.roomNumber!.isNotEmpty) ...[
-                                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                                if (user.roomNumber != null &&
+                                    user.roomNumber!.isNotEmpty) ...[
+                                  const Divider(
+                                    height: 1,
+                                    color: Color(0xFF1E1E2A),
+                                  ),
                                   _buildProfileFieldTile(
                                     label: 'Unit / Door Number',
                                     value: user.roomNumber!,
                                     icon: Icons.door_front_door_rounded,
-                                    iconBgColor: const Color(0xFFEFF6FF),
+                                    iconBgColor: const Color(0x263B82F6),
                                     iconColor: const Color(0xFF2563EB),
                                   ),
                                 ],
@@ -581,16 +715,22 @@ class _ProfileTabState extends State<ProfileTab> {
                       );
                     },
                   ),
-                  
+
                   // Documents Section
-                  if (user.aadhaarCard != null || user.panCard != null ||
-                      user.aadhaarCardFrontImage != null || user.aadhaarCardBackImage != null ||
+                  if (user.aadhaarCard != null ||
+                      user.panCard != null ||
+                      user.aadhaarCardFrontImage != null ||
+                      user.aadhaarCardBackImage != null ||
                       user.panCardImage != null) ...[
                     const SizedBox(height: 20),
-                    _buildSectionHeader('Identity Documents', Icons.shield_rounded),
+                    _buildSectionHeader(
+                      'Identity Documents',
+                      Icons.shield_rounded,
+                    ),
                     const SizedBox(height: 10),
                   ],
-                  if (user.aadhaarCard != null && user.aadhaarCard!.isNotEmpty) ...[
+                  if (user.aadhaarCard != null &&
+                      user.aadhaarCard!.isNotEmpty) ...[
                     _buildCompactInfoCard(
                       'Aadhaar',
                       user.aadhaarCard!,
@@ -599,7 +739,8 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                     const SizedBox(height: 8),
                   ],
-                  if (user.aadhaarCardFrontImage != null || user.aadhaarCardBackImage != null) ...[
+                  if (user.aadhaarCardFrontImage != null ||
+                      user.aadhaarCardBackImage != null) ...[
                     IdentityDocumentPair(
                       frontImageUrl: user.aadhaarCardFrontImage,
                       backImageUrl: user.aadhaarCardBackImage,
@@ -618,19 +759,14 @@ class _ProfileTabState extends State<ProfileTab> {
                     const SizedBox(height: 8),
                   ],
                   if (user.panCardImage != null) ...[
-                    _buildCompactImageCard(
-                      'PAN Card',
-                      user.panCardImage!,
-                    ),
+                    _buildCompactImageCard('PAN Card', user.panCardImage!),
                   ],
 
                   const SizedBox(height: 16),
-                  PropertyDocumentsSection(
-                    apartmentId: user.apartmentId,
-                  ),
-                  
+                  PropertyDocumentsSection(apartmentId: user.apartmentId),
+
                   const SizedBox(height: 28),
-                  
+
                   // Account Management Actions
                   Row(
                     children: [
@@ -639,7 +775,11 @@ class _ProfileTabState extends State<ProfileTab> {
                           onPressed: () {
                             _showDeleteAccountBottomSheet(context);
                           },
-                          icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 18),
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: Color(0xFFEF4444),
+                            size: 18,
+                          ),
                           label: const Text(
                             'Delete Account',
                             style: TextStyle(
@@ -649,7 +789,10 @@ class _ProfileTabState extends State<ProfileTab> {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFFFECACA), width: 1.5),
+                            side: const BorderSide(
+                              color: Color(0x4DEF4444),
+                              width: 1.5,
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -661,12 +804,22 @@ class _ProfileTabState extends State<ProfileTab> {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            LogoutConfirmSheet.showLogoutConfirmSheet(context, onLogout: () {
-                              context.read<AuthBloc>().add(LogoutEvent());
-                              AppNavigation.resetTo(context, AppRoutes.userTypeSelection);
-                            });
+                            LogoutConfirmSheet.showLogoutConfirmSheet(
+                              context,
+                              onLogout: () {
+                                context.read<AuthBloc>().add(LogoutEvent());
+                                AppNavigation.resetTo(
+                                  context,
+                                  AppRoutes.userTypeSelection,
+                                );
+                              },
+                            );
                           },
-                          icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 18),
+                          icon: const Icon(
+                            Icons.logout_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                           label: const Text(
                             'Log Out',
                             style: TextStyle(
@@ -707,7 +860,9 @@ class _ProfileTabState extends State<ProfileTab> {
           break;
         }
       }
-      hostelName ??= user.apartments!.isNotEmpty ? user.apartments!.first.name : null;
+      hostelName ??= user.apartments!.isNotEmpty
+          ? user.apartments!.first.name
+          : null;
     }
     showModalBottomSheet(
       context: context,
@@ -728,7 +883,7 @@ class _ProfileTabState extends State<ProfileTab> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF14141F),
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
@@ -773,7 +928,7 @@ class _ProfileTabState extends State<ProfileTab> {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textColor,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 12),
@@ -781,11 +936,7 @@ class _ProfileTabState extends State<ProfileTab> {
             const Text(
               'Are you sure you want to delete the account?',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppTheme.textColor,
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 15, color: Colors.white, height: 1.5),
             ),
             const SizedBox(height: 30),
             // Buttons
@@ -808,7 +959,7 @@ class _ProfileTabState extends State<ProfileTab> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textColor,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -850,16 +1001,11 @@ class _ProfileTabState extends State<ProfileTab> {
       SnackBar(
         content: const Text(
           'Account will be deleted within 24 hours',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
         backgroundColor: AppTheme.primaryColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 4),
       ),
@@ -895,7 +1041,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   label,
                   style: const TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF64748B),
+                    color: Color(0xFF9CA3AF),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -905,7 +1051,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
+                    color: Colors.white,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -924,7 +1070,7 @@ class _ProfileTabState extends State<ProfileTab> {
         Container(
           padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
-            color: const Color(0xFFEEF2FF),
+            color: const Color(0x263B82F6),
             borderRadius: BorderRadius.circular(7),
           ),
           child: Icon(icon, color: AppTheme.primaryColor, size: 14),
@@ -935,7 +1081,7 @@ class _ProfileTabState extends State<ProfileTab> {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textColor,
+            color: Colors.white,
             letterSpacing: 0.2,
           ),
         ),
@@ -943,7 +1089,12 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  Widget _buildCompactInfoRow(String label, String value, IconData icon, Color iconColor) {
+  Widget _buildCompactInfoRow(
+    String label,
+    String value,
+    IconData icon,
+    Color iconColor,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       child: Row(
@@ -966,7 +1117,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   label,
                   style: const TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF64748B),
+                    color: Color(0xFF9CA3AF),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -976,7 +1127,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
+                    color: Colors.white,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -989,12 +1140,17 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  Widget _buildCompactInfoCard(String label, String value, IconData icon, Color iconColor) {
+  Widget _buildCompactInfoCard(
+    String label,
+    String value,
+    IconData icon,
+    Color iconColor,
+  ) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),
@@ -1018,7 +1174,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     label,
                     style: TextStyle(
                       fontSize: 9,
-                      color: AppTheme.textColor.withValues(alpha: 0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.2,
                     ),
@@ -1029,7 +1185,7 @@ class _ProfileTabState extends State<ProfileTab> {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textColor,
+                      color: Colors.white,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1046,9 +1202,9 @@ class _ProfileTabState extends State<ProfileTab> {
   Widget _buildCompactImageCard(String label, String imageUrl) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1060,7 +1216,7 @@ class _ProfileTabState extends State<ProfileTab> {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textColor.withValues(alpha: 0.7),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -1078,11 +1234,15 @@ class _ProfileTabState extends State<ProfileTab> {
                 return Container(
                   width: double.infinity,
                   height: 100,
-                  color: const Color(0xFFF8FAFC),
+                  color: const Color(0xFF0A0A12),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, color: Colors.grey[400], size: 24),
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.grey[400],
+                        size: 24,
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         'Failed',
@@ -1097,7 +1257,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 return Container(
                   width: double.infinity,
                   height: 100,
-                  color: const Color(0xFFF8FAFC),
+                  color: const Color(0xFF0A0A12),
                   child: Center(
                     child: SizedBox(
                       width: 20,
@@ -1106,7 +1266,7 @@ class _ProfileTabState extends State<ProfileTab> {
                         strokeWidth: 2,
                         value: loadingProgress.expectedTotalBytes != null
                             ? loadingProgress.cumulativeBytesLoaded /
-                                loadingProgress.expectedTotalBytes!
+                                  loadingProgress.expectedTotalBytes!
                             : null,
                         color: AppTheme.primaryColor,
                       ),
@@ -1121,4 +1281,3 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 }
-

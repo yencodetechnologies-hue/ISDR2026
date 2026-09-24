@@ -3,28 +3,29 @@ const EventRegistration = require('../models/EventRegistration');
 const SessionFile = require('../models/SessionFile');
 const SessionPoll = require('../models/SessionPoll');
 const SessionQuestion = require('../models/SessionQuestion');
+const SessionRating = require('../models/SessionRating');
 const { uploadDocumentToCloudinary, deleteFromCloudinary } = require('../middleware/upload');
 
 const MAX_POLL_OPTIONS = 6;
 const MAX_ANSWER_LENGTH = 1000;
+const MAX_COMMENT_LENGTH = 1000;
 
 /**
- * Loads the session (schedule row) and works out whether the caller is its speaker —
- * a speaker login matches every schedule row sharing their mobile number.
+ * Loads the session (schedule row) and works out whether the caller is its speaker
+ * (the speaker the schedule was created with).
  */
 async function loadSession(req, res) {
   const schedule = await EventSchedule.findById(req.params.scheduleId).select(
-    'apartmentId speakerMobile'
+    'apartmentId speakerId'
   );
   if (!schedule || String(schedule.apartmentId) !== String(req.apartmentId)) {
     res.status(404).json({ success: false, error: 'Session not found' });
     return null;
   }
-  let isSpeaker = false;
-  if (req.userType === 'speaker') {
-    const own = await EventSchedule.findById(req.userId).select('speakerMobile');
-    isSpeaker = !!own && !!own.speakerMobile && own.speakerMobile === schedule.speakerMobile;
-  }
+  const isSpeaker =
+    req.userType === 'speaker' &&
+    !!schedule.speakerId &&
+    String(schedule.speakerId) === String(req.userId);
   return { schedule, isSpeaker };
 }
 
@@ -95,18 +96,35 @@ function questionDto(q, isSpeaker, participantId) {
   return dto;
 }
 
+const ratingDto = (r) => ({
+  name: r.participantName || '',
+  stars: r.stars,
+  comment: r.comment || '',
+  createdAt: r.createdAt,
+});
+
+/** Average (1 decimal) and count of a session's ratings. */
+function summarize(ratings) {
+  const count = ratings.length;
+  const average = count ? Math.round((ratings.reduce((s, r) => s + r.stars, 0) / count) * 10) / 10 : 0;
+  return { count, average };
+}
+
 // GET /api/session-content/:scheduleId
 const getContent = async (req, res) => {
   try {
     const ctx = await loadSession(req, res);
     if (!ctx) return;
     const scheduleId = ctx.schedule._id;
-    const [files, polls, questions] = await Promise.all([
+    const participantId = req.userType === 'participant' ? String(req.userId) : null;
+    const [files, polls, questions, ratings, myRating] = await Promise.all([
       SessionFile.find({ scheduleId }).sort({ createdAt: 1 }),
       SessionPoll.find({ scheduleId }).sort({ createdAt: 1 }),
       SessionQuestion.find({ scheduleId }).sort({ createdAt: 1 }),
+      // Every rating goes to the speaker only; a participant just gets their own.
+      ctx.isSpeaker ? SessionRating.find({ scheduleId }).sort({ createdAt: -1 }) : [],
+      participantId ? SessionRating.findOne({ scheduleId, participantId }) : null,
     ]);
-    const participantId = req.userType === 'participant' ? String(req.userId) : null;
     res.json({
       success: true,
       isSpeaker: ctx.isSpeaker,
@@ -114,6 +132,8 @@ const getContent = async (req, res) => {
       files: files.map(fileDto),
       polls: polls.map((p) => pollDto(p, ctx.isSpeaker, participantId)),
       questions: questions.map((q) => questionDto(q, ctx.isSpeaker, participantId)),
+      myRating: myRating ? ratingDto(myRating) : null,
+      ...(ctx.isSpeaker ? { ratings: ratings.map(ratingDto), ratingSummary: summarize(ratings) } : {}),
     });
   } catch (error) {
     handleError(res, 'getContent', error);
@@ -319,6 +339,46 @@ const answerQuestion = async (req, res) => {
   }
 };
 
+// POST /api/session-content/:scheduleId/rating  { stars: 1-5, comment }
+// One rating per participant per session; final once submitted.
+const rateSession = async (req, res) => {
+  try {
+    const ctx = await loadSession(req, res);
+    if (!ctx) return;
+    if (req.userType !== 'participant') return denyParticipantOnly(res);
+    const stars = Number(req.body.stars);
+    if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+      return res.status(400).json({ success: false, error: 'Choose 1 to 5 stars' });
+    }
+    const comment = String(req.body.comment || '').trim();
+    if (comment.length > MAX_COMMENT_LENGTH) {
+      return res
+        .status(400)
+        .json({ success: false, error: `Comment must be under ${MAX_COMMENT_LENGTH} characters` });
+    }
+    const exists = await SessionRating.exists({ scheduleId: ctx.schedule._id, participantId: req.userId });
+    if (exists) {
+      return res.status(400).json({ success: false, error: 'You have already rated this session' });
+    }
+    const reg = await EventRegistration.findById(req.userId).select('name');
+    const rating = await SessionRating.create({
+      scheduleId: ctx.schedule._id,
+      apartmentId: ctx.schedule.apartmentId,
+      participantId: req.userId,
+      participantName: reg ? reg.name : '',
+      stars,
+      comment,
+    });
+    res.status(201).json({ success: true, rating: ratingDto(rating) });
+  } catch (error) {
+    // Duplicate key = a second rating raced the first.
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, error: 'You have already rated this session' });
+    }
+    handleError(res, 'rateSession', error);
+  }
+};
+
 module.exports = {
   getContent,
   uploadFile,
@@ -329,4 +389,5 @@ module.exports = {
   createQuestion,
   deleteQuestion,
   answerQuestion,
+  rateSession,
 };

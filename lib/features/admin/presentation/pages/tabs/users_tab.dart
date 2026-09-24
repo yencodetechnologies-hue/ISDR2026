@@ -27,15 +27,15 @@ Future<void> _launchUserPhone(BuildContext context, String mobileNumber) async {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open dialer')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not open dialer')));
     }
   } catch (e) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not place call: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not place call: $e')));
     }
   }
 }
@@ -77,32 +77,34 @@ class _UsersTabState extends State<UsersTab> {
     if (_searchQuery.isEmpty) {
       return users;
     }
-    
+
     final query = _searchQuery.toLowerCase();
     final matchingUsers = <UserModel>[];
     final nonMatchingUsers = <UserModel>[];
-    
+
     for (final user in users) {
-      final matches = user.name.toLowerCase().contains(query) ||
+      final matches =
+          user.name.toLowerCase().contains(query) ||
           user.email.toLowerCase().contains(query) ||
           user.mobileNumber.toLowerCase().contains(query) ||
-          (user.username.isNotEmpty && user.username.toLowerCase().contains(query)) ||
+          (user.username.isNotEmpty &&
+              user.username.toLowerCase().contains(query)) ||
           (user.block != null && user.block!.toLowerCase().contains(query)) ||
-          (user.roomNumber != null && user.roomNumber!.toLowerCase().contains(query));
-      
+          (user.roomNumber != null &&
+              user.roomNumber!.toLowerCase().contains(query));
+
       if (matches) {
         matchingUsers.add(user);
       } else {
         nonMatchingUsers.add(user);
       }
     }
-    
+
     return [...matchingUsers, ...nonMatchingUsers];
   }
 
   bool _isUserApprovedOrAssigned(UserModel u) {
-    if (false ||
-        widget.apartment?.propertyType == PropertyType.events) {
+    if (false || widget.apartment?.propertyType == PropertyType.events) {
       return u.status == AccountStatus.approved && u.isActive;
     }
     return isUserAssigned(u);
@@ -113,7 +115,9 @@ class _UsersTabState extends State<UsersTab> {
       case 0:
         return allUsers.where(_isUserApprovedOrAssigned).toList();
       case 1:
-        return allUsers.where((u) => u.status == AccountStatus.pending).toList();
+        return allUsers
+            .where((u) => u.status == AccountStatus.pending)
+            .toList();
       case 2:
         return allUsers.where((u) => !u.isActive).toList();
       default:
@@ -123,8 +127,9 @@ class _UsersTabState extends State<UsersTab> {
 
   void _openAddUser(BuildContext context) {
     final blocState = context.read<AdminBloc>().state;
-    final apartmentId =
-        blocState is AdminLoaded ? blocState.selectedApartmentId : null;
+    final apartmentId = blocState is AdminLoaded
+        ? blocState.selectedApartmentId
+        : null;
     final propertyType = widget.apartment?.propertyType.name;
     Navigator.pushNamed(
       context,
@@ -157,10 +162,12 @@ class _UsersTabState extends State<UsersTab> {
     setState(() {
       _searchQuery = value;
       if (_tabIndex == 0 && value.isNotEmpty) {
-        final isHostel =
-            false;
+        final isHostel = false;
         final tree = buildAssignedUsersTree(
-          users: widget.state.regularUsers.where(isUserAssigned).where(_userMatchesSearch).toList(),
+          users: widget.state.regularUsers
+              .where(isUserAssigned)
+              .where(_userMatchesSearch)
+              .toList(),
           blocks: widget.state.blocks,
           isHostel: isHostel,
         );
@@ -192,9 +199,8 @@ class _UsersTabState extends State<UsersTab> {
     return _UserListCard(
       user: user,
       isSearchHighlight: _userMatchesSearch(user),
-      hasRoom: user.block != null &&
-          user.floor != null &&
-          user.roomNumber != null,
+      hasRoom:
+          user.block != null && user.floor != null && user.roomNumber != null,
       showRoomBadge: showRoomBadge,
       showUserMobile: _resolveShowUserMobile(),
       propertyType: widget.apartment?.propertyType,
@@ -234,8 +240,7 @@ class _UsersTabState extends State<UsersTab> {
         apartment: widget.apartment,
       );
     } else if (value == 'approve') {
-      if (false ||
-          widget.apartment?.propertyType == PropertyType.events) {
+      if (false || widget.apartment?.propertyType == PropertyType.events) {
         _approveStaffDirectly(context, user);
       } else {
         showModalBottomSheet<void>(
@@ -246,7 +251,8 @@ class _UsersTabState extends State<UsersTab> {
             tenant: user,
             initialBlocks: widget.state.blocks,
             assignedUsers: allRegularUsers,
-            scopedApartmentId: widget.state.selectedApartmentId ?? widget.apartment?.id,
+            scopedApartmentId:
+                widget.state.selectedApartmentId ?? widget.apartment?.id,
             propertyType: widget.apartment?.propertyType,
           ),
         );
@@ -260,7 +266,8 @@ class _UsersTabState extends State<UsersTab> {
           tenant: user,
           initialBlocks: widget.state.blocks,
           assignedUsers: allRegularUsers,
-          scopedApartmentId: widget.state.selectedApartmentId ?? widget.apartment?.id,
+          scopedApartmentId:
+              widget.state.selectedApartmentId ?? widget.apartment?.id,
           propertyType: widget.apartment?.propertyType,
         ),
       );
@@ -271,8 +278,12 @@ class _UsersTabState extends State<UsersTab> {
     }
   }
 
-  Future<void> _approveStaffDirectly(BuildContext context, UserModel user) async {
-    final apartmentId = widget.state.selectedApartmentId ?? widget.apartment?.id;
+  Future<void> _approveStaffDirectly(
+    BuildContext context,
+    UserModel user,
+  ) async {
+    final apartmentId =
+        widget.state.selectedApartmentId ?? widget.apartment?.id;
     final api = ApiService();
     try {
       final res = await api.updateUserStatus(
@@ -292,7 +303,9 @@ class _UsersTabState extends State<UsersTab> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(res['error']?.toString() ?? 'Failed to approve staff'),
+            content: Text(
+              res['error']?.toString() ?? 'Failed to approve staff',
+            ),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -314,25 +327,17 @@ class _UsersTabState extends State<UsersTab> {
       builder: (ctx) => AlertDialog(
         title: const Text(
           'Delete User',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textColor,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         content: Text(
           'Are you sure you want to delete ${user.name}? This action cannot be undone.',
-          style: const TextStyle(color: AppTheme.textColor),
+          style: const TextStyle(color: Colors.white),
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey),
-            ),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -340,10 +345,7 @@ class _UsersTabState extends State<UsersTab> {
               Navigator.pop(ctx);
             },
             style: AppTheme.errorElevatedStyle,
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -353,282 +355,293 @@ class _UsersTabState extends State<UsersTab> {
   @override
   Widget build(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    final isWarden = authState is AuthAuthenticated && authState.user.loginRole == 'warden';
+    final isWarden =
+        authState is AuthAuthenticated && authState.user.loginRole == 'warden';
 
     final addLabel = false
         ? 'Create Company'
         : widget.apartment?.propertyType == PropertyType.events
-            ? 'Add Event Staff'
-            : 'Add User';
+        ? 'Add Event Staff'
+        : 'Add User';
 
     final currentState = widget.state;
     final allRegularUsers = currentState.regularUsers;
-        final pendingCount = allRegularUsers
-            .where((u) => u.status == AccountStatus.pending)
-            .length;
-        final assignedCount = allRegularUsers.where(_isUserApprovedOrAssigned).length;
-        final deactiveCount = allRegularUsers.where((u) => !u.isActive).length;
-        final totalCount = allRegularUsers.length;
+    final pendingCount = allRegularUsers
+        .where((u) => u.status == AccountStatus.pending)
+        .length;
+    final assignedCount = allRegularUsers
+        .where(_isUserApprovedOrAssigned)
+        .length;
+    final deactiveCount = allRegularUsers.where((u) => !u.isActive).length;
+    final totalCount = allRegularUsers.length;
 
-        final tabUsers = _usersForTab(allRegularUsers);
-        final sortedUsers = _getSortedUsers(tabUsers);
-        final visibleUsers = _searchQuery.isEmpty
-            ? sortedUsers
-            : sortedUsers.where(_userMatchesSearch).toList();
-        final isHostel =
-            false;
-        final isSchoolOrCollege = false ||
-            widget.apartment?.propertyType == PropertyType.events;
-        final assignedTree = (_tabIndex == 0 && !isSchoolOrCollege)
-            ? buildAssignedUsersTree(
-                users: visibleUsers,
-                blocks: currentState.blocks,
-                isHostel: isHostel,
-              )
-            : null;
-        final showAssignedHierarchy =
-            _tabIndex == 0 && !isSchoolOrCollege && assignedTree != null && !assignedTree.isEmpty;
+    final tabUsers = _usersForTab(allRegularUsers);
+    final sortedUsers = _getSortedUsers(tabUsers);
+    final visibleUsers = _searchQuery.isEmpty
+        ? sortedUsers
+        : sortedUsers.where(_userMatchesSearch).toList();
+    final isHostel = false;
+    final isSchoolOrCollege =
+        false || widget.apartment?.propertyType == PropertyType.events;
+    final assignedTree = (_tabIndex == 0 && !isSchoolOrCollege)
+        ? buildAssignedUsersTree(
+            users: visibleUsers,
+            blocks: currentState.blocks,
+            isHostel: isHostel,
+          )
+        : null;
+    final showAssignedHierarchy =
+        _tabIndex == 0 &&
+        !isSchoolOrCollege &&
+        assignedTree != null &&
+        !assignedTree.isEmpty;
 
-        return Container(
-          color: const Color(0xFFFAFAF9),
-          child: Column(
-            children: [
-              // Header with stats and create button (identical to Blocks tab)
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                color: const Color(0xFFFAFAF9),
-                child: Column(
+    return Container(
+      color: const Color(0xFF0A0A12),
+      child: Column(
+        children: [
+          // Header with stats and create button (identical to Blocks tab)
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            color: const Color(0xFF0A0A12),
+            child: Column(
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildUsersStatCard(
-                            icon: Icons.hourglass_top_rounded,
-                            label: 'Pending',
-                            value: '$pendingCount',
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildUsersStatCard(
-                            icon: Icons.home_work_rounded,
-                            label: false ||
-                                    widget.apartment?.propertyType == PropertyType.events
-                                ? 'Approved'
-                                : 'Assigned',
-                            value: '$assignedCount',
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildUsersStatCard(
-                            icon: Icons.person_off_outlined,
-                            label: 'Inactive',
-                            value: '$deactiveCount',
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (widget.apartment?.addUserEnabled ?? false) ...[
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _openAddUser(context),
-                              child: Container(
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [Color(0xFF13275D), Color(0xFF1E3A8A)],
-                                  ),
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF13275D).withOpacity(0.28),
-                                      blurRadius: 14,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      '＋ ',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                      addLabel,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                    Expanded(
+                      child: _buildUsersStatCard(
+                        icon: Icons.hourglass_top_rounded,
+                        label: 'Pending',
+                        value: '$pendingCount',
                       ),
-                    ],
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildUsersStatCard(
+                        icon: Icons.home_work_rounded,
+                        label:
+                            false ||
+                                widget.apartment?.propertyType ==
+                                    PropertyType.events
+                            ? 'Approved'
+                            : 'Assigned',
+                        value: '$assignedCount',
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildUsersStatCard(
+                        icon: Icons.person_off_outlined,
+                        label: 'Inactive',
+                        value: '$deactiveCount',
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              if (totalCount > 0) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: _onSearchChanged,
-                    decoration: InputDecoration(
-                      hintText: 'Search name, email, mobile, room...',
-                      hintStyle: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: const Color(0xFF8C8C90),
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.search_rounded,
-                        size: 20,
-                        color: Color(0xFF8C8C90),
-                      ),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(
-                                Icons.clear_rounded,
-                                size: 18,
-                                color: Color(0xFF8C8C90),
+                if (widget.apartment?.addUserEnabled ?? false) ...[
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _openAddUser(context),
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFF13275D), Color(0xFF1E3A8A)],
                               ),
-                              onPressed: () {
-                                _searchController.clear();
-                                _onSearchChanged('');
-                              },
-                            )
-                          : null,
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFFECECEA)),
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF3B82F6,
+                                  ).withOpacity(0.28),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  '＋ ',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  addLabel,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFFECECEA)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFF13275D), width: 1.5),
-                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (totalCount > 0) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _onSearchChanged,
+                decoration: InputDecoration(
+                  hintText: 'Search name, email, mobile, room...',
+                  hintStyle: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: const Color(0xFF9CA3AF),
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    size: 20,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(
+                            Icons.clear_rounded,
+                            size: 18,
+                            color: Color(0xFF9CA3AF),
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                            _onSearchChanged('');
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: const Color(0xFF1E1E2A),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 11,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0x14FFFFFF)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0x14FFFFFF)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF3B82F6),
+                      width: 1.5,
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: _UsersFilterChips(
-                  selectedIndex: _tabIndex,
-                  pendingCount: pendingCount,
-                  assignedCount: assignedCount,
-                  deactiveCount: deactiveCount,
-                  propertyType: widget.apartment?.propertyType,
-                  onSelected: (index) {
-                    setState(() {
-                      _tabIndex = index;
-                      if (index != 0) {
-                        _expandedAssignedKeys.clear();
-                      } else if (_searchQuery.isNotEmpty) {
-                        final tree = buildAssignedUsersTree(
-                          users: allRegularUsers
-                              .where(isUserAssigned)
-                              .where(_userMatchesSearch)
-                              .toList(),
-                          blocks: currentState.blocks,
-                          isHostel: isHostel,
-                        );
-                        _expandedAssignedKeys
-                          ..clear()
-                          ..addAll(collectAssignedExpansionKeys(tree));
-                      }
-                    });
-                  },
-                ),
               ),
-            ],
-            Expanded(
-              child: totalCount == 0
-                  ? _UsersEmptyState(
-                      addLabel: addLabel == 'Add User'
-                          ? 'Add First User'
-                          : addLabel,
-                      onAdd: () => _openAddUser(context),
-                      showAddButton: widget.apartment?.addUserEnabled ?? false,
-                    )
-                  : visibleUsers.isEmpty
-                      ? _UsersNoResultsState(
-                          isSearch: _searchQuery.isNotEmpty,
-                          query: _searchQuery,
-                          tabLabel: _tabLabel(_tabIndex),
-                        )
-                      : RefreshIndicator(
-                          color: AppTheme.primaryColor,
-                          onRefresh: () async {
-                            context.read<AdminBloc>().add(LoadAllUsersEvent());
-                            await Future.delayed(
-                              const Duration(milliseconds: 500),
-                            );
-                          },
-                          child: showAssignedHierarchy
-                              ? _AssignedUsersHierarchyList(
-                                  tree: assignedTree,
-                                  showBlockLevel: assignedTree.blocks.length > 1,
-                                  expandedKeys: _expandedAssignedKeys,
-                                  onExpansionChanged: _onAssignedExpansionChanged,
-                                  isHostel: isHostel,
-                                  propertyType: widget.apartment?.propertyType,
-                                  buildUserCard: (user) => _buildUserListCard(
-                                    user: user,
-                                    allRegularUsers: allRegularUsers,
-                                    isWarden: isWarden,
-                                    showRoomBadge: false,
-                                  ),
-                                  buildOtherUserCard: (user) => _buildUserListCard(
-                                    user: user,
-                                    allRegularUsers: allRegularUsers,
-                                    isWarden: isWarden,
-                                  ),
-                                )
-                              : ListView.builder(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(12, 0, 12, 16),
-                                  itemCount: visibleUsers.length,
-                                  itemBuilder: (context, index) {
-                                    return _buildUserListCard(
-                                      user: visibleUsers[index],
-                                      allRegularUsers: allRegularUsers,
-                                      isWarden: isWarden,
-                                    );
-                                  },
-                                ),
-                        ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: _UsersFilterChips(
+                selectedIndex: _tabIndex,
+                pendingCount: pendingCount,
+                assignedCount: assignedCount,
+                deactiveCount: deactiveCount,
+                propertyType: widget.apartment?.propertyType,
+                onSelected: (index) {
+                  setState(() {
+                    _tabIndex = index;
+                    if (index != 0) {
+                      _expandedAssignedKeys.clear();
+                    } else if (_searchQuery.isNotEmpty) {
+                      final tree = buildAssignedUsersTree(
+                        users: allRegularUsers
+                            .where(isUserAssigned)
+                            .where(_userMatchesSearch)
+                            .toList(),
+                        blocks: currentState.blocks,
+                        isHostel: isHostel,
+                      );
+                      _expandedAssignedKeys
+                        ..clear()
+                        ..addAll(collectAssignedExpansionKeys(tree));
+                    }
+                  });
+                },
+              ),
             ),
           ],
-        ),
-      );
+          Expanded(
+            child: totalCount == 0
+                ? _UsersEmptyState(
+                    addLabel: addLabel == 'Add User'
+                        ? 'Add First User'
+                        : addLabel,
+                    onAdd: () => _openAddUser(context),
+                    showAddButton: widget.apartment?.addUserEnabled ?? false,
+                  )
+                : visibleUsers.isEmpty
+                ? _UsersNoResultsState(
+                    isSearch: _searchQuery.isNotEmpty,
+                    query: _searchQuery,
+                    tabLabel: _tabLabel(_tabIndex),
+                  )
+                : RefreshIndicator(
+                    color: const Color(0xFF3B82F6),
+                    onRefresh: () async {
+                      context.read<AdminBloc>().add(LoadAllUsersEvent());
+                      await Future.delayed(const Duration(milliseconds: 500));
+                    },
+                    child: showAssignedHierarchy
+                        ? _AssignedUsersHierarchyList(
+                            tree: assignedTree,
+                            showBlockLevel: assignedTree.blocks.length > 1,
+                            expandedKeys: _expandedAssignedKeys,
+                            onExpansionChanged: _onAssignedExpansionChanged,
+                            isHostel: isHostel,
+                            propertyType: widget.apartment?.propertyType,
+                            buildUserCard: (user) => _buildUserListCard(
+                              user: user,
+                              allRegularUsers: allRegularUsers,
+                              isWarden: isWarden,
+                              showRoomBadge: false,
+                            ),
+                            buildOtherUserCard: (user) => _buildUserListCard(
+                              user: user,
+                              allRegularUsers: allRegularUsers,
+                              isWarden: isWarden,
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+                            itemCount: visibleUsers.length,
+                            itemBuilder: (context, index) {
+                              return _buildUserListCard(
+                                user: visibleUsers[index],
+                                allRegularUsers: allRegularUsers,
+                                isWarden: isWarden,
+                              );
+                            },
+                          ),
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _tabLabel(int index) {
     switch (index) {
       case 0:
-        return false ||
-                widget.apartment?.propertyType == PropertyType.events
+        return false || widget.apartment?.propertyType == PropertyType.events
             ? 'Approved'
             : 'Assigned';
       case 1:
@@ -643,58 +656,58 @@ class _UsersTabState extends State<UsersTab> {
 
 // ——— Users tab UI components ———
 
-  Widget _buildUsersStatCard({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFECECEA)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+Widget _buildUsersStatCard({
+  required IconData icon,
+  required String label,
+  required String value,
+}) {
+  return Container(
+    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+    decoration: BoxDecoration(
+      color: const Color(0xFF14141F),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: const Color(0x14FFFFFF)),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.02),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF3B82F6).withOpacity(0.12),
+            shape: BoxShape.circle,
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF13275D).withOpacity(0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: const Color(0xFF13275D), size: 16),
+          child: Icon(icon, color: const Color(0xFF3B82F6), size: 16),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: GoogleFonts.sora(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: GoogleFonts.sora(
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF0F172A),
-            ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            color: const Color(0xFF9CA3AF),
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              color: const Color(0xFF8C8C90),
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+          textAlign: TextAlign.center,
+        ),
+      ],
+    ),
+  );
+}
 
 class _UsersStatChip extends StatelessWidget {
   final String label;
@@ -749,7 +762,7 @@ class _UsersStatChip extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
+                    color: const Color(0xFF9CA3AF),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -780,9 +793,9 @@ class _UsersSearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAF9),
+        color: const Color(0xFF0A0A12),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFECECEA)),
+        border: Border.all(color: const Color(0x14FFFFFF)),
       ),
       child: TextField(
         controller: controller,
@@ -790,21 +803,18 @@ class _UsersSearchField extends StatelessWidget {
         style: const TextStyle(fontSize: 14),
         decoration: InputDecoration(
           hintText: 'Search name, email, mobile, room…',
-          hintStyle: TextStyle(
-            fontSize: 13,
-            color: Colors.grey.shade500,
-          ),
+          hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
           prefixIcon: const Icon(
             Icons.search_rounded,
             size: 20,
-            color: Color(0xFF13275D),
+            color: Color(0xFF3B82F6),
           ),
           suffixIcon: searchQuery.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     Icons.close_rounded,
                     size: 18,
-                    color: Colors.grey.shade600,
+                    color: const Color(0xFF9CA3AF),
                   ),
                   onPressed: onClear,
                 )
@@ -840,9 +850,21 @@ class _UsersFilterChips extends StatelessWidget {
   });
 
   static const _filters = [
-    (icon: Icons.home_work_rounded, label: 'Assigned', color: Color(0xFF13275D)),
-    (icon: Icons.hourglass_top_rounded, label: 'Pending', color: Color(0xFF13275D)),
-    (icon: Icons.person_off_outlined, label: 'Inactive', color: Color(0xFF13275D)),
+    (
+      icon: Icons.home_work_rounded,
+      label: 'Assigned',
+      color: Color(0xFF3B82F6),
+    ),
+    (
+      icon: Icons.hourglass_top_rounded,
+      label: 'Pending',
+      color: Color(0xFF3B82F6),
+    ),
+    (
+      icon: Icons.person_off_outlined,
+      label: 'Inactive',
+      color: Color(0xFF3B82F6),
+    ),
   ];
 
   @override
@@ -870,13 +892,16 @@ class _UsersFilterChips extends StatelessWidget {
               onTap: () => onSelected(index),
               borderRadius: BorderRadius.circular(20),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: selected
                         ? f.color
-                        : AppTheme.dividerColor.withOpacityCompat(0.8),
+                        : const Color(0x1AFFFFFF).withOpacityCompat(0.8),
                   ),
                 ),
                 child: Row(
@@ -890,8 +915,7 @@ class _UsersFilterChips extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       index == 0 &&
-                              (false ||
-                                  propertyType == PropertyType.events)
+                              (false || propertyType == PropertyType.events)
                           ? 'Approved'
                           : f.label,
                       style: TextStyle(
@@ -899,7 +923,7 @@ class _UsersFilterChips extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         color: selected
                             ? Colors.white
-                            : AppTheme.textColor.withOpacityCompat(0.75),
+                            : Colors.white.withOpacityCompat(0.75),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -1017,9 +1041,9 @@ class _AssignedHierarchyCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF14141F),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFECECEA)),
+          border: Border.all(color: const Color(0x14FFFFFF)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -1070,12 +1094,12 @@ class _AssignedBlockExpansion extends StatelessWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: const Color(0xFF13275D).withOpacity(0.12),
+            color: const Color(0xFF3B82F6).withOpacity(0.12),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
             Icons.apartment_rounded,
-            color: Color(0xFF13275D),
+            color: Color(0xFF3B82F6),
             size: 22,
           ),
         ),
@@ -1084,7 +1108,7 @@ class _AssignedBlockExpansion extends StatelessWidget {
           style: GoogleFonts.sora(
             fontWeight: FontWeight.bold,
             fontSize: 16,
-            color: const Color(0xFF0F172A),
+            color: Colors.white,
           ),
         ),
         subtitle: Text(
@@ -1092,7 +1116,7 @@ class _AssignedBlockExpansion extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF8C8C90),
+            color: const Color(0xFF9CA3AF),
           ),
         ),
         children: blockNode.floors
@@ -1147,17 +1171,22 @@ class _AssignedFloorExpansion extends StatelessWidget {
       initiallyExpanded: isExpanded,
       onExpansionChanged: (expanded) => onExpansionChanged(key, expanded),
       tilePadding: EdgeInsets.fromLTRB(nested ? 10 : 16, 6, 12, 6),
-      childrenPadding: EdgeInsets.fromLTRB(nested ? 6 : 10, 0, nested ? 6 : 10, 10),
+      childrenPadding: EdgeInsets.fromLTRB(
+        nested ? 6 : 10,
+        0,
+        nested ? 6 : 10,
+        10,
+      ),
       leading: Container(
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: const Color(0xFF13275D).withOpacity(0.12),
+          color: const Color(0xFF3B82F6).withOpacity(0.12),
           borderRadius: BorderRadius.circular(10),
         ),
         child: const Icon(
           Icons.layers_rounded,
-          color: Color(0xFF13275D),
+          color: Color(0xFF3B82F6),
           size: 20,
         ),
       ),
@@ -1166,7 +1195,7 @@ class _AssignedFloorExpansion extends StatelessWidget {
         style: GoogleFonts.sora(
           fontWeight: FontWeight.bold,
           fontSize: 14.5,
-          color: const Color(0xFF0F172A),
+          color: Colors.white,
         ),
       ),
       subtitle: Text(
@@ -1174,7 +1203,7 @@ class _AssignedFloorExpansion extends StatelessWidget {
         style: GoogleFonts.inter(
           fontSize: 12,
           fontWeight: FontWeight.w500,
-          color: const Color(0xFF8C8C90),
+          color: const Color(0xFF9CA3AF),
         ),
       ),
       children: floorNode.rooms
@@ -1197,9 +1226,9 @@ class _AssignedFloorExpansion extends StatelessWidget {
       return Container(
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: const Color(0xFF0A0A12),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFECECEA)),
+          border: Border.all(color: const Color(0x14FFFFFF)),
         ),
         child: tile,
       );
@@ -1242,9 +1271,9 @@ class _AssignedRoomExpansion extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -1265,7 +1294,7 @@ class _AssignedRoomExpansion extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0xFF13275D).withOpacity(0.1),
+              color: const Color(0xFF3B82F6).withOpacity(0.1),
               borderRadius: BorderRadius.circular(9),
             ),
             child: Icon(
@@ -1273,7 +1302,7 @@ class _AssignedRoomExpansion extends StatelessWidget {
                   ? Icons.home_rounded
                   : Icons.door_front_door_rounded,
               size: 18,
-              color: const Color(0xFF13275D),
+              color: const Color(0xFF3B82F6),
             ),
           ),
           title: Text(
@@ -1281,7 +1310,7 @@ class _AssignedRoomExpansion extends StatelessWidget {
             style: GoogleFonts.sora(
               fontWeight: FontWeight.bold,
               fontSize: 14,
-              color: const Color(0xFF0F172A),
+              color: Colors.white,
             ),
           ),
           subtitle: Text(
@@ -1289,7 +1318,7 @@ class _AssignedRoomExpansion extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 11.5,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF8C8C90),
+              color: const Color(0xFF9CA3AF),
             ),
           ),
           trailing: Container(
@@ -1348,14 +1377,14 @@ class _AssignedOtherSection extends StatelessWidget {
           style: GoogleFonts.sora(
             fontWeight: FontWeight.bold,
             fontSize: 15,
-            color: const Color(0xFF0F172A),
+            color: Colors.white,
           ),
         ),
         subtitle: Text(
           '${users.length} user${users.length == 1 ? '' : 's'} not matched to current block data',
           style: GoogleFonts.inter(
             fontSize: 12,
-            color: const Color(0xFF8C8C90),
+            color: const Color(0xFF9CA3AF),
           ),
         ),
         children: users.map(buildUserCard).toList(),
@@ -1421,7 +1450,7 @@ class _UserListCard extends StatelessWidget {
         child: _MenuRow(
           icon: Icons.person_outline_rounded,
           label: 'View details',
-          color: Color(0xFF13275D),
+          color: Color(0xFF3B82F6),
         ),
       ),
       PopupMenuItem(
@@ -1431,7 +1460,7 @@ class _UserListCard extends StatelessWidget {
           label: propertyType == PropertyType.events
               ? 'Edit event staff'
               : 'Edit user',
-          color: const Color(0xFF13275D),
+          color: const Color(0xFF3B82F6),
         ),
       ),
     ];
@@ -1454,7 +1483,7 @@ class _UserListCard extends StatelessWidget {
           child: _MenuRow(
             icon: Icons.swap_horiz_rounded,
             label: reassignActionLabel(propertyType),
-            color: const Color(0xFF13275D),
+            color: const Color(0xFF3B82F6),
           ),
         ),
       );
@@ -1463,9 +1492,11 @@ class _UserListCard extends StatelessWidget {
       PopupMenuItem(
         value: 'toggle_active',
         child: _MenuRow(
-          icon: user.isActive ? Icons.toggle_on_rounded : Icons.toggle_off_rounded,
+          icon: user.isActive
+              ? Icons.toggle_on_rounded
+              : Icons.toggle_off_rounded,
           label: user.isActive ? 'Deactivate user' : 'Activate user',
-          color: const Color(0xFF13275D),
+          color: const Color(0xFF3B82F6),
         ),
       ),
     );
@@ -1489,12 +1520,12 @@ class _UserListCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isSearchHighlight
-              ? const Color(0xFF13275D)
-              : const Color(0xFFECECEA),
+              ? const Color(0xFF3B82F6)
+              : const Color(0x14FFFFFF),
           width: isSearchHighlight ? 1.5 : 1,
         ),
         boxShadow: [
@@ -1521,16 +1552,18 @@ class _UserListCard extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 26,
-                      backgroundColor: const Color(0xFF13275D).withOpacity(0.12),
-                      backgroundImage: user.profilePic != null &&
-                              user.profilePic!.isNotEmpty
+                      backgroundColor: const Color(
+                        0xFF3B82F6,
+                      ).withOpacity(0.12),
+                      backgroundImage:
+                          user.profilePic != null && user.profilePic!.isNotEmpty
                           ? NetworkImage(user.profilePic!)
                           : null,
                       child: user.profilePic == null || user.profilePic!.isEmpty
                           ? Text(
                               _initials(user.name),
                               style: GoogleFonts.sora(
-                                color: const Color(0xFF13275D),
+                                color: const Color(0xFF3B82F6),
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1567,7 +1600,7 @@ class _UserListCard extends StatelessWidget {
                               style: GoogleFonts.sora(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF0F172A),
+                                color: Colors.white,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1581,10 +1614,7 @@ class _UserListCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      _InfoRow(
-                        icon: Icons.email_outlined,
-                        text: user.email,
-                      ),
+                      _InfoRow(icon: Icons.email_outlined, text: user.email),
                       if (user.mobileNumber.isNotEmpty && showUserMobile) ...[
                         const SizedBox(height: 4),
                         _InfoRow(
@@ -1603,7 +1633,7 @@ class _UserListCard extends StatelessWidget {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF13275D).withOpacity(0.08),
+                            color: const Color(0xFF3B82F6).withOpacity(0.08),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -1612,7 +1642,7 @@ class _UserListCard extends StatelessWidget {
                               const Icon(
                                 Icons.door_front_door_outlined,
                                 size: 14,
-                                color: Color(0xFF13275D),
+                                color: Color(0xFF3B82F6),
                               ),
                               const SizedBox(width: 6),
                               Flexible(
@@ -1621,7 +1651,7 @@ class _UserListCard extends StatelessWidget {
                                   style: GoogleFonts.inter(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF13275D),
+                                    color: const Color(0xFF3B82F6),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1653,18 +1683,19 @@ class _UserListCard extends StatelessWidget {
                     width: 34,
                     height: 34,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
+                      color: const Color(0xFF1E1E2A),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: IconButton(
                       icon: const Icon(
                         Icons.call,
                         size: 16,
-                        color: Color(0xFF13275D),
+                        color: Color(0xFF3B82F6),
                       ),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      onPressed: () => _launchUserPhone(context, user.mobileNumber),
+                      onPressed: () =>
+                          _launchUserPhone(context, user.mobileNumber),
                       tooltip: 'Call User',
                     ),
                   ),
@@ -1674,7 +1705,7 @@ class _UserListCard extends StatelessWidget {
                   icon: const Icon(
                     Icons.more_vert_rounded,
                     size: 20,
-                    color: Color(0xFF8C8C90),
+                    color: Color(0xFF9CA3AF),
                   ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -1720,10 +1751,7 @@ class _StatusPill extends StatelessWidget {
             Container(
               width: 7,
               height: 7,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 6),
             Text(
@@ -1767,18 +1795,14 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 14,
-          color: AppTheme.textColor.withOpacityCompat(0.4),
-        ),
+        Icon(icon, size: 14, color: Colors.white.withOpacityCompat(0.4)),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
               fontSize: 12,
-              color: AppTheme.textColor.withOpacityCompat(0.65),
+              color: Colors.white.withOpacityCompat(0.65),
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1840,7 +1864,7 @@ class _UsersEmptyState extends StatelessWidget {
               child: Icon(
                 Icons.people_outline_rounded,
                 size: 56,
-                color: AppTheme.primaryColor.withOpacityCompat(0.5),
+                color: const Color(0xFF3B82F6).withOpacityCompat(0.5),
               ),
             ),
             const SizedBox(height: 20),
@@ -1849,7 +1873,7 @@ class _UsersEmptyState extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.textColor,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 8),
@@ -1859,7 +1883,7 @@ class _UsersEmptyState extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 height: 1.4,
-                color: AppTheme.textColor.withOpacityCompat(0.55),
+                color: Colors.white.withOpacityCompat(0.55),
               ),
             ),
           ],
@@ -1889,9 +1913,11 @@ class _UsersNoResultsState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isSearch ? Icons.search_off_rounded : Icons.filter_list_off_rounded,
+              isSearch
+                  ? Icons.search_off_rounded
+                  : Icons.filter_list_off_rounded,
               size: 48,
-              color: AppTheme.textColor.withOpacityCompat(0.25),
+              color: Colors.white.withOpacityCompat(0.25),
             ),
             const SizedBox(height: 14),
             Text(
@@ -1899,7 +1925,7 @@ class _UsersNoResultsState extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textColor,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 6),
@@ -1910,7 +1936,7 @@ class _UsersNoResultsState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color: AppTheme.textColor.withOpacityCompat(0.5),
+                color: Colors.white.withOpacityCompat(0.5),
               ),
             ),
           ],
@@ -2068,17 +2094,17 @@ class _UserDetailsSheet extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open email app')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not open email app')));
     }
   }
 
   void _copyToClipboard(BuildContext context, String value, String label) {
     Clipboard.setData(ClipboardData(text: value));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label copied')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$label copied')));
   }
 
   bool get _hasPersonalInfo =>
@@ -2109,7 +2135,7 @@ class _UserDetailsSheet extends StatelessWidget {
         _QuickActionChip(
           icon: Icons.phone_rounded,
           label: 'Call',
-          accentColor: AppTheme.primaryColor,
+          accentColor: const Color(0xFF3B82F6),
           onTap: onCall,
         ),
       if (canEmail)
@@ -2143,7 +2169,7 @@ class _UserDetailsSheet extends StatelessWidget {
       builder: (context, scrollController) {
         return Container(
           decoration: const BoxDecoration(
-            color: AppTheme.backgroundColor,
+            color: const Color(0xFF0A0A12),
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -2154,7 +2180,7 @@ class _UserDetailsSheet extends StatelessWidget {
                   height: 4,
                   margin: const EdgeInsets.only(top: 10, bottom: 6),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withAlpha(70),
+                    color: const Color(0xFF3B82F6).withAlpha(70),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -2170,15 +2196,12 @@ class _UserDetailsSheet extends StatelessWidget {
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF13275D),
-                            Color(0xFF1E3A8A),
-                          ],
+                          colors: [Color(0xFF13275D), Color(0xFF1E3A8A)],
                         ),
                         borderRadius: BorderRadius.circular(22),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF13275D).withAlpha(45),
+                            color: const Color(0xFF3B82F6).withAlpha(45),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
@@ -2226,11 +2249,13 @@ class _UserDetailsSheet extends StatelessWidget {
                                   child: CircleAvatar(
                                     radius: 40,
                                     backgroundColor: Colors.white.withAlpha(40),
-                                    backgroundImage: (user.profilePic != null &&
+                                    backgroundImage:
+                                        (user.profilePic != null &&
                                             user.profilePic!.isNotEmpty)
                                         ? NetworkImage(user.profilePic!)
                                         : null,
-                                    child: (user.profilePic == null ||
+                                    child:
+                                        (user.profilePic == null ||
                                             user.profilePic!.isEmpty)
                                         ? Text(
                                             _initials(user.name),
@@ -2298,8 +2323,7 @@ class _UserDetailsSheet extends StatelessWidget {
                                   onDark: true,
                                 ),
                                 _StatusPill(
-                                  label:
-                                      user.isActive ? 'Active' : 'Inactive',
+                                  label: user.isActive ? 'Active' : 'Inactive',
                                   color: user.isActive
                                       ? const Color(0xFF10B981)
                                       : AppTheme.errorColor,
@@ -2363,7 +2387,7 @@ class _UserDetailsSheet extends StatelessWidget {
                                 icon: Icons.email_outlined,
                                 label: 'Email',
                                 value: user.email,
-                                accentColor: AppTheme.primaryColor,
+                                accentColor: const Color(0xFF3B82F6),
                                 onTap: canEmail
                                     ? () => _emailUser(context)
                                     : null,
@@ -2418,7 +2442,7 @@ class _UserDetailsSheet extends StatelessWidget {
                                     icon: Icons.wc_outlined,
                                     label: 'Gender',
                                     value: _genderLabel(user.gender!),
-                                    accentColor: AppTheme.primaryColor,
+                                    accentColor: const Color(0xFF3B82F6),
                                   ),
                                 if (user.dateOfBirth != null)
                                   _InfoTile(
@@ -2432,8 +2456,9 @@ class _UserDetailsSheet extends StatelessWidget {
                                     icon: Icons.work_outline_rounded,
                                     label: 'Occupation',
                                     value: _occupationLabel(
-                                        user.occupationCategory!),
-                                    accentColor: AppTheme.primaryColor,
+                                      user.occupationCategory!,
+                                    ),
+                                    accentColor: const Color(0xFF3B82F6),
                                   ),
                                 if (user.occupationDetails != null &&
                                     user.occupationDetails!.isNotEmpty)
@@ -2441,7 +2466,7 @@ class _UserDetailsSheet extends StatelessWidget {
                                     icon: Icons.description_outlined,
                                     label: 'Occupation details',
                                     value: user.occupationDetails!,
-                                    accentColor: AppTheme.primaryColor,
+                                    accentColor: const Color(0xFF3B82F6),
                                   ),
                                 if (user.familyType != null)
                                   _InfoTile(
@@ -2480,7 +2505,7 @@ class _UserDetailsSheet extends StatelessWidget {
                                     icon: Icons.business_outlined,
                                     label: 'Department',
                                     value: user.department!,
-                                    accentColor: AppTheme.primaryColor,
+                                    accentColor: const Color(0xFF3B82F6),
                                   ),
                                 if (user.employeeId != null &&
                                     user.employeeId!.isNotEmpty)
@@ -2488,7 +2513,7 @@ class _UserDetailsSheet extends StatelessWidget {
                                     icon: Icons.badge_outlined,
                                     label: 'Employee ID',
                                     value: user.employeeId!,
-                                    accentColor: AppTheme.primaryColor,
+                                    accentColor: const Color(0xFF3B82F6),
                                     copyable: true,
                                     onCopy: () => _copyToClipboard(
                                       context,
@@ -2544,7 +2569,7 @@ class _UserDetailsSheet extends StatelessWidget {
                                     icon: Icons.credit_card_outlined,
                                     label: 'ID number',
                                     value: user.aadhaarCard!,
-                                    accentColor: AppTheme.primaryColor,
+                                    accentColor: const Color(0xFF3B82F6),
                                     copyable: true,
                                     onCopy: () => _copyToClipboard(
                                       context,
@@ -2604,10 +2629,10 @@ class _UserDetailsSheet extends StatelessWidget {
                   12 + MediaQuery.of(context).padding.bottom,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFF14141F),
                   border: Border(
                     top: BorderSide(
-                      color: AppTheme.dividerColor.withAlpha(180),
+                      color: const Color(0x1AFFFFFF).withAlpha(180),
                     ),
                   ),
                   boxShadow: [
@@ -2657,9 +2682,9 @@ class _QuickActionChip extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFF14141F),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFECECEA)),
+            border: Border.all(color: const Color(0x14FFFFFF)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withAlpha(6),
@@ -2686,7 +2711,7 @@ class _QuickActionChip extends StatelessWidget {
                 style: GoogleFonts.sora(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF0F172A),
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -2701,10 +2726,7 @@ class _AssignmentHighlightCard extends StatelessWidget {
   final UserModel user;
   final PropertyType? propertyType;
 
-  const _AssignmentHighlightCard({
-    required this.user,
-    this.propertyType,
-  });
+  const _AssignmentHighlightCard({required this.user, this.propertyType});
 
   bool get _isAssigned {
     final block = user.block?.trim() ?? '';
@@ -2722,9 +2744,9 @@ class _AssignmentHighlightCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFECECEA)),
+        border: Border.all(color: const Color(0x14FFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(6),
@@ -2745,13 +2767,13 @@ class _AssignmentHighlightCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withAlpha(20),
+                      color: const Color(0xFF3B82F6).withAlpha(20),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
                       Icons.home_work_outlined,
                       size: 18,
-                      color: AppTheme.primaryColor,
+                      color: const Color(0xFF3B82F6),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -2760,7 +2782,7 @@ class _AssignmentHighlightCard extends StatelessWidget {
                     style: GoogleFonts.sora(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF0F172A),
+                      color: Colors.white,
                     ),
                   ),
                   const Spacer(),
@@ -2816,7 +2838,7 @@ class _AssignmentHighlightCard extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF64748B),
+                          color: const Color(0xFF9CA3AF),
                         ),
                       ),
                     ],
@@ -2828,7 +2850,7 @@ class _AssignmentHighlightCard extends StatelessWidget {
                   style: GoogleFonts.sora(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0F172A),
+                    color: Colors.white,
                     height: 1.35,
                   ),
                 ),
@@ -2854,13 +2876,13 @@ class _LinkedOwnerCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withAlpha(20),
+              color: const Color(0xFF3B82F6).withAlpha(20),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
               Icons.person_outline_rounded,
               size: 18,
-              color: AppTheme.primaryColor,
+              color: const Color(0xFF3B82F6),
             ),
           ),
           const SizedBox(width: 12),
@@ -2873,7 +2895,7 @@ class _LinkedOwnerCard extends StatelessWidget {
                   style: GoogleFonts.sora(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0F172A),
+                    color: Colors.white,
                   ),
                 ),
                 if (owner.mobileNumber.isNotEmpty) ...[
@@ -2882,7 +2904,7 @@ class _LinkedOwnerCard extends StatelessWidget {
                     owner.mobileNumber,
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: const Color(0xFF64748B),
+                      color: const Color(0xFF9CA3AF),
                     ),
                   ),
                 ],
@@ -2913,9 +2935,9 @@ class _InfoSection extends StatelessWidget {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF14141F),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFECECEA)),
+          border: Border.all(color: const Color(0x14FFFFFF)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withAlpha(6),
@@ -2936,13 +2958,13 @@ class _InfoSection extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withAlpha(20),
+                        color: const Color(0xFF3B82F6).withAlpha(20),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         icon,
                         size: 18,
-                        color: AppTheme.primaryColor,
+                        color: const Color(0xFF3B82F6),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -2951,13 +2973,13 @@ class _InfoSection extends StatelessWidget {
                       style: GoogleFonts.sora(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0F172A),
+                        color: Colors.white,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const Divider(height: 1, color: Color(0xFF1E1E2A)),
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
                 child: Column(children: children),
@@ -2983,7 +3005,7 @@ class _InfoTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
-    this.accentColor = AppTheme.primaryColor,
+    this.accentColor = const Color(0xFF3B82F6),
     this.onTap,
     this.copyable = false,
     this.onCopy,
@@ -3013,7 +3035,7 @@ class _InfoTile extends StatelessWidget {
                   label,
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: const Color(0xFF64748B),
+                    color: const Color(0xFF9CA3AF),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -3023,7 +3045,7 @@ class _InfoTile extends StatelessWidget {
                   style: GoogleFonts.sora(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF0F172A),
+                    color: Colors.white,
                     height: 1.25,
                   ),
                 ),
@@ -3065,10 +3087,7 @@ class _UserRequiredDocumentsSection extends StatefulWidget {
   final UserModel user;
   final String? apartmentId;
 
-  const _UserRequiredDocumentsSection({
-    required this.user,
-    this.apartmentId,
-  });
+  const _UserRequiredDocumentsSection({required this.user, this.apartmentId});
 
   @override
   State<_UserRequiredDocumentsSection> createState() =>
@@ -3121,9 +3140,9 @@ class _UserRequiredDocumentsSectionState
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open document')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not open document')));
     }
   }
 
@@ -3156,10 +3175,10 @@ class _UserRequiredDocumentsSectionState
                 : null,
             onPreviewImage: doc.isUploaded && doc.isImage
                 ? () => showIdentityDocumentFullscreen(
-                      context,
-                      label: doc.requirementName,
-                      imageUrl: doc.submission!.fileUrl,
-                    )
+                    context,
+                    label: doc.requirementName,
+                    imageUrl: doc.submission!.fileUrl,
+                  )
                 : null,
           ),
           if (doc != _documents.last) const SizedBox(height: 10),
@@ -3183,7 +3202,9 @@ class _RequiredDocumentRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uploaded = item.isUploaded;
-    final accent = item.isPdf ? AppTheme.secondaryColor : AppTheme.primaryColor;
+    final accent = item.isPdf
+        ? AppTheme.secondaryColor
+        : const Color(0xFF3B82F6);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -3211,7 +3232,7 @@ class _RequiredDocumentRow extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: AppTheme.textColor,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -3249,7 +3270,7 @@ class _RequiredDocumentRow extends StatelessWidget {
                       item.submission!.fileUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
-                        color: Colors.grey[100],
+                        color: const Color(0xFF1E1E2A),
                         child: const Icon(Icons.broken_image_outlined),
                       ),
                     ),
@@ -3258,7 +3279,7 @@ class _RequiredDocumentRow extends StatelessWidget {
               )
             else
               Material(
-                color: Colors.white,
+                color: const Color(0xFF14141F),
                 borderRadius: BorderRadius.circular(10),
                 child: InkWell(
                   onTap: onOpen,
@@ -3302,28 +3323,23 @@ class _DocumentImageCard extends StatelessWidget {
   final String label;
   final String imageUrl;
 
-  const _DocumentImageCard({
-    required this.label,
-    required this.imageUrl,
-  });
+  const _DocumentImageCard({required this.label, required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => showIdentityDocumentFullscreen(
-            context,
-            label: label,
-            imageUrl: imageUrl,
-          ),
+        context,
+        label: label,
+        imageUrl: imageUrl,
+      ),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppTheme.primaryColor.withAlpha(35),
-          ),
+          border: Border.all(color: const Color(0xFF3B82F6).withAlpha(35)),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryColor.withAlpha(15),
+              color: const Color(0xFF3B82F6).withAlpha(15),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -3342,22 +3358,22 @@ class _DocumentImageCard extends StatelessWidget {
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Container(
-                      color: Colors.grey[100],
+                      color: const Color(0xFF1E1E2A),
                       child: Center(
                         child: CircularProgressIndicator(
                           value: loadingProgress.expectedTotalBytes != null
                               ? loadingProgress.cumulativeBytesLoaded /
-                                  (loadingProgress.expectedTotalBytes ?? 1)
+                                    (loadingProgress.expectedTotalBytes ?? 1)
                               : null,
                           strokeWidth: 2,
-                          color: AppTheme.primaryColor,
+                          color: const Color(0xFF3B82F6),
                         ),
                       ),
                     );
                   },
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      color: Colors.grey[100],
+                      color: const Color(0xFF1E1E2A),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -3370,7 +3386,7 @@ class _DocumentImageCard extends StatelessWidget {
                           Text(
                             'Image failed to load',
                             style: TextStyle(
-                              color: Colors.grey[600],
+                              color: const Color(0xFF9CA3AF),
                               fontSize: 11,
                             ),
                           ),
@@ -3640,7 +3656,9 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
   Future<void> _refreshBlocksFromApi() async {
     if (_apartmentId == null || _apartmentId!.isEmpty) return;
     try {
-      final response = await _apiService.getAllBlocks(apartmentId: _apartmentId);
+      final response = await _apiService.getAllBlocks(
+        apartmentId: _apartmentId,
+      );
       if (response['success'] == true && response['blocks'] != null) {
         final fresh = _parseBlocksList(response['blocks']);
         if (mounted && fresh.isNotEmpty) {
@@ -3668,14 +3686,17 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
       return;
     }
     try {
-      final response = await _apiService.getAllBlocks(apartmentId: _apartmentId);
+      final response = await _apiService.getAllBlocks(
+        apartmentId: _apartmentId,
+      );
       if (response['success'] == true && response['blocks'] != null) {
         final parsed = _parseBlocksList(response['blocks']);
         if (mounted) {
           setState(() {
             _blocks = parsed;
             if (parsed.isEmpty) {
-              _loadError = 'No blocks found. Add blocks under the Blocks tab first.';
+              _loadError =
+                  'No blocks found. Add blocks under the Blocks tab first.';
             }
           });
         }
@@ -3702,7 +3723,7 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
     return Container(
       constraints: BoxConstraints(maxHeight: maxHeight),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
@@ -3723,7 +3744,7 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: const Color(0x33FFFFFF),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -3735,7 +3756,7 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
             const SizedBox(height: 8),
             Text(
               'Assign room details for ${widget.tenant.name}',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 13, color: const Color(0xFF9CA3AF)),
             ),
             const SizedBox(height: 24),
             if (_isLoading)
@@ -3750,7 +3771,10 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(
                   _loadError!,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: const Color(0xFF9CA3AF),
+                  ),
                 ),
               )
             else if (_blocks.isEmpty)
@@ -3758,7 +3782,10 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(
                   'No blocks found. Add blocks under the Blocks tab first.',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: const Color(0xFF9CA3AF),
+                  ),
                 ),
               )
             else
@@ -3777,14 +3804,17 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
                           isDense: true,
                           contentPadding: EdgeInsets.all(12),
                         ),
-                        style: const TextStyle(fontSize: 14, color: Colors.black),
-                        dropdownColor: Colors.white,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                        dropdownColor: const Color(0xFF1E1E2A),
                         items: _blocks.map((block) {
                           return DropdownMenuItem<BlockModel>(
                             value: block,
                             child: Text(
                               block.name,
-                              style: const TextStyle(color: Colors.black),
+                              style: const TextStyle(color: Colors.white),
                             ),
                           );
                         }).toList(),
@@ -3811,14 +3841,18 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
                           isDense: true,
                           contentPadding: EdgeInsets.all(12),
                         ),
-                        style: const TextStyle(fontSize: 14, color: Colors.black),
-                        dropdownColor: Colors.white,
-                        items: _selectedBlock?.floors.map((floor) {
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                        dropdownColor: const Color(0xFF1E1E2A),
+                        items:
+                            _selectedBlock?.floors.map((floor) {
                               return DropdownMenuItem<FloorModel>(
                                 value: floor,
                                 child: Text(
                                   floor.number,
-                                  style: const TextStyle(color: Colors.black),
+                                  style: const TextStyle(color: Colors.white),
                                 ),
                               );
                             }).toList() ??
@@ -3847,36 +3881,44 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
                           isDense: true,
                           contentPadding: const EdgeInsets.all(12),
                         ),
-                        style: const TextStyle(fontSize: 14, color: Colors.black),
-                        dropdownColor: Colors.white,
-                        items: (_selectedBlock != null && _selectedFloor != null
-                                ? _selectedFloor!.rooms
-                                    .where(
-                                      (r) => _roomHasVacancy(
-                                        r,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                        dropdownColor: const Color(0xFF1E1E2A),
+                        items:
+                            (_selectedBlock != null && _selectedFloor != null
+                                    ? _selectedFloor!.rooms
+                                          .where(
+                                            (r) => _roomHasVacancy(
+                                              r,
+                                              blockName: _selectedBlock!.name,
+                                              floorNumber:
+                                                  _selectedFloor!.number,
+                                              users: widget.assignedUsers,
+                                              excludeUserId: widget.tenant.id,
+                                            ),
+                                          )
+                                          .toList()
+                                    : [])
+                                .map((room) {
+                                  return DropdownMenuItem<RoomModel>(
+                                    value: room,
+                                    child: Text(
+                                      _roomAssignmentLabel(
+                                        room,
                                         blockName: _selectedBlock!.name,
                                         floorNumber: _selectedFloor!.number,
                                         users: widget.assignedUsers,
                                         excludeUserId: widget.tenant.id,
                                       ),
-                                    )
-                                    .toList()
-                                : [])
-                            .map((room) {
-                          return DropdownMenuItem<RoomModel>(
-                            value: room,
-                            child: Text(
-                              _roomAssignmentLabel(
-                                room,
-                                blockName: _selectedBlock!.name,
-                                floorNumber: _selectedFloor!.number,
-                                users: widget.assignedUsers,
-                                excludeUserId: widget.tenant.id,
-                              ),
-                              style: const TextStyle(color: Colors.black),
-                            ),
-                          );
-                        }).toList(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  );
+                                })
+                                .toList(),
                         onChanged: _selectedFloor == null
                             ? null
                             : (RoomModel? value) {
@@ -3901,14 +3943,19 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.pop(context),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text('Cancel', style: TextStyle(fontSize: 14)),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(fontSize: 14),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -3927,7 +3974,8 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
                                 floor: _selectedFloor!.number,
                                 roomNumber: _selectedRoom!.number,
                                 apartmentId: _apartmentId,
-                                onSubmitting: (v) => setState(() => _isSubmitting = v),
+                                onSubmitting: (v) =>
+                                    setState(() => _isSubmitting = v),
                                 successMessage:
                                     'User approved and room assigned successfully.',
                               );
@@ -3946,7 +3994,10 @@ class _ApprovalBottomSheetState extends State<_ApprovalBottomSheet> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Approve', style: TextStyle(fontSize: 14)),
+                          : const Text(
+                              'Approve',
+                              style: TextStyle(fontSize: 14),
+                            ),
                     ),
                   ),
                 ],
@@ -3989,15 +4040,16 @@ RoomModel? _findRoomByNumber(List<RoomModel> rooms, String? number) {
 void _applyCurrentAssignment({
   required UserModel tenant,
   required List<BlockModel> blocks,
-  required void Function(
-    BlockModel? block,
-    FloorModel? floor,
-    RoomModel? room,
-  ) apply,
+  required void Function(BlockModel? block, FloorModel? floor, RoomModel? room)
+  apply,
 }) {
   final block = _findBlockByName(blocks, tenant.block);
-  final floor = block == null ? null : _findFloorByNumber(block.floors, tenant.floor);
-  final room = floor == null ? null : _findRoomByNumber(floor.rooms, tenant.roomNumber);
+  final floor = block == null
+      ? null
+      : _findFloorByNumber(block.floors, tenant.floor);
+  final room = floor == null
+      ? null
+      : _findRoomByNumber(floor.rooms, tenant.roomNumber);
   apply(block, floor, room);
 }
 
@@ -4069,7 +4121,9 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
   Future<void> _refreshBlocksFromApi() async {
     if (_apartmentId == null || _apartmentId!.isEmpty) return;
     try {
-      final response = await _apiService.getAllBlocks(apartmentId: _apartmentId);
+      final response = await _apiService.getAllBlocks(
+        apartmentId: _apartmentId,
+      );
       if (response['success'] == true && response['blocks'] != null) {
         final fresh = _parseBlocksList(response['blocks']);
         if (mounted && fresh.isNotEmpty) {
@@ -4093,13 +4147,16 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _loadError = 'No property selected. Open this hostel/apartment from the dashboard first.';
+          _loadError =
+              'No property selected. Open this hostel/apartment from the dashboard first.';
         });
       }
       return;
     }
     try {
-      final response = await _apiService.getAllBlocks(apartmentId: _apartmentId);
+      final response = await _apiService.getAllBlocks(
+        apartmentId: _apartmentId,
+      );
       if (response['success'] == true && response['blocks'] != null) {
         final blocks = _parseBlocksList(response['blocks']);
         if (!mounted) return;
@@ -4107,7 +4164,8 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
           _blocks = blocks;
           _selectCurrentAssignment(_blocks);
           if (blocks.isEmpty) {
-            _loadError = 'No blocks found. Add blocks under the Blocks tab first.';
+            _loadError =
+                'No blocks found. Add blocks under the Blocks tab first.';
           }
         });
       } else if (mounted) {
@@ -4132,7 +4190,8 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
 
     final availableRooms = (_selectedBlock != null && _selectedFloor != null)
         ? _selectedFloor!.rooms.where((r) {
-            final isCurrent = r.number == widget.tenant.roomNumber &&
+            final isCurrent =
+                r.number == widget.tenant.roomNumber &&
                 _selectedBlock!.name.trim().toLowerCase() ==
                     (widget.tenant.block ?? '').trim().toLowerCase() &&
                 _selectedFloor!.number.trim() ==
@@ -4153,7 +4212,7 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
     return Container(
       constraints: BoxConstraints(maxHeight: maxHeight),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
@@ -4174,7 +4233,7 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: const Color(0x33FFFFFF),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -4186,7 +4245,7 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
             const SizedBox(height: 8),
             Text(
               'Current: $currentAssignment',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 13, color: const Color(0xFF9CA3AF)),
             ),
             const SizedBox(height: 24),
             if (_isLoading)
@@ -4201,7 +4260,10 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(
                   _loadError!,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: const Color(0xFF9CA3AF),
+                  ),
                 ),
               )
             else if (_blocks.isEmpty)
@@ -4209,7 +4271,10 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(
                   'No blocks found. Add blocks under the Blocks tab first.',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: const Color(0xFF9CA3AF),
+                  ),
                 ),
               )
             else
@@ -4228,14 +4293,17 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
                           isDense: true,
                           contentPadding: EdgeInsets.all(12),
                         ),
-                        style: const TextStyle(fontSize: 14, color: Colors.black),
-                        dropdownColor: Colors.white,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                        dropdownColor: const Color(0xFF1E1E2A),
                         items: _blocks.map((block) {
                           return DropdownMenuItem<BlockModel>(
                             value: block,
                             child: Text(
                               block.name,
-                              style: const TextStyle(color: Colors.black),
+                              style: const TextStyle(color: Colors.white),
                             ),
                           );
                         }).toList(),
@@ -4246,7 +4314,8 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
                             _selectedRoom = null;
                           });
                         },
-                        validator: (value) => value == null ? 'Please select a block' : null,
+                        validator: (value) =>
+                            value == null ? 'Please select a block' : null,
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<FloorModel>(
@@ -4259,14 +4328,18 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
                           isDense: true,
                           contentPadding: EdgeInsets.all(12),
                         ),
-                        style: const TextStyle(fontSize: 14, color: Colors.black),
-                        dropdownColor: Colors.white,
-                        items: _selectedBlock?.floors.map((floor) {
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                        dropdownColor: const Color(0xFF1E1E2A),
+                        items:
+                            _selectedBlock?.floors.map((floor) {
                               return DropdownMenuItem<FloorModel>(
                                 value: floor,
                                 child: Text(
                                   floor.number,
-                                  style: const TextStyle(color: Colors.black),
+                                  style: const TextStyle(color: Colors.white),
                                 ),
                               );
                             }).toList() ??
@@ -4279,7 +4352,8 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
                                   _selectedRoom = null;
                                 });
                               },
-                        validator: (value) => value == null ? 'Please select a floor' : null,
+                        validator: (value) =>
+                            value == null ? 'Please select a floor' : null,
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<RoomModel>(
@@ -4292,15 +4366,22 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
                           isDense: true,
                           contentPadding: const EdgeInsets.all(12),
                         ),
-                        style: const TextStyle(fontSize: 14, color: Colors.black),
-                        dropdownColor: Colors.white,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                        dropdownColor: const Color(0xFF1E1E2A),
                         items: availableRooms.map((room) {
-                          final isCurrent = room.number == widget.tenant.roomNumber &&
+                          final isCurrent =
+                              room.number == widget.tenant.roomNumber &&
                               _selectedBlock?.name.trim().toLowerCase() ==
-                                  (widget.tenant.block ?? '').trim().toLowerCase() &&
+                                  (widget.tenant.block ?? '')
+                                      .trim()
+                                      .toLowerCase() &&
                               _selectedFloor?.number.trim() ==
                                   (widget.tenant.floor ?? '').trim();
-                          final label = _selectedBlock != null && _selectedFloor != null
+                          final label =
+                              _selectedBlock != null && _selectedFloor != null
                               ? _roomAssignmentLabel(
                                   room,
                                   blockName: _selectedBlock!.name,
@@ -4313,7 +4394,7 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
                             value: room,
                             child: Text(
                               isCurrent ? '$label (current)' : label,
-                              style: const TextStyle(color: Colors.black),
+                              style: const TextStyle(color: Colors.white),
                             ),
                           );
                         }).toList(),
@@ -4346,14 +4427,19 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
                 children: [
                   Expanded(
                     child: TextButton(
-                      onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.pop(context),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text('Cancel', style: TextStyle(fontSize: 14)),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(fontSize: 14),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -4372,7 +4458,8 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
                                 floor: _selectedFloor!.number,
                                 roomNumber: _selectedRoom!.number,
                                 apartmentId: _apartmentId,
-                                onSubmitting: (v) => setState(() => _isSubmitting = v),
+                                onSubmitting: (v) =>
+                                    setState(() => _isSubmitting = v),
                                 successMessage: 'User reassigned successfully.',
                               );
                             },
@@ -4390,7 +4477,10 @@ class _ReassignBottomSheetState extends State<_ReassignBottomSheet> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Reassign', style: TextStyle(fontSize: 14)),
+                          : const Text(
+                              'Reassign',
+                              style: TextStyle(fontSize: 14),
+                            ),
                     ),
                   ),
                 ],

@@ -19,8 +19,12 @@ const eventScheduleSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    // The speaker picked from the Speakers list. Their name/photo are copied
+    // below so every screen that reads a schedule keeps working.
+    speakerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Speaker', default: null, index: true },
     speakerName: { type: String, required: true, trim: true },
     speakerPhoto: { type: String, default: '' },
+    // Legacy: older schedules carried their speaker's own login.
     speakerMobile: { type: String, default: '', trim: true, index: true },
     speakerPassword: { type: String, default: '', select: false },
     fcmTokens: { type: [String], default: [] },

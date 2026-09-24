@@ -5,10 +5,27 @@ import 'tick_box.dart';
 
 /// Calendar days (ISO date + short label) between an event's start and end date.
 List<({String iso, String label})> eventDays(Map<String, dynamic> event) {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  final startRaw = DateTime.tryParse(event['eventDate']?.toString() ?? '')?.toLocal();
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  final startRaw = DateTime.tryParse(
+    event['eventDate']?.toString() ?? '',
+  )?.toLocal();
   if (startRaw == null) return [];
-  final endRaw = DateTime.tryParse(event['eventEndDate']?.toString() ?? '')?.toLocal() ?? startRaw;
+  final endRaw =
+      DateTime.tryParse(event['eventEndDate']?.toString() ?? '')?.toLocal() ??
+      startRaw;
   var cursor = DateTime(startRaw.year, startRaw.month, startRaw.day);
   final end = DateTime(endRaw.year, endRaw.month, endRaw.day);
   final days = <({String iso, String label})>[];
@@ -42,8 +59,9 @@ List<Map<String, dynamic>> normalizeInclusions(dynamic raw) {
   return out;
 }
 
-String paymentModeLabel(String mode) =>
-    mode == 'upi' ? 'UPI' : (mode.isEmpty ? '' : mode[0].toUpperCase() + mode.substring(1));
+String paymentModeLabel(String mode) => mode == 'upi'
+    ? 'UPI'
+    : (mode.isEmpty ? '' : mode[0].toUpperCase() + mode.substring(1));
 
 /// Add / edit package sheet: name, rate (or Free toggle), payment mode and a
 /// per-day inclusion matrix.
@@ -89,7 +107,9 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
   void _addInclusion() {
     final value = _inclusionController.text.trim();
     if (value.isEmpty) return;
-    if (!_inclusions.any((i) => i['name'].toString().toLowerCase() == value.toLowerCase())) {
+    if (!_inclusions.any(
+      (i) => i['name'].toString().toLowerCase() == value.toLowerCase(),
+    )) {
       setState(() => _inclusions.add({'name': value, 'dates': <String>[]}));
     }
     _inclusionController.clear();
@@ -134,49 +154,61 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
   }
 
   InputDecoration _dec(String label, {String? hint}) => InputDecoration(
-        labelText: label,
-        hintText: hint,
-        filled: true,
-        fillColor: const Color(0xFFF8FAFC),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFF1F5F9)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
-        ),
-      );
+    labelText: label,
+    hintText: hint,
+    filled: true,
+    fillColor: const Color(0xFF0A0A12),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
+    ),
+    disabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: Color(0xFF1E1E2A)),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: const Color(0xFF3B82F6), width: 1.5),
+    ),
+  );
 
   Widget _section(String text, {IconData? icon}) => Padding(
-        padding: const EdgeInsets.only(top: 6, bottom: 10),
-        child: Row(
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 18, color: AppTheme.primaryColor),
-              const SizedBox(width: 6),
-            ],
-            Text(text, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
-          ],
+    padding: const EdgeInsets.only(top: 6, bottom: 10),
+    child: Row(
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 18, color: const Color(0xFF3B82F6)),
+          const SizedBox(width: 6),
+        ],
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 
   Future<void> _editInclusion(Map<String, dynamic> inc) async {
-    final controller = TextEditingController(text: inc['name']?.toString() ?? '');
+    final controller = TextEditingController(
+      text: inc['name']?.toString() ?? '',
+    );
     final newName = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Edit Inclusion', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+        title: const Text(
+          'Edit Inclusion',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -184,11 +216,14 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
           decoration: InputDecoration(
             labelText: 'Inclusion name',
             filled: true,
-            fillColor: const Color(0xFFF8FAFC),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            fillColor: const Color(0xFF0A0A12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
             ),
           ),
         ),
@@ -199,9 +234,11 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: const Color(0xFF3B82F6),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () {
               final trimmed = controller.text.trim();
@@ -219,7 +256,11 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
     }
   }
 
-  Widget _dayChip(Map<String, dynamic> inc, ({String iso, String label}) d, bool on) {
+  Widget _dayChip(
+    Map<String, dynamic> inc,
+    ({String iso, String label}) d,
+    bool on,
+  ) {
     return InkWell(
       borderRadius: BorderRadius.circular(8),
       onTap: () => _toggleDay(inc, d.iso, !on),
@@ -227,9 +268,11 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
         height: 36,
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: on ? const Color(0xFFF0FDF4) : Colors.white,
+          color: on ? const Color(0x2622C55E) : Colors.white,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: on ? const Color(0xFFBBF7D0) : const Color(0xFFE2E8F0)),
+          border: Border.all(
+            color: on ? const Color(0xFFBBF7D0) : const Color(0x1AFFFFFF),
+          ),
         ),
         child: Row(
           children: [
@@ -242,7 +285,7 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
-                  color: on ? const Color(0xFF166534) : const Color(0xFF475569),
+                  color: on ? const Color(0xFF86EFAC) : const Color(0xFFCBD5E1),
                 ),
               ),
             ),
@@ -252,15 +295,18 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
     );
   }
 
-  Widget _inclusionCard(Map<String, dynamic> inc, List<({String iso, String label})> days) {
+  Widget _inclusionCard(
+    Map<String, dynamic> inc,
+    List<({String iso, String label})> days,
+  ) {
     final dates = (inc['dates'] as List).map((d) => d.toString()).toList();
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.fromLTRB(12, 8, 4, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,20 +315,36 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.restaurant_rounded, size: 16, color: Color(0xFF2563EB)),
+                decoration: BoxDecoration(
+                  color: const Color(0x263B82F6),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.restaurant_rounded,
+                  size: 16,
+                  color: Color(0xFF2563EB),
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(inc['name'].toString(),
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF0F172A))),
+                    Text(
+                      inc['name'].toString(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        color: Colors.white,
+                      ),
+                    ),
                     if (days.isNotEmpty)
                       Text(
                         '${days.where((d) => dates.contains(d.iso)).length} of ${days.length} days',
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF9CA3AF),
+                        ),
                       ),
                   ],
                 ),
@@ -291,19 +353,30 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                 visualDensity: VisualDensity.compact,
                 tooltip: 'Edit name',
                 onPressed: () => _editInclusion(inc),
-                icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF2563EB)),
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  size: 20,
+                  color: Color(0xFF2563EB),
+                ),
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
                 tooltip: 'Delete',
                 onPressed: () => setState(() => _inclusions.remove(inc)),
-                icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppTheme.errorColor),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  size: 20,
+                  color: AppTheme.errorColor,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           if (days.isEmpty)
-            const Text('Set the event dates to pick days.', style: TextStyle(fontSize: 12, color: Colors.black45))
+            const Text(
+              'Set the event dates to pick days.',
+              style: TextStyle(fontSize: 12, color: const Color(0xFF9CA3AF)),
+            )
           else
             LayoutBuilder(
               builder: (context, c) {
@@ -314,7 +387,12 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                   spacing: gap,
                   runSpacing: gap,
                   children: days
-                      .map((d) => SizedBox(width: w, child: _dayChip(inc, d, dates.contains(d.iso))))
+                      .map(
+                        (d) => SizedBox(
+                          width: w,
+                          child: _dayChip(inc, d, dates.contains(d.iso)),
+                        ),
+                      )
                       .toList(),
                 );
               },
@@ -329,7 +407,9 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
     final days = eventDays(widget.event);
     final editing = widget.existing != null;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: DraggableScrollableSheet(
         initialChildSize: 0.92,
         minChildSize: 0.5,
@@ -337,7 +417,7 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
         expand: false,
         builder: (context, scrollController) => Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFF14141F),
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -346,21 +426,33 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
               Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(4)),
+                decoration: BoxDecoration(
+                  color: const Color(0x33FFFFFF),
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 8, 4),
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(editing ? 'Edit Package' : 'Add Package',
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                      child: Text(
+                        editing ? 'Edit Package' : 'Add Package',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                    IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(context),
+                    ),
                   ],
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const Divider(height: 1, color: Color(0xFF1E1E2A)),
               Expanded(
                 child: ListView(
                   controller: scrollController,
@@ -371,17 +463,27 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                         margin: const EdgeInsets.only(bottom: 14),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFEF2F2),
+                          color: const Color(0x26EF4444),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFFECACA)),
+                          border: Border.all(color: const Color(0x4DEF4444)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.error_outline_rounded, size: 18, color: AppTheme.errorColor),
+                            const Icon(
+                              Icons.error_outline_rounded,
+                              size: 18,
+                              color: AppTheme.errorColor,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(_error!,
-                                  style: const TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.w600, fontSize: 13)),
+                              child: Text(
+                                _error!,
+                                style: const TextStyle(
+                                  color: AppTheme.errorColor,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -390,17 +492,31 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                     Container(
                       padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
                       decoration: BoxDecoration(
-                        color: _isFree ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
+                        color: _isFree
+                            ? const Color(0x2622C55E)
+                            : const Color(0xFF0A0A12),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: _isFree ? const Color(0xFFBBF7D0) : const Color(0xFFE2E8F0)),
+                        border: Border.all(
+                          color: _isFree
+                              ? const Color(0xFFBBF7D0)
+                              : const Color(0x1AFFFFFF),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.card_giftcard_rounded,
-                              size: 20, color: _isFree ? TickBox.green : const Color(0xFF94A3B8)),
+                          Icon(
+                            Icons.card_giftcard_rounded,
+                            size: 20,
+                            color: _isFree
+                                ? TickBox.green
+                                : const Color(0xFF94A3B8),
+                          ),
                           const SizedBox(width: 10),
                           const Expanded(
-                            child: Text('Free package', style: TextStyle(fontWeight: FontWeight.w700)),
+                            child: Text(
+                              'Free package',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
                           ),
                           Switch(
                             value: _isFree,
@@ -424,7 +540,10 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                       ),
                     ],
                     const SizedBox(height: 12),
-                    TextField(controller: _nameController, decoration: _dec('Package name *')),
+                    TextField(
+                      controller: _nameController,
+                      decoration: _dec('Package name *'),
+                    ),
                     const SizedBox(height: 18),
                     _section('Inclusions', icon: Icons.checklist_rounded),
                     Row(
@@ -433,7 +552,10 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                           child: TextField(
                             controller: _inclusionController,
                             onSubmitted: (_) => _addInclusion(),
-                            decoration: _dec('Add inclusion', hint: 'e.g. Lunch'),
+                            decoration: _dec(
+                              'Add inclusion',
+                              hint: 'e.g. Lunch',
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -442,11 +564,15 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                           child: ElevatedButton(
                             onPressed: _addInclusion,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryColor,
+                              backgroundColor: const Color(0xFF3B82F6),
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             child: const Icon(Icons.add_rounded),
                           ),
@@ -458,12 +584,17 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
+                          color: const Color(0xFF0A0A12),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          border: Border.all(color: const Color(0x1AFFFFFF)),
                         ),
-                        child: const Text('No inclusions yet. Add one above, then tick the days it applies to.',
-                            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
+                        child: const Text(
+                          'No inclusions yet. Add one above, then tick the days it applies to.',
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 13,
+                          ),
+                        ),
                       )
                     else
                       ..._inclusions.map((inc) => _inclusionCard(inc, days)),
@@ -471,10 +602,15 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                 ),
               ),
               Container(
-                padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + MediaQuery.of(context).padding.bottom),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  12,
+                  20,
+                  12 + MediaQuery.of(context).padding.bottom,
+                ),
                 decoration: const BoxDecoration(
-                  color: Colors.white,
-                  border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+                  color: const Color(0xFF14141F),
+                  border: Border(top: BorderSide(color: Color(0xFF1E1E2A))),
                 ),
                 child: Row(
                   children: [
@@ -483,7 +619,9 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: const Text('Cancel'),
                       ),
@@ -494,11 +632,13 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                       child: ElevatedButton(
                         onPressed: _submit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
+                          backgroundColor: const Color(0xFF3B82F6),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: Text(editing ? 'Save Package' : 'Add Package'),
                       ),

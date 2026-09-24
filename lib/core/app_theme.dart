@@ -267,6 +267,104 @@ class AppTheme {
   }
 }
 
+/// Black theme used for every logged-in screen (participant, speaker, event
+/// staff and management), matching the participant homepage. Login, splash and
+/// other pre-login screens keep [AppTheme.lightTheme].
+extension AppDarkTheme on AppTheme {
+  static const Color bg = Color(0xFF0A0A12);
+  static const Color card = Color(0xFF14141F);
+  static const Color field = Color(0xFF1E1E2A);
+  static const Color line = Color(0x14FFFFFF);
+  static const Color muted = Color(0xFF9CA3AF);
+  static const Color accent = Color(0xFF3B82F6);
+
+  static ThemeData get theme {
+    final base = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: accent,
+        brightness: Brightness.dark,
+        primary: accent,
+        secondary: AppTheme.secondaryColor,
+        error: AppTheme.errorColor,
+        surface: card,
+      ),
+    );
+    return base.copyWith(
+      scaffoldBackgroundColor: bg,
+      canvasColor: bg,
+      dividerColor: line,
+      appBarTheme: AppBarTheme(
+        backgroundColor: bg,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: line),
+        ),
+      ),
+      dialogTheme: const DialogThemeData(backgroundColor: card),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: card,
+        modalBackgroundColor: card,
+      ),
+      popupMenuTheme: const PopupMenuThemeData(color: field),
+      listTileTheme: const ListTileThemeData(
+        textColor: Colors.white,
+        iconColor: muted,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: field,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: line),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: line),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: accent, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.errorColor),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        labelStyle: GoogleFonts.inter(fontSize: 14, color: muted),
+        hintStyle: GoogleFonts.inter(fontSize: 14, color: muted),
+        prefixIconColor: muted,
+        suffixIconColor: muted,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: AppTheme.primaryElevatedStyle.copyWith(
+          backgroundColor: WidgetStateProperty.all(accent),
+        ),
+      ),
+      textTheme: GoogleFonts.interTextTheme(
+        base.textTheme,
+      ).apply(bodyColor: Colors.white, displayColor: Colors.white),
+    );
+  }
+}
+
 // Extension to provide compatibility for opacity operations
 extension ColorWithOpacityCompat on Color {
   Color withOpacityCompat(double opacity) {

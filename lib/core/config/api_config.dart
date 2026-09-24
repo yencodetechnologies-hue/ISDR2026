@@ -21,7 +21,7 @@ class ApiConfig {
     defaultValue: '',
   );
 
-  /// Base URL: production (https://isdr2026.yencodetechnologies.in/api)
+  /// Base URL: live production server.
   static String get baseUrl {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
     return _productionBaseUrl;
@@ -230,6 +230,9 @@ class ApiConfig {
   static String get managedEventMyTickets => '$managedEventsBase/my-tickets';
   static String get managedEventMySpeakerSessions =>
       '$managedEventsBase/my-speaker-sessions';
+
+  // Speakers (management Speakers page; picked when adding a schedule)
+  static String get speakers => '$baseUrl/speakers';
 
   // Participant favorites (hearted schedules)
   static String get managedEventMyFavorites =>

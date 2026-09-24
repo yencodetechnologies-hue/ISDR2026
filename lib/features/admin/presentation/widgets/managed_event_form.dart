@@ -18,11 +18,11 @@ class ManagedEventFormData {
     this.existingPhotoUrl,
     this.photoPath,
     this.removePhoto = false,
-  })  : title = TextEditingController(text: title),
-        venue = TextEditingController(text: venue),
-        description = TextEditingController(text: description),
-        eventDate = eventDate ?? DateTime.now().add(const Duration(days: 1)),
-        eventEndDate = eventEndDate;
+  }) : title = TextEditingController(text: title),
+       venue = TextEditingController(text: venue),
+       description = TextEditingController(text: description),
+       eventDate = eventDate ?? DateTime.now().add(const Duration(days: 1)),
+       eventEndDate = eventEndDate;
 
   factory ManagedEventFormData.fromEvent(Map<String, dynamic> event) {
     DateTime date = DateTime.now().add(const Duration(days: 1));
@@ -36,7 +36,9 @@ class ManagedEventFormData {
       venue: event['venue']?.toString() ?? '',
       description: event['description']?.toString() ?? '',
       eventDate: date,
-      eventEndDate: DateTime.tryParse(event['eventEndDate']?.toString() ?? '')?.toLocal(),
+      eventEndDate: DateTime.tryParse(
+        event['eventEndDate']?.toString() ?? '',
+      )?.toLocal(),
       existingPhotoUrl: rawPhoto.isNotEmpty ? rawPhoto : null,
     );
   }
@@ -51,7 +53,10 @@ class ManagedEventFormData {
   bool removePhoto;
 
   bool get hasPhoto =>
-      photoPath != null || (existingPhotoUrl != null && existingPhotoUrl!.isNotEmpty && !removePhoto);
+      photoPath != null ||
+      (existingPhotoUrl != null &&
+          existingPhotoUrl!.isNotEmpty &&
+          !removePhoto);
 
   void clearPhoto() {
     photoPath = null;
@@ -101,7 +106,7 @@ class ManagedEventFormBody extends StatelessWidget {
     final picker = ImagePicker();
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF14141F),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -116,7 +121,7 @@ class ManagedEventFormBody extends StatelessWidget {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: const Color(0x33FFFFFF),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -125,7 +130,7 @@ class ManagedEventFormBody extends StatelessWidget {
                 style: GoogleFonts.sora(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF0F172A),
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 14),
@@ -133,18 +138,27 @@ class ManagedEventFormBody extends StatelessWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withAlpha(20),
+                    color: const Color(0xFF3B82F6).withAlpha(20),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.photo_library_rounded, color: AppTheme.primaryColor),
+                  child: const Icon(
+                    Icons.photo_library_rounded,
+                    color: const Color(0xFF3B82F6),
+                  ),
                 ),
                 title: Text(
                   'Choose from Gallery',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
                 subtitle: Text(
                   'Select an image from device gallery',
-                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B)),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: const Color(0xFF9CA3AF),
+                  ),
                 ),
                 onTap: () => Navigator.pop(ctx, ImageSource.gallery),
               ),
@@ -155,15 +169,24 @@ class ManagedEventFormBody extends StatelessWidget {
                     color: AppTheme.secondaryColor.withAlpha(20),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.camera_alt_rounded, color: AppTheme.secondaryColor),
+                  child: const Icon(
+                    Icons.camera_alt_rounded,
+                    color: AppTheme.secondaryColor,
+                  ),
                 ),
                 title: Text(
                   'Take Photo',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
                 subtitle: Text(
                   'Use camera to take a new photo',
-                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B)),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: const Color(0xFF9CA3AF),
+                  ),
                 ),
                 onTap: () => Navigator.pop(ctx, ImageSource.camera),
               ),
@@ -189,32 +212,32 @@ class ManagedEventFormBody extends StatelessWidget {
       labelText: labelText,
       labelStyle: GoogleFonts.inter(
         fontSize: 13,
-        color: const Color(0xFF64748B),
+        color: const Color(0xFF9CA3AF),
         fontWeight: FontWeight.w500,
       ),
       floatingLabelStyle: GoogleFonts.inter(
         fontSize: 13,
-        color: AppTheme.primaryColor,
+        color: const Color(0xFF3B82F6),
         fontWeight: FontWeight.w600,
       ),
-      prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 20),
+      prefixIcon: Icon(icon, color: const Color(0xFF3B82F6), size: 20),
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 14,
-      ),
+      fillColor: const Color(0xFF0A0A12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFECECEA)),
+        borderSide: const BorderSide(color: Color(0x14FFFFFF)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFECECEA)),
+        borderSide: const BorderSide(color: Color(0x14FFFFFF)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
+        borderSide: const BorderSide(
+          color: const Color(0xFF3B82F6),
+          width: 1.5,
+        ),
       ),
     );
   }
@@ -224,9 +247,9 @@ class ManagedEventFormBody extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFECECEA)),
+        border: Border.all(color: const Color(0x14FFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(6),
@@ -246,7 +269,7 @@ class ManagedEventFormBody extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF0F172A),
+              color: Colors.white,
             ),
             decoration: _buildInputDecoration(
               labelText: 'Title *',
@@ -259,7 +282,7 @@ class ManagedEventFormBody extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF0F172A),
+              color: Colors.white,
             ),
             decoration: _buildInputDecoration(
               labelText: 'Venue',
@@ -268,7 +291,7 @@ class ManagedEventFormBody extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Material(
-            color: const Color(0xFFF8FAFC),
+            color: const Color(0xFF0A0A12),
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
               onTap: onPickDateTime,
@@ -280,19 +303,19 @@ class ManagedEventFormBody extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFECECEA)),
+                  border: Border.all(color: const Color(0x14FFFFFF)),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withAlpha(16),
+                        color: const Color(0xFF3B82F6).withAlpha(16),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
                         Icons.calendar_month_rounded,
-                        color: AppTheme.primaryColor,
+                        color: const Color(0xFF3B82F6),
                         size: 20,
                       ),
                     ),
@@ -306,7 +329,7 @@ class ManagedEventFormBody extends StatelessWidget {
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: const Color(0xFF64748B),
+                              color: const Color(0xFF9CA3AF),
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -315,7 +338,7 @@ class ManagedEventFormBody extends StatelessWidget {
                             style: GoogleFonts.sora(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF0F172A),
+                              color: Colors.white,
                             ),
                           ),
                         ],
@@ -334,26 +357,33 @@ class ManagedEventFormBody extends StatelessWidget {
           if (showEndDate) ...[
             const SizedBox(height: 12),
             Material(
-              color: const Color(0xFFF8FAFC),
+              color: const Color(0xFF0A0A12),
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 onTap: onPickEndDateTime,
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFECECEA)),
+                    border: Border.all(color: const Color(0x14FFFFFF)),
                   ),
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withAlpha(16),
+                          color: const Color(0xFF3B82F6).withAlpha(16),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.event_available_rounded, color: AppTheme.primaryColor, size: 20),
+                        child: const Icon(
+                          Icons.event_available_rounded,
+                          color: const Color(0xFF3B82F6),
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -362,14 +392,22 @@ class ManagedEventFormBody extends StatelessWidget {
                           children: [
                             Text(
                               'End date & time (optional)',
-                              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF64748B)),
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF9CA3AF),
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               data.eventEndDate == null
-                                   ? 'Not set'
+                                  ? 'Not set'
                                   : '${_dateFmt.format(data.eventEndDate!)} · ${_timeFmt.format(data.eventEndDate!)}',
-                              style: GoogleFonts.sora(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)),
+                              style: GoogleFonts.sora(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
                             ),
                           ],
                         ),
@@ -382,7 +420,11 @@ class ManagedEventFormBody extends StatelessWidget {
                           },
                           child: const Padding(
                             padding: EdgeInsets.all(4),
-                            child: Icon(Icons.close_rounded, size: 18, color: Color(0xFF94A3B8)),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: Color(0xFF94A3B8),
+                            ),
                           ),
                         ),
                     ],
@@ -398,7 +440,7 @@ class ManagedEventFormBody extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF0F172A),
+              color: Colors.white,
             ),
             decoration: _buildInputDecoration(
               labelText: 'Description',
@@ -416,7 +458,7 @@ class ManagedEventFormBody extends StatelessWidget {
         height: 160,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: const Color(0x1AFFFFFF)),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(14),
@@ -424,18 +466,19 @@ class ManagedEventFormBody extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               if (data.photoPath != null)
-                Image.file(
-                  File(data.photoPath!),
-                  fit: BoxFit.cover,
-                )
+                Image.file(File(data.photoPath!), fit: BoxFit.cover)
               else if (data.existingPhotoUrl != null)
                 Image.network(
                   data.existingPhotoUrl!,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
-                    color: const Color(0xFFF1F5F9),
+                    color: const Color(0xFF1E1E2A),
                     child: const Center(
-                      child: Icon(Icons.broken_image_rounded, size: 36, color: Colors.grey),
+                      child: Icon(
+                        Icons.broken_image_rounded,
+                        size: 36,
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
                 ),
@@ -460,7 +503,10 @@ class ManagedEventFormBody extends StatelessWidget {
                 top: 10,
                 left: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(140),
                     borderRadius: BorderRadius.circular(6),
@@ -468,7 +514,11 @@ class ManagedEventFormBody extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.image_rounded, color: Colors.white, size: 14),
+                      const Icon(
+                        Icons.image_rounded,
+                        color: Colors.white,
+                        size: 14,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Event Photo',
@@ -493,25 +543,36 @@ class ManagedEventFormBody extends StatelessWidget {
                       onTap: () => _pickPhoto(context),
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: const Color(0xFF14141F),
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: const [
-                            BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
                           ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.edit_rounded, size: 14, color: AppTheme.primaryColor),
+                            const Icon(
+                              Icons.edit_rounded,
+                              size: 14,
+                              color: const Color(0xFF3B82F6),
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Change',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.primaryColor,
+                                color: const Color(0xFF3B82F6),
                               ),
                             ),
                           ],
@@ -526,18 +587,29 @@ class ManagedEventFormBody extends StatelessWidget {
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEF4444),
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: const [
-                            BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
                           ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.delete_outline_rounded, size: 14, color: Colors.white),
+                            const Icon(
+                              Icons.delete_outline_rounded,
+                              size: 14,
+                              color: Colors.white,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Remove',
@@ -562,7 +634,7 @@ class ManagedEventFormBody extends StatelessWidget {
 
     // Unselected state
     return Material(
-      color: const Color(0xFFF8FAFC),
+      color: const Color(0xFF0A0A12),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: () => _pickPhoto(context),
@@ -572,7 +644,7 @@ class ManagedEventFormBody extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: const Color(0xFFCBD5E1),
+              color: const Color(0x33FFFFFF),
               style: BorderStyle.solid,
             ),
           ),
@@ -582,12 +654,12 @@ class ManagedEventFormBody extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withAlpha(14),
+                  color: const Color(0xFF3B82F6).withAlpha(14),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.add_photo_alternate_outlined,
-                  color: AppTheme.primaryColor,
+                  color: const Color(0xFF3B82F6),
                   size: 24,
                 ),
               ),
@@ -601,7 +673,7 @@ class ManagedEventFormBody extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1E293B),
+                        color: const Color(0xFFE2E8F0),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -609,7 +681,7 @@ class ManagedEventFormBody extends StatelessWidget {
                       'Tap to upload cover / banner image',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: const Color(0xFF64748B),
+                        color: const Color(0xFF9CA3AF),
                       ),
                     ),
                   ],

@@ -38,7 +38,8 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
   final Set<String> _togglingIds = {};
 
   String? get _apartmentId {
-    final sel = widget.selectedApartmentId ??
+    final sel =
+        widget.selectedApartmentId ??
         (widget.state is AdminLoaded
             ? (widget.state as AdminLoaded).selectedApartmentId
             : null);
@@ -58,8 +59,8 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
       final title = e['title']?.toString().toLowerCase() ?? '';
       final venue = e['venue']?.toString().toLowerCase() ?? '';
       final status = e['status']?.toString().toLowerCase() ?? '';
-      final activeLabel = (e['isActive'] != false &&
-              e['status']?.toString() != 'cancelled')
+      final activeLabel =
+          (e['isActive'] != false && e['status']?.toString() != 'cancelled')
           ? 'active'
           : 'inactive';
       return title.contains(q) ||
@@ -92,8 +93,9 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
       _loading = false;
       if (res['success'] == true) {
         _events = List<Map<String, dynamic>>.from(
-          (res['events'] as List?)
-                  ?.map((e) => Map<String, dynamic>.from(e as Map)) ??
+          (res['events'] as List?)?.map(
+                (e) => Map<String, dynamic>.from(e as Map),
+              ) ??
               [],
         );
       } else {
@@ -115,8 +117,11 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
     if (!mounted) return;
     if (created != null) {
       final slug = created['publicSlug']?.toString() ?? '';
-      setState(() => _message =
-          slug.isNotEmpty ? 'Event created. Register link copied.' : 'Event created');
+      setState(
+        () => _message = slug.isNotEmpty
+            ? 'Event created. Register link copied.'
+            : 'Event created',
+      );
       await _load();
     }
   }
@@ -130,10 +135,7 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
                 event: event,
                 apartmentId: _apartmentId,
               )
-            : ManagedEventDetailsPage(
-                event: event,
-                apartmentId: _apartmentId,
-              ),
+            : ManagedEventDetailsPage(event: event, apartmentId: _apartmentId),
       ),
     );
     if (!mounted) return;
@@ -207,10 +209,7 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
                 child: TextField(
                   controller: _searchController,
                   onChanged: (v) => setState(() => _searchQuery = v.trim()),
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: const Color(0xFF0F172A),
-                  ),
+                  style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'Search by title, venue, status...',
                     hintStyle: GoogleFonts.inter(
@@ -219,7 +218,7 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
                     ),
                     prefixIcon: const Icon(
                       Icons.search_rounded,
-                      color: AppTheme.primaryColor,
+                      color: const Color(0xFF3B82F6),
                       size: 20,
                     ),
                     suffixIcon: _searchQuery.isEmpty
@@ -232,23 +231,23 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
                             },
                           ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: const Color(0xFF1E1E2A),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 12,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFECECEA)),
+                      borderSide: const BorderSide(color: Color(0x14FFFFFF)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFECECEA)),
+                      borderSide: const BorderSide(color: Color(0x14FFFFFF)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: AppTheme.primaryColor,
+                        color: const Color(0xFF3B82F6),
                         width: 1.5,
                       ),
                     ),
@@ -260,14 +259,14 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
                 tooltip: 'Create event',
                 onPressed: _openCreate,
                 icon: const Icon(Icons.add_rounded),
-                color: AppTheme.primaryColor,
+                color: const Color(0xFF3B82F6),
                 iconSize: 24,
                 style: IconButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor.withAlpha(15),
+                  backgroundColor: const Color(0xFF3B82F6).withAlpha(15),
                   padding: const EdgeInsets.all(12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: Color(0xFFECECEA)),
+                    side: const BorderSide(color: Color(0x14FFFFFF)),
                   ),
                 ),
               ),
@@ -284,7 +283,7 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.primaryColor,
+                  color: const Color(0xFF3B82F6),
                 ),
               ),
             ),
@@ -292,7 +291,7 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: _load,
-            color: AppTheme.primaryColor,
+            color: const Color(0xFF3B82F6),
             child: _loading
                 ? ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -300,303 +299,297 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
                       SizedBox(height: 120),
                       Center(
                         child: CircularProgressIndicator(
-                          color: AppTheme.primaryColor,
+                          color: const Color(0xFF3B82F6),
                         ),
                       ),
                     ],
                   )
                 : _events.isEmpty
-                    ? ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(24),
-                        children: [
-                          const SizedBox(height: 40),
-                          Center(
-                            child: Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryColor.withAlpha(16),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.confirmation_number_outlined,
-                                size: 30,
-                                color: AppTheme.primaryColor,
-                              ),
-                            ),
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(24),
+                    children: [
+                      const SizedBox(height: 40),
+                      Center(
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3B82F6).withAlpha(16),
+                            shape: BoxShape.circle,
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No events yet',
-                            textAlign: TextAlign.center,
+                          child: const Icon(
+                            Icons.confirmation_number_outlined,
+                            size: 30,
+                            color: const Color(0xFF3B82F6),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No events yet',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.sora(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          'Tap + to create an event and share the register link.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: const Color(0xFF9CA3AF),
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Center(
+                        child: ElevatedButton.icon(
+                          onPressed: _openCreate,
+                          icon: const Icon(Icons.add_rounded, size: 20),
+                          label: Text(
+                            'Create event',
                             style: GoogleFonts.sora(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF0F172A),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: Text(
-                              'Tap + to create an event and share the register link.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: const Color(0xFF64748B),
-                                height: 1.4,
-                              ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF3B82F6),
+                            foregroundColor: Colors.white,
+                            elevation: 2,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          const SizedBox(height: 24),
-                          Center(
-                            child: ElevatedButton.icon(
-                              onPressed: _openCreate,
-                              icon: const Icon(Icons.add_rounded, size: 20),
-                              label: Text(
-                                'Create event',
-                                style: GoogleFonts.sora(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
-                                foregroundColor: Colors.white,
-                                elevation: 2,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : filtered.isEmpty
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(24),
-                            children: [
-                              const SizedBox(height: 48),
-                              Text(
-                                'No events match your search.',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.inter(
-                                  fontSize: 14,
-                                  color: const Color(0xFF64748B),
-                                ),
-                              ),
-                            ],
-                          )
-                        : ListView.separated(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                            itemCount: filtered.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final e = filtered[index];
-                              final id = e['id']?.toString() ??
-                                  e['_id']?.toString() ??
-                                  '';
-                              final isActive = e['isActive'] != false &&
-                                  e['status']?.toString() != 'cancelled';
-                              final toggling = _togglingIds.contains(id);
+                        ),
+                      ),
+                    ],
+                  )
+                : filtered.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(24),
+                    children: [
+                      const SizedBox(height: 48),
+                      Text(
+                        'No events match your search.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: const Color(0xFF9CA3AF),
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final e = filtered[index];
+                      final id =
+                          e['id']?.toString() ?? e['_id']?.toString() ?? '';
+                      final isActive =
+                          e['isActive'] != false &&
+                          e['status']?.toString() != 'cancelled';
+                      final toggling = _togglingIds.contains(id);
 
-                              return Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: const Color(0xFFECECEA),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withAlpha(6),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: InkWell(
-                                    onTap: () => _openDetails(e),
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(14),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            child: (e['photoUrl']?.toString() ?? '').isNotEmpty
-                                                ? Image.network(
-                                                    e['photoUrl'].toString(),
-                                                    width: 52,
-                                                    height: 52,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder: (_, __, ___) =>
-                                                        Container(
-                                                      width: 52,
-                                                      height: 52,
-                                                      decoration: BoxDecoration(
-                                                        color: const Color(0xFFF1F5F9),
-                                                        borderRadius:
-                                                            BorderRadius.circular(12),
-                                                        border: Border.all(
-                                                            color: const Color(0xFFE2E8F0)),
-                                                      ),
-                                                      child: const Icon(
-                                                        Icons.calendar_month_rounded,
-                                                        size: 24,
-                                                        color: Color(0xFF1E293B),
-                                                      ),
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF14141F),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0x14FFFFFF)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(6),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(16),
+                          child: InkWell(
+                            onTap: () => _openDetails(e),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child:
+                                        (e['photoUrl']?.toString() ?? '')
+                                            .isNotEmpty
+                                        ? Image.network(
+                                            e['photoUrl'].toString(),
+                                            width: 52,
+                                            height: 52,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                Container(
+                                                  width: 52,
+                                                  height: 52,
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                      0xFF1E1E2A,
                                                     ),
-                                                  )
-                                                : Container(
-                                                    width: 52,
-                                                    height: 52,
-                                                    decoration: BoxDecoration(
-                                                      color: const Color(0xFFF1F5F9),
-                                                      borderRadius:
-                                                          BorderRadius.circular(12),
-                                                      border: Border.all(
-                                                          color: const Color(0xFFE2E8F0)),
-                                                    ),
-                                                    child: const Icon(
-                                                      Icons.calendar_month_rounded,
-                                                      size: 24,
-                                                      color: Color(0xFF1E293B),
-                                                    ),
-                                                  ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  e['title']?.toString() ??
-                                                      'Event',
-                                                  style: GoogleFonts.sora(
-                                                    fontSize: 15,
-                                                    fontWeight:
-                                                        FontWeight.bold,
-                                                    color:
-                                                        const Color(0xFF0F172A),
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  _whenLabel(e),
-                                                  style: GoogleFonts.inter(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w500,
-                                                    color:
-                                                        const Color(0xFF64748B),
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Row(
-                                                  children: [
-                                                    Container(
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                        horizontal: 7,
-                                                        vertical: 2,
-                                                      ),
-                                                      decoration: BoxDecoration(
-                                                        color:
-                                                            const Color(0xFFF1F5F9),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(6),
-                                                      ),
-                                                      child: Text(
-                                                        widget.isEventsProperty
-                                                            ? '${e['bookedCount'] ?? 0} registered'
-                                                            : '${e['bookedCount'] ?? 0}/${e['totalSlots'] ?? 0} booked',
-                                                        style:
-                                                            GoogleFonts.inter(
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color: const Color(
-                                                            0xFF475569,
-                                                          ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
                                                         ),
+                                                    border: Border.all(
+                                                      color: const Color(
+                                                        0x1AFFFFFF,
                                                       ),
                                                     ),
-                                                    if (e['status'] != null &&
-                                                        e['status']
-                                                            .toString()
-                                                            .isNotEmpty) ...[
-                                                      const SizedBox(width: 6),
-                                                      Text(
-                                                        '· ${e['status']}',
-                                                        style:
-                                                            GoogleFonts.inter(
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          color: const Color(
-                                                            0xFF94A3B8,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ],
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons
+                                                        .calendar_month_rounded,
+                                                    size: 24,
+                                                    color: Color(0xFFE2E8F0),
+                                                  ),
                                                 ),
-                                              ],
+                                          )
+                                        : Container(
+                                            width: 52,
+                                            height: 52,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF1E1E2A),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: const Color(0x1AFFFFFF),
+                                              ),
+                                            ),
+                                            child: const Icon(
+                                              Icons.calendar_month_rounded,
+                                              size: 24,
+                                              color: Color(0xFFE2E8F0),
                                             ),
                                           ),
-                                          Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Switch(
-                                                value: isActive,
-                                                activeThumbColor:
-                                                    AppTheme.primaryColor,
-                                                onChanged: toggling ||
-                                                        e['status']
-                                                                ?.toString() ==
-                                                            'cancelled'
-                                                    ? null
-                                                    : (v) =>
-                                                        _toggleActive(e, v),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          e['title']?.toString() ?? 'Event',
+                                          style: GoogleFonts.sora(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF0F172A),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _whenLabel(e),
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: const Color(0xFF9CA3AF),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 7,
+                                                    vertical: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF1E1E2A),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
                                               ),
-                                              Text(
-                                                isActive
-                                                    ? 'Active'
-                                                    : 'Inactive',
+                                              child: Text(
+                                                widget.isEventsProperty
+                                                    ? '${e['bookedCount'] ?? 0} registered'
+                                                    : '${e['bookedCount'] ?? 0}/${e['totalSlots'] ?? 0} booked',
                                                 style: GoogleFonts.inter(
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: isActive
-                                                      ? const Color(0xFF10B981)
-                                                      : const Color(0xFF94A3B8),
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: const Color(
+                                                    0xFFCBD5E1,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            if (e['status'] != null &&
+                                                e['status']
+                                                    .toString()
+                                                    .isNotEmpty) ...[
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                '· ${e['status']}',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: const Color(
+                                                    0xFF94A3B8,
+                                                  ),
                                                 ),
                                               ),
                                             ],
-                                          ),
-                                        ],
-                                      ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ),
-                              );
-                            },
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Switch(
+                                        value: isActive,
+                                        activeThumbColor: const Color(
+                                          0xFF3B82F6,
+                                        ),
+                                        onChanged:
+                                            toggling ||
+                                                e['status']?.toString() ==
+                                                    'cancelled'
+                                            ? null
+                                            : (v) => _toggleActive(e, v),
+                                      ),
+                                      Text(
+                                        isActive ? 'Active' : 'Inactive',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: isActive
+                                              ? const Color(0xFF10B981)
+                                              : const Color(0xFF94A3B8),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ),
       ],

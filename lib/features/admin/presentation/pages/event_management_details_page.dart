@@ -48,6 +48,7 @@ class _EventManagementDetailsPageState
   String? _message;
   String _search = '';
   final Set<String> _expandedRegs = {};
+
   /// Scanned / not scanned / rejected counts keyed by 'package|inclusion'.
   Map<String, Map<String, dynamic>> _incStats = {};
 
@@ -57,9 +58,10 @@ class _EventManagementDetailsPageState
   bool get _isCancelled => _event['status']?.toString() == 'cancelled';
 
   List<Map<String, dynamic>> get _packages => List<Map<String, dynamic>>.from(
-        (_event['packages'] as List? ?? [])
-            .map((p) => Map<String, dynamic>.from(p as Map)),
-      );
+    (_event['packages'] as List? ?? []).map(
+      (p) => Map<String, dynamic>.from(p as Map),
+    ),
+  );
 
   DateTime? _dateOf(String key) {
     final raw = _event[key];
@@ -71,7 +73,10 @@ class _EventManagementDetailsPageState
     final q = _search.trim().toLowerCase();
     if (q.isEmpty) return _registrations;
     return _registrations.where((r) {
-      return r.values.any((v) => (v is String || v is num) && v.toString().toLowerCase().contains(q));
+      return r.values.any(
+        (v) =>
+            (v is String || v is num) && v.toString().toLowerCase().contains(q),
+      );
     }).toList();
   }
 
@@ -114,20 +119,24 @@ class _EventManagementDetailsPageState
     setState(() {
       _incStats = {
         for (final r in rows)
-          '${r['packageName']}|${r['name']}': Map<String, dynamic>.from(r as Map),
+          '${r['packageName']}|${r['name']}': Map<String, dynamic>.from(
+            r as Map,
+          ),
       };
     });
   }
 
   Widget _statPill(String text, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(text,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+    ),
+  );
 
   Future<void> _loadRegistrations() async {
     if (_eventId.isEmpty) {
@@ -143,8 +152,9 @@ class _EventManagementDetailsPageState
     setState(() {
       _loadingRegs = false;
       _registrations = List<Map<String, dynamic>>.from(
-        (res['registrations'] as List?)
-                ?.map((e) => Map<String, dynamic>.from(e as Map)) ??
+        (res['registrations'] as List?)?.map(
+              (e) => Map<String, dynamic>.from(e as Map),
+            ) ??
             [],
       );
     });
@@ -162,8 +172,14 @@ class _EventManagementDetailsPageState
       builder: (ctx) => AlertDialog(
         title: Text(title),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(action)),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(action),
+          ),
         ],
       ),
     );
@@ -191,11 +207,15 @@ class _EventManagementDetailsPageState
   Future<void> _cancelEvent() async {
     if (!await _confirm('Cancel event?', 'Yes')) return;
     setState(() => _busy = true);
-    final res = await _api.cancelManagedEvent(_eventId, apartmentId: widget.apartmentId);
+    final res = await _api.cancelManagedEvent(
+      _eventId,
+      apartmentId: widget.apartmentId,
+    );
     if (!mounted) return;
     setState(() => _busy = false);
     if (res['success'] == true) {
-      if (res['event'] is Map) setState(() => _event = Map<String, dynamic>.from(res['event'] as Map));
+      if (res['event'] is Map)
+        setState(() => _event = Map<String, dynamic>.from(res['event'] as Map));
       _showMessage('Event cancelled');
     } else {
       _showMessage(res['error']?.toString() ?? 'Cancel failed');
@@ -203,9 +223,16 @@ class _EventManagementDetailsPageState
   }
 
   Future<void> _deleteEvent() async {
-    if (!await _confirm('Delete "${_event['title']}" and all its participants permanently?', 'Delete')) return;
+    if (!await _confirm(
+      'Delete "${_event['title']}" and all its participants permanently?',
+      'Delete',
+    ))
+      return;
     setState(() => _busy = true);
-    final res = await _api.deleteManagedEventPermanently(_eventId, apartmentId: widget.apartmentId);
+    final res = await _api.deleteManagedEventPermanently(
+      _eventId,
+      apartmentId: widget.apartmentId,
+    );
     if (!mounted) return;
     setState(() => _busy = false);
     if (res['success'] == true) {
@@ -215,7 +242,10 @@ class _EventManagementDetailsPageState
     }
   }
 
-  Future<void> _savePackages(List<Map<String, dynamic>> next, String okMessage) async {
+  Future<void> _savePackages(
+    List<Map<String, dynamic>> next,
+    String okMessage,
+  ) async {
     setState(() => _busy = true);
     final res = await _api.updateManagedEvent(
       eventId: _eventId,
@@ -225,7 +255,8 @@ class _EventManagementDetailsPageState
     if (!mounted) return;
     setState(() => _busy = false);
     if (res['success'] == true) {
-      if (res['event'] is Map) setState(() => _event = Map<String, dynamic>.from(res['event'] as Map));
+      if (res['event'] is Map)
+        setState(() => _event = Map<String, dynamic>.from(res['event'] as Map));
       _loadIncStats();
       _showMessage(okMessage);
     } else {
@@ -245,12 +276,18 @@ class _EventManagementDetailsPageState
     final next = existing == null
         ? [...current, result]
         : current.map((p) => p['id'] == existing['id'] ? result : p).toList();
-    await _savePackages(next, existing == null ? 'Package added' : 'Package updated');
+    await _savePackages(
+      next,
+      existing == null ? 'Package added' : 'Package updated',
+    );
   }
 
   Future<void> _removePackage(String packageId) async {
     if (!await _confirm('Remove this package?', 'Remove')) return;
-    await _savePackages(_packages.where((p) => p['id'] != packageId).toList(), 'Package removed');
+    await _savePackages(
+      _packages.where((p) => p['id'] != packageId).toList(),
+      'Package removed',
+    );
   }
 
   String _suggestNextIdNumber() {
@@ -298,7 +335,8 @@ class _EventManagementDetailsPageState
   }
 
   Future<void> _deleteParticipant(Map<String, dynamic> reg) async {
-    if (!await _confirm('Delete registration for "${reg['name']}"?', 'Delete')) return;
+    if (!await _confirm('Delete registration for "${reg['name']}"?', 'Delete'))
+      return;
     setState(() => _busy = true);
     final res = await _api.deleteEventRegistration(
       eventId: _eventId,
@@ -327,11 +365,13 @@ class _EventManagementDetailsPageState
   Widget _rateBadge(Map<String, dynamic> p) {
     final rate = num.tryParse(p['rate']?.toString() ?? '') ?? 0;
     final mode = p['paymentMode']?.toString() ?? '';
-    final text = rate == 0 ? 'Free' : '₹$rate${mode.isNotEmpty ? ' · ${paymentModeLabel(mode)}' : ''}';
+    final text = rate == 0
+        ? 'Free'
+        : '₹$rate${mode.isNotEmpty ? ' · ${paymentModeLabel(mode)}' : ''}';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: rate == 0 ? const Color(0xFFDCFCE7) : const Color(0xFFEFF6FF),
+        color: rate == 0 ? const Color(0x2622C55E) : const Color(0x263B82F6),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -339,7 +379,7 @@ class _EventManagementDetailsPageState
         style: TextStyle(
           fontSize: 12.5,
           fontWeight: FontWeight.w800,
-          color: rate == 0 ? const Color(0xFF166534) : const Color(0xFF2563EB),
+          color: rate == 0 ? const Color(0xFF86EFAC) : const Color(0xFF2563EB),
         ),
       ),
     );
@@ -358,18 +398,31 @@ class _EventManagementDetailsPageState
             Row(
               children: [
                 Expanded(
-                  child: Text(p['name']?.toString() ?? '',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  child: Text(
+                    p['name']?.toString() ?? '',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
+                  ),
                 ),
                 _rateBadge(p),
               ],
             ),
             const SizedBox(height: 8),
             if (inclusions.isEmpty)
-              const Text('No inclusions added.', style: TextStyle(color: Colors.black45, fontSize: 12.5))
+              const Text(
+                'No inclusions added.',
+                style: TextStyle(
+                  color: const Color(0xFF9CA3AF),
+                  fontSize: 12.5,
+                ),
+              )
             else
               ...inclusions.map((inc) {
-                final dates = (inc['dates'] as List).map((d) => d.toString()).toList();
+                final dates = (inc['dates'] as List)
+                    .map((d) => d.toString())
+                    .toList();
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Column(
@@ -378,25 +431,42 @@ class _EventManagementDetailsPageState
                       Row(
                         children: [
                           Flexible(
-                            child: Text(inc['name'].toString(),
-                                style: const TextStyle(fontWeight: FontWeight.w700)),
+                            child: Text(
+                              inc['name'].toString(),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                       ...[
                         const SizedBox(height: 4),
-                        Builder(builder: (_) {
-                          final st = _incStats['${p['name']}|${inc['name']}'] ?? const <String, dynamic>{};
-                          return Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              _statPill('${st['scanned'] ?? 0} Scanned', const Color(0xFF16A34A)),
-                              _statPill('${st['notScanned'] ?? 0} Not scanned', const Color(0xFFD97706)),
-                              _statPill('${st['rejected'] ?? 0} Rejected', const Color(0xFFDC2626)),
-                            ],
-                          );
-                        }),
+                        Builder(
+                          builder: (_) {
+                            final st =
+                                _incStats['${p['name']}|${inc['name']}'] ??
+                                const <String, dynamic>{};
+                            return Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                _statPill(
+                                  '${st['scanned'] ?? 0} Scanned',
+                                  const Color(0xFF16A34A),
+                                ),
+                                _statPill(
+                                  '${st['notScanned'] ?? 0} Not scanned',
+                                  const Color(0xFFD97706),
+                                ),
+                                _statPill(
+                                  '${st['rejected'] ?? 0} Rejected',
+                                  const Color(0xFFDC2626),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                       ],
                       if (days.isNotEmpty) ...[
                         const SizedBox(height: 4),
@@ -404,14 +474,19 @@ class _EventManagementDetailsPageState
                           spacing: 12,
                           runSpacing: 6,
                           children: days
-                              .map((d) => Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      TickBox(value: dates.contains(d.iso)),
-                                      const SizedBox(width: 3),
-                                      Text(d.label, style: const TextStyle(fontSize: 12)),
-                                    ],
-                                  ))
+                              .map(
+                                (d) => Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    TickBox(value: dates.contains(d.iso)),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      d.label,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              )
                               .toList(),
                         ),
                       ],
@@ -429,10 +504,14 @@ class _EventManagementDetailsPageState
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
-                  onPressed: _busy ? null : () => _removePackage(p['id'].toString()),
+                  onPressed: _busy
+                      ? null
+                      : () => _removePackage(p['id'].toString()),
                   icon: const Icon(Icons.delete_outline, size: 16),
                   label: const Text('Remove'),
-                  style: OutlinedButton.styleFrom(foregroundColor: AppTheme.errorColor),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.errorColor,
+                  ),
                 ),
               ],
             ),
@@ -443,13 +522,18 @@ class _EventManagementDetailsPageState
   }
 
   void _showClaimedInclusions(Map<String, dynamic> r) {
-    final name = [r['title'], r['firstName'], r['middleName'], r['lastName']]
-        .map((e) => e?.toString() ?? '')
-        .where((e) => e.isNotEmpty)
-        .join(' ');
+    final name = [
+      r['title'],
+      r['firstName'],
+      r['middleName'],
+      r['lastName'],
+    ].map((e) => e?.toString() ?? '').where((e) => e.isNotEmpty).join(' ');
     final regId = (r['id'] ?? r['_id']).toString();
     final claims = List<Map<String, dynamic>>.from(
-      (r['claimedInclusions'] as List?)?.map((c) => Map<String, dynamic>.from(c as Map)) ?? [],
+      (r['claimedInclusions'] as List?)?.map(
+            (c) => Map<String, dynamic>.from(c as Map),
+          ) ??
+          [],
     );
     final fmt = DateFormat('d MMM, h:mm a');
     String? busyId;
@@ -472,8 +556,9 @@ class _EventManagementDetailsPageState
             );
             if (res['success'] == true) {
               final updated = List<Map<String, dynamic>>.from(
-                (res['registration']?['claimedInclusions'] as List?)
-                        ?.map((e) => Map<String, dynamic>.from(e as Map)) ??
+                (res['registration']?['claimedInclusions'] as List?)?.map(
+                      (e) => Map<String, dynamic>.from(e as Map),
+                    ) ??
                     [],
               );
               setSheetState(() {
@@ -487,7 +572,11 @@ class _EventManagementDetailsPageState
               setSheetState(() => busyId = null);
               if (ctx.mounted) {
                 ScaffoldMessenger.of(ctx).showSnackBar(
-                  SnackBar(content: Text(res['error']?.toString() ?? 'Failed to reclaim')),
+                  SnackBar(
+                    content: Text(
+                      res['error']?.toString() ?? 'Failed to reclaim',
+                    ),
+                  ),
                 );
               }
             }
@@ -507,26 +596,41 @@ class _EventManagementDetailsPageState
                   if (name.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text(name, style: const TextStyle(color: Colors.black54, fontSize: 12.5)),
+                      child: Text(
+                        name,
+                        style: const TextStyle(
+                          color: const Color(0xFF9CA3AF),
+                          fontSize: 12.5,
+                        ),
+                      ),
                     ),
                   const SizedBox(height: 12),
                   if (claims.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Text('No inclusions claimed yet', style: TextStyle(color: Colors.black45)),
+                      child: Text(
+                        'No inclusions claimed yet',
+                        style: TextStyle(color: const Color(0xFF9CA3AF)),
+                      ),
                     )
                   else
                     ...claims.map((c) {
                       final inclName = c['inclusionName']?.toString() ?? '';
                       final claimId = c['id']?.toString() ?? '';
-                      final at = DateTime.tryParse(c['claimedAt']?.toString() ?? '');
+                      final at = DateTime.tryParse(
+                        c['claimedAt']?.toString() ?? '',
+                      );
                       final isBusy = busyId == claimId;
                       final byAdmin = c['reclaimedByAdmin'] == true;
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Row(
                           children: [
-                            const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 18),
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              color: Color(0xFF16A34A),
+                              size: 18,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Column(
@@ -535,23 +639,34 @@ class _EventManagementDetailsPageState
                                   Row(
                                     children: [
                                       Flexible(
-                                        child: Text(inclName,
-                                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                                        child: Text(
+                                          inclName,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ),
                                       if (byAdmin) ...[
                                         const SizedBox(width: 6),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 1,
+                                          ),
                                           decoration: BoxDecoration(
-                                            color: AppTheme.primaryColor.withValues(alpha: 0.10),
-                                            borderRadius: BorderRadius.circular(10),
+                                            color: const Color(
+                                              0xFF3B82F6,
+                                            ).withValues(alpha: 0.10),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
                                           ),
                                           child: Text(
                                             'By Admin',
                                             style: TextStyle(
                                               fontSize: 9.5,
                                               fontWeight: FontWeight.w800,
-                                              color: AppTheme.primaryColor,
+                                              color: const Color(0xFF3B82F6),
                                             ),
                                           ),
                                         ),
@@ -561,7 +676,10 @@ class _EventManagementDetailsPageState
                                   if (at != null)
                                     Text(
                                       fmt.format(at.toLocal()),
-                                      style: const TextStyle(fontSize: 11.5, color: Colors.black45),
+                                      style: const TextStyle(
+                                        fontSize: 11.5,
+                                        color: const Color(0xFF9CA3AF),
+                                      ),
                                     ),
                                 ],
                               ),
@@ -572,11 +690,15 @@ class _EventManagementDetailsPageState
                                   ? const SizedBox(
                                       width: 14,
                                       height: 14,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     )
                                   : const Icon(Icons.replay_rounded, size: 16),
                               label: const Text('Reclaim'),
-                              style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppTheme.errorColor,
+                              ),
                             ),
                           ],
                         ),
@@ -593,9 +715,12 @@ class _EventManagementDetailsPageState
 
   Widget _participantCard(Map<String, dynamic> r) {
     String v(String k) => r[k]?.toString() ?? '';
-    final displayName = [v('title'), v('firstName'), v('middleName'), v('lastName')]
-        .where((e) => e.isNotEmpty)
-        .join(' ');
+    final displayName = [
+      v('title'),
+      v('firstName'),
+      v('middleName'),
+      v('lastName'),
+    ].where((e) => e.isNotEmpty).join(' ');
     final photo = v('photoUrl');
     final claimed = (r['claimedInclusions'] as List? ?? []).length;
     final line = [
@@ -606,10 +731,21 @@ class _EventManagementDetailsPageState
         ? const SizedBox.shrink()
         : Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: Text.rich(TextSpan(children: [
-              TextSpan(text: '$label: ', style: const TextStyle(color: Colors.black45)),
-              TextSpan(text: value, style: const TextStyle(color: Colors.black87)),
-            ]), style: const TextStyle(fontSize: 12.5)),
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$label: ',
+                    style: const TextStyle(color: const Color(0xFF9CA3AF)),
+                  ),
+                  TextSpan(
+                    text: value,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
+              style: const TextStyle(fontSize: 12.5),
+            ),
           );
     final regId = (r['id'] ?? r['_id']).toString();
     final expanded = _expandedRegs.contains(regId);
@@ -621,111 +757,173 @@ class _EventManagementDetailsPageState
           if (!_expandedRegs.remove(regId)) _expandedRegs.add(regId);
         }),
         child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: const Color(0xFFF1F5F9),
-                  backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
-                  child: photo.isEmpty ? const Icon(Icons.person, color: Colors.black38) : null,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(displayName.isEmpty ? v('name') : displayName,
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
-                      if (line.isNotEmpty)
-                        Text(line, style: const TextStyle(fontSize: 12, color: Colors.black54)),
-                    ],
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: const Color(0xFF1E1E2A),
+                    backgroundImage: photo.isNotEmpty
+                        ? NetworkImage(photo)
+                        : null,
+                    child: photo.isEmpty
+                        ? const Icon(
+                            Icons.person,
+                            color: const Color(0xFF9CA3AF),
+                          )
+                        : null,
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(6)),
-                  child: Text(
-                    v('idNumber'),
-                    style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w800, fontSize: 13),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                AnimatedRotation(
-                  turns: expanded ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 200),
-                  child: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.black45),
-                ),
-              ],
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOut,
-              alignment: Alignment.topCenter,
-              child: !expanded
-                  ? const SizedBox(width: double.infinity)
-                  : Column(
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-            const SizedBox(height: 10),
-            const Divider(height: 1, color: Color(0xFFF1F5F9)),
-            const SizedBox(height: 8),
-            info('Type', v('participantType').isEmpty ? 'Delegate' : v('participantType')),
-            info('Package', v('packageName')),
-            info('Gender', v('gender')),
-            info('Mobile', v('mobileNumber')),
-            info('Email', v('email')),
-            info('ID no.', v('idNumber')),
-            info('Food', v('foodPreference')),
-            info('Payment', [v('paymentMode'), v('utrNumber')].where((e) => e.isNotEmpty).join(' · ')),
-            info('Address', v('address')),
-            if (claimed > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: OutlinedButton.icon(
-                  onPressed: () => _showClaimedInclusions(r),
-                  icon: const Icon(Icons.verified_rounded, size: 16),
-                  label: Text('Claimed: $claimed inclusion${claimed == 1 ? '' : 's'}'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF16A34A),
-                    side: const BorderSide(color: Color(0xFF16A34A)),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  tooltip: 'Edit',
-                  onPressed: () => _openParticipantSheet(r),
-                  icon: const Icon(Icons.edit_outlined, size: 20),
-                ),
-                IconButton(
-                  tooltip: 'QR',
-                  onPressed: () => _openQrView(r),
-                  icon: const Icon(Icons.qr_code_2_rounded, size: 22),
-                ),
-                IconButton(
-                  tooltip: 'Delete',
-                  onPressed: _busy ? null : () => _deleteParticipant(r),
-                  icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.errorColor),
-                ),
-              ],
-            ),
+                        Text(
+                          displayName.isEmpty ? v('name') : displayName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14.5,
+                          ),
+                        ),
+                        if (line.isNotEmpty)
+                          Text(
+                            line,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: const Color(0xFF9CA3AF),
+                            ),
+                          ),
                       ],
                     ),
-            ),
-          ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E2A),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      v('idNumber'),
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: const Color(0xFF9CA3AF),
+                    ),
+                  ),
+                ],
+              ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                alignment: Alignment.topCenter,
+                child: !expanded
+                    ? const SizedBox(width: double.infinity)
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
+                          const Divider(height: 1, color: Color(0xFF1E1E2A)),
+                          const SizedBox(height: 8),
+                          info(
+                            'Type',
+                            v('participantType').isEmpty
+                                ? 'Delegate'
+                                : v('participantType'),
+                          ),
+                          info('Package', v('packageName')),
+                          info('Gender', v('gender')),
+                          info('Mobile', v('mobileNumber')),
+                          info('Email', v('email')),
+                          info('ID no.', v('idNumber')),
+                          info('Food', v('foodPreference')),
+                          info(
+                            'Payment',
+                            [
+                              v('paymentMode'),
+                              v('utrNumber'),
+                            ].where((e) => e.isNotEmpty).join(' · '),
+                          ),
+                          info('Address', v('address')),
+                          if (claimed > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: OutlinedButton.icon(
+                                onPressed: () => _showClaimedInclusions(r),
+                                icon: const Icon(
+                                  Icons.verified_rounded,
+                                  size: 16,
+                                ),
+                                label: Text(
+                                  'Claimed: $claimed inclusion${claimed == 1 ? '' : 's'}',
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF16A34A),
+                                  side: const BorderSide(
+                                    color: Color(0xFF16A34A),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              IconButton(
+                                tooltip: 'Edit',
+                                onPressed: () => _openParticipantSheet(r),
+                                icon: const Icon(Icons.edit_outlined, size: 20),
+                              ),
+                              IconButton(
+                                tooltip: 'QR',
+                                onPressed: () => _openQrView(r),
+                                icon: const Icon(
+                                  Icons.qr_code_2_rounded,
+                                  size: 22,
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Delete',
+                                onPressed: _busy
+                                    ? null
+                                    : () => _deleteParticipant(r),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  size: 20,
+                                  color: AppTheme.errorColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -737,16 +935,28 @@ class _EventManagementDetailsPageState
     final shown = _filteredRegistrations;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFF0A0A12),
       appBar: AppBar(
         title: Text(_event['title']?.toString() ?? 'Event'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: const Color(0xFF0A0A12),
         foregroundColor: Colors.white,
         actions: [
-          IconButton(tooltip: 'Edit event', onPressed: _busy ? null : _editEvent, icon: const Icon(Icons.edit_outlined)),
+          IconButton(
+            tooltip: 'Edit event',
+            onPressed: _busy ? null : _editEvent,
+            icon: const Icon(Icons.edit_outlined),
+          ),
           if (!_isCancelled)
-            IconButton(tooltip: 'Cancel event', onPressed: _busy ? null : _cancelEvent, icon: const Icon(Icons.cancel_outlined)),
-          IconButton(tooltip: 'Delete event', onPressed: _busy ? null : _deleteEvent, icon: const Icon(Icons.delete_outline)),
+            IconButton(
+              tooltip: 'Cancel event',
+              onPressed: _busy ? null : _cancelEvent,
+              icon: const Icon(Icons.cancel_outlined),
+            ),
+          IconButton(
+            tooltip: 'Delete event',
+            onPressed: _busy ? null : _deleteEvent,
+            icon: const Icon(Icons.delete_outline),
+          ),
         ],
       ),
       body: RefreshIndicator(
@@ -757,12 +967,19 @@ class _EventManagementDetailsPageState
             if (_message != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Text(_message!,
-                    style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.w600)),
+                child: Text(
+                  _message!,
+                  style: const TextStyle(
+                    color: const Color(0xFF3B82F6),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             Card(
               clipBehavior: Clip.antiAlias,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -782,58 +999,90 @@ class _EventManagementDetailsPageState
                         Row(
                           children: [
                             Expanded(
-                              child: Text(_event['title']?.toString() ?? 'Event',
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                              child: Text(
+                                _event['title']?.toString() ?? 'Event',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                             ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _isCancelled ? const Color(0xFFFEE2E2) : const Color(0xFFDCFCE7),
-                            borderRadius: BorderRadius.circular(20),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _isCancelled
+                                    ? const Color(0x26EF4444)
+                                    : const Color(0x2622C55E),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                (_event['status'] ?? 'Active').toString(),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: _isCancelled
+                                      ? const Color(0xFFFCA5A5)
+                                      : const Color(0xFF86EFAC),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if ((_event['venue']?.toString() ?? '').isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            '📍 ${_event['venue']}',
+                            style: const TextStyle(
+                              color: const Color(0xFF9CA3AF),
+                            ),
                           ),
-                          child: Text(
-                            (_event['status'] ?? 'Active').toString(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: _isCancelled ? const Color(0xFF991B1B) : const Color(0xFF166534),
-                            ),
+                        ],
+                        if (start != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            '${_dateFmt.format(start)} · ${_timeFmt.format(start)}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                        if (end != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'to ${_dateFmt.format(end)} · ${_timeFmt.format(end)}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                        const SizedBox(height: 6),
+                        Text(
+                          '${_event['bookedCount'] ?? 0} registered',
+                          style: const TextStyle(
+                            color: const Color(0xFF9CA3AF),
                           ),
                         ),
+                        if ((_event['description']?.toString() ?? '')
+                            .isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(_event['description'].toString()),
+                        ],
                       ],
                     ),
-                    if ((_event['venue']?.toString() ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text('📍 ${_event['venue']}', style: const TextStyle(color: Colors.black54)),
-                    ],
-                    if (start != null) ...[
-                      const SizedBox(height: 6),
-                      Text('${_dateFmt.format(start)} · ${_timeFmt.format(start)}',
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                    ],
-                    if (end != null) ...[
-                      const SizedBox(height: 2),
-                      Text('to ${_dateFmt.format(end)} · ${_timeFmt.format(end)}',
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                    ],
-                    const SizedBox(height: 6),
-                    Text('${_event['bookedCount'] ?? 0} registered', style: const TextStyle(color: Colors.black54)),
-                    if ((_event['description']?.toString() ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Text(_event['description'].toString()),
-                    ],
-                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
             const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
-                  child: Text('Packages (${_packages.length})',
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                  child: Text(
+                    'Packages (${_packages.length})',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
                 TextButton.icon(
                   onPressed: _busy ? null : () => _openPackageSheet(),
@@ -846,7 +1095,10 @@ class _EventManagementDetailsPageState
             if (_packages.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text('No packages added yet.', style: TextStyle(color: Colors.black54)),
+                child: Text(
+                  'No packages added yet.',
+                  style: TextStyle(color: const Color(0xFF9CA3AF)),
+                ),
               )
             else
               ..._packages.map(_packageCard),
@@ -858,7 +1110,10 @@ class _EventManagementDetailsPageState
                     _search.isEmpty
                         ? 'Participants (${_registrations.length})'
                         : 'Participants (${shown.length} of ${_registrations.length})',
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
                 TextButton.icon(
@@ -886,8 +1141,10 @@ class _EventManagementDetailsPageState
                       ),
                 isDense: true,
                 filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                fillColor: const Color(0xFF1E1E2A),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -903,7 +1160,7 @@ class _EventManagementDetailsPageState
                   _registrations.isEmpty
                       ? 'No participants registered for this event yet.'
                       : 'No participants match your search.',
-                  style: const TextStyle(color: Colors.black54),
+                  style: const TextStyle(color: const Color(0xFF9CA3AF)),
                 ),
               )
             else
@@ -932,7 +1189,9 @@ class _ParticipantQrSheetState extends State<_ParticipantQrSheet> {
     try {
       final boundary =
           _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 1181 / boundary.size.width);
+      final image = await boundary.toImage(
+        pixelRatio: 1181 / boundary.size.width,
+      );
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       return byteData?.buffer.asUint8List();
     } catch (_) {
@@ -946,18 +1205,20 @@ class _ParticipantQrSheetState extends State<_ParticipantQrSheet> {
     try {
       final tempDir = await getTemporaryDirectory();
       final file = File(
-          '${tempDir.path}/badge_${widget.registration['idNumber'] ?? 'qr'}.png');
+        '${tempDir.path}/badge_${widget.registration['idNumber'] ?? 'qr'}.png',
+      );
       await file.writeAsBytes(bytes);
       await Gal.putImage(file.path);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Badge saved to gallery')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Badge saved to gallery')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error saving QR code: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving QR code: $e')));
       }
     }
   }
@@ -967,14 +1228,20 @@ class _ParticipantQrSheetState extends State<_ParticipantQrSheet> {
     final reg = widget.registration;
     final qrData = reg['qrCode']?.toString() ?? '';
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.94),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.94,
+      ),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
-            20, 14, 20, 20 + MediaQuery.of(context).padding.bottom),
+          20,
+          14,
+          20,
+          20 + MediaQuery.of(context).padding.bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1002,7 +1269,7 @@ class _ParticipantQrSheetState extends State<_ParticipantQrSheet> {
                 icon: const Icon(Icons.download_rounded, size: 18),
                 label: const Text('Download badge'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: const Color(0xFF3B82F6),
                   foregroundColor: Colors.white,
                 ),
               ),

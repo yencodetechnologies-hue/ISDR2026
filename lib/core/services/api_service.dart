@@ -2474,6 +2474,17 @@ class ApiService {
             data: {'option': option},
           ));
 
+  /// Participant's one-time 1–5 star rating (and optional comment) of a session.
+  Future<Map<String, dynamic>> rateSession(
+    String scheduleId, {
+    required int stars,
+    String comment = '',
+  }) =>
+      _sessionContentCall(() => _dio.post(
+            '${ApiConfig.sessionContent(scheduleId)}/rating',
+            data: {'stars': stars, 'comment': comment},
+          ));
+
   Future<Map<String, dynamic>> createSessionQuestion(
     String scheduleId,
     String question,
@@ -2503,29 +2514,48 @@ class ApiService {
             data: {'text': text},
           ));
 
+  // ---- Speakers (added on the management Speakers page) ----
+
+  Future<Map<String, dynamic>> listSpeakers() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.speakers));
+
+  Future<Map<String, dynamic>> createSpeaker({
+    required String name,
+    required String mobileNumber,
+    required String password,
+    String? photoPath,
+  }) =>
+      _sessionContentCall(() async => _dio.post(
+            ApiConfig.speakers,
+            data: FormData.fromMap({
+              'name': name,
+              'mobileNumber': mobileNumber,
+              'password': password,
+              if (photoPath != null)
+                'photo':
+                    await MultipartFile.fromFile(photoPath, filename: 'speaker.jpg'),
+            }),
+          ));
+
+  Future<Map<String, dynamic>> deleteSpeaker(String speakerId) =>
+      _sessionContentCall(() => _dio.delete('${ApiConfig.speakers}/$speakerId'));
+
   Future<Map<String, dynamic>> createEventSchedule({
     required String eventId,
-    required String speakerName,
-    required String speakerMobile,
-    required String speakerPassword,
+    required String speakerId, // picked from the Speakers list
     required String scheduleName,
     String hall = '',
     // One entry per date: {date: yyyy-MM-dd, fromTime: HH:mm, toTime: HH:mm}
     required List<Map<String, String>> slots,
     String description = '',
-    String? photoPath,
   }) async {
     try {
       final formData = FormData.fromMap({
-        'speakerName': speakerName,
-        'speakerMobile': speakerMobile,
-        'speakerPassword': speakerPassword,
+        'speakerId': speakerId,
         'scheduleName': scheduleName,
         'hall': hall,
         'slots': jsonEncode(slots),
         'description': description,
-        if (photoPath != null)
-          'photo': await MultipartFile.fromFile(photoPath, filename: 'speaker.jpg'),
       });
       final response = await _dio.post(
         ApiConfig.managedEventSchedules(eventId),

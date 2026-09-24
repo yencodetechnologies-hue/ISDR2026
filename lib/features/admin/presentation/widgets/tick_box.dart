@@ -21,7 +21,7 @@ class TickBox extends StatelessWidget {
         onChanged: onChanged == null ? null : (v) => onChanged!(v ?? false),
         checkColor: Colors.white,
         fillColor: WidgetStateProperty.resolveWith(
-          (states) => value ? green : const Color(0xFFFEE2E2),
+          (states) => value ? green : const Color(0x26EF4444),
         ),
         side: BorderSide(color: color, width: 1.6),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

@@ -91,8 +91,9 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
     setState(() {
       _loadingRegs = false;
       _registrations = List<Map<String, dynamic>>.from(
-        (res['registrations'] as List?)
-                ?.map((e) => Map<String, dynamic>.from(e as Map)) ??
+        (res['registrations'] as List?)?.map(
+              (e) => Map<String, dynamic>.from(e as Map),
+            ) ??
             [],
       );
     });
@@ -118,7 +119,7 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF14141F),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -150,19 +151,22 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
               const Text(
                 'Users scan this to open the register form and get their ticket QR.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54),
+                style: TextStyle(color: const Color(0xFF9CA3AF)),
               ),
               const SizedBox(height: 20),
               QrImageView(
                 data: _registerUrl,
                 size: 220,
-                backgroundColor: Colors.white,
+                backgroundColor: const Color(0xFF14141F),
               ),
               const SizedBox(height: 16),
               SelectableText(
                 _registerUrl,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: const Color(0xFF9CA3AF),
+                ),
               ),
               const SizedBox(height: 12),
               SizedBox(
@@ -172,7 +176,7 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
                   icon: const Icon(Icons.share, size: 18),
                   label: const Text('Share'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: const Color(0xFF3B82F6),
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -239,14 +243,18 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
   String _answersSummary(Map<String, dynamic> r) {
     final answers = r['answers'];
     if (answers is! List || answers.isEmpty) return '';
-    return answers.map((a) {
-      if (a is! Map) return '';
-      final label = a['label']?.toString() ?? '';
-      final value = a['value'];
-      final display =
-          value is List ? value.join(', ') : (value?.toString() ?? '');
-      return '$label: $display';
-    }).where((s) => s.isNotEmpty).join(' · ');
+    return answers
+        .map((a) {
+          if (a is! Map) return '';
+          final label = a['label']?.toString() ?? '';
+          final value = a['value'];
+          final display = value is List
+              ? value.join(', ')
+              : (value?.toString() ?? '');
+          return '$label: $display';
+        })
+        .where((s) => s.isNotEmpty)
+        .join(' · ');
   }
 
   @override
@@ -259,10 +267,10 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
     final filteredRegs = _filteredRegistrations;
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFF0A0A12),
       appBar: AppBar(
         title: Text(_event['title']?.toString() ?? 'Event'),
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: const Color(0xFF0A0A12),
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -292,7 +300,9 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
           children: [
             Card(
               clipBehavior: Clip.antiAlias,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -316,37 +326,42 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                    const SizedBox(height: 8),
-                    if ((_event['venue']?.toString() ?? '').isNotEmpty)
-                      Text(
-                        _event['venue'].toString(),
-                        style: const TextStyle(color: Colors.black54),
-                      ),
-                    if (date != null) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        '${_dateFmt.format(date)} · ${_timeFmt.format(date)}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    Text(
-                      '${_event['bookedCount'] ?? 0}/${_event['totalSlots'] ?? 0} booked'
-                      ' · ${_event['status'] ?? ''}'
-                      ' · ${isActive ? 'Active' : 'Inactive'}'
-                      '${qCount > 0 ? ' · $qCount questions' : ''}',
-                      style: const TextStyle(color: Colors.black54),
+                        const SizedBox(height: 8),
+                        if ((_event['venue']?.toString() ?? '').isNotEmpty)
+                          Text(
+                            _event['venue'].toString(),
+                            style: const TextStyle(
+                              color: const Color(0xFF9CA3AF),
+                            ),
+                          ),
+                        if (date != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            '${_dateFmt.format(date)} · ${_timeFmt.format(date)}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        Text(
+                          '${_event['bookedCount'] ?? 0}/${_event['totalSlots'] ?? 0} booked'
+                          ' · ${_event['status'] ?? ''}'
+                          ' · ${isActive ? 'Active' : 'Inactive'}'
+                          '${qCount > 0 ? ' · $qCount questions' : ''}',
+                          style: const TextStyle(
+                            color: const Color(0xFF9CA3AF),
+                          ),
+                        ),
+                        if ((_event['description']?.toString() ?? '')
+                            .isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(_event['description'].toString()),
+                        ],
+                      ],
                     ),
-                    if ((_event['description']?.toString() ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Text(_event['description'].toString()),
-                    ],
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
             const SizedBox(height: 12),
             Card(
               child: Padding(
@@ -366,7 +381,10 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
                       isActive
                           ? 'Users open this link, fill the form, and get a ticket QR for security.'
                           : 'Registration link is disabled while this event is inactive.',
-                      style: const TextStyle(fontSize: 12, color: Colors.black54),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: const Color(0xFF9CA3AF),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     if (isActive)
@@ -377,19 +395,23 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
                     else
                       const Text(
                         'Link and QR are unavailable until the event is active again.',
-                        style: TextStyle(fontSize: 13, color: Colors.black45),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: const Color(0xFF9CA3AF),
+                        ),
                       ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed:
-                                _canShareRegistration ? _shareLink : null,
+                            onPressed: _canShareRegistration
+                                ? _shareLink
+                                : null,
                             icon: const Icon(Icons.share, size: 18),
                             label: const Text('Share'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryColor,
+                              backgroundColor: const Color(0xFF3B82F6),
                               foregroundColor: Colors.white,
                             ),
                           ),
@@ -403,7 +425,7 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
                             icon: const Icon(Icons.qr_code_2, size: 18),
                             label: const Text('View QR'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryColor,
+                              backgroundColor: const Color(0xFF3B82F6),
                               foregroundColor: Colors.white,
                             ),
                           ),
@@ -430,11 +452,11 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
                     hintText: 'Search by name, mobile, ticket...',
                     hintStyle: TextStyle(
                       fontSize: 13,
-                      color: AppTheme.textColor.withOpacity(0.5),
+                      color: Colors.white.withOpacity(0.5),
                     ),
                     prefixIcon: Icon(
                       Icons.search,
-                      color: AppTheme.primaryColor.withOpacity(0.7),
+                      color: const Color(0xFF3B82F6).withOpacity(0.7),
                     ),
                     suffixIcon: _regSearchQuery.isEmpty
                         ? null
@@ -446,23 +468,23 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
                             },
                           ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: const Color(0xFF1E1E2A),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 10,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                      borderSide: BorderSide(color: const Color(0x33FFFFFF)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                      borderSide: BorderSide(color: const Color(0x33FFFFFF)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(
-                        color: AppTheme.primaryColor,
+                        color: const Color(0xFF3B82F6),
                       ),
                     ),
                   ),
@@ -473,12 +495,12 @@ class _ManagedEventDetailsPageState extends State<ManagedEventDetailsPage> {
             else if (_registrations.isEmpty)
               const Text(
                 'No registrations yet.',
-                style: TextStyle(color: Colors.black54),
+                style: TextStyle(color: const Color(0xFF9CA3AF)),
               )
             else if (filteredRegs.isEmpty)
               const Text(
                 'No registrations match your search.',
-                style: TextStyle(color: Colors.black54),
+                style: TextStyle(color: const Color(0xFF9CA3AF)),
               )
             else
               ...filteredRegs.map((r) {

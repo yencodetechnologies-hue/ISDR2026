@@ -1,41 +1,14 @@
 const ManagedEvent = require('../models/ManagedEvent');
 const EventSchedule = require('../models/EventSchedule');
-const Apartment = require('../models/Apartment');
-const ManagementUser = require('../models/ManagementUser');
-const EventStaff = require('../models/EventStaff');
 const EventRegistration = require('../models/EventRegistration');
-const { uploadToCloudinary } = require('../middleware/upload');
+const Speaker = require('../models/Speaker');
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
-
-/** Last 10 digits of a phone-like string, or '' if there are fewer than 10 digits. */
-function normalizeMobile10(raw) {
-  const digits = String(raw ?? '').replace(/\D/g, '');
-  return digits.length >= 10 ? digits.slice(-10) : '';
-}
-
-/**
- * Login tries management, staff and participant accounts before speakers, so a
- * speaker mobile must not already belong to any of those (or another schedule).
- */
-async function speakerMobileTaken(mobile) {
-  const [schedule, apartment, mUser, staff, participant] = await Promise.all([
-    EventSchedule.exists({ speakerMobile: mobile }),
-    Apartment.exists({ contactPhone: mobile }),
-    ManagementUser.exists({ mobileNumber: mobile }),
-    EventStaff.exists({ mobileNumber: mobile }),
-    EventRegistration.exists({ mobileNumber: mobile }),
-  ]);
-  if (schedule) return 'This mobile number is already used by another schedule';
-  if (apartment || mUser || staff || participant) {
-    return 'This mobile number already belongs to another account';
-  }
-  return null;
-}
 
 const toDto = (s) => ({
   id: s._id.toString(),
   eventId: s.eventId.toString(),
+  speakerId: s.speakerId ? s.speakerId.toString() : null,
   speakerName: s.speakerName,
   speakerPhoto: s.speakerPhoto || '',
   scheduleName: s.scheduleName,
@@ -94,27 +67,21 @@ function readSlots(body) {
   }
 }
 
-// POST /api/managed-events/:id/schedules  (multipart, optional `photo`)
+// POST /api/managed-events/:id/schedules  { speakerId, scheduleName, hall, slots, description }
 const createSchedule = async (req, res) => {
   try {
     const event = await loadOwnedEvent(req, res);
     if (!event) return;
 
-    const speakerName = String(req.body.speakerName || '').trim();
+    const speakerId = String(req.body.speakerId || '').trim();
     const scheduleName = String(req.body.scheduleName || '').trim();
     const hall = String(req.body.hall || '').trim();
     const description = String(req.body.description || '').trim();
-    const speakerMobile = normalizeMobile10(req.body.speakerMobile);
-    const speakerPassword = String(req.body.speakerPassword || '');
     const rawSlots = readSlots(req.body);
 
-    if (!speakerName) return res.status(400).json({ success: false, error: 'Speaker name is required' });
-    if (!speakerMobile) {
-      return res.status(400).json({ success: false, error: 'Enter a valid 10-digit speaker mobile number' });
-    }
-    if (speakerPassword.trim().length < 6) {
-      return res.status(400).json({ success: false, error: 'Speaker password must be at least 6 characters' });
-    }
+    if (!speakerId) return res.status(400).json({ success: false, error: 'Select a speaker' });
+    const speaker = await Speaker.findOne({ _id: speakerId, apartmentId: event.apartmentId }).catch(() => null);
+    if (!speaker) return res.status(400).json({ success: false, error: 'Speaker not found' });
     if (!scheduleName) return res.status(400).json({ success: false, error: 'Schedule name is required' });
     if (rawSlots.length === 0) return res.status(400).json({ success: false, error: 'Select at least one date' });
 
@@ -147,23 +114,15 @@ const createSchedule = async (req, res) => {
       }
       slots.push({ date, fromTime, toTime });
     }
-    const mobileClash = await speakerMobileTaken(speakerMobile);
-    if (mobileClash) return res.status(400).json({ success: false, error: mobileClash });
 
-    let speakerPhoto = '';
-    if (req.file) {
-      speakerPhoto = await uploadToCloudinary(req.file.buffer, 'isdr/speakers');
-    }
-
-    // One row per date; they share the speaker's mobile + password, so one login covers them all.
+    // One row per date, all linked to the speaker (whose login covers them all).
     const created = await EventSchedule.create(
       slots.map((slot) => ({
         eventId: event._id,
         apartmentId: event.apartmentId,
-        speakerName,
-        speakerPhoto,
-        speakerMobile,
-        speakerPassword,
+        speakerId: speaker._id,
+        speakerName: speaker.name,
+        speakerPhoto: speaker.photo || '',
         scheduleName,
         hall,
         date: slot.date,
@@ -203,19 +162,19 @@ const deleteSchedule = async (req, res) => {
 };
 
 // GET /api/managed-events/my-speaker-sessions  (speaker login)
-// Every schedule row sharing the logged-in speaker's mobile, plus the event.
+// Every schedule the logged-in speaker was picked for, plus the event.
 const mySpeakerSessions = async (req, res) => {
   try {
     if (req.userType !== 'speaker') {
       return res.status(403).json({ success: false, error: 'Only speakers can view this' });
     }
-    const own = await EventSchedule.findById(req.userId).select('eventId speakerMobile');
-    if (!own) return res.status(404).json({ success: false, error: 'Speaker not found' });
-    const sessions = await EventSchedule.find({ speakerMobile: own.speakerMobile }).sort({
+    const sessions = await EventSchedule.find({ speakerId: req.userId }).sort({
       date: 1,
       fromTime: 1,
     });
-    const event = await ManagedEvent.findById(own.eventId).select('title venue');
+    const event = sessions.length
+      ? await ManagedEvent.findById(sessions[0].eventId).select('title venue')
+      : null;
     res.json({
       success: true,
       sessions: sessions.map(toDto),

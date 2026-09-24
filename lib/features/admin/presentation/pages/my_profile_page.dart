@@ -69,8 +69,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
       return;
     }
     setState(() => _savingPassword = true);
-    final result = await ApiService()
-        .changeManagementPassword(currentPassword: current, newPassword: next);
+    final result = await ApiService().changeManagementPassword(
+      currentPassword: current,
+      newPassword: next,
+    );
     if (!mounted) return;
     setState(() => _savingPassword = false);
     if (result['success'] == true) {
@@ -96,9 +98,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
     setState(() => _uploading = false);
     if (result['success'] == true) {
       context.read<AuthBloc>().add(RefreshCurrentUserEvent());
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile photo updated')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile photo updated')));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result['error']?.toString() ?? 'Upload failed')),
@@ -124,9 +126,13 @@ class _MyProfilePageState extends State<MyProfilePage> {
     final isParticipant = user?.userType == UserType.participant;
 
     return Scaffold(
-      backgroundColor: isParticipant ? const Color(0xFF0F172A) : AppTheme.backgroundColor,
+      backgroundColor: isParticipant
+          ? const Color(0xFF0F172A)
+          : const Color(0xFF0A0A12),
       appBar: AppBar(
-        backgroundColor: isParticipant ? const Color(0xFF0F172A) : AppTheme.primaryColor,
+        backgroundColor: isParticipant
+            ? const Color(0xFF0F172A)
+            : const Color(0xFF3B82F6),
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
@@ -143,26 +149,38 @@ class _MyProfilePageState extends State<MyProfilePage> {
       body: user == null
           ? const Center(child: Text('Not logged in'))
           : isParticipant
-              ? _buildParticipantBadgeView(user)
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-                  children: [
-                    _idCard(user),
-                    const SizedBox(height: 12),
-                    _tile(Icons.phone_rounded, 'Mobile', user.mobileNumber,
-                        AppTheme.primaryColor),
-                    const SizedBox(height: 8),
-                    _tile(Icons.email_rounded, 'Email address', user.email,
-                        AppTheme.primaryColor),
-                    if ((user.apartmentName ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      _tile(Icons.event_rounded, 'Event', user.apartmentName!,
-                          AppTheme.primaryColor),
-                    ],
-                    const SizedBox(height: 12),
-                    _passwordCard(),
-                  ],
+          ? _buildParticipantBadgeView(user)
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+              children: [
+                _idCard(user),
+                const SizedBox(height: 12),
+                _tile(
+                  Icons.phone_rounded,
+                  'Mobile',
+                  user.mobileNumber,
+                  const Color(0xFF3B82F6),
                 ),
+                const SizedBox(height: 8),
+                _tile(
+                  Icons.email_rounded,
+                  'Email address',
+                  user.email,
+                  const Color(0xFF3B82F6),
+                ),
+                if ((user.apartmentName ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _tile(
+                    Icons.event_rounded,
+                    'Event',
+                    user.apartmentName!,
+                    const Color(0xFF3B82F6),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                _passwordCard(),
+              ],
+            ),
     );
   }
 
@@ -184,7 +202,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
-          16, 10, 16, 20 + MediaQuery.of(context).padding.bottom),
+        16,
+        10,
+        16,
+        20 + MediaQuery.of(context).padding.bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -202,8 +224,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.info_outline_rounded,
-                    size: 16, color: Colors.white70),
+                const Icon(
+                  Icons.info_outline_rounded,
+                  size: 16,
+                  color: Colors.white70,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'ID: $idNumber   •   ${user.mobileNumber}',
@@ -224,40 +249,43 @@ class _MyProfilePageState extends State<MyProfilePage> {
   InputDecoration _pwDecoration(String label, IconData icon, {Widget? suffix}) {
     return InputDecoration(
       hintText: label,
-      hintStyle: const TextStyle(color: Colors.black45, fontSize: 14.5),
-      prefixIcon: Icon(icon, color: AppTheme.primaryColor, size: 20),
+      hintStyle: const TextStyle(
+        color: const Color(0xFF9CA3AF),
+        fontSize: 14.5,
+      ),
+      prefixIcon: Icon(icon, color: const Color(0xFF3B82F6), size: 20),
       suffixIcon: suffix,
       filled: true,
-      fillColor: AppTheme.backgroundColor,
+      fillColor: const Color(0xFF0A0A12),
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(vertical: 12),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: AppTheme.primaryColor, width: 1.4),
+        borderSide: BorderSide(color: const Color(0xFF3B82F6), width: 1.4),
       ),
     );
   }
 
   Widget _eye(bool obscured, VoidCallback onTap) => IconButton(
-        onPressed: onTap,
-        icon: Icon(
-          obscured ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-          color: const Color(0xFF8C8C90),
-          size: 20,
-        ),
-      );
+    onPressed: onTap,
+    icon: Icon(
+      obscured ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+      color: const Color(0xFF9CA3AF),
+      size: 20,
+    ),
+  );
 
   Widget _passwordCard() {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -275,10 +303,14 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.09),
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.09),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.lock_outline_rounded, color: AppTheme.primaryColor, size: 20),
+                child: Icon(
+                  Icons.lock_outline_rounded,
+                  color: const Color(0xFF3B82F6),
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 14),
               const Expanded(
@@ -287,14 +319,20 @@ class _MyProfilePageState extends State<MyProfilePage> {
                   children: [
                     Text(
                       'Change Password',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     SizedBox(height: 2),
                     Text(
                       'Enter current password to set a new one',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11.5, color: Colors.black54),
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: const Color(0xFF9CA3AF),
+                      ),
                     ),
                   ],
                 ),
@@ -309,8 +347,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
             decoration: _pwDecoration(
               'Current password',
               Icons.lock_outline_rounded,
-              suffix: _eye(_obscureCurrent,
-                  () => setState(() => _obscureCurrent = !_obscureCurrent)),
+              suffix: _eye(
+                _obscureCurrent,
+                () => setState(() => _obscureCurrent = !_obscureCurrent),
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -322,7 +362,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
               'New password',
               Icons.lock_rounded,
               suffix: _eye(
-                  _obscureNew, () => setState(() => _obscureNew = !_obscureNew)),
+                _obscureNew,
+                () => setState(() => _obscureNew = !_obscureNew),
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -330,7 +372,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
             controller: _confirmPw,
             obscureText: _obscureNew,
             textInputAction: TextInputAction.done,
-            decoration: _pwDecoration('Confirm new password', Icons.lock_rounded),
+            decoration: _pwDecoration(
+              'Confirm new password',
+              Icons.lock_rounded,
+            ),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -339,7 +384,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
             child: ElevatedButton(
               onPressed: _savingPassword ? null : _changePassword,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: const Color(0xFF3B82F6),
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.zero,
                 minimumSize: const Size.fromHeight(44),
@@ -352,10 +397,17 @@ class _MyProfilePageState extends State<MyProfilePage> {
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2.5, color: Colors.white),
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
                     )
-                  : const Text('Update Password',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  : const Text(
+                      'Update Password',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -369,11 +421,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor,
+        color: const Color(0xFF3B82F6),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withValues(alpha: 0.25),
+            color: const Color(0xFF3B82F6).withValues(alpha: 0.25),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -414,7 +466,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.black54,
+                        color: const Color(0xFF9CA3AF),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Center(
@@ -435,14 +487,17 @@ class _MyProfilePageState extends State<MyProfilePage> {
                   child: Container(
                     padding: const EdgeInsets.all(5),
                     decoration: const BoxDecoration(
-                      color: Colors.white,
+                      color: const Color(0xFF14141F),
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(10),
                         bottomRight: Radius.circular(16),
                       ),
                     ),
-                    child: const Icon(Icons.camera_alt_rounded,
-                        size: 13, color: AppTheme.primaryColor),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      size: 13,
+                      color: const Color(0xFF3B82F6),
+                    ),
                   ),
                 ),
               ],
@@ -504,14 +559,17 @@ class _MyProfilePageState extends State<MyProfilePage> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(fontSize: 11, color: Colors.black54),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: const Color(0xFF9CA3AF),
+                  ),
                 ),
                 Text(
                   value.isEmpty ? '-' : value,
                   style: const TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.primaryColor,
+                    color: const Color(0xFF3B82F6),
                   ),
                 ),
               ],

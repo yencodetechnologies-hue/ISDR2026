@@ -50,9 +50,15 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
     _propertyType = widget.apartment.propertyType;
     _nameController = TextEditingController(text: widget.apartment.name);
     _emailController = TextEditingController(text: widget.apartment.email);
-    _mobileController = TextEditingController(text: widget.apartment.contactPhone);
-    _wardenNameController = TextEditingController(text: widget.apartment.wardenName);
-    _wardenContactController = TextEditingController(text: widget.apartment.wardenContact);
+    _mobileController = TextEditingController(
+      text: widget.apartment.contactPhone,
+    );
+    _wardenNameController = TextEditingController(
+      text: widget.apartment.wardenName,
+    );
+    _wardenContactController = TextEditingController(
+      text: widget.apartment.wardenContact,
+    );
     _currentPasswordController = TextEditingController();
     _newPasswordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
@@ -139,7 +145,8 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
   String? _validateEmail(String? v) {
     final s = (v ?? '').trim();
     if (s.isEmpty) return 'Email ID is required';
-    if (!RegExp(r'^\S+@\S+\.\S+$').hasMatch(s)) return 'Enter a valid email address';
+    if (!RegExp(r'^\S+@\S+\.\S+$').hasMatch(s))
+      return 'Enter a valid email address';
     return null;
   }
 
@@ -151,7 +158,9 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
     final confirmPassword = _confirmPasswordController.text.trim();
     final currentPassword = _currentPasswordController.text;
     final changingPassword =
-        newPassword.isNotEmpty || confirmPassword.isNotEmpty || currentPassword.isNotEmpty;
+        newPassword.isNotEmpty ||
+        confirmPassword.isNotEmpty ||
+        currentPassword.isNotEmpty;
 
     if (changingPassword) {
       if (currentPassword.isEmpty) {
@@ -172,7 +181,8 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
 
     final authState = context.read<AuthBloc>().state;
     final isManagementLogin =
-        authState is AuthAuthenticated && authState.user.userType == UserType.apartment;
+        authState is AuthAuthenticated &&
+        authState.user.userType == UserType.apartment;
 
     final Map<String, dynamic> result;
     if (isManagementLogin) {
@@ -213,7 +223,7 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
                   ? 'Profile and password updated successfully'
                   : 'Profile updated successfully',
             ),
-            backgroundColor: const Color(0xFF13275D),
+            backgroundColor: const Color(0xFF3B82F6),
           ),
         );
         Navigator.pop(context, true);
@@ -221,17 +231,19 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
       return;
     }
 
-    setState(() => _error = result['error'] as String? ?? 'Failed to update profile');
+    setState(
+      () => _error = result['error'] as String? ?? 'Failed to update profile',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAF9),
-      appBar: buildBrandGradientAppBar(title: Text(_pageTitle)),
+      backgroundColor: const Color(0xFF0A0A12),
+      appBar: buildDarkAppBar(title: Text(_pageTitle)),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF13275D)),
+              child: CircularProgressIndicator(color: Color(0xFF3B82F6)),
             )
           : SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
@@ -249,9 +261,9 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
                         message: _isHostel
                             ? 'Only the hostel owner can edit property details.'
                             : 'Only the property owner can edit these details.',
-                        bgColor: const Color(0xFF13275D).withOpacity(0.08),
-                        iconColor: const Color(0xFF13275D),
-                        textColor: const Color(0xFF13275D),
+                        bgColor: const Color(0xFF3B82F6).withOpacity(0.08),
+                        iconColor: const Color(0xFF3B82F6),
+                        textColor: const Color(0xFF3B82F6),
                       ),
                       const SizedBox(height: 14),
                     ],
@@ -259,9 +271,9 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
                       _buildInfoBanner(
                         icon: Icons.error_outline_rounded,
                         message: _error!,
-                        bgColor: const Color(0xFFFEF2F2),
+                        bgColor: const Color(0x26EF4444),
                         iconColor: const Color(0xFFDC2626),
-                        textColor: const Color(0xFF991B1B),
+                        textColor: const Color(0xFFFCA5A5),
                       ),
                       const SizedBox(height: 14),
                     ],
@@ -275,7 +287,8 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
                           icon: _propertyIcon,
                           textCapitalization: TextCapitalization.words,
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty) return 'Name is required';
+                            if (v == null || v.trim().isEmpty)
+                              return 'Name is required';
                             return null;
                           },
                         ),
@@ -295,8 +308,10 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
                           helperText: _isHostel ? 'Owner login mobile' : null,
                           keyboardType: TextInputType.phone,
                           maxLength: 10,
-                          validator: (v) =>
-                              _validatePhone10(v, emptyMsg: 'Mobile number is required'),
+                          validator: (v) => _validatePhone10(
+                            v,
+                            emptyMsg: 'Mobile number is required',
+                          ),
                         ),
                       ],
                     ),
@@ -361,13 +376,14 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
                             obscureText: _obscureCurrent,
                             textInputAction: TextInputAction.next,
                             suffixIcon: IconButton(
-                              onPressed: () =>
-                                  setState(() => _obscureCurrent = !_obscureCurrent),
+                              onPressed: () => setState(
+                                () => _obscureCurrent = !_obscureCurrent,
+                              ),
                               icon: Icon(
                                 _obscureCurrent
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined,
-                                color: const Color(0xFF8C8C90),
+                                color: const Color(0xFF9CA3AF),
                                 size: 20,
                               ),
                             ),
@@ -386,7 +402,7 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
                                 _obscureNew
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined,
-                                color: const Color(0xFF8C8C90),
+                                color: const Color(0xFF9CA3AF),
                                 size: 20,
                               ),
                             ),
@@ -480,11 +496,7 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
                       width: 1,
                     ),
                   ),
-                  child: Icon(
-                    _propertyIcon,
-                    color: Colors.white,
-                    size: 28,
-                  ),
+                  child: Icon(_propertyIcon, color: Colors.white, size: 28),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -607,12 +619,9 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFECECEA),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0x14FFFFFF), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -631,14 +640,10 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF13275D).withOpacity(0.12),
+                  color: const Color(0xFF3B82F6).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFF13275D),
-                  size: 20,
-                ),
+                child: Icon(icon, color: const Color(0xFF3B82F6), size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -650,7 +655,7 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
                       style: GoogleFonts.sora(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF0F172A),
+                        color: Colors.white,
                       ),
                     ),
                     if (subtitle != null) ...[
@@ -659,7 +664,7 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
                         subtitle,
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: const Color(0xFF8C8C90),
+                          color: const Color(0xFF9CA3AF),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -670,7 +675,7 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
             ],
           ),
           const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const Divider(height: 1, color: Color(0xFF1E1E2A)),
           const SizedBox(height: 16),
           ...children,
         ],
@@ -707,19 +712,19 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
       style: GoogleFonts.inter(
         fontSize: 14.5,
         fontWeight: FontWeight.w600,
-        color: enabled ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+        color: enabled ? const Color(0xFF0F172A) : const Color(0xFF9CA3AF),
       ),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.inter(
           fontSize: 13.5,
           fontWeight: FontWeight.w500,
-          color: const Color(0xFF64748B),
+          color: const Color(0xFF9CA3AF),
         ),
         floatingLabelStyle: GoogleFonts.inter(
           fontSize: 13,
           fontWeight: FontWeight.w700,
-          color: const Color(0xFF13275D),
+          color: const Color(0xFF3B82F6),
         ),
         hintText: hint,
         hintStyle: GoogleFonts.inter(
@@ -729,28 +734,24 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
         helperText: helperText,
         helperStyle: GoogleFonts.inter(
           fontSize: 11.5,
-          color: const Color(0xFF8C8C90),
+          color: const Color(0xFF9CA3AF),
         ),
         counterText: maxLength != null ? '' : null,
         filled: true,
-        fillColor: enabled ? const Color(0xFFFAFAF9) : const Color(0xFFF1F5F9),
-        prefixIcon: Icon(
-          icon,
-          color: const Color(0xFF13275D),
-          size: 20,
-        ),
+        fillColor: enabled ? const Color(0xFF0A0A12) : const Color(0xFF1E1E2A),
+        prefixIcon: Icon(icon, color: const Color(0xFF3B82F6), size: 20),
         suffixIcon: suffixIcon,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFECECEA)),
+          borderSide: const BorderSide(color: Color(0x14FFFFFF)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFECECEA)),
+          borderSide: const BorderSide(color: Color(0x14FFFFFF)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF13275D), width: 1.8),
+          borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 1.8),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -760,9 +761,11 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.8),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
     );
   }
 }
-

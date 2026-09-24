@@ -6,7 +6,7 @@ const EventStaff = require('../models/EventStaff');
 const { buildStaffPayload } = require('./staffController');
 const EventRegistration = require('../models/EventRegistration');
 const ManagedEvent = require('../models/ManagedEvent');
-const EventSchedule = require('../models/EventSchedule');
+const Speaker = require('../models/Speaker');
 const { uploadToCloudinary } = require('../middleware/upload');
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
@@ -147,22 +147,19 @@ async function findParticipantAccount(rawId) {
   return mobile ? EventRegistration.findOne({ mobileNumber: mobile }).select('+password') : null;
 }
 
-/** The `user` object the app expects for a speaker login (one per schedule). */
-function buildSpeakerPayload(schedule, event) {
+/** The `user` object the app expects for a speaker login. */
+function buildSpeakerPayload(speaker) {
   return {
-    id: schedule._id.toString(),
-    name: schedule.speakerName,
-    username: schedule.speakerMobile,
+    id: speaker._id.toString(),
+    name: speaker.name,
+    username: speaker.mobileNumber,
     email: '',
-    mobileNumber: schedule.speakerMobile,
+    mobileNumber: speaker.mobileNumber,
     userType: 'speaker',
     status: 'approved',
     isActive: true,
-    profilePic: schedule.speakerPhoto || null,
-    apartmentId: schedule.apartmentId.toString(),
-    eventId: schedule.eventId.toString(),
-    eventTitle: event ? event.title : undefined,
-    scheduleName: schedule.scheduleName,
+    profilePic: speaker.photo || null,
+    apartmentId: speaker.apartmentId.toString(),
   };
 }
 
@@ -171,24 +168,23 @@ async function findSpeakerAccount(rawId) {
   const identifier = String(rawId ?? '').trim();
   if (!identifier || identifier.includes('@')) return null;
   const mobile = normalizeMobile10(identifier);
-  return mobile ? EventSchedule.findOne({ speakerMobile: mobile }).select('+speakerPassword') : null;
+  return mobile ? Speaker.findOne({ mobileNumber: mobile }).select('+password') : null;
 }
 
 /** Speaker login (used when no management, staff or participant account matches). */
 async function loginSpeaker(req, res, identifier, passwordStr, fcmToken) {
-  const schedule = await findSpeakerAccount(identifier);
-  if (!schedule) {
+  const speaker = await findSpeakerAccount(identifier);
+  if (!speaker) {
     return res.status(400).json({ error: 'No account found with this email or mobile number' });
   }
-  if (!(await schedule.comparePassword(passwordStr))) {
+  if (!(await speaker.comparePassword(passwordStr))) {
     return res.status(401).json({ error: 'Invalid email/mobile number or password' });
   }
-  await storeFcmToken(schedule, fcmToken);
-  const event = await ManagedEvent.findById(schedule.eventId).select('title');
-  const token = generateToken(schedule._id, schedule.apartmentId, { speaker: true });
+  await storeFcmToken(speaker, fcmToken);
+  const token = generateToken(speaker._id, speaker.apartmentId, { speaker: true });
   return res.json({
     message: 'Login successful',
-    user: buildSpeakerPayload(schedule, event),
+    user: buildSpeakerPayload(speaker),
     token,
     success: true,
   });
@@ -328,10 +324,9 @@ const getCurrentUser = async (req, res) => {
       return res.json({ user: buildParticipantPayload(reg, event) });
     }
     if (req.userType === 'speaker') {
-      const schedule = await EventSchedule.findById(req.userId);
-      if (!schedule) return res.status(404).json({ error: 'User not found' });
-      const event = await ManagedEvent.findById(schedule.eventId).select('title');
-      return res.json({ user: buildSpeakerPayload(schedule, event) });
+      const speaker = await Speaker.findById(req.userId);
+      if (!speaker) return res.status(404).json({ error: 'User not found' });
+      return res.json({ user: buildSpeakerPayload(speaker) });
     }
     if (req.userType === 'user') {
       const staff = await EventStaff.findById(req.userId);

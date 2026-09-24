@@ -38,7 +38,12 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
 
   bool get _isStaff {
     final currentProp = resolveCurrentProperty(widget.user);
-    final propType = currentProp?.propertyType ?? widget.user.propertyType ?? (widget.user.apartments != null && widget.user.apartments!.isNotEmpty ? widget.user.apartments!.first.propertyType : null);
+    final propType =
+        currentProp?.propertyType ??
+        widget.user.propertyType ??
+        (widget.user.apartments != null && widget.user.apartments!.isNotEmpty
+            ? widget.user.apartments!.first.propertyType
+            : null);
     if (false) {
       return true;
     }
@@ -53,8 +58,10 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
         roleName.contains('employee') ||
         name.contains('staff') ||
         email.contains('staff') ||
-        (widget.user.department != null && widget.user.department!.trim().isNotEmpty) ||
-        (widget.user.employeeId != null && widget.user.employeeId!.trim().isNotEmpty);
+        (widget.user.department != null &&
+            widget.user.department!.trim().isNotEmpty) ||
+        (widget.user.employeeId != null &&
+            widget.user.employeeId!.trim().isNotEmpty);
   }
 
   @override
@@ -153,7 +160,7 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
@@ -176,12 +183,12 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
+                    color: const Color(0x33FFFFFF),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Top Action Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -202,11 +209,13 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          widget.isHostel ? 'Digital Hostel ID' : 'Digital Access Pass',
+                          widget.isHostel
+                              ? 'Digital Hostel ID'
+                              : 'Digital Access Pass',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
+                            color: Colors.white,
                             letterSpacing: -0.2,
                           ),
                         ),
@@ -216,11 +225,11 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(
                         Icons.close_rounded,
-                        color: Color(0xFF64748B),
+                        color: Color(0xFF9CA3AF),
                         size: 20,
                       ),
                       style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xFFF1F5F9),
+                        backgroundColor: const Color(0xFF1E1E2A),
                         padding: const EdgeInsets.all(6),
                         minimumSize: const Size(32, 32),
                       ),
@@ -229,7 +238,8 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
                 ),
                 const SizedBox(height: 12),
 
-                if ((widget.isHostel && _loadingHostel) || (!widget.isHostel && _loadingStaffQr))
+                if ((widget.isHostel && _loadingHostel) ||
+                    (!widget.isHostel && _loadingStaffQr))
                   const Padding(
                     padding: EdgeInsets.all(48),
                     child: CircularProgressIndicator(),
@@ -239,7 +249,11 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       children: [
-                        Text(_loadError!, textAlign: TextAlign.center),
+                        Text(
+                          _loadError!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white),
+                        ),
                         const SizedBox(height: 12),
                         TextButton(
                           onPressed: _loadHostelPayload,
@@ -251,244 +265,262 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
                 else
                   SingleChildScrollView(
                     child: Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: const Color(0xFFE2E8F0),
-                            width: 1.5,
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x0F0F172A),
-                              blurRadius: 20,
-                              offset: Offset(0, 10),
-                            ),
-                          ],
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF14141F),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: const Color(0x1AFFFFFF),
+                          width: 1.5,
                         ),
-                        child: Column(
-                          children: [
-                            // Card Top Decorative Header Pattern
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(22),
-                                ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x0FFFFFFF),
+                            blurRadius: 20,
+                            offset: Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Card Top Decorative Header Pattern
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                              horizontal: 16,
+                            ),
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      if (_badgeLabel != null)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF2563EB),
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(
-                                                Icons.verified_user_rounded,
-                                                color: Colors.white,
-                                                size: 13,
-                                              ),
-                                              const SizedBox(width: 5),
-                                              Text(
-                                                _badgeLabel!,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w800,
-                                                  letterSpacing: 0.8,
-                                                ),
-                                              ),
-                                            ],
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(22),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    if (_badgeLabel != null)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF2563EB),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
                                           ),
                                         ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.verified_user_rounded,
+                                              color: Colors.white,
+                                              size: 13,
+                                            ),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              _badgeLabel!,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.8,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                Text(
+                                  AppConstants.appName,
+                                  style: const TextStyle(
+                                    color: Color(0xFF94A3B8),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              children: [
+                                // User Avatar
+                                Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppTheme.primaryColor
+                                          .withOpacityCompat(0.2),
+                                      width: 3,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppTheme.primaryColor
+                                            .withOpacityCompat(0.1),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
                                     ],
                                   ),
-                                  Text(
-                                    AppConstants.appName,
-                                    style: const TextStyle(
-                                      color: Color(0xFF94A3B8),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.5,
-                                    ),
+                                  child: CircleAvatar(
+                                    radius: 40,
+                                    backgroundColor: const Color(0xFF1E1E2A),
+                                    backgroundImage:
+                                        user.profilePic != null &&
+                                            user.profilePic!.isNotEmpty
+                                        ? NetworkImage(user.profilePic!)
+                                        : null,
+                                    child:
+                                        user.profilePic == null ||
+                                            user.profilePic!.isEmpty
+                                        ? const Icon(
+                                            Icons.person_rounded,
+                                            size: 40,
+                                            color: AppTheme.primaryColor,
+                                          )
+                                        : null,
                                   ),
-                                ],
-                              ),
-                            ),
-
-                            Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                children: [
-                                  // User Avatar
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: AppTheme.primaryColor.withOpacityCompat(0.2),
-                                        width: 3,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: AppTheme.primaryColor.withOpacityCompat(0.1),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: CircleAvatar(
-                                      radius: 40,
-                                      backgroundColor: const Color(0xFFF8FAFC),
-                                      backgroundImage: user.profilePic != null &&
-                                              user.profilePic!.isNotEmpty
-                                          ? NetworkImage(user.profilePic!)
-                                          : null,
-                                      child: user.profilePic == null ||
-                                              user.profilePic!.isEmpty
-                                          ? const Icon(
-                                              Icons.person_rounded,
-                                              size: 40,
-                                              color: AppTheme.primaryColor,
-                                            )
-                                          : null,
-                                    ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  user.name,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: -0.3,
                                   ),
-                                  const SizedBox(height: 12),
+                                ),
+                                if (widget.isHostel &&
+                                    (widget.hostelName ??
+                                                hostelPayload?.hostelName)
+                                            ?.isNotEmpty ==
+                                        true) ...[
+                                  const SizedBox(height: 4),
                                   Text(
-                                    user.name,
+                                    widget.hostelName ??
+                                        hostelPayload!.hostelName,
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w800,
-                                      color: Color(0xFF0F172A),
-                                      letterSpacing: -0.3,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF9CA3AF),
                                     ),
                                   ),
-                                  if (widget.isHostel &&
-                                      (widget.hostelName ?? hostelPayload?.hostelName)
-                                          ?.isNotEmpty ==
-                                      true) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      widget.hostelName ?? hostelPayload!.hostelName,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF64748B),
-                                      ),
+                                ] else if (user.email.isNotEmpty) ...[
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    user.email,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF9CA3AF),
                                     ),
-                                  ] else if (user.email.isNotEmpty) ...[
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      user.email,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xFF64748B),
-                                      ),
-                                    ),
-                                  ],
-                                  
-                                  const SizedBox(height: 10),
-                                  Wrap(
-                                    alignment: WrapAlignment.center,
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: _locationChips(user, hostelPayload),
-                                  ),
-                                  if (widget.isHostel && hostelPayload != null) ...[
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFEF3C7),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        'Valid till ${validFmt.format(hostelPayload.validTill)}',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          color: Color(0xFFD97706),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-
-                                  const SizedBox(height: 20),
-                                  
-                                  // Clean QR Card Frame
-                                  Container(
-                                    padding: const EdgeInsets.all(14),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF8FAFC),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: const Color(0xFFE2E8F0),
-                                      ),
-                                    ),
-                                    child: QrImageView(
-                                      data: _qrData,
-                                      version: QrVersions.auto,
-                                      size: 180,
-                                      backgroundColor: Colors.white,
-                                      eyeStyle: const QrEyeStyle(
-                                        eyeShape: QrEyeShape.square,
-                                        color: Color(0xFF0F172A),
-                                      ),
-                                      dataModuleStyle: const QrDataModuleStyle(
-                                        dataModuleShape: QrDataModuleShape.square,
-                                        color: Color(0xFF0F172A),
-                                      ),
-                                      errorCorrectionLevel: QrErrorCorrectLevel.H,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.qr_code_scanner_rounded,
-                                        size: 14,
-                                        color: const Color(0xFF64748B),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        widget.isHostel
-                                            ? 'Show code at gate for hostel entry'
-                                            : 'Scan code at security gate for instant entry',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                          color: Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ],
                                   ),
                                 ],
-                              ),
+
+                                const SizedBox(height: 10),
+                                Wrap(
+                                  alignment: WrapAlignment.center,
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _locationChips(user, hostelPayload),
+                                ),
+                                if (widget.isHostel &&
+                                    hostelPayload != null) ...[
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0x26F59E0B),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'Valid till ${validFmt.format(hostelPayload.validTill)}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFFD97706),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+
+                                const SizedBox(height: 20),
+
+                                // Clean QR Card Frame
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1E1E2A),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: const Color(0x1AFFFFFF),
+                                    ),
+                                  ),
+                                  child: QrImageView(
+                                    data: _qrData,
+                                    version: QrVersions.auto,
+                                    size: 180,
+                                    backgroundColor: Colors.white,
+                                    eyeStyle: const QrEyeStyle(
+                                      eyeShape: QrEyeShape.square,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                    dataModuleStyle: const QrDataModuleStyle(
+                                      dataModuleShape: QrDataModuleShape.square,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                    errorCorrectionLevel: QrErrorCorrectLevel.H,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.qr_code_scanner_rounded,
+                                      size: 14,
+                                      color: const Color(0xFF9CA3AF),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      widget.isHostel
+                                          ? 'Show code at gate for hostel entry'
+                                          : 'Scan code at security gate for instant entry',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF9CA3AF),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
               ],
             ),
           ),
@@ -496,7 +528,6 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
       ),
     );
   }
-
 
   List<Widget> _locationChips(UserModel user, HostelIdPayload? payload) {
     if (_isStaff) {
@@ -511,7 +542,9 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
           ? user.hostelBed!
           : (payload?.hostelBed ?? '');
       if (room.isNotEmpty) {
-        chips.add(_UnitChip(icon: Icons.door_front_door_outlined, label: 'Room $room'));
+        chips.add(
+          _UnitChip(icon: Icons.door_front_door_outlined, label: 'Room $room'),
+        );
       }
       if (bed.isNotEmpty) {
         chips.add(_UnitChip(icon: Icons.hotel_rounded, label: 'Bed $bed'));
@@ -520,10 +553,17 @@ class _ProfileQrSheetState extends State<ProfileQrSheet> {
     }
     final chips = <Widget>[];
     if (user.block != null && user.block!.isNotEmpty) {
-      chips.add(_UnitChip(icon: Icons.apartment_rounded, label: 'Block ${user.block}'));
+      chips.add(
+        _UnitChip(icon: Icons.apartment_rounded, label: 'Block ${user.block}'),
+      );
     }
     if (user.roomNumber != null && user.roomNumber!.isNotEmpty) {
-      chips.add(_UnitChip(icon: Icons.door_front_door_outlined, label: 'Door ${user.roomNumber}'));
+      chips.add(
+        _UnitChip(
+          icon: Icons.door_front_door_outlined,
+          label: 'Door ${user.roomNumber}',
+        ),
+      );
     }
     return chips;
   }
@@ -540,7 +580,7 @@ class _UnitChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.dividerColor),
       ),

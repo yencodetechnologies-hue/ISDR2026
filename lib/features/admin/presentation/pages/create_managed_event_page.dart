@@ -15,7 +15,11 @@ class CreateManagedEventPage extends StatefulWidget {
   final String? apartmentId;
   final bool isEventsProperty;
 
-  const CreateManagedEventPage({super.key, this.apartmentId, this.isEventsProperty = false});
+  const CreateManagedEventPage({
+    super.key,
+    this.apartmentId,
+    this.isEventsProperty = false,
+  });
 
   @override
   State<CreateManagedEventPage> createState() => _CreateManagedEventPageState();
@@ -40,7 +44,10 @@ class _CreateManagedEventPageState extends State<CreateManagedEventPage> {
   }
 
   Future<void> _pickEndDate() async {
-    final next = await pickManagedEventDateTime(context, _form.eventEndDate ?? _form.eventDate);
+    final next = await pickManagedEventDateTime(
+      context,
+      _form.eventEndDate ?? _form.eventDate,
+    );
     if (next == null || !mounted) return;
     setState(() => _form.eventEndDate = next);
   }
@@ -73,7 +80,9 @@ class _CreateManagedEventPageState extends State<CreateManagedEventPage> {
       _error = null;
     });
     final aptId = _effectiveApartmentId;
-    debugPrint('[CreateManagedEventPage] Saving event with apartmentId: $aptId');
+    debugPrint(
+      '[CreateManagedEventPage] Saving event with apartmentId: $aptId',
+    );
     final res = await _api.createManagedEvent(
       title: _form.title.text.trim(),
       description: _form.description.text.trim(),
@@ -103,7 +112,7 @@ class _CreateManagedEventPageState extends State<CreateManagedEventPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF0A0A12),
       appBar: AppBar(
         title: Text(
           'Create event',
@@ -114,7 +123,7 @@ class _CreateManagedEventPageState extends State<CreateManagedEventPage> {
           ),
         ),
         centerTitle: true,
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: const Color(0xFF3B82F6),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -124,21 +133,21 @@ class _CreateManagedEventPageState extends State<CreateManagedEventPage> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFF14141F),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFECECEA)),
+              border: Border.all(color: const Color(0x14FFFFFF)),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withAlpha(16),
+                    color: const Color(0xFF3B82F6).withAlpha(16),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.info_outline_rounded,
-                    color: AppTheme.primaryColor,
+                    color: const Color(0xFF3B82F6),
                     size: 20,
                   ),
                 ),
@@ -148,7 +157,7 @@ class _CreateManagedEventPageState extends State<CreateManagedEventPage> {
                     'Fill in the event details below. A public register link is generated for sharing where applicable.',
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: const Color(0xFF64748B),
+                      color: const Color(0xFF9CA3AF),
                       height: 1.4,
                     ),
                   ),

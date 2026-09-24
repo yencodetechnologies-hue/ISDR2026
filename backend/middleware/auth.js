@@ -2,12 +2,12 @@ const jwt = require('jsonwebtoken');
 const Apartment = require('../models/Apartment');
 const EventStaff = require('../models/EventStaff');
 const EventRegistration = require('../models/EventRegistration');
-const EventSchedule = require('../models/EventSchedule');
+const Speaker = require('../models/Speaker');
 
 /**
  * Verifies the Bearer token. The token's userId is the property (Apartment) id for a
  * management login, an event staff account id, a participant (EventRegistration) id,
- * or a speaker's schedule (EventSchedule) id.
+ * or a Speaker id.
  */
 const protect = async (req, res, next) => {
   const header = req.headers.authorization;
@@ -33,8 +33,8 @@ const protect = async (req, res, next) => {
       }
       const participant = await EventRegistration.findById(decoded.userId).lean();
       if (!participant) {
-        const speaker = await EventSchedule.findById(decoded.userId).lean();
-        if (!speaker || !speaker.speakerMobile) {
+        const speaker = await Speaker.findById(decoded.userId).lean();
+        if (!speaker) {
           return res.status(401).json({ error: 'Not authorized, account not found' });
         }
         req.userId = decoded.userId;

@@ -55,10 +55,19 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
     if (d == null) return null;
     DateTime at(String hhmm) {
       final p = hhmm.split(':');
-      return DateTime(d.year, d.month, d.day, int.tryParse(p[0]) ?? 0,
-          p.length > 1 ? int.tryParse(p[1]) ?? 0 : 0);
+      return DateTime(
+        d.year,
+        d.month,
+        d.day,
+        int.tryParse(p[0]) ?? 0,
+        p.length > 1 ? int.tryParse(p[1]) ?? 0 : 0,
+      );
     }
-    return (start: at(s['fromTime'].toString()), end: at(s['toTime'].toString()));
+
+    return (
+      start: at(s['fromTime'].toString()),
+      end: at(s['toTime'].toString()),
+    );
   }
 
   /// Banner for a schedule: live now, upcoming (today), tomorrow, a later date — null once over.
@@ -98,8 +107,9 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
       _loading = false;
       if (res['success'] == true) {
         _schedules = List<Map<String, dynamic>>.from(
-          (res['schedules'] as List?)
-                  ?.map((e) => Map<String, dynamic>.from(e as Map)) ??
+          (res['schedules'] as List?)?.map(
+                (e) => Map<String, dynamic>.from(e as Map),
+              ) ??
               [],
         );
       } else {
@@ -124,8 +134,14 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete this schedule?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -154,9 +170,9 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFF0A0A12),
       appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: const Color(0xFF0A0A12),
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
@@ -180,10 +196,12 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
                 child: ElevatedButton.icon(
                   onPressed: _add,
                   icon: const Icon(Icons.add_rounded),
-                  label: const Text('Add Schedule',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
+                  label: const Text(
+                    'Add Schedule',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: const Color(0xFF3B82F6),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -196,38 +214,53 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(_error!),
-                            const SizedBox(height: 10),
-                            OutlinedButton(onPressed: _load, child: const Text('Retry')),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!),
+                        const SizedBox(height: 10),
+                        OutlinedButton(
+                          onPressed: _load,
+                          child: const Text('Retry'),
                         ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _load,
-                        child: _schedules.isEmpty
-                            ? ListView(
-                                children: const [
-                                  SizedBox(height: 120),
-                                  Center(
-                                    child: Text('No schedules added yet',
-                                        style: TextStyle(color: Colors.black54)),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: _schedules.isEmpty
+                        ? ListView(
+                            children: const [
+                              SizedBox(height: 120),
+                              Center(
+                                child: Text(
+                                  'No schedules added yet',
+                                  style: TextStyle(
+                                    color: const Color(0xFF9CA3AF),
                                   ),
-                                ],
-                              )
-                            : Builder(builder: (_) {
-                                final items = _ordered;
-                                return ListView.separated(
-                                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                                  itemCount: items.length,
-                                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                                  itemBuilder: (_, i) => _card(items[i]),
-                                );
-                              }),
-                      ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Builder(
+                            builder: (_) {
+                              final items = _ordered;
+                              return ListView.separated(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  8,
+                                  16,
+                                  24,
+                                ),
+                                itemCount: items.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 10),
+                                itemBuilder: (_, i) => _card(items[i]),
+                              );
+                            },
+                          ),
+                  ),
           ),
         ],
       ),
@@ -244,19 +277,24 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
             radius: 26,
-            backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.09),
-            backgroundImage: photo.isNotEmpty ? CachedNetworkImageProvider(photo) : null,
+            backgroundColor: const Color(0xFF3B82F6).withValues(alpha: 0.09),
+            backgroundImage: photo.isNotEmpty
+                ? CachedNetworkImageProvider(photo)
+                : null,
             child: photo.isEmpty
-                ? const Icon(Icons.person_rounded, color: AppTheme.primaryColor)
+                ? const Icon(
+                    Icons.person_rounded,
+                    color: const Color(0xFF3B82F6),
+                  )
                 : null,
           ),
           const SizedBox(width: 12),
@@ -270,9 +308,10 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
                       child: Text(
                         s['scheduleName']?.toString() ?? '',
                         style: const TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.textColor),
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                     if (banner != null) ...[
@@ -285,25 +324,37 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
                 Text(
                   s['speakerName']?.toString() ?? '',
                   style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.primaryColor),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF3B82F6),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${date != null ? _dateFmt.format(date) : ''} · '
                   '${_fmtTime(s['fromTime'].toString())} - ${_fmtTime(s['toTime'].toString())}',
-                  style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: const Color(0xFF9CA3AF),
+                  ),
                 ),
                 if (hall.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      const Icon(Icons.meeting_room_outlined,
-                          size: 13, color: Colors.black45),
+                      const Icon(
+                        Icons.meeting_room_outlined,
+                        size: 13,
+                        color: const Color(0xFF9CA3AF),
+                      ),
                       const SizedBox(width: 4),
-                      Text(hall,
-                          style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
+                      Text(
+                        hall,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: const Color(0xFF9CA3AF),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -317,7 +368,11 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
           if (!widget.isReadOnly)
             IconButton(
               onPressed: () => _delete(s),
-              icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.errorColor),
+              icon: const Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: AppTheme.errorColor,
+              ),
             ),
         ],
       ),
@@ -368,11 +423,16 @@ class _StatusBannerState extends State<_StatusBanner>
   @override
   Widget build(BuildContext context) {
     final live = widget.live;
-    final fg = live ? const Color(0xFF166534) : AppTheme.primaryColor;
-    final bg = live ? const Color(0xFFDCFCE7) : AppTheme.primaryColor.withValues(alpha: 0.09);
+    final fg = live ? const Color(0xFF86EFAC) : const Color(0xFF3B82F6);
+    final bg = live
+        ? const Color(0x2622C55E)
+        : const Color(0xFF3B82F6).withValues(alpha: 0.09);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -390,8 +450,9 @@ class _StatusBannerState extends State<_StatusBanner>
                       height: 6 + 8 * _pulse.value,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFF22C55E)
-                            .withValues(alpha: 0.5 * (1 - _pulse.value)),
+                        color: const Color(
+                          0xFF22C55E,
+                        ).withValues(alpha: 0.5 * (1 - _pulse.value)),
                       ),
                     ),
                     Container(
