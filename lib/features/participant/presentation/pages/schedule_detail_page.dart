@@ -498,9 +498,10 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
           Opacity(
             opacity: 0.85,
             child: Image.asset(
-              'assets/tooth icon.png',
+              'assets/ISDR 2026 Logo.png',
               width: 44,
               height: 44,
+              fit: BoxFit.contain,
               errorBuilder: (_, _, _) => const SizedBox.shrink(),
             ),
           ),

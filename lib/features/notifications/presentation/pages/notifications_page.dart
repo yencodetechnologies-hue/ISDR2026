@@ -110,10 +110,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ),
           Builder(
             builder: (context) {
-              final authState = context.read<AuthBloc>().state;
-              final isSecurity =
-                  authState is AuthAuthenticated &&
-                  authState.user.userType == UserType.security;
               return PopupMenuButton<String>(
                 icon: const Icon(Icons.tune_rounded),
                 color: _dark ? const Color(0xFF1E1E2A) : Colors.white,
@@ -137,25 +133,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   const PopupMenuItem(value: 'read', child: Text('Read')),
                   const PopupMenuDivider(),
                   const PopupMenuItem(value: 'message', child: Text('Message')),
-                  if (!isSecurity) ...[
-                    const PopupMenuItem(
-                      value: 'visitor',
-                      child: Text('Visitor'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'maintenance',
-                      child: Text('Maintenance'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'payment',
-                      child: Text('Payment'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'complaint',
-                      child: Text('Complaint'),
-                    ),
-                    const PopupMenuItem(value: 'notice', child: Text('Notice')),
-                  ],
+                  const PopupMenuItem(
+                    value: 'maintenance',
+                    child: Text('Maintenance'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'complaint',
+                    child: Text('Complaint'),
+                  ),
+                  const PopupMenuItem(value: 'notice', child: Text('Notice')),
                 ],
               );
             },

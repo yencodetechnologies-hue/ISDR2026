@@ -4,9 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:screen_protector/screen_protector.dart';
 import '../../../../core/services/api_service.dart';
-import '../../../../core/app_theme.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../participant/presentation/widgets/inclusions_section.dart';
 import '../widgets/delegate_badge.dart';
 
 /// Shows the details of the account that is currently logged in.
@@ -137,9 +137,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
         elevation: 0,
         centerTitle: false,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          isParticipant ? 'Delegate Badge' : 'My Profile',
-          style: const TextStyle(
+        title: const Text(
+          'My Profile',
+          style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w800,
             fontSize: 20,
@@ -209,6 +209,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
@@ -241,6 +242,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
               ],
             ),
           ),
+          const SizedBox(height: 24),
+          const InclusionsSection(),
         ],
       ),
     );

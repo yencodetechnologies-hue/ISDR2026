@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/api_service.dart';
-import '../pages/session_file_viewer.dart';
 
 class _Colors {
   static const ink = Color(0xFFFFFFFF);
@@ -12,8 +11,8 @@ class _Colors {
   static const green = Color(0xFF22C55E);
 }
 
-/// What the speaker added to a session — files to open, polls to vote on and
-/// questions to answer. Shown on the session's details page; only participants
+/// What the speaker added to a session — polls to vote on and questions to
+/// answer. Shown on the session's details page; only participants
 /// can vote / answer, and they never see others' votes or answers.
 class SessionContentSection extends StatefulWidget {
   final String scheduleId;
@@ -29,7 +28,6 @@ class _SessionContentSectionState extends State<SessionContentSection> {
   bool _loading = true;
   String? _error;
   bool _canRespond = false;
-  List<Map<String, dynamic>> _files = [];
   List<Map<String, dynamic>> _polls = [];
   List<Map<String, dynamic>> _questions = [];
   bool _isSpeaker = false;
@@ -55,7 +53,6 @@ class _SessionContentSectionState extends State<SessionContentSection> {
       if (res['success'] == true) {
         _error = null;
         _canRespond = res['canRespond'] == true;
-        _files = _list(res['files']);
         _polls = _list(res['polls']);
         _questions = _list(res['questions']);
         _isSpeaker = res['isSpeaker'] == true;
@@ -95,8 +92,7 @@ class _SessionContentSectionState extends State<SessionContentSection> {
       );
     }
     // Participants always get the rating card; the speaker the ratings list.
-    if (_files.isEmpty &&
-        _polls.isEmpty &&
+    if (_polls.isEmpty &&
         _questions.isEmpty &&
         !_canRespond &&
         !_isSpeaker) {
@@ -105,11 +101,6 @@ class _SessionContentSectionState extends State<SessionContentSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_files.isNotEmpty)
-          _Group(
-            title: 'PRESENTATIONS & DOCUMENTS',
-            children: [for (final f in _files) _FileRow(file: f)],
-          ),
         if (_polls.isNotEmpty)
           _Group(
             title: 'POLLS',
@@ -194,69 +185,6 @@ class _Group extends StatelessWidget {
           const SizedBox(height: 10),
           ...children,
         ],
-      ),
-    );
-  }
-}
-
-class _FileRow extends StatelessWidget {
-  final Map<String, dynamic> file;
-
-  const _FileRow({required this.file});
-
-  @override
-  Widget build(BuildContext context) {
-    final isPdf = file['kind'] == 'pdf';
-    final color = isPdf ? const Color(0xFFE11D48) : const Color(0xFFF97316);
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => openSessionFile(context, file),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                isPdf ? Icons.picture_as_pdf_rounded : Icons.slideshow_rounded,
-                color: color,
-                size: 21,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    file['name']?.toString() ?? '',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: _Colors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isPdf ? 'PDF · Tap to view' : 'Presentation · Tap to view',
-                    style: GoogleFonts.inter(
-                      fontSize: 11.5,
-                      color: _Colors.muted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: _Colors.muted),
-          ],
-        ),
       ),
     );
   }

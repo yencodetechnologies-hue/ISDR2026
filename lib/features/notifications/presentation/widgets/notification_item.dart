@@ -23,18 +23,12 @@ class NotificationItem extends StatelessWidget {
     switch (notification.type) {
       case 'maintenance':
         return const Color(0xFF13275D);
-      case 'payment':
-        return const Color(0xFF10B981);
       case 'complaint':
         return const Color(0xFFDC2626);
-      case 'visitor':
-        return const Color(0xFFF59E0B);
       case 'notice':
         return const Color(0xFF13275D);
       case 'message':
         return const Color(0xFF10B981);
-      case 'kid_exit':
-        return const Color(0xFFF59E0B);
       case 'permission':
         return const Color(0xFF13275D);
       case 'user_status':
@@ -48,18 +42,12 @@ class NotificationItem extends StatelessWidget {
     switch (notification.type) {
       case 'maintenance':
         return Icons.build_rounded;
-      case 'payment':
-        return Icons.payments_rounded;
       case 'complaint':
         return Icons.report_problem_rounded;
-      case 'visitor':
-        return Icons.person_pin_rounded;
       case 'notice':
         return Icons.campaign_rounded;
       case 'message':
         return Icons.message_rounded;
-      case 'kid_exit':
-        return Icons.child_care_rounded;
       case 'permission':
         return Icons.lock_rounded;
       case 'user_status':

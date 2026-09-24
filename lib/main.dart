@@ -13,7 +13,6 @@ import 'features/admin/presentation/bloc/admin_bloc.dart';
 import 'features/auth/data/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/notifications/presentation/bloc/notification_bloc.dart';
-import 'features/security/presentation/bloc/security_bloc.dart';
 import 'features/splash/presentation/pages/splash_page.dart';
 import 'features/user/presentation/bloc/user_bloc.dart';
 
@@ -56,9 +55,6 @@ class MyApp extends StatelessWidget {
           ),
           BlocProvider<UserBloc>(
             create: (context) => UserBloc(),
-          ),
-          BlocProvider<SecurityBloc>(
-            create: (context) => SecurityBloc(),
           ),
           BlocProvider<NotificationBloc>(
             create: (context) => NotificationBloc(),

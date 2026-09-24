@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Reusable center dialog popup for logout confirmation. Use [showLogoutConfirmSheet].
+/// Reusable modal bottom sheet for logout confirmation. Use [showLogoutConfirmSheet].
 class LogoutConfirmSheet extends StatelessWidget {
   final VoidCallback onLogout;
   final VoidCallback onCancel;
@@ -12,26 +12,26 @@ class LogoutConfirmSheet extends StatelessWidget {
     required this.onCancel,
   });
 
-  /// Shows the logout confirmation as a normal center dialog popup.
+  /// Shows the logout confirmation as a modal bottom sheet.
   static Future<void> showLogoutConfirmSheet(
     BuildContext context, {
     required VoidCallback onLogout,
   }) {
-    return showDialog<void>(
+    return showModalBottomSheet<void>(
       context: context,
-      barrierDismissible: true,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        elevation: 8,
-        backgroundColor: Colors.white,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        top: false,
         child: LogoutConfirmSheet(
           onLogout: () {
-            Navigator.of(context).pop();
+            Navigator.of(sheetContext).pop();
             onLogout();
           },
-          onCancel: () => Navigator.of(context).pop(),
+          onCancel: () => Navigator.of(sheetContext).pop(),
         ),
       ),
     );
@@ -40,11 +40,24 @@ class LogoutConfirmSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Normal red circle icon badge
+          // Top drag handle indicator
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 18),
+              decoration: BoxDecoration(
+                color: const Color(0xFFCBD5E1),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // Red circle icon badge
           Container(
             width: 64,
             height: 64,

@@ -28,7 +28,6 @@ import 'favorites_page.dart';
 import '../widgets/news_ticker_strap.dart';
 import 'speakers_page.dart';
 import 'upcoming_schedules_page.dart';
-import 'inclusions_page.dart';
 
 // ---------------------------------------------------------------------------
 // Management Theme Palette
@@ -346,10 +345,10 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
   /// and the bottom nav's "More" tab so both stay in sync.
   List<_ParticipantModuleItem> get _allModuleItems => [
     _ParticipantModuleItem(
-      label: 'Id Card',
-      icon: Icons.badge_rounded,
-      color: const Color(0xFF6366F1),
-      onTap: () => _onTileTap('Profile'),
+      label: 'Schedule',
+      icon: Icons.event_note_rounded,
+      color: const Color(0xFFF97316),
+      onTap: _openSchedules,
     ),
     _ParticipantModuleItem(
       label: 'Feed',
@@ -358,28 +357,52 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       onTap: () => _onTileTap('Feed'),
     ),
     _ParticipantModuleItem(
-      label: 'Speakers',
-      icon: Icons.groups_rounded,
-      color: const Color(0xFF14B8A6),
-      onTap: _openSpeakers,
-    ),
-    _ParticipantModuleItem(
-      label: 'Schedule',
-      icon: Icons.event_note_rounded,
-      color: const Color(0xFFF97316),
-      onTap: _openSchedules,
-    ),
-    _ParticipantModuleItem(
-      label: 'Inclusion',
-      icon: Icons.card_giftcard_rounded,
-      color: const Color(0xFF0EA5E9),
-      onTap: _openInclusions,
-    ),
-    _ParticipantModuleItem(
       label: 'Committee',
       icon: Icons.account_balance_rounded,
       color: const Color(0xFFA855F7),
       onTap: () => _onTileTap('Organizational Committee'),
+    ),
+    _ParticipantModuleItem(
+      label: 'Favorites',
+      icon: Icons.star_rounded,
+      color: const Color(0xFFE11D48),
+      onTap: _openFavorites,
+    ),
+    _ParticipantModuleItem(
+      label: 'Certifications',
+      icon: Icons.workspace_premium_rounded,
+      color: const Color(0xFF10B981),
+      onTap: () => _dummyTap('Certifications'),
+    ),
+    _ParticipantModuleItem(
+      label: 'Help &\nSupport',
+      icon: Icons.help_rounded,
+      color: const Color(0xFF06B6D4),
+      onTap: () => _dummyTap('Help & Support'),
+    ),
+    _ParticipantModuleItem(
+      label: 'Exhibitors',
+      icon: Icons.storefront_rounded,
+      color: const Color(0xFFEF4444),
+      onTap: () => _dummyTap('Exhibitors'),
+    ),
+    _ParticipantModuleItem(
+      label: 'Q/A',
+      icon: Icons.question_answer_rounded,
+      color: const Color(0xFF3B82F6),
+      onTap: () => _dummyTap('Q/A'),
+    ),
+    _ParticipantModuleItem(
+      label: 'Polls',
+      icon: Icons.poll_rounded,
+      color: const Color(0xFF8B5CF6),
+      onTap: () => _dummyTap('Polls'),
+    ),
+    _ParticipantModuleItem(
+      label: 'About',
+      icon: Icons.menu_book_rounded,
+      color: const Color(0xFF6366F1),
+      onTap: () => _onTileTap('About ISDR'),
     ),
     _ParticipantModuleItem(
       label: 'Conference',
@@ -388,39 +411,21 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       onTap: () => _onTileTap('Student Conference'),
     ),
     _ParticipantModuleItem(
+      label: 'Accommodation',
+      icon: Icons.hotel_rounded,
+      color: const Color(0xFF0EA5E9),
+      onTap: () => _onTileTap('Accommodation'),
+    ),
+    _ParticipantModuleItem(
       label: 'Awards',
       icon: Icons.emoji_events_rounded,
       color: const Color(0xFFF59E0B),
       onTap: () => _onTileTap('Awards'),
     ),
-    _ParticipantModuleItem(
-      label: 'About',
-      icon: Icons.menu_book_rounded,
-      color: const Color(0xFF8B5CF6),
-      onTap: () => _onTileTap('About ISDR'),
-    ),
-    _ParticipantModuleItem(
-      label: 'Yencode Support',
-      icon: Icons.support_agent_rounded,
-      color: const Color(0xFF22C55E),
-      onTap: () => _dummyTap('Yencode Support'),
-    ),
-    _ParticipantModuleItem(
-      label: 'Help and Support',
-      icon: Icons.help_rounded,
-      color: const Color(0xFF06B6D4),
-      onTap: () => _dummyTap('Help and Support'),
-    ),
-    _ParticipantModuleItem(
-      label: 'Exhibitor',
-      icon: Icons.storefront_rounded,
-      color: const Color(0xFFEF4444),
-      onTap: () => _dummyTap('Exhibitor'),
-    ),
   ];
 
   /// Opens the same "More" overflow page the module grid's own More tile
-  /// opens — whatever didn't fit in the grid's fixed slots, plus Settings.
+  /// opens — whatever didn't fit in the grid's fixed 2 rows (11 slots), plus Settings.
   void _openMoreModules() {
     const crossAxisCount = 6;
     const maxRealSlots = crossAxisCount * 2 - 1;
@@ -429,15 +434,6 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
         ? items.sublist(maxRealSlots)
         : <_ParticipantModuleItem>[];
     _showMoreModules(overflow);
-  }
-
-  /// "Inclusion" shows every inclusion day by day, with a "Claimed" banner
-  /// on the ones already claimed that day.
-  void _openInclusions() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const InclusionsPage()),
-    );
   }
 
   /// "More" holds every module that doesn't fit in the first two grid rows.
@@ -646,7 +642,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
               width: 48,
               height: 48,
               child: Image.asset(
-                'assets/tooth icon.png',
+                'assets/ISDR 2026 Logo.png',
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => const Icon(
                   Icons.medical_services_rounded,
@@ -860,7 +856,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
+                      horizontal: 2,
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
@@ -2366,16 +2362,13 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     );
   }
 
-  /// 4-column flat icon-badge grid — colored icon square + label, no card.
-  /// Lays out modules in a 6-column, 2-row grid (12 slots). If there are
-  /// more items than that, the last slot becomes a "More" tile that opens a
-  /// sheet with everything that didn't fit — so the row count stays fixed
-  /// regardless of how many modules are added.
+  /// 6-column flat icon-badge grid — strictly 2 rows (12 slots).
+  /// If items exceed 11 slots, the 12th slot becomes "More" and all exceeding
+  /// modules go inside "More" so it never creates a 3rd row.
   Widget _buildModuleGrid(List<_ParticipantModuleItem> items) {
     const crossAxisCount = 6;
-    const maxSlots = crossAxisCount * 2;
-    // "More" always takes the last slot, however many modules fit before it.
-    const maxRealSlots = maxSlots - 1;
+    const maxSlots = crossAxisCount * 2; // 12 slots (strictly 2 rows)
+    const maxRealSlots = maxSlots - 1; // 11 module slots + 1 "More" slot
 
     final shown = items.length > maxRealSlots
         ? items.sublist(0, maxRealSlots)
@@ -2655,6 +2648,7 @@ class _ManagementTileWidgetState extends State<_ManagementTileWidget> {
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
+    final isMultiLine = item.label.contains('\n');
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -2668,27 +2662,34 @@ class _ManagementTileWidgetState extends State<_ManagementTileWidget> {
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Container(
-              width: 46,
-              height: 46,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: item.color,
-                borderRadius: BorderRadius.circular(13),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(item.icon, size: 22, color: Colors.white),
+              child: Icon(item.icon, size: 21, color: Colors.white),
             ),
             const SizedBox(height: 4),
             SizedBox(
               height: 24,
-              child: Text(
-                item.label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.9),
-                  height: 1.15,
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.topCenter,
+                  child: Text(
+                    item.label,
+                    textAlign: TextAlign.center,
+                    maxLines: isMultiLine ? 2 : 1,
+                    softWrap: isMultiLine,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      letterSpacing: -0.2,
+                      height: 1.1,
+                    ),
+                  ),
                 ),
               ),
             ),

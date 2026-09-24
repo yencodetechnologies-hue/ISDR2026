@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import 'apartment_model.dart';
 
-enum UserType { admin, user, security, apartment, tenant, participant, speaker }
+enum UserType { admin, user, apartment, tenant, participant, speaker }
 
 enum AccountStatus { pending, approved, rejected }
 

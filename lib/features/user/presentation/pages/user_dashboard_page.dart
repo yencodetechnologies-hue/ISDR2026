@@ -15,9 +15,7 @@ import '../../../../features/notifications/presentation/bloc/notification_bloc.d
 import '../bloc/user_bloc.dart';
 import 'widgets/home_tab.dart';
 import 'widgets/profile_tab.dart';
-import 'visitors_page.dart';
 import 'my_event_tickets_page.dart';
-import 'gate_approval_page.dart';
 import 'terms_and_conditions_page.dart';
 
 class UserDashboardPage extends StatefulWidget {
@@ -77,7 +75,6 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
               authState.selectedApartmentId,
               propertyCtx: propertyCtx,
               complaintsEnabled: complaintsEnabled,
-              securityEnabled: propertyCtx.securityEnabled,
               currentIndex: effectiveIndex,
               isEventsProperty: isEventsProperty,
               isStaffSchoolOrCollege: isStaffSchoolOrCollege,
@@ -186,8 +183,6 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                 HomeTab(
                   user: authState.user,
                   isHostel: propertyCtx.isHostel,
-                  securityEnabled: propertyCtx.securityEnabled,
-                  assignPaymentEnabled: propertyCtx.assignPaymentEnabled,
                   showLeaveRequests: false,
                   complaintsEnabled: false,
                   adsEnabled: propertyCtx.adsEnabled,
@@ -223,7 +218,6 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
     String? selectedApartmentId, {
     required CurrentPropertyContext propertyCtx,
     required bool complaintsEnabled,
-    required bool securityEnabled,
     required int currentIndex,
     bool isEventsProperty = false,
     bool isStaffSchoolOrCollege = false,
@@ -602,38 +596,9 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                       },
                     ),
                   ],
-                  if (securityEnabled &&
-                      !user.isStaff &&
+                  if (!user.isStaff &&
                       !isEventsProperty &&
                       !isStaffSchoolOrCollege) ...[
-                    _buildDrawerItem(
-                      context,
-                      icon: Icons.person_add_alt_1_rounded,
-                      title: 'Gate Approval',
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const GateApprovalPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildDrawerItem(
-                      context,
-                      icon: Icons.group_rounded,
-                      title: isHostel ? 'Guests' : 'Visitors',
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => VisitorsPage(user: user),
-                          ),
-                        );
-                      },
-                    ),
                     _buildDrawerItem(
                       context,
                       icon: Icons.confirmation_number_rounded,

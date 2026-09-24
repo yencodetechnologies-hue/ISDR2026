@@ -51,15 +51,12 @@ const List<_ModuleVisual> _predefinedVisuals = [
     Icons.confirmation_number_rounded,
     group: 'COMMUNITY',
   ),
-  _ModuleVisual('Security', Icons.shield_rounded, group: 'COMMUNITY'),
-  _ModuleVisual('Visitors', Icons.badge_rounded, group: 'COMMUNITY'),
   _ModuleVisual(
     'Complaints',
     Icons.warning_amber_rounded,
     group: 'COMMUNITY',
     accent: true,
   ),
-  _ModuleVisual('Assign pay', Icons.payments_rounded, group: 'COMMUNITY'),
   _ModuleVisual('Out pass', Icons.exit_to_app_rounded, group: 'COMMUNITY'),
   _ModuleVisual('Amenities', Icons.pool_rounded, group: 'COMMUNITY'),
 
@@ -75,7 +72,6 @@ const List<_ModuleVisual> _predefinedVisuals = [
   _ModuleVisual('Ads', Icons.ads_click_rounded, group: 'OPERATIONS'),
   _ModuleVisual('Documents', Icons.description_rounded, group: 'OPERATIONS'),
 
-  _ModuleVisual('Subscription', Icons.dns_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Management IDs', Icons.badge_outlined, group: 'ACCOUNT'),
   _ModuleVisual('Brochure', Icons.menu_book_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Profile', Icons.person_rounded, group: 'ACCOUNT'),

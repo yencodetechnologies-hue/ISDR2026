@@ -236,64 +236,6 @@ class AuthRepository {
     }
   }
 
-  Future<UserModel> registerResidentBundle({
-    required String name,
-    required String username,
-    required String email,
-    required String password,
-    required String mobileNumber,
-    required String ownerName,
-    required String ownerMobile,
-    required String ownerPassword,
-    String? secondaryMobileNumber,
-    Gender? gender,
-    FamilyType? familyType,
-    String? aadhaarCard,
-    String? panCard,
-    int? totalOccupants,
-    String? apartmentId,
-    File? profilePic,
-    File? aadhaarFront,
-    File? aadhaarBack,
-    File? panCardImage,
-    bool? isNRI,
-  }) async {
-    try {
-      final response = await _apiService.registerResidentBundle(
-        name: name,
-        username: username,
-        email: email,
-        password: password,
-        mobileNumber: mobileNumber,
-        ownerName: ownerName,
-        ownerMobile: ownerMobile,
-        ownerPassword: ownerPassword,
-        secondaryMobileNumber: secondaryMobileNumber,
-        gender: gender?.name,
-        familyType: familyType?.name,
-        aadhaarCard: aadhaarCard,
-        panCard: panCard,
-        totalOccupants: totalOccupants,
-        apartmentId: apartmentId,
-        profilePic: profilePic,
-        aadhaarFront: aadhaarFront,
-        aadhaarBack: aadhaarBack,
-        panCardImage: panCardImage,
-        isNRI: isNRI,
-      );
-
-      if (response['success'] == true && response['tenant'] != null) {
-        final tenantData = Map<String, dynamic>.from(response['tenant'] as Map);
-        tenantData['email'] = email;
-        tenantData['username'] = username;
-        return UserModel.fromJson(tenantData);
-      }
-      throw Exception(response['error'] ?? 'Registration failed');
-    } catch (e) {
-      throw Exception(e.toString());
-    }
-  }
-
   Future<void> sendOtp(String email) async {
     final response = await _apiService.sendOtp(email);
     if (response['success'] != true) {

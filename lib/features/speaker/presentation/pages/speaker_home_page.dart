@@ -12,7 +12,6 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../participant/presentation/pages/schedule_detail_page.dart';
 import '../../../participant/presentation/widgets/live_show_card.dart';
 import '../widgets/speaker_ui.dart';
-import 'speaker_session_files_page.dart';
 import 'speaker_session_polls_page.dart';
 import 'speaker_session_questions_page.dart';
 
@@ -156,14 +155,6 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
   void _openSessionPicker(String feature) {
     final ValueChanged<_Session>? onPick = switch (feature) {
       'My Sessions' => _openDetails,
-      'Upload PDF' => (s) => _openSessionPage(
-        s,
-        (ref) => SpeakerSessionFilesPage(session: ref, kind: 'pdf'),
-      ),
-      'Upload PPT' => (s) => _openSessionPage(
-        s,
-        (ref) => SpeakerSessionFilesPage(session: ref, kind: 'ppt'),
-      ),
       'Poll' => (s) => _openSessionPage(
         s,
         (ref) => SpeakerSessionPollsPage(session: ref),
@@ -282,10 +273,10 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
     return Row(
       children: [
         SizedBox(
-          width: 44,
-          height: 44,
+          width: 46,
+          height: 46,
           child: Image.asset(
-            'assets/tooth icon.png',
+            'assets/ISDR 2026 Logo.png',
             fit: BoxFit.contain,
             errorBuilder: (_, _, _) =>
                 const Icon(Icons.mic_rounded, color: Colors.white, size: 25),
@@ -722,20 +713,6 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
   Widget _buildQuickActions() {
     const actions = [
       _QuickAction(
-        'Upload PPT',
-        'Add your presentation',
-        Icons.present_to_all_rounded,
-        [Color(0xFF818CF8), Color(0xFF4F46E5)],
-        picksSession: true,
-      ),
-      _QuickAction(
-        'Upload PDF',
-        'Share reference material',
-        Icons.picture_as_pdf_rounded,
-        [Color(0xFFFB7185), Color(0xFFE11D48)],
-        picksSession: true,
-      ),
-      _QuickAction(
         'Q&A',
         'View questions',
         Icons.mic_rounded,
@@ -963,7 +940,7 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
 }
 
 /// Every one of the speaker's sessions, grouped by date — opened from the
-/// Upload PPT / Upload PDF / Q&A quick actions.
+/// Q&A / Poll / My Sessions quick actions.
 class _SessionPickerPage extends StatelessWidget {
   final String title;
   final List<_Session> sessions;

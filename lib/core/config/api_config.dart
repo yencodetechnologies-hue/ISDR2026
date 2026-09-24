@@ -9,10 +9,6 @@ class ApiConfig {
   static const String _productionBaseUrl =
       'https://isdr2026.yencodetechnologies.in/api';
 
-  /// Public Razorpay Key ID — same value as backend `RAZORPAY_KEY_ID`.
-  /// Override at build time: `--dart-define=RAZORPAY_KEY_ID=rzp_live_...`
-  static const String _razorpayKeyId = 'rzp_test_StaehAceNWvsTB';
-
   /// Override at runtime: run with
   ///   flutter run --dart-define=API_BASE_URL=http://localhost:5000/api
   /// to use a local backend (or your PC IP for a device on the same network).
@@ -43,7 +39,6 @@ class ApiConfig {
   static String get updateFcmToken => '$authBase/fcm-token';
   static String get getAllUsers => '$authBase/users';
   static String get registerTenant => '$authBase/register-tenant';
-  static String get registerResidentBundle => '$authBase/register-resident-bundle';
   static String get getTenants => '$authBase/tenants';
   static String get getUsersByMobileNumber => '$authBase/users-by-mobile';
   static String get managementUsers => '$authBase/management-users';
@@ -76,41 +71,12 @@ class ApiConfig {
   static String get updateUserStatus => getAllUsers; // Use with /:id/status
   static String get updateUser => getAllUsers; // Use with /:id
   static String get deleteUser => getAllUsers; // Use with /:id
-  static String get securityBase => '$authBase/security';
-  static String get updateSecurity => securityBase; // Use with /:id
-  static String get deleteSecurity => securityBase; // Use with /:id
-
   // Maintenance endpoints
   static String get maintenanceBase => '$baseUrl/maintenance';
   static String get getAllMaintenance => '$maintenanceBase/all';
   static String get getMaintenance => maintenanceBase;
   static String get setMaintenance => maintenanceBase;
   static String get updateMaintenance => maintenanceBase; // Use with /:id
-
-  /// Razorpay Key ID for checkout — [_razorpayKeyId], or `--dart-define`, or create-order `keyId`.
-  static String get razorpayKey {
-    const fromDefine = String.fromEnvironment('RAZORPAY_KEY_ID', defaultValue: '');
-    if (fromDefine.trim().isNotEmpty) return fromDefine.trim();
-    return _razorpayKeyId;
-  }
-
-  // Payment endpoints
-  static String get paymentsBase => '$baseUrl/payments';
-  static String get getAllPayments => paymentsBase;
-  static String get getPaymentStats => '$paymentsBase/stats';
-  static String get getMyPayments => '$paymentsBase/my';
-  static String get recordPayment => paymentsBase;
-  static String get assignPayment => paymentsBase;
-  static String get createRazorpayOrder => '$paymentsBase/create-order';
-  static String get downloadPaymentReport => '$paymentsBase/report/download';
-  static String getPaymentByIdUrl(String id) => '$paymentsBase/$id';
-  static String completePaymentUrl(String id) => '$paymentsBase/$id/complete';
-  static String downloadPaymentInvoiceUrl(String id) =>
-      '$paymentsBase/$id/invoice/download';
-  static String sendPaymentReminderUrl(String id) => '$paymentsBase/$id/send-reminder';
-  static String uploadPaymentProofUrl(String id) => '$paymentsBase/$id/upload-proof';
-  static String verifyPaymentProofUrl(String id) => '$paymentsBase/$id/verify-proof';
-  static String rejectPaymentProofUrl(String id) => '$paymentsBase/$id/reject-proof';
 
   // Notice endpoints
   static String get noticesBase => '$baseUrl/notices';
@@ -184,25 +150,6 @@ class ApiConfig {
   static String get addFamilyMember => familyMembersBase;
   static String deleteFamilyMemberUrl(String id) => '$familyMembersBase/$id';
 
-  // Visitor endpoints (security: all visitors / today)
-  static String get visitorsBase => '$baseUrl/visitors';
-  static String get getSecurityVisitors => '$visitorsBase/all/list';
-  static String get createSecurityVisitor => '$visitorsBase/security';
-  static String get createSecurityVisitorBulk => '$visitorsBase/security/bulk';
-  static String get getVisitorsForMyUnit => '$visitorsBase/my-unit';
-  static String get getActiveVisitors => '$visitorsBase/active';
-  static String get getVisitorHistory => '$visitorsBase/history';
-  static String get getVisitorAnalytics => '$visitorsBase/analytics';
-  static String get getMonthlyAttendance => '$visitorsBase/monthly-attendance';
-  static String visitorApprovalUrl(String visitorId) => '$visitorsBase/$visitorId/approval';
-  static String visitorEntryUrl(String visitorId) => '$visitorsBase/$visitorId/entry';
-  static String visitorExitUrl(String visitorId) => '$visitorsBase/$visitorId/exit';
-  static String get getMonthlyVisitorPasses => '$visitorsBase/monthly-passes';
-  static String get createMonthlyVisitorPass => '$visitorsBase/monthly-passes';
-  static String monthlyVisitorPassToggleUrl(String passId) => '$visitorsBase/monthly-passes/$passId/toggle';
-  static String get verifyVisitorByOtp => '$visitorsBase/verify-by-otp';
-  static String get verifyVisitorByQr => '$visitorsBase/verify-by-qr';
-
   // Managed event ticketing (BookMyShow-style)
   static String get managedEventsBase => '$baseUrl/managed-events';
   static String get managedEventsList => managedEventsBase;
@@ -240,20 +187,15 @@ class ApiConfig {
   static String managedEventToggleFavorite(String scheduleId) =>
       '$managedEventsBase/favorites/$scheduleId';
 
-  // Session content: speaker files / polls / questions on one schedule row
+  // Session content: speaker polls / questions on one schedule row
   static String sessionContent(String scheduleId) =>
       '$baseUrl/session-content/$scheduleId';
-  static String get managedEventSecurityToday =>
-      '$managedEventsBase/security/today';
   static String get managedEventClaimInclusion =>
       '$managedEventsBase/claim-inclusion';
   /// Public web register link host (web SPA).
   static const String publicWebBaseUrl = 'https://www.maccess.online';
   static const String eventWebBaseUrl = publicWebBaseUrl;
   static String eventRegisterWebUrl(String slug) => '$eventWebBaseUrl/e/$slug';
-
-  // Security list for residents
-  static String get getSecurityList => '$securityBase/list';
 
   // Support / Help desk endpoints
   static String get supportTicketsBase => '$baseUrl/support/tickets';
@@ -293,62 +235,6 @@ class ApiConfig {
   static String get hostelIdPayload => '$authBase/hostel-id-payload';
   static String get verifyHostelQr => '$authBase/verify-hostel-qr';
   static String get staffQr => '$authBase/staff-qr';
-
-  // Kid exit endpoints (user–security communication)
-  static String get kidExitsBase => '$baseUrl/kid-exits';
-  static String get reportKidExit => kidExitsBase;
-  static String get getKidExits => kidExitsBase;
-  static String kidExitAcknowledgeUrl(String id) => '$kidExitsBase/$id/acknowledge';
-
-  // Subscription endpoints (admin subscription, app-active for user/security)
-  static String get subscriptionBase => '$baseUrl/subscription';
-  static String get subscriptionPlans => '$subscriptionBase/plans';
-  static String get subscriptionPlansHistory => '$subscriptionBase/plans/history';
-  static String get subscriptionCreateOrder => '$subscriptionBase/create-order';
-  static String get subscriptionVerify => '$subscriptionBase/verify';
-  static String get subscriptionMy => '$subscriptionBase/my';
-  static String subscriptionByApartment(String apartmentId) =>
-      '$subscriptionBase/by-apartment/$apartmentId';
-  static String get subscriptionPurchases => '$subscriptionBase/purchases';
-  static String subscriptionPurchaseInvoiceDownload(String id, {String format = 'pdf'}) =>
-      '$subscriptionBase/purchases/$id/invoice/download?format=$format';
-  static String get subscriptionAppActive => '$subscriptionBase/app-active';
-  static String get subscriptionCreatePlan => '$subscriptionBase/plans';
-  static String subscriptionUpdatePlan(String id) => '$subscriptionBase/plans/$id';
-  static String subscriptionDeletePlan(String id) => '$subscriptionBase/plans/$id';
-
-  // Guard Message / Chat endpoints
-  static String get guardMessagesBase => '$baseUrl/guard-messages';
-  static String get guardConversations => '$guardMessagesBase/conversations';
-  static String guardConversationMessages(String conversationId) =>
-      '$guardMessagesBase/conversations/$conversationId';
-  static String guardMarkConversationRead(String conversationId) =>
-      '$guardMessagesBase/conversations/$conversationId/read';
-  static String get guardSendMessage => '$guardMessagesBase/send';
-  static String guardMarkMessageRead(String messageId) =>
-      '$guardMessagesBase/$messageId/read';
-  static String get guardUnreadCount => '$guardMessagesBase/unread-count';
-  static String get guardSecurityList => '$guardMessagesBase/security-list';
-  static String get guardTenantList => '$guardMessagesBase/tenant-list';
-  static String get guardGetOrCreateConversation => '$guardMessagesBase/conversation';
-
-  // Tenant Message / Chat endpoints
-  static String get tenantMessagesBase => '$baseUrl/tenant-messages';
-  static String tenantGetOrCreateConversation(String tenantId) =>
-      '$tenantMessagesBase/conversation/$tenantId';
-  static String get tenantConversations => '$tenantMessagesBase/conversations';
-  static String tenantConversationMessages(String conversationId) =>
-      '$tenantMessagesBase/conversations/$conversationId';
-  static String tenantMarkConversationRead(String conversationId) =>
-      '$tenantMessagesBase/conversations/$conversationId/read';
-  static String get tenantSendMessage => '$tenantMessagesBase/send';
-  static String get tenantUploadAgreement => '$tenantMessagesBase/agreements/upload';
-  static String tenantGetAgreements(String conversationId) =>
-      '$tenantMessagesBase/agreements/$conversationId';
-  static String tenantDeleteAgreement(String agreementId) =>
-      '$tenantMessagesBase/agreements/$agreementId';
-  static String tenantDownloadAgreement(String agreementId) =>
-      '$tenantMessagesBase/agreements/$agreementId/download';
 
   // Health check
   static String get health => '$baseUrl/health';

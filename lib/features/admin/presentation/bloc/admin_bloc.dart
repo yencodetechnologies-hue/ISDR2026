@@ -132,61 +132,6 @@ class DeleteFloorEvent extends AdminEvent {
 
 class LoadAllUsersEvent extends AdminEvent {}
 
-class AddSecurityEvent extends AdminEvent {
-  final String name;
-  final String email;
-  final String mobileNumber;
-  final String password;
-  final File? profilePic;
-  final File? idProof;
-
-  const AddSecurityEvent({
-    required this.name,
-    required this.email,
-    required this.mobileNumber,
-    required this.password,
-    this.profilePic,
-    this.idProof,
-  });
-
-  @override
-  List<Object?> get props =>
-      [name, email, mobileNumber, password, profilePic, idProof];
-}
-
-class UpdateSecurityEvent extends AdminEvent {
-  final String securityId;
-  final String? name;
-  final String? email;
-  final String? mobileNumber;
-  final String? password;
-  final File? profilePic;
-  final File? idProof;
-
-  const UpdateSecurityEvent({
-    required this.securityId,
-    this.name,
-    this.email,
-    this.mobileNumber,
-    this.password,
-    this.profilePic,
-    this.idProof,
-  });
-
-  @override
-  List<Object?> get props =>
-      [securityId, name, email, mobileNumber, password, profilePic, idProof];
-}
-
-class DeleteSecurityEvent extends AdminEvent {
-  final String securityId;
-
-  const DeleteSecurityEvent({required this.securityId});
-
-  @override
-  List<Object?> get props => [securityId];
-}
-
 class AddUserEvent extends AdminEvent {
   final String name;
   final String email;
@@ -430,7 +375,6 @@ class AdminLoading extends AdminState {}
 class AdminLoaded extends AdminState {
   final List<BlockModel> blocks;
   final List<UserModel> allUsers;
-  final List<UserModel> securityStaff;
   final List<UserModel> regularUsers;
   final List<ComplaintModel> complaints;
   final String? selectedApartmentId;
@@ -438,15 +382,14 @@ class AdminLoaded extends AdminState {
   const AdminLoaded({
     required this.blocks,
     required this.allUsers,
-    List<UserModel>? securityStaff,
     required this.regularUsers,
     this.complaints = const [],
     this.selectedApartmentId,
-  }) : securityStaff = securityStaff ?? const [];
+  });
 
   @override
   List<Object?> get props =>
-      [blocks, allUsers, securityStaff, regularUsers, complaints, selectedApartmentId];
+      [blocks, allUsers, regularUsers, complaints, selectedApartmentId];
 }
 
 class AdminError extends AdminState {
@@ -492,9 +435,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     on<CreateBlockEvent>(_onCreateBlock);
     on<AddFloorEvent>(_onAddFloor);
     on<LoadAllUsersEvent>(_onLoadAllUsers);
-    on<AddSecurityEvent>(_onAddSecurity);
-    on<UpdateSecurityEvent>(_onUpdateSecurity);
-    on<DeleteSecurityEvent>(_onDeleteSecurity);
     on<AddUserEvent>(_onAddUser);
     on<BlockUserEvent>(_onBlockUser);
     on<UnblockUserEvent>(_onUnblockUser);
@@ -516,20 +456,16 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
   Future<
       ({
         List<UserModel> allUsers,
-        List<UserModel> securityStaff,
         List<UserModel> regularUsers,
       })> _fetchUsersForApartment() async {
     final users =
         await _authRepository.getAllUsers(apartmentId: _selectedApartmentId);
-    final securityStaff =
-        users.where((u) => u.userType == UserType.security).toList();
     final regularUsers = users
         .where((u) =>
             u.userType == UserType.user || u.userType == UserType.tenant)
         .toList();
     return (
       allUsers: users,
-      securityStaff: securityStaff,
       regularUsers: regularUsers,
     );
   }
@@ -541,7 +477,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       emit(AdminLoaded(
         blocks: current.blocks,
         allUsers: current.allUsers,
-        securityStaff: current.securityStaff,
         regularUsers: current.regularUsers,
         complaints: current.complaints,
         selectedApartmentId: _selectedApartmentId,
@@ -563,15 +498,12 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       final blocks = <BlockModel>[];
 
       final users = await _authRepository.getAllUsers(apartmentId: apartmentId);
-      final securityStaff =
-          users.where((u) => u.userType == UserType.security).toList();
       final regularUsers =
           users.where((u) => u.userType == UserType.user || u.userType == UserType.tenant).toList();
 
       emit(AdminLoaded(
         blocks: blocks,
         allUsers: users,
-        securityStaff: securityStaff,
         regularUsers: regularUsers,
         complaints: const <ComplaintModel>[],
         selectedApartmentId: _selectedApartmentId,
@@ -594,21 +526,18 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       final users = await _authRepository.getAllUsers(apartmentId: _selectedApartmentId);
       print('Users fetched from repository: ${users.length}');
 
-      final securityStaff =
-          users.where((u) => u.userType == UserType.security).toList();
       final regularUsers = users
           .where((u) => u.userType == UserType.user || u.userType == UserType.tenant)
           .toList();
 
       print(
-        'Filtered users - securityStaff: ${securityStaff.length}, regularUsers: ${regularUsers.length}',
+        'Filtered users - regularUsers: ${regularUsers.length}',
       );
 
       if (currentState is AdminLoaded) {
         emit(AdminLoaded(
           blocks: currentState.blocks,
           allUsers: users,
-          securityStaff: securityStaff,
           regularUsers: regularUsers,
           complaints: currentState.complaints,
           selectedApartmentId: _selectedApartmentId,
@@ -617,7 +546,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
         emit(AdminLoaded(
           blocks: const [],
           allUsers: users,
-          securityStaff: securityStaff,
           regularUsers: regularUsers,
           complaints: const [],
           selectedApartmentId: _selectedApartmentId,
@@ -628,117 +556,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     } catch (e) {
       print('Error in _onLoadAllUsers: $e');
       emit(AdminError(message: e.toString()));
-    }
-  }
-
-  Future<void> _onAddSecurity(
-    AddSecurityEvent event,
-    Emitter<AdminState> emit,
-  ) async {
-    if (isClosed) return;
-    emit(AdminLoading());
-    try {
-      // Resolve apartmentId so added security shows in apartment-wise list and resident app
-      String? apartmentId = _selectedApartmentId;
-      if ((apartmentId == null || apartmentId.isEmpty) && state is AdminLoaded) {
-        final loaded = state as AdminLoaded;
-        if (loaded.blocks.isNotEmpty && loaded.blocks.first.apartmentId != null) {
-          apartmentId = loaded.blocks.first.apartmentId;
-        }
-      }
-      if (apartmentId == null || apartmentId.isEmpty) {
-        if (!isClosed) {
-          emit(AdminError(
-              message: 'Please select an apartment first so security is assigned to it. Open an apartment from the Overview tab.'));
-        }
-        return;
-      }
-
-      final username = event.name.toLowerCase().replaceAll(' ', '_');
-
-      final response = await _apiService.registerUser(
-        name: event.name,
-        username: username,
-        email: event.email,
-        password: event.password,
-        mobileNumber: event.mobileNumber,
-        userType: 'security',
-        apartmentId: apartmentId,
-        profilePic: event.profilePic,
-        aadhaarFront: event.idProof, // Using aadhaarFront field for ID proof
-      );
-
-      if (response['success'] == true) {
-        add(LoadAllUsersEvent());
-        add(LoadBlocksEvent());
-      } else {
-        if (!isClosed) {
-          emit(AdminError(
-              message: response['error'] ?? 'Failed to add security staff'));
-        }
-      }
-    } catch (e) {
-      if (!isClosed) {
-        emit(AdminError(message: e.toString()));
-      }
-    }
-  }
-
-  Future<void> _onUpdateSecurity(
-    UpdateSecurityEvent event,
-    Emitter<AdminState> emit,
-  ) async {
-    if (isClosed) return;
-    emit(AdminLoading());
-    try {
-      final response = await _apiService.updateSecurity(
-        securityId: event.securityId,
-        name: event.name,
-        email: event.email,
-        mobileNumber: event.mobileNumber,
-        password: event.password,
-        profilePic: event.profilePic,
-        idProof: event.idProof,
-      );
-
-      if (response['success'] == true) {
-        add(LoadAllUsersEvent());
-        add(LoadBlocksEvent());
-      } else {
-        if (!isClosed) {
-          emit(AdminError(
-              message: response['error'] ?? 'Failed to update security staff'));
-        }
-      }
-    } catch (e) {
-      if (!isClosed) {
-        emit(AdminError(message: e.toString()));
-      }
-    }
-  }
-
-  Future<void> _onDeleteSecurity(
-    DeleteSecurityEvent event,
-    Emitter<AdminState> emit,
-  ) async {
-    if (isClosed) return;
-    emit(AdminLoading());
-    try {
-      final response = await _apiService.deleteSecurity(event.securityId);
-
-      if (response['success'] == true) {
-        add(LoadAllUsersEvent());
-        add(LoadBlocksEvent());
-      } else {
-        if (!isClosed) {
-          emit(AdminError(
-              message: response['error'] ?? 'Failed to delete security staff'));
-        }
-      }
-    } catch (e) {
-      if (!isClosed) {
-        emit(AdminError(message: e.toString()));
-      }
     }
   }
 
@@ -927,7 +744,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
           emit(AdminLoaded(
             blocks: blocks,
             allUsers: currentState.allUsers,
-            securityStaff: currentState.securityStaff,
             regularUsers: currentState.regularUsers,
             complaints: currentState.complaints,
             selectedApartmentId: _selectedApartmentId,
@@ -935,15 +751,12 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
         } else {
           final users =
               await _authRepository.getAllUsers(apartmentId: _selectedApartmentId);
-          final securityStaff =
-              users.where((u) => u.userType == UserType.security).toList();
           final regularUsers =
               users.where((u) => u.userType == UserType.user || u.userType == UserType.tenant).toList();
           if (!isClosed) {
             emit(AdminLoaded(
               blocks: blocks,
               allUsers: users,
-              securityStaff: securityStaff,
               regularUsers: regularUsers,
               complaints: const [],
               selectedApartmentId: _selectedApartmentId,
@@ -999,21 +812,17 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
         emit(AdminLoaded(
           blocks: blocks,
           allUsers: currentState.allUsers,
-          securityStaff: currentState.securityStaff,
           regularUsers: currentState.regularUsers,
           complaints: currentState.complaints,
           selectedApartmentId: _selectedApartmentId,
         ));
       } else {
         final users = await _authRepository.getAllUsers(apartmentId: _selectedApartmentId);
-        final securityStaff =
-            users.where((u) => u.userType == UserType.security).toList();
         final regularUsers =
             users.where((u) => u.userType == UserType.user || u.userType == UserType.tenant).toList();
         emit(AdminLoaded(
           blocks: blocks,
           allUsers: users,
-          securityStaff: securityStaff,
           regularUsers: regularUsers,
           complaints: const [],
         selectedApartmentId: _selectedApartmentId,
@@ -1048,15 +857,12 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
 
       // Reload users from backend
       final users = await _authRepository.getAllUsers(apartmentId: _selectedApartmentId);
-      final securityStaff =
-          users.where((u) => u.userType == UserType.security).toList();
       final regularUsers =
           users.where((u) => u.userType == UserType.user || u.userType == UserType.tenant).toList();
 
       emit(AdminLoaded(
         blocks: currentState.blocks,
         allUsers: users,
-        securityStaff: securityStaff,
         regularUsers: regularUsers,
         complaints: currentState.complaints,
       selectedApartmentId: _selectedApartmentId,
@@ -1172,7 +978,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       emit(AdminLoaded(
         blocks: blocks,
         allUsers: currentState.allUsers,
-        securityStaff: currentState.securityStaff,
         regularUsers: currentState.regularUsers,
         complaints: currentState.complaints,
       selectedApartmentId: _selectedApartmentId,
@@ -1215,7 +1020,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       emit(AdminLoaded(
         blocks: blocks,
         allUsers: currentState.allUsers,
-        securityStaff: currentState.securityStaff,
         regularUsers: currentState.regularUsers,
         complaints: currentState.complaints,
       selectedApartmentId: _selectedApartmentId,
@@ -1254,7 +1058,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       emit(AdminLoaded(
         blocks: blocks,
         allUsers: users.allUsers,
-        securityStaff: users.securityStaff,
         regularUsers: users.regularUsers,
         complaints: currentState.complaints,
       selectedApartmentId: _selectedApartmentId,
@@ -1292,7 +1095,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       emit(AdminLoaded(
         blocks: blocks,
         allUsers: currentState.allUsers,
-        securityStaff: currentState.securityStaff,
         regularUsers: currentState.regularUsers,
         complaints: currentState.complaints,
       selectedApartmentId: _selectedApartmentId,
@@ -1335,7 +1137,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       emit(AdminLoaded(
         blocks: blocks,
         allUsers: users.allUsers,
-        securityStaff: users.securityStaff,
         regularUsers: users.regularUsers,
         complaints: currentState.complaints,
       selectedApartmentId: _selectedApartmentId,
@@ -1376,7 +1177,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       emit(AdminLoaded(
         blocks: blocks,
         allUsers: currentState.allUsers,
-        securityStaff: currentState.securityStaff,
         regularUsers: currentState.regularUsers,
         complaints: currentState.complaints,
       selectedApartmentId: _selectedApartmentId,
@@ -1419,7 +1219,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       emit(AdminLoaded(
         blocks: blocks,
         allUsers: currentState.allUsers,
-        securityStaff: currentState.securityStaff,
         regularUsers: currentState.regularUsers,
         complaints: currentState.complaints,
       selectedApartmentId: _selectedApartmentId,
@@ -1461,7 +1260,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       emit(AdminLoaded(
         blocks: blocks,
         allUsers: currentState.allUsers,
-        securityStaff: currentState.securityStaff,
         regularUsers: currentState.regularUsers,
         complaints: currentState.complaints,
       selectedApartmentId: _selectedApartmentId,
@@ -1507,7 +1305,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       emit(AdminLoaded(
         blocks: blocks,
         allUsers: users.allUsers,
-        securityStaff: users.securityStaff,
         regularUsers: users.regularUsers,
         complaints: currentState.complaints,
         selectedApartmentId: _selectedApartmentId,

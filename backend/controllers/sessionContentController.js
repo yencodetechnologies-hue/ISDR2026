@@ -1,10 +1,8 @@
 const EventSchedule = require('../models/EventSchedule');
 const EventRegistration = require('../models/EventRegistration');
-const SessionFile = require('../models/SessionFile');
 const SessionPoll = require('../models/SessionPoll');
 const SessionQuestion = require('../models/SessionQuestion');
 const SessionRating = require('../models/SessionRating');
-const { uploadDocumentToCloudinary, deleteFromCloudinary } = require('../middleware/upload');
 
 const MAX_POLL_OPTIONS = 6;
 const MAX_ANSWER_LENGTH = 1000;
@@ -46,15 +44,6 @@ function handleError(res, label, error) {
   console.error(`${label} error:`, error);
   return res.status(500).json({ success: false, error: error.message || 'Server error' });
 }
-
-const fileDto = (f) => ({
-  id: f._id.toString(),
-  kind: f.kind,
-  name: f.name,
-  url: f.url,
-  size: f.size || 0,
-  createdAt: f.createdAt,
-});
 
 /** Vote counts go to the speaker only; a participant just sees their own vote. */
 function pollDto(p, isSpeaker, participantId) {
@@ -117,8 +106,7 @@ const getContent = async (req, res) => {
     if (!ctx) return;
     const scheduleId = ctx.schedule._id;
     const participantId = req.userType === 'participant' ? String(req.userId) : null;
-    const [files, polls, questions, ratings, myRating] = await Promise.all([
-      SessionFile.find({ scheduleId }).sort({ createdAt: 1 }),
+    const [polls, questions, ratings, myRating] = await Promise.all([
       SessionPoll.find({ scheduleId }).sort({ createdAt: 1 }),
       SessionQuestion.find({ scheduleId }).sort({ createdAt: 1 }),
       // Every rating goes to the speaker only; a participant just gets their own.
@@ -129,7 +117,6 @@ const getContent = async (req, res) => {
       success: true,
       isSpeaker: ctx.isSpeaker,
       canRespond: !!participantId,
-      files: files.map(fileDto),
       polls: polls.map((p) => pollDto(p, ctx.isSpeaker, participantId)),
       questions: questions.map((q) => questionDto(q, ctx.isSpeaker, participantId)),
       myRating: myRating ? ratingDto(myRating) : null,
@@ -137,57 +124,6 @@ const getContent = async (req, res) => {
     });
   } catch (error) {
     handleError(res, 'getContent', error);
-  }
-};
-
-// POST /api/session-content/:scheduleId/files  (multipart `file`: .pdf / .ppt / .pptx)
-const uploadFile = async (req, res) => {
-  try {
-    const ctx = await loadSession(req, res);
-    if (!ctx) return;
-    if (!ctx.isSpeaker) return denySpeakerOnly(res);
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: 'Choose a PDF or PPT file' });
-    }
-    const name = req.file.originalname || 'file';
-    const kind = name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'ppt';
-    const { url, publicId } = await uploadDocumentToCloudinary(
-      req.file.buffer,
-      'isdr/session-files',
-      name
-    );
-    const file = await SessionFile.create({
-      scheduleId: ctx.schedule._id,
-      apartmentId: ctx.schedule.apartmentId,
-      kind,
-      name,
-      url,
-      publicId,
-      size: req.file.size || 0,
-    });
-    res.status(201).json({ success: true, file: fileDto(file) });
-  } catch (error) {
-    handleError(res, 'uploadFile', error);
-  }
-};
-
-// DELETE /api/session-content/:scheduleId/files/:fileId
-const deleteFile = async (req, res) => {
-  try {
-    const ctx = await loadSession(req, res);
-    if (!ctx) return;
-    if (!ctx.isSpeaker) return denySpeakerOnly(res);
-    const removed = await SessionFile.findOneAndDelete({
-      _id: req.params.fileId,
-      scheduleId: ctx.schedule._id,
-    });
-    if (!removed) return res.status(404).json({ success: false, error: 'File not found' });
-    deleteFromCloudinary(removed.publicId).catch((e) =>
-      console.error('Cloudinary delete failed:', e.message)
-    );
-    res.json({ success: true });
-  } catch (error) {
-    handleError(res, 'deleteFile', error);
   }
 };
 
@@ -381,8 +317,6 @@ const rateSession = async (req, res) => {
 
 module.exports = {
   getContent,
-  uploadFile,
-  deleteFile,
   createPoll,
   deletePoll,
   votePoll,

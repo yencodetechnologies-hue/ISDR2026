@@ -9,21 +9,15 @@ import '../../../../../../core/constants/app_constants.dart';
 import '../../../../../../core/models/ad_model.dart';
 import '../../../../../../core/models/apartment_model.dart';
 import '../../../../../../core/models/user_model.dart';
-import '../../../../../../core/models/visitor_model.dart';
 import '../../../../../../core/routes/app_routes.dart';
 import '../../../../../../core/services/api_service.dart';
 import '../../../../../../core/utils/current_property_context.dart';
-import '../../../../chat/presentation/pages/guard_conversations_page.dart';
 import 'create_post_sheet.dart';
 import 'create_poll_sheet.dart';
 import 'create_event_sheet.dart';
 import 'profile_qr_sheet.dart';
-import '../visitors_page.dart';
 import '../feed_page.dart';
 import '../my_posts_page.dart';
-import '../gate_approval_page.dart';
-import '../security_list_page.dart';
-import '../unit_visitor_list_page.dart';
 import '../terms_and_conditions_page.dart';
 import '../user_events_page.dart';
 import '../../../../admin/presentation/widgets/auto_scroll_banner.dart';
@@ -33,9 +27,7 @@ class HomeTab extends StatefulWidget {
   final VoidCallback? onSwitchToComplaints;
   final VoidCallback? onSwitchToProfile;
   final bool isHostel;
-  final bool securityEnabled;
   final bool showLeaveRequests;
-  final bool assignPaymentEnabled;
   final bool complaintsEnabled;
   final bool adsEnabled;
 
@@ -46,8 +38,6 @@ class HomeTab extends StatefulWidget {
     this.showLeaveRequests = false,
     this.onSwitchToComplaints,
     this.onSwitchToProfile,
-    this.securityEnabled = true,
-    this.assignPaymentEnabled = true,
     this.complaintsEnabled = true,
     this.adsEnabled = true,
   });
@@ -127,63 +117,6 @@ class _HomeTabState extends State<HomeTab> {
       context,
       AppRoutes.featureComingSoon,
       arguments: {'featureName': featureName},
-    );
-  }
-
-  void _navigateToVisitors() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (ctx) => VisitorsPage(user: widget.user)),
-    );
-  }
-
-  void _navigateToGateApproval() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (ctx) => const GateApprovalPage()),
-    );
-  }
-
-  void _navigateToSecurityList() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (ctx) => const SecurityListPage()),
-    );
-  }
-
-  void _navigateToCabAutoList() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => UnitVisitorListPage(
-          title: 'Cab / Auto',
-          visitorTypes: [VisitorType.cabDriver],
-        ),
-      ),
-    );
-  }
-
-  void _navigateToAllowedDeliveryList() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => UnitVisitorListPage(
-          title: 'Allowed Delivery',
-          visitorTypes: [VisitorType.courierDelivery],
-        ),
-      ),
-    );
-  }
-
-  void _navigateToDailyHelpList() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => UnitVisitorListPage(
-          title: 'My Daily Help',
-          visitorTypes: [VisitorType.otherVendors],
-        ),
-      ),
     );
   }
 
@@ -512,42 +445,13 @@ class _HomeTabState extends State<HomeTab> {
         Icons.report_problem_rounded,
         _Action.complaints,
       ),
-      _QuickOption('Payments', Icons.payment_rounded, _Action.payments),
-      _QuickOption('Security', Icons.security_rounded, _Action.securityList),
-      _QuickOption(
-        'Gate Approval',
-        Icons.how_to_reg_rounded,
-        _Action.gateApproval,
-      ),
-      _QuickOption(
-        'Invite Guest',
-        Icons.person_add_rounded,
-        _Action.inviteGuest,
-      ),
-      _QuickOption('Cab/Auto', Icons.local_taxi_rounded, _Action.cabAuto),
-      _QuickOption(
-        'Allowed Delivery',
-        Icons.delivery_dining_rounded,
-        _Action.allowedDelivery,
-      ),
-      _QuickOption('Call Security', Icons.phone_rounded, _Action.securityList),
-      _QuickOption(
-        'Message Guard',
-        Icons.message_rounded,
-        _Action.messageGuard,
-      ),
-      _QuickOption(
-        'My Daily Help',
-        Icons.cleaning_services_rounded,
-        _Action.dailyHelp,
-      ),
       _QuickOption(
         'Hostel Help & Support',
         Icons.support_agent_rounded,
         _Action.hostelHelpDesk,
       ),
       _QuickOption(
-        'Help and Support',
+        'Help & Support',
         Icons.support_agent_rounded,
         _Action.helpDesk,
       ),
@@ -581,9 +485,6 @@ class _HomeTabState extends State<HomeTab> {
       final byAction = {for (final o in allOptions) o.action: o};
       final ordered = <_QuickOption>[
         byAction[_Action.profile]!,
-        allOptions.firstWhere(
-          (o) => o.action == _Action.securityList && o.title == 'Security',
-        ),
         byAction[_Action.termsAndConditions]!,
         byAction[_Action.accessServices]!,
         byAction[_Action.createPost]!,
@@ -623,15 +524,6 @@ class _HomeTabState extends State<HomeTab> {
       switch (o.action) {
         case _Action.complaints:
           return widget.complaintsEnabled;
-        case _Action.payments:
-          return widget.assignPaymentEnabled;
-        case _Action.securityList:
-        case _Action.gateApproval:
-        case _Action.inviteGuest:
-        case _Action.cabAuto:
-        case _Action.allowedDelivery:
-        case _Action.messageGuard:
-          return widget.securityEnabled;
         default:
           return true;
       }
@@ -724,7 +616,6 @@ class _HomeTabState extends State<HomeTab> {
   /// Apartment / society features not shown on the hostel resident dashboard.
   static bool _isApartmentOnlyQuickOption(_Action action) {
     switch (action) {
-      case _Action.dailyHelp:
       case _Action.accessServices:
         return true;
       default:
@@ -740,18 +631,6 @@ class _HomeTabState extends State<HomeTab> {
       case _Action.complaints:
         widget.onSwitchToComplaints?.call();
         break;
-      case _Action.gateApproval:
-        _navigateToGateApproval();
-        break;
-      case _Action.inviteGuest:
-        _navigateToVisitors();
-        break;
-      case _Action.securityList:
-        _navigateToSecurityList();
-        break;
-      case _Action.payments:
-        Navigator.pushNamed(context, AppRoutes.payments);
-        break;
       case _Action.hostelHelpDesk:
       case _Action.helpDesk:
         Navigator.pushNamed(
@@ -759,18 +638,6 @@ class _HomeTabState extends State<HomeTab> {
           AppRoutes.support,
           arguments: {'isHostel': o.action == _Action.hostelHelpDesk},
         );
-        break;
-      case _Action.cabAuto:
-        _navigateToCabAutoList();
-        break;
-      case _Action.allowedDelivery:
-        _navigateToAllowedDeliveryList();
-        break;
-      case _Action.dailyHelp:
-        _navigateToDailyHelpList();
-        break;
-      case _Action.messageGuard:
-        _navigateToMessageGuard();
         break;
       case _Action.accessServices:
         _navigateToComingSoon('${AppConstants.appName} Services');
@@ -848,45 +715,13 @@ class _HomeTabState extends State<HomeTab> {
     return apts.first.name;
   }
 
-  Future<void> _navigateToMessageGuard() async {
-    final token = await _apiService.getToken();
-    if (token == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Please login again')));
-      }
-      return;
-    }
-
-    if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => GuardConversationsPage(
-            token: token,
-            odId: widget.user.id,
-            userType: 'user',
-          ),
-        ),
-      );
-    }
-  }
 }
 
 enum _Action {
   profile,
   complaints,
-  gateApproval,
-  inviteGuest,
-  securityList,
-  payments,
   helpDesk,
   hostelHelpDesk,
-  cabAuto,
-  allowedDelivery,
-  dailyHelp,
-  messageGuard,
   accessServices,
   termsAndConditions,
   hostelId,

@@ -83,7 +83,6 @@ class _ImageSourceOption extends StatelessWidget {
 
 enum ImageType { profilePicture, aadhaarFront, aadhaarBack, panCard }
 
-enum ResidentAccountType { owner, tenant }
 
 class _UserRegistrationPageState extends State<UserRegistrationPage> {
   final _formKey = GlobalKey<FormState>();
@@ -94,9 +93,6 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
   final _addressController = TextEditingController();
   final _mobileController = TextEditingController();
   final _secondaryMobileController = TextEditingController();
-  final _ownerNameController = TextEditingController();
-  final _ownerMobileController = TextEditingController();
-  final _ownerPasswordController = TextEditingController();
   final _aadhaarController = TextEditingController();
   final _panController = TextEditingController();
   final _totalOccupantsController = TextEditingController();
@@ -108,8 +104,6 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _obscureOwnerPassword = true;
-  ResidentAccountType _accountType = ResidentAccountType.owner;
   bool _companySaving = false;
   UserType? _currentUserType;
   String? _currentUserApartmentId;
@@ -139,8 +133,6 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
   /// Admin adding a resident: minimal fields (apartment & hostel).
   bool get _isAdminApartmentSimplified => widget.fromAdmin && (false || false);
 
-  /// Owner/tenant choice applies only when admin adds a user to an apartment.
-  bool get _showAdminAccountType => _isAdminApartmentSimplified && false;
 
   @override
   void initState() {
@@ -167,9 +159,6 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     _addressController.dispose();
     _mobileController.dispose();
     _secondaryMobileController.dispose();
-    _ownerNameController.dispose();
-    _ownerMobileController.dispose();
-    _ownerPasswordController.dispose();
     _aadhaarController.dispose();
     _panController.dispose();
     _totalOccupantsController.dispose();
@@ -308,44 +297,11 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     final hostelValid = _isAdminApartmentSimplified
         ? (baseValid && _familyType != null)
         : (baseValid && _gender != null && _occupationCategory != null);
-    final isTenantAccount =
-        _showAdminAccountType && _accountType == ResidentAccountType.tenant;
     final userValid = noExtraFieldsType
         ? baseValid
         : (_isAdminApartmentSimplified
               ? (baseValid && _familyType != null)
               : (baseValid && _familyType != null && _gender != null));
-
-    if (isTenantAccount) {
-      final ownerName = _ownerNameController.text.trim();
-      final ownerMobile = _ownerMobileController.text.trim();
-      final ownerPassword = _ownerPasswordController.text;
-      if (ownerName.isEmpty) {
-        _showSnackBar('Please enter owner name', isError: true);
-        return;
-      }
-      if (ownerMobile.length != 10) {
-        _showSnackBar(
-          'Please enter valid 10-digit owner mobile number',
-          isError: true,
-        );
-        return;
-      }
-      if (ownerPassword.length < 6) {
-        _showSnackBar(
-          'Owner password must be at least 6 characters',
-          isError: true,
-        );
-        return;
-      }
-      if (ownerMobile == _mobileController.text.trim()) {
-        _showSnackBar(
-          'Owner and tenant mobile numbers must be different',
-          isError: true,
-        );
-        return;
-      }
-    }
 
     if ((isCompany || noExtraFieldsType
         ? baseValid
@@ -368,38 +324,6 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
         }
 
         _createCompanyProperty();
-        return;
-      }
-      if (isTenantAccount) {
-        context.read<AuthBloc>().add(
-          RegisterResidentBundleEvent(
-            name: _usernameController.text.trim(),
-            username: _usernameController.text.trim(),
-            email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
-            mobileNumber: _mobileController.text.trim(),
-            ownerName: _ownerNameController.text.trim(),
-            ownerMobile: _ownerMobileController.text.trim(),
-            ownerPassword: _ownerPasswordController.text,
-            secondaryMobileNumber:
-                _secondaryMobileController.text.trim().isEmpty
-                ? null
-                : _secondaryMobileController.text.trim(),
-            familyType: _familyType,
-            aadhaarCard: _aadhaarController.text.trim().isEmpty
-                ? null
-                : _aadhaarController.text.trim(),
-            panCard: _panController.text.trim().isEmpty
-                ? null
-                : _panController.text.trim(),
-            apartmentId: widget.apartmentId ?? _currentUserApartmentId,
-            profilePicPath: _profilePicture?.path,
-            aadhaarFrontPath: _aadhaarFrontImage?.path,
-            aadhaarBackPath: _aadhaarBackImage?.path,
-            panCardImagePath: _panCardImage?.path,
-            isNRI: _isNRI,
-          ),
-        );
         return;
       }
       context.read<AuthBloc>().add(
@@ -531,9 +455,6 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
       case UserType.tenant:
         route = AppRoutes.userDashboard;
         break;
-      case UserType.security:
-        route = AppRoutes.securityDashboard;
-        break;
       default:
         route = AppRoutes.login;
     }
@@ -654,20 +575,13 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is UserRegisteredSuccess && widget.fromAdmin) {
-            final isBundle =
-                _showAdminAccountType &&
-                _accountType == ResidentAccountType.tenant;
             _showSuccessDialog(
               title: false
                   ? 'Company Created Successfully!'
-                  : (isBundle
-                        ? 'Owner & Tenant Created'
-                        : 'User Registered Successfully!'),
+                  : 'User Registered Successfully!',
               message: false
                   ? 'The company account has been created successfully.'
-                  : (isBundle
-                        ? 'The owner and tenant accounts have been registered successfully.'
-                        : 'The user has been registered successfully.'),
+                  : 'The user has been registered successfully.',
               fromAdmin: true,
             );
           } else if (state is AuthAuthenticated && !widget.fromAdmin) {
@@ -1056,96 +970,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                                 _buildProfilePicturePicker(),
                                 const SizedBox(height: 24),
                               ],
-                              if (_showAdminAccountType) ...[
-                                DropdownButtonFormField<ResidentAccountType>(
-                                  value: _accountType,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
-                                  decoration: InputDecoration(
-                                    labelText: 'Account Type',
-                                    labelStyle: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      color: const Color(0xFF9CA3AF),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    floatingLabelStyle: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      color: const Color(0xFF3B82F6),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    prefixIcon: const Icon(
-                                      Icons.account_circle_outlined,
-                                      color: const Color(0xFF3B82F6),
-                                      size: 20,
-                                    ),
-                                    filled: true,
-                                    fillColor: const Color(0xFF0A0A12),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 14,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                        color: Color(0x14FFFFFF),
-                                      ),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                        color: Color(0x14FFFFFF),
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                        color: const Color(0xFF3B82F6),
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                  ),
-                                  items: [
-                                    DropdownMenuItem(
-                                      value: ResidentAccountType.owner,
-                                      child: Text(
-                                        'Owner',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: ResidentAccountType.tenant,
-                                      child: Text(
-                                        'Tenant',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                  onChanged: (v) {
-                                    if (v != null)
-                                      setState(() => _accountType = v);
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                              ],
                               _buildTextField(
                                 controller: _usernameController,
-                                label:
-                                    _showAdminAccountType &&
-                                        _accountType ==
-                                            ResidentAccountType.tenant
-                                    ? 'Tenant Name'
-                                    : 'Full Name',
+                                label: 'Full Name',
                                 icon: Icons.person_rounded,
                                 validator: (value) => value?.isEmpty ?? true
                                     ? 'Please enter your name'
@@ -1213,73 +1040,6 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                                 maxLength: 10,
                                 isOptional: true,
                               ),
-                              if (_showAdminAccountType &&
-                                  _accountType ==
-                                      ResidentAccountType.tenant) ...[
-                                const SizedBox(height: 24),
-                                _buildSectionCard(
-                                  title: 'Owner Details',
-                                  icon: Icons.supervisor_account_rounded,
-                                  children: [
-                                    _buildTextField(
-                                      controller: _ownerNameController,
-                                      label: 'Owner Name',
-                                      icon: Icons.person_rounded,
-                                      validator: (value) =>
-                                          value?.isEmpty ?? true
-                                          ? 'Please enter owner name'
-                                          : null,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildTextField(
-                                      controller: _ownerMobileController,
-                                      label: 'Owner Mobile Number',
-                                      icon: Icons.phone_rounded,
-                                      keyboardType: TextInputType.phone,
-                                      maxLength: 10,
-                                      validator: (value) {
-                                        if (value?.isEmpty ?? true) {
-                                          return 'Please enter owner mobile number';
-                                        }
-                                        if (value!.length != 10) {
-                                          return 'Enter valid 10-digit number';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildTextField(
-                                      controller: _ownerPasswordController,
-                                      label: 'Owner Password',
-                                      icon: Icons.lock_rounded,
-                                      obscureText: _obscureOwnerPassword,
-                                      validator: (value) {
-                                        if (value?.isEmpty ?? true) {
-                                          return 'Please enter owner password';
-                                        }
-                                        if (value!.length < 6) {
-                                          return 'Password must be at least 6 characters';
-                                        }
-                                        return null;
-                                      },
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          _obscureOwnerPassword
-                                              ? Icons.visibility
-                                              : Icons.visibility_off,
-                                          color: const Color(0xFF9CA3AF),
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            _obscureOwnerPassword =
-                                                !_obscureOwnerPassword;
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
                             ],
                           ],
                         ),

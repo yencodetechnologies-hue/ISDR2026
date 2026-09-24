@@ -34,76 +34,6 @@ class LoginEvent extends AuthEvent {
   List<Object?> get props => [email, password, userType];
 }
 
-class RegisterResidentBundleEvent extends AuthEvent {
-  final String name;
-  final String username;
-  final String email;
-  final String password;
-  final String mobileNumber;
-  final String ownerName;
-  final String ownerMobile;
-  final String ownerPassword;
-  final String? secondaryMobileNumber;
-  final Gender? gender;
-  final FamilyType? familyType;
-  final String? aadhaarCard;
-  final String? panCard;
-  final int? totalOccupants;
-  final String? apartmentId;
-  final String? profilePicPath;
-  final String? aadhaarFrontPath;
-  final String? aadhaarBackPath;
-  final String? panCardImagePath;
-  final bool? isNRI;
-
-  const RegisterResidentBundleEvent({
-    required this.name,
-    required this.username,
-    required this.email,
-    required this.password,
-    required this.mobileNumber,
-    required this.ownerName,
-    required this.ownerMobile,
-    required this.ownerPassword,
-    this.secondaryMobileNumber,
-    this.gender,
-    this.familyType,
-    this.aadhaarCard,
-    this.panCard,
-    this.totalOccupants,
-    this.apartmentId,
-    this.profilePicPath,
-    this.aadhaarFrontPath,
-    this.aadhaarBackPath,
-    this.panCardImagePath,
-    this.isNRI,
-  });
-
-  @override
-  List<Object?> get props => [
-        name,
-        username,
-        email,
-        password,
-        mobileNumber,
-        ownerName,
-        ownerMobile,
-        ownerPassword,
-        secondaryMobileNumber,
-        gender,
-        familyType,
-        aadhaarCard,
-        panCard,
-        totalOccupants,
-        apartmentId,
-        profilePicPath,
-        aadhaarFrontPath,
-        aadhaarBackPath,
-        panCardImagePath,
-        isNRI,
-      ];
-}
-
 class RegisterUserEvent extends AuthEvent {
   final String name;
   final String username;
@@ -336,7 +266,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<RefreshCurrentUserEvent>(_onRefreshCurrentUser);
     on<LoginEvent>(_onLogin);
     on<RegisterUserEvent>(_onRegisterUser);
-    on<RegisterResidentBundleEvent>(_onRegisterResidentBundle);
     on<SendOtpEvent>(_onSendOtp);
     on<VerifyOtpEvent>(_onVerifyOtp);
     on<ResetPasswordEvent>(_onResetPassword);
@@ -469,71 +398,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return s.substring('Exception: '.length);
     }
     return s;
-  }
-
-  Future<void> _onRegisterResidentBundle(
-    RegisterResidentBundleEvent event,
-    Emitter<AuthState> emit,
-  ) async {
-    final sessionBeforeRegister = await authRepository.getCurrentUser();
-    emit(AuthLoading());
-    try {
-      final user = await authRepository.registerResidentBundle(
-        name: event.name,
-        username: event.username,
-        email: event.email,
-        password: event.password,
-        mobileNumber: event.mobileNumber,
-        ownerName: event.ownerName,
-        ownerMobile: event.ownerMobile,
-        ownerPassword: event.ownerPassword,
-        secondaryMobileNumber: event.secondaryMobileNumber,
-        gender: event.gender,
-        familyType: event.familyType,
-        aadhaarCard: event.aadhaarCard,
-        panCard: event.panCard,
-        totalOccupants: event.totalOccupants,
-        apartmentId: event.apartmentId,
-        profilePic: event.profilePicPath != null
-            ? await _getFileFromPath(event.profilePicPath!)
-            : null,
-        aadhaarFront: event.aadhaarFrontPath != null
-            ? await _getFileFromPath(event.aadhaarFrontPath!)
-            : null,
-        aadhaarBack: event.aadhaarBackPath != null
-            ? await _getFileFromPath(event.aadhaarBackPath!)
-            : null,
-        panCardImage: event.panCardImagePath != null
-            ? await _getFileFromPath(event.panCardImagePath!)
-            : null,
-        isNRI: event.isNRI,
-      );
-      emit(UserRegisteredSuccess(user: user));
-      final session =
-          sessionBeforeRegister ?? await authRepository.getCurrentUser();
-      if (session != null) {
-        final savedId = await authRepository.getSelectedApartmentId();
-        final selectedId = _resolveSelectedApartmentId(session, savedId);
-        if (selectedId != null && selectedId != savedId) {
-          await authRepository.saveSelectedApartmentId(selectedId);
-        }
-        emit(AuthAuthenticated(
-          user: session,
-          selectedApartmentId: selectedId,
-        ));
-      }
-    } catch (e) {
-      final message = e is Exception ? _readableMessage(e) : e.toString();
-      emit(AuthError(message: message));
-      final session = sessionBeforeRegister;
-      if (session != null) {
-        final savedId = await authRepository.getSelectedApartmentId();
-        emit(AuthAuthenticated(
-          user: session,
-          selectedApartmentId: savedId,
-        ));
-      }
-    }
   }
 
   Future<void> _onRegisterUser(
