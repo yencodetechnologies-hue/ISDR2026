@@ -110,8 +110,8 @@ class AboutISDRPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAF9),
-      appBar: buildBrandGradientAppBar(
+      backgroundColor: const Color(0xFF0A0A12),
+      appBar: buildDarkAppBar(
         title: Text(
           'About ISDR',
           style: GoogleFonts.outfit(
@@ -132,7 +132,7 @@ class AboutISDRPage extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFF14141F),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -216,7 +216,7 @@ class AboutISDRPage extends StatelessWidget {
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         fontStyle: FontStyle.italic,
-                        color: const Color(0xFFFDE68A),
+                        color: const Color(0x4DF59E0B),
                       ),
                     ),
                   ),
@@ -246,7 +246,7 @@ class AboutISDRPage extends StatelessWidget {
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFFB45309),
+                      color: const Color(0xFFFBBF24),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -276,9 +276,9 @@ class AboutISDRPage extends StatelessWidget {
             // =================================================================
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: const Color(0xFF14141F),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFECECEA)),
+                border: Border.all(color: const Color(0x14FFFFFF)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.03),
@@ -314,7 +314,7 @@ class AboutISDRPage extends StatelessWidget {
                     style: GoogleFonts.outfit(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF0F172A),
+                      color: Colors.white,
                     ),
                   ),
                   subtitle: Text(
@@ -322,11 +322,11 @@ class AboutISDRPage extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF64748B),
+                      color: const Color(0xFF9CA3AF),
                     ),
                   ),
                   children: [
-                    const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                    const Divider(height: 1, color: Color(0x1AFFFFFF)),
                     const SizedBox(height: 10),
                     ListView.separated(
                       shrinkWrap: true,
@@ -334,7 +334,7 @@ class AboutISDRPage extends StatelessWidget {
                       padding: EdgeInsets.zero,
                       itemCount: _executiveCouncil.length,
                       separatorBuilder: (_, __) =>
-                          const Divider(height: 12, color: Color(0xFFF1F5F9)),
+                          const Divider(height: 12, color: Color(0xFF1E1E2A)),
                       itemBuilder: (context, index) {
                         final number = (index + 1).toString().padLeft(2, '0');
                         final name = _executiveCouncil[index];
@@ -346,7 +346,7 @@ class AboutISDRPage extends StatelessWidget {
                                 width: 26,
                                 height: 26,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F5F9),
+                                  color: const Color(0xFF1E1E2A),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Center(
@@ -355,7 +355,7 @@ class AboutISDRPage extends StatelessWidget {
                                     style: GoogleFonts.inter(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF64748B),
+                                      color: const Color(0xFF9CA3AF),
                                     ),
                                   ),
                                 ),
@@ -367,7 +367,7 @@ class AboutISDRPage extends StatelessWidget {
                                   style: GoogleFonts.inter(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF1E293B),
+                                    color: const Color(0xFFE2E8F0),
                                   ),
                                 ),
                               ),
@@ -388,9 +388,9 @@ class AboutISDRPage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: const Color(0xFF14141F),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFECECEA)),
+                border: Border.all(color: const Color(0x14FFFFFF)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.03),
@@ -424,7 +424,7 @@ class AboutISDRPage extends StatelessWidget {
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.6,
-                          color: const Color(0xFF64748B),
+                          color: const Color(0xFF9CA3AF),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -433,7 +433,7 @@ class AboutISDRPage extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0F172A),
+                          color: Colors.white,
                         ),
                       ),
                     ],
@@ -456,9 +456,9 @@ class AboutISDRPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFECECEA)),
+        border: Border.all(color: const Color(0x14FFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -475,7 +475,7 @@ class AboutISDRPage extends StatelessWidget {
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF0F172A),
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 12),
@@ -484,7 +484,7 @@ class AboutISDRPage extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 13.5,
               height: 1.6,
-              color: const Color(0xFF334155),
+              color: const Color(0xFFCBD5E1),
             ),
           ),
         ],
@@ -496,9 +496,9 @@ class AboutISDRPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -516,7 +516,7 @@ class AboutISDRPage extends StatelessWidget {
             height: 80,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+              border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
@@ -566,7 +566,7 @@ class AboutISDRPage extends StatelessWidget {
                   style: GoogleFonts.outfit(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF0F172A),
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -577,7 +577,7 @@ class AboutISDRPage extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 11.5,
                     height: 1.35,
-                    color: const Color(0xFF64748B),
+                    color: const Color(0xFF9CA3AF),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

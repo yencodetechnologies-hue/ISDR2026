@@ -1,19 +1,23 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/services/api_service.dart';
-import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import 'selfie_camera_page.dart';
 
+// Same dark theme as the participant homepage.
 class _Colors {
-  static const ink = Color(0xFF0F172A);
-  static const bg = Color(0xFFFAFAF9);
-  static const card = Color(0xFFFFFFFF);
-  static const muted = Color(0xFF8C8C90);
-  static const line = Color(0xFFECECEA);
+  static const ink = Colors.white;
+  static const bg = Color(0xFF0A0A12);
+  static const card = Color(0xFF14141F);
+  static const muted = Color(0xFF9CA3AF);
+  static const line = Color(0x14FFFFFF); // white at 8%
 }
 
-/// Every participant's posted selfie, newest first â€” no restriction on who
+/// Every participant's posted selfie, newest first — no restriction on who
 /// can see whose photo.
 class ParticipantFeedPage extends StatefulWidget {
   const ParticipantFeedPage({super.key});
@@ -78,6 +82,34 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
     });
   }
 
+  String? _sharingId; // post whose photo is being downloaded to share
+
+  /// Downloads the post's photo and opens the phone's share sheet with it.
+  Future<void> _share(Map<String, dynamic> post) async {
+    final id = post['id'].toString();
+    final url = post['imageUrl']?.toString() ?? '';
+    if (url.isEmpty || _sharingId != null) return;
+    setState(() => _sharingId = id);
+    try {
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/isdr_feed_$id.jpg');
+      await Dio().download(url, file.path);
+      final name = post['participantName']?.toString() ?? '';
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'image/jpeg')],
+        text: name.isEmpty ? 'From the ISDR 2026 feed' : '$name at ISDR 2026',
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not share this photo')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sharingId = null);
+    }
+  }
+
   String _fmtTime(String? iso) {
     if (iso == null || iso.isEmpty) return '';
     final d = DateTime.tryParse(iso);
@@ -89,7 +121,10 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _Colors.bg,
-      appBar: buildBrandGradientAppBar(
+      appBar: AppBar(
+        backgroundColor: _Colors.bg,
+        foregroundColor: Colors.white,
+        elevation: 0,
         title: Text(
           'Feed',
           style: GoogleFonts.outfit(
@@ -102,7 +137,7 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
       body: RefreshIndicator(
         onRefresh: _load,
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(color: Colors.white))
             : _posts.isEmpty
                 ? ListView(
                     padding: const EdgeInsets.all(24),
@@ -118,15 +153,10 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
                       ),
                     ],
                   )
-                : GridView.builder(
+                : ListView.separated(
                     padding: const EdgeInsets.all(12),
                     itemCount: _posts.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 1,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: 1.2,
-                    ),
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final post = _posts[index];
                       final imageUrl = post['imageUrl']?.toString() ?? '';
@@ -144,10 +174,12 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
+                            // Square, like the 1:1 selfie camera.
+                            AspectRatio(
+                              aspectRatio: 1,
                               child: imageUrl.isNotEmpty
                                   ? Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity)
-                                  : Container(color: const Color(0xFFF1F5F9)),
+                                  : Container(color: const Color(0xFF1E1E2A)),
                             ),
                             Padding(
                               padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
@@ -179,6 +211,22 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
                                     liked: liked,
                                     count: likeCount,
                                     onTap: () => _toggleLike(index),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Share',
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: () => _share(post),
+                                    icon: _sharingId == post['id'].toString()
+                                        ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          )
+                                        : const Icon(
+                                            Icons.share_rounded,
+                                            size: 21,
+                                            color: _Colors.muted,
+                                          ),
                                   ),
                                 ],
                               ),

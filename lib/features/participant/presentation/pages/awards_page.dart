@@ -150,8 +150,8 @@ class AwardsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAF9),
-      appBar: buildBrandGradientAppBar(
+      backgroundColor: const Color(0xFF0A0A12),
+      appBar: buildDarkAppBar(
         title: Text(
           'Conference Awards',
           style: GoogleFonts.outfit(
@@ -223,7 +223,7 @@ class AwardsPage extends StatelessWidget {
         fontSize: 11.5,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.6,
-        color: const Color(0xFF8C8C90),
+        color: const Color(0xFF9CA3AF),
       ),
     );
   }
@@ -315,9 +315,9 @@ class AwardsPage extends StatelessWidget {
   Widget _buildGeneralNotesCard() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -340,7 +340,7 @@ class AwardsPage extends StatelessWidget {
                   fontSize: 13.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.6,
-                  color: const Color(0xFF0F172A),
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -390,7 +390,7 @@ class AwardsPage extends StatelessWidget {
                 fontSize: 12,
                 height: 1.45,
                 fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w500,
-                color: isHighlight ? const Color(0xFFB45309) : const Color(0xFF334155),
+                color: isHighlight ? const Color(0xFFFBBF24) : const Color(0xFFCBD5E1),
               ),
             ),
           ),
@@ -403,9 +403,9 @@ class AwardsPage extends StatelessWidget {
   Widget _buildAwardAccordionCard(_AwardCategoryItem item) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -429,9 +429,9 @@ class AwardsPage extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: const Color(0x263B82F6),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFBFDBFE), width: 1),
+                border: Border.all(color: const Color(0x4D3B82F6), width: 1),
               ),
               child: Center(
                 child: Text(
@@ -439,7 +439,7 @@ class AwardsPage extends StatelessWidget {
                   style: GoogleFonts.outfit(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF1E3A8A),
+                    color: const Color(0xFF93C5FD),
                   ),
                 ),
               ),
@@ -449,7 +449,7 @@ class AwardsPage extends StatelessWidget {
               style: GoogleFonts.outfit(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF0F172A),
+                color: Colors.white,
               ),
             ),
             subtitle: item.subtitle != null
@@ -461,22 +461,22 @@ class AwardsPage extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
                         fontSize: 11,
-                        color: const Color(0xFF64748B),
+                        color: const Color(0xFF9CA3AF),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   )
                 : null,
             children: [
-              const Divider(color: Color(0xFFF1F5F9), height: 1),
+              const Divider(color: Color(0xFF1E1E2A), height: 1),
               const SizedBox(height: 12),
               if (item.subtitle != null) ...[
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: const Color(0xFF1E1E2A),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: const Color(0x1AFFFFFF)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -489,7 +489,7 @@ class AwardsPage extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 11.5,
                             height: 1.4,
-                            color: const Color(0xFF334155),
+                            color: const Color(0xFFCBD5E1),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -505,7 +505,7 @@ class AwardsPage extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 12.5,
                     height: 1.55,
-                    color: const Color(0xFF475569),
+                    color: const Color(0xFFCBD5E1),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -514,13 +514,13 @@ class AwardsPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
+                    color: const Color(0x26F59E0B),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFFDE68A)),
+                    border: Border.all(color: const Color(0x4DF59E0B)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.verified_outlined, size: 16, color: Color(0xFFB45309)),
+                      const Icon(Icons.verified_outlined, size: 16, color: Color(0xFFFBBF24)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -528,7 +528,7 @@ class AwardsPage extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFFB45309),
+                            color: const Color(0xFFFBBF24),
                           ),
                         ),
                       ),
@@ -553,9 +553,9 @@ class AwardsPage extends StatelessWidget {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: accentColor.withValues(alpha: 0.10),
@@ -592,7 +592,7 @@ class AwardsPage extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontSize: 14.5,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0F172A),
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -600,7 +600,7 @@ class AwardsPage extends StatelessWidget {
                         subtitle,
                         style: GoogleFonts.inter(
                           fontSize: 11.5,
-                          color: const Color(0xFF64748B),
+                          color: const Color(0xFF9CA3AF),
                           fontWeight: FontWeight.w500,
                         ),
                       ),

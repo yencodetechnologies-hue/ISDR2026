@@ -311,8 +311,8 @@ class OrganizingCommitteePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAF9),
-      appBar: buildBrandGradientAppBar(
+      backgroundColor: const Color(0xFF0A0A12),
+      appBar: buildDarkAppBar(
         title: Text(
           'Organising Committee',
           style: GoogleFonts.outfit(
@@ -338,7 +338,7 @@ class OrganizingCommitteePage extends StatelessWidget {
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFFB45309),
+                      color: const Color(0xFFFBBF24),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -369,7 +369,7 @@ class OrganizingCommitteePage extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
-                  color: const Color(0xFF8C8C90),
+                  color: const Color(0xFF9CA3AF),
                 ),
               ),
             ),
@@ -391,7 +391,7 @@ class OrganizingCommitteePage extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
-                  color: const Color(0xFF8C8C90),
+                  color: const Color(0xFF9CA3AF),
                 ),
               ),
             ),
@@ -607,9 +607,9 @@ class OrganizingCommitteePage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -627,7 +627,7 @@ class OrganizingCommitteePage extends StatelessWidget {
             height: 80,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+              border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
@@ -677,7 +677,7 @@ class OrganizingCommitteePage extends StatelessWidget {
                   style: GoogleFonts.outfit(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF0F172A),
+                    color: Colors.white,
                   ),
                 ),
               ],
@@ -692,9 +692,9 @@ class OrganizingCommitteePage extends StatelessWidget {
       BuildContext context, _SubCommittee committee) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFECECEA)),
+        border: Border.all(color: const Color(0x14FFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -729,7 +729,7 @@ class OrganizingCommitteePage extends StatelessWidget {
             style: GoogleFonts.outfit(
               fontSize: 15.5,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF0F172A),
+              color: Colors.white,
             ),
           ),
           subtitle: Text(
@@ -737,11 +737,11 @@ class OrganizingCommitteePage extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF64748B),
+              color: const Color(0xFF9CA3AF),
             ),
           ),
           children: [
-            const Divider(height: 1, color: Color(0xFFE2E8F0)),
+            const Divider(height: 1, color: Color(0x1AFFFFFF)),
             const SizedBox(height: 8),
             ListView.separated(
               shrinkWrap: true,
@@ -749,7 +749,7 @@ class OrganizingCommitteePage extends StatelessWidget {
               padding: EdgeInsets.zero,
               itemCount: committee.members.length,
               separatorBuilder: (_, __) =>
-                  const Divider(height: 10, color: Color(0xFFF1F5F9)),
+                  const Divider(height: 10, color: Color(0xFF1E1E2A)),
               itemBuilder: (context, index) {
                 final number = (index + 1).toString().padLeft(2, '0');
                 final name = committee.members[index];
@@ -761,7 +761,7 @@ class OrganizingCommitteePage extends StatelessWidget {
                         width: 24,
                         height: 24,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
+                          color: const Color(0xFF1E1E2A),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Center(
@@ -770,7 +770,7 @@ class OrganizingCommitteePage extends StatelessWidget {
                             style: GoogleFonts.inter(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF64748B),
+                              color: const Color(0xFF9CA3AF),
                             ),
                           ),
                         ),
@@ -782,7 +782,7 @@ class OrganizingCommitteePage extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1E293B),
+                            color: const Color(0xFFE2E8F0),
                           ),
                         ),
                       ),

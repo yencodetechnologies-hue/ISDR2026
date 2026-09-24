@@ -4,12 +4,12 @@ import '../../../../core/services/api_service.dart';
 import '../pages/session_file_viewer.dart';
 
 class _Colors {
-  static const ink = Color(0xFF0F172A);
-  static const primaryBlue = Color(0xFF2563EB);
-  static const card = Color(0xFFFFFFFF);
-  static const muted = Color(0xFF8C8C90);
-  static const line = Color(0xFFECECEA);
-  static const green = Color(0xFF16A34A);
+  static const ink = Color(0xFFFFFFFF);
+  static const primaryBlue = Color(0xFF3B82F6);
+  static const card = Color(0xFF14141F);
+  static const muted = Color(0xFF9CA3AF);
+  static const line = Color(0x14FFFFFF);
+  static const green = Color(0xFF22C55E);
 }
 
 /// What the speaker added to a session — files to open, polls to vote on and
@@ -65,7 +65,7 @@ class _SessionContentSectionState extends State<SessionContentSection> {
     if (_loading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2.4)),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white)),
       );
     }
     if (_error != null) {
@@ -121,7 +121,7 @@ class _SessionContentSectionState extends State<SessionContentSection> {
   }
 }
 
-/// White card with a small uppercase heading, like "ABOUT THIS SESSION".
+/// Dark card with a small uppercase heading, like "ABOUT THIS SESSION".
 class _Group extends StatelessWidget {
   final String title;
   final List<Widget> children;
@@ -278,7 +278,7 @@ class _PollCardState extends State<_PollCard> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: const Color(0xFF1E1E2A),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _Colors.line),
       ),
@@ -347,8 +347,8 @@ class _PollCardState extends State<_PollCard> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: chosen
-                ? _Colors.primaryBlue.withValues(alpha: 0.08)
-                : Colors.white,
+                ? _Colors.primaryBlue.withValues(alpha: 0.15)
+                : const Color(0xFF14141F),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: chosen ? _Colors.primaryBlue : _Colors.line,
@@ -442,7 +442,7 @@ class _QuestionCardState extends State<_QuestionCard> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: const Color(0xFF1E1E2A),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _Colors.line),
       ),
@@ -489,7 +489,7 @@ class _QuestionCardState extends State<_QuestionCard> {
               decoration: InputDecoration(
                 hintText: 'Type your answer',
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: const Color(0xFF14141F),
                 counterText: '',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),

@@ -43,6 +43,8 @@ const eventRegistrationSchema = new mongoose.Schema(
     idNumber: { type: String, default: '', trim: true, index: true },
     address: { type: String, default: '', trim: true },
     photoUrl: { type: String, default: '' },
+    // Schedules the participant hearted — shown on their Favorites page.
+    favoriteSchedules: { type: [mongoose.Schema.Types.ObjectId], ref: 'EventSchedule', default: [] },
     foodPreference: { type: String, enum: ['', 'veg', 'non-veg'], default: '' },
     paymentMode: { type: String, enum: ['', 'cash', 'card', 'upi'], default: '' },
     utrNumber: { type: String, default: '', trim: true },

@@ -227,4 +227,75 @@ const mySpeakerSessions = async (req, res) => {
   }
 };
 
-module.exports = { listSchedules, createSchedule, deleteSchedule, mySpeakerSessions };
+// GET /api/managed-events/my-favorites  (participant login)
+// The participant's hearted schedules (oldest first) with each one's event.
+const myFavorites = async (req, res) => {
+  try {
+    if (req.userType !== 'participant') {
+      return res.status(403).json({ success: false, error: 'Only participants have favorites' });
+    }
+    const reg = await EventRegistration.findById(req.userId).select('favoriteSchedules');
+    if (!reg) return res.status(404).json({ success: false, error: 'Participant not found' });
+    const schedules = await EventSchedule.find({ _id: { $in: reg.favoriteSchedules } }).sort({
+      date: 1,
+      fromTime: 1,
+    });
+    const events = await ManagedEvent.find({
+      _id: { $in: [...new Set(schedules.map((s) => String(s.eventId)))] },
+    }).select('title venue');
+    res.json({
+      success: true,
+      // Deleted schedules drop out here, so the ids always match `schedules`.
+      scheduleIds: schedules.map((s) => s._id.toString()),
+      schedules: schedules.map(toDto),
+      events: Object.fromEntries(
+        events.map((e) => [e._id.toString(), { id: e._id.toString(), title: e.title, venue: e.venue || '' }])
+      ),
+    });
+  } catch (error) {
+    console.error('myFavorites error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+// POST /api/managed-events/favorites/:scheduleId  (participant login)
+// Hearts the schedule, or removes it if it's already a favorite.
+const toggleFavorite = async (req, res) => {
+  try {
+    if (req.userType !== 'participant') {
+      return res.status(403).json({ success: false, error: 'Only participants have favorites' });
+    }
+    const schedule = await EventSchedule.findById(req.params.scheduleId).select('_id');
+    if (!schedule) return res.status(404).json({ success: false, error: 'Schedule not found' });
+    const reg = await EventRegistration.findById(req.userId).select('favoriteSchedules');
+    if (!reg) return res.status(404).json({ success: false, error: 'Participant not found' });
+    const isFavorite = reg.favoriteSchedules.some((id) => String(id) === String(schedule._id));
+    const updated = await EventRegistration.findByIdAndUpdate(
+      reg._id,
+      isFavorite
+        ? { $pull: { favoriteSchedules: schedule._id } }
+        : { $addToSet: { favoriteSchedules: schedule._id } },
+      { new: true }
+    ).select('favoriteSchedules');
+    res.json({
+      success: true,
+      favorite: !isFavorite,
+      scheduleIds: updated.favoriteSchedules.map((id) => id.toString()),
+    });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({ success: false, error: 'Schedule not found' });
+    }
+    console.error('toggleFavorite error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+module.exports = {
+  listSchedules,
+  createSchedule,
+  deleteSchedule,
+  mySpeakerSessions,
+  myFavorites,
+  toggleFavorite,
+};

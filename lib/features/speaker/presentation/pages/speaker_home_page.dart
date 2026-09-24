@@ -10,6 +10,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/logout_confirm_sheet.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../participant/presentation/pages/schedule_detail_page.dart';
+import '../../../participant/presentation/widgets/live_show_card.dart';
 import '../widgets/speaker_ui.dart';
 import 'speaker_session_files_page.dart';
 import 'speaker_session_polls_page.dart';
@@ -215,14 +216,6 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
     return 'Evening';
   }
 
-  String _durationText(_Session s) {
-    final m = s.end.difference(s.start).inMinutes;
-    if (m < 60) return '$m min session';
-    final h = m ~/ 60;
-    final r = m % 60;
-    return r == 0 ? '$h hr session' : '$h hr $r min session';
-  }
-
   BoxDecoration get _cardDecoration => BoxDecoration(
     color: _C.card.withValues(alpha: 0.85),
     borderRadius: BorderRadius.circular(20),
@@ -267,7 +260,7 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
                 else if (_error != null)
                   _buildError()
                 else ...[
-                  _buildNextSessionCard(now),
+                  const LiveShowCard(),
                   const SizedBox(height: 14),
                   _buildTodaySchedule(now),
                 ],
@@ -431,233 +424,6 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
   // ---------------------------------------------------------------------------
   // Next session
   // ---------------------------------------------------------------------------
-
-  Widget _buildNextSessionCard(DateTime now) {
-    _Session? next;
-    for (final s in _sessions) {
-      if (s.end.isAfter(now)) {
-        next = s;
-        break;
-      }
-    }
-    final metaStyle = GoogleFonts.inter(
-      fontSize: 12.5,
-      color: Colors.white.withValues(alpha: 0.85),
-    );
-
-    return Container(
-      decoration: _cardDecoration,
-      // The background image covers the decoration's border, so the border
-      // is painted again on top — otherwise the rounded corners look cut.
-      foregroundDecoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _C.border),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            // Wider than the card: aligned so the mic sits near the right
-            // edge and the image's own dark panel stays behind the text.
-            child: Image.asset(
-              'assets/speaker mic.png',
-              fit: BoxFit.cover,
-              alignment: const Alignment(0.6, 0),
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-            ),
-          ),
-          const Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    Color(0x990B1B3F),
-                    Color(0x660B1B3F),
-                    Color(0x000B1B3F),
-                  ],
-                  stops: [0, 0.5, 0.75],
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: next == null
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'No upcoming sessions',
-                        style: GoogleFonts.outfit(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _sessions.isEmpty
-                            ? 'You have no sessions assigned yet.'
-                            : 'All your sessions are completed.',
-                        style: GoogleFonts.inter(fontSize: 12.5, color: _C.sub),
-                      ),
-                    ],
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _nextBadge(next, now),
-                      const SizedBox(height: 10),
-                      Text(
-                        DateFormat('h:mm a').format(next.start),
-                        style: GoogleFonts.outfit(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w700,
-                          color: _C.time,
-                          height: 1.05,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        next.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.outfit(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          if (next.hall.isNotEmpty) ...[
-                            Icon(
-                              Icons.location_on_outlined,
-                              size: 16,
-                              color: Colors.white.withValues(alpha: 0.85),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(next.hall, style: metaStyle),
-                            Container(
-                              width: 1,
-                              height: 14,
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              color: Colors.white.withValues(alpha: 0.25),
-                            ),
-                          ],
-                          Icon(
-                            Icons.schedule_rounded,
-                            size: 16,
-                            color: Colors.white.withValues(alpha: 0.85),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(_durationText(next), style: metaStyle),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      _detailsButton(next),
-                    ],
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _nextBadge(_Session s, DateTime now) {
-    final live = !now.isBefore(s.start);
-    final label = live
-        ? 'Live Now'
-        : DateUtils.isSameDay(s.start, now)
-        ? 'Next Session'
-        : 'Next Session · ${DateFormat('d MMM').format(s.start)}';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: live ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            live ? Icons.sensors_rounded : Icons.star_rounded,
-            size: 14,
-            color: Colors.white,
-          ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _detailsButton(_Session s) {
-    return Material(
-      color: Colors.transparent,
-      child: Ink(
-        height: 46,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF10B981), Color(0xFF14B8A6)],
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _openDetails(s),
-          child: Row(
-            children: [
-              const SizedBox(width: 10),
-              Container(
-                width: 26,
-                height: 26,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: Color(0xFF10B981),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'View Session Details',
-                  style: GoogleFonts.inter(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Colors.white,
-                size: 22,
-              ),
-              const SizedBox(width: 10),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   // ---------------------------------------------------------------------------
   // Today's schedule

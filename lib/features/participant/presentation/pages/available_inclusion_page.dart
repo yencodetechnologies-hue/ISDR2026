@@ -4,12 +4,12 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 
 class _Colors {
-  static const ink = Color(0xFF0F172A);
-  static const primaryBlue = Color(0xFF2563EB);
-  static const bg = Color(0xFFFAFAF9);
-  static const card = Color(0xFFFFFFFF);
-  static const muted = Color(0xFF8C8C90);
-  static const line = Color(0xFFECECEA);
+  static const ink = Color(0xFFFFFFFF);
+  static const primaryBlue = Color(0xFF3B82F6);
+  static const bg = Color(0xFF0A0A12);
+  static const card = Color(0xFF14141F);
+  static const muted = Color(0xFF9CA3AF);
+  static const line = Color(0x14FFFFFF);
 }
 
 /// Shows the inclusions in the participant's package that haven't been
@@ -73,7 +73,7 @@ class _AvailableInclusionPageState extends State<AvailableInclusionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _Colors.bg,
-      appBar: buildBrandGradientAppBar(
+      appBar: buildDarkAppBar(
         title: Text(
           'Available Inclusion',
           style: GoogleFonts.outfit(
@@ -86,7 +86,7 @@ class _AvailableInclusionPageState extends State<AvailableInclusionPage> {
       body: RefreshIndicator(
         onRefresh: _load,
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(color: Colors.white))
             : _error != null
                 ? ListView(
                     padding: const EdgeInsets.all(24),
@@ -199,7 +199,7 @@ class _AvailableInclusionPageState extends State<AvailableInclusionPage> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFF1F5F9),
+                                        color: const Color(0xFF1E1E2A),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(

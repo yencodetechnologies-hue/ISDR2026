@@ -2606,6 +2606,18 @@ class ApiService {
   }
 
   /// Posts a selfie (with the event banner baked in) to the participant feed.
+  /// The participant's hearted schedules: {success, scheduleIds, schedules, events}.
+  Future<Map<String, dynamic>> getMyFavorites() => _sessionContentCall(
+        () => _dio.get(ApiConfig.managedEventMyFavorites),
+      );
+
+  /// Hearts a schedule, or removes it from favorites if already hearted.
+  /// Returns {success, favorite, scheduleIds}.
+  Future<Map<String, dynamic>> toggleFavoriteSchedule(String scheduleId) =>
+      _sessionContentCall(
+        () => _dio.post(ApiConfig.managedEventToggleFavorite(scheduleId)),
+      );
+
   /// Likes a feed post, or removes the like if already liked.
   /// Returns {success, liked, likeCount}.
   Future<Map<String, dynamic>> toggleFeedPostLike(String postId) =>

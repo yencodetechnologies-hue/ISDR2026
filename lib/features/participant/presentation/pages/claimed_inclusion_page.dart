@@ -5,12 +5,12 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 
 class _Colors {
-  static const ink = Color(0xFF0F172A);
-  static const bg = Color(0xFFFAFAF9);
-  static const card = Color(0xFFFFFFFF);
-  static const muted = Color(0xFF8C8C90);
-  static const line = Color(0xFFECECEA);
-  static const green = Color(0xFF16A34A);
+  static const ink = Color(0xFFFFFFFF);
+  static const bg = Color(0xFF0A0A12);
+  static const card = Color(0xFF14141F);
+  static const muted = Color(0xFF9CA3AF);
+  static const line = Color(0x14FFFFFF);
+  static const green = Color(0xFF22C55E);
 }
 
 /// Shows only the inclusions the logged-in participant has already claimed.
@@ -70,7 +70,7 @@ class _ClaimedInclusionPageState extends State<ClaimedInclusionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _Colors.bg,
-      appBar: buildBrandGradientAppBar(
+      appBar: buildDarkAppBar(
         title: Text(
           'Claimed Inclusion',
           style: GoogleFonts.outfit(
@@ -83,7 +83,7 @@ class _ClaimedInclusionPageState extends State<ClaimedInclusionPage> {
       body: RefreshIndicator(
         onRefresh: _load,
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(color: Colors.white))
             : _error != null
                 ? ListView(
                     padding: const EdgeInsets.all(24),

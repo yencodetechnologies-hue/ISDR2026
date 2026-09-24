@@ -130,8 +130,8 @@ class StudentConferencePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAF9),
-      appBar: buildBrandGradientAppBar(
+      backgroundColor: const Color(0xFF0A0A12),
+      appBar: buildDarkAppBar(
         title: Text(
           'Student Conference',
           style: GoogleFonts.outfit(
@@ -204,7 +204,7 @@ class StudentConferencePage extends StatelessWidget {
         fontSize: 12,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.6,
-        color: const Color(0xFF8C8C90),
+        color: const Color(0xFF9CA3AF),
       ),
     );
   }
@@ -296,9 +296,9 @@ class StudentConferencePage extends StatelessWidget {
   Widget _buildKeynoteSpeakersSection() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -328,7 +328,7 @@ class StudentConferencePage extends StatelessWidget {
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.8,
-                  color: const Color(0xFF1E3A8A),
+                  color: const Color(0xFF93C5FD),
                 ),
               ),
             ],
@@ -340,7 +340,7 @@ class StudentConferencePage extends StatelessWidget {
             if (i < _keynoteSpeakers.length - 1)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 14),
-                child: Divider(color: Color(0xFFF1F5F9), height: 1),
+                child: Divider(color: Color(0xFF1E1E2A), height: 1),
               ),
           ],
         ],
@@ -357,9 +357,9 @@ class StudentConferencePage extends StatelessWidget {
           width: 96,
           height: 84,
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
+            color: const Color(0xFF1E1E2A),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+            border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(11),
@@ -385,7 +385,7 @@ class StudentConferencePage extends StatelessWidget {
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.3,
-                  color: const Color(0xFF1E3A8A),
+                  color: const Color(0xFF93C5FD),
                 ),
               ),
               const SizedBox(height: 2),
@@ -394,7 +394,7 @@ class StudentConferencePage extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF334155),
+                  color: const Color(0xFFCBD5E1),
                 ),
               ),
               const SizedBox(height: 3),
@@ -403,7 +403,7 @@ class StudentConferencePage extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   height: 1.35,
-                  color: const Color(0xFF64748B),
+                  color: const Color(0xFF9CA3AF),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -418,9 +418,9 @@ class StudentConferencePage extends StatelessWidget {
   Widget _buildPreambleCard() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -443,7 +443,7 @@ class StudentConferencePage extends StatelessWidget {
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.8,
-                  color: const Color(0xFF0F172A),
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -455,16 +455,16 @@ class StudentConferencePage extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 12.5,
               height: 1.55,
-              color: const Color(0xFF475569),
+              color: const Color(0xFFCBD5E1),
             ),
           ),
           const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: const Color(0xFF1E1E2A),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: const Color(0x1AFFFFFF)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -479,7 +479,7 @@ class StudentConferencePage extends StatelessWidget {
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
-                        color: const Color(0xFFB45309),
+                        color: const Color(0xFFFBBF24),
                       ),
                     ),
                   ],
@@ -490,7 +490,7 @@ class StudentConferencePage extends StatelessWidget {
                   style: GoogleFonts.outfit(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF0F172A),
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -499,7 +499,7 @@ class StudentConferencePage extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 11.5,
                     height: 1.45,
-                    color: const Color(0xFF64748B),
+                    color: const Color(0xFF9CA3AF),
                   ),
                 ),
               ],
@@ -515,9 +515,9 @@ class StudentConferencePage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -535,7 +535,7 @@ class StudentConferencePage extends StatelessWidget {
             height: 80,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+              border: Border.all(color: const Color(0x1AFFFFFF), width: 1),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
@@ -544,7 +544,7 @@ class StudentConferencePage extends StatelessWidget {
                 fit: BoxFit.cover,
                 alignment: Alignment.center,
                 errorBuilder: (_, __, ___) => Container(
-                  color: const Color(0xFFF1F5F9),
+                  color: const Color(0xFF1E1E2A),
                   child: const Icon(Icons.person, size: 36, color: Color(0xFF94A3B8)),
                 ),
               ),
@@ -563,7 +563,7 @@ class StudentConferencePage extends StatelessWidget {
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.4,
-                    color: const Color(0xFF0F172A),
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -582,7 +582,7 @@ class StudentConferencePage extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       height: 1.3,
-                      color: const Color(0xFF64748B),
+                      color: const Color(0xFF9CA3AF),
                     ),
                   ),
                 ],
@@ -591,7 +591,7 @@ class StudentConferencePage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
+                      color: const Color(0x26F59E0B),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -599,7 +599,7 @@ class StudentConferencePage extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFFB45309),
+                        color: const Color(0xFFFBBF24),
                       ),
                     ),
                   ),
@@ -616,9 +616,9 @@ class StudentConferencePage extends StatelessWidget {
   Widget _buildHospitalityAccordion() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -642,7 +642,7 @@ class StudentConferencePage extends StatelessWidget {
             leading: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: const Color(0x263B82F6),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.room_service_rounded, color: Color(0xFF2563EB), size: 20),
@@ -652,19 +652,19 @@ class StudentConferencePage extends StatelessWidget {
               style: GoogleFonts.outfit(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF0F172A),
+                color: Colors.white,
               ),
             ),
             subtitle: Text(
               '${_receptionHospitality.length} Committee Members',
               style: GoogleFonts.inter(
                 fontSize: 11,
-                color: const Color(0xFF64748B),
+                color: const Color(0xFF9CA3AF),
                 fontWeight: FontWeight.w500,
               ),
             ),
             children: [
-              const Divider(color: Color(0xFFF1F5F9), height: 1),
+              const Divider(color: Color(0xFF1E1E2A), height: 1),
               const SizedBox(height: 12),
               Column(
                 children: _receptionHospitality.map((name) {
@@ -687,7 +687,7 @@ class StudentConferencePage extends StatelessWidget {
                             style: GoogleFonts.inter(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF334155),
+                              color: const Color(0xFFCBD5E1),
                             ),
                           ),
                         ),

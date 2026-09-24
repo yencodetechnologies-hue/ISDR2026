@@ -60,8 +60,8 @@ class AccommodationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAF9),
-      appBar: buildBrandGradientAppBar(
+      backgroundColor: const Color(0xFF0A0A12),
+      appBar: buildDarkAppBar(
         title: Text(
           'Accommodation',
           style: GoogleFonts.outfit(
@@ -107,7 +107,7 @@ class AccommodationPage extends StatelessWidget {
         fontSize: 11.5,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.6,
-        color: const Color(0xFF8C8C90),
+        color: const Color(0xFF9CA3AF),
       ),
     );
   }
@@ -292,9 +292,9 @@ class AccommodationPage extends StatelessWidget {
   Widget _buildPaymentWarningCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
+        color: const Color(0x1AF59E0B),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+        border: Border.all(color: const Color(0x4DF59E0B), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFFD97706).withValues(alpha: 0.06),
@@ -322,7 +322,7 @@ class AccommodationPage extends StatelessWidget {
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
-                        color: const Color(0xFF92400E),
+                        color: const Color(0xFFFCD34D),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -332,7 +332,7 @@ class AccommodationPage extends StatelessWidget {
                         fontSize: 12,
                         height: 1.45,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF78350F),
+                        color: const Color(0xFFFCD34D),
                       ),
                     ),
                   ],
@@ -341,14 +341,14 @@ class AccommodationPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(color: Color(0xFFFDE68A), height: 1),
+          const Divider(color: Color(0x4DF59E0B), height: 1),
           const SizedBox(height: 12),
 
           // Contact Representative Pill Button
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFF14141F),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFFCD34D)),
             ),
@@ -357,10 +357,10 @@ class AccommodationPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
+                    color: const Color(0x26F59E0B),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.support_agent_rounded, color: Color(0xFFB45309), size: 20),
+                  child: const Icon(Icons.support_agent_rounded, color: Color(0xFFFBBF24), size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -372,14 +372,14 @@ class AccommodationPage extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0F172A),
+                          color: Colors.white,
                         ),
                       ),
                       Text(
                         'Accommodation & Details',
                         style: GoogleFonts.inter(
                           fontSize: 11,
-                          color: const Color(0xFF64748B),
+                          color: const Color(0xFF9CA3AF),
                         ),
                       ),
                     ],
@@ -417,9 +417,9 @@ class AccommodationPage extends StatelessWidget {
   Widget _buildScheduleCard() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -437,7 +437,7 @@ class AccommodationPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
+                    color: const Color(0x263B82F6),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.login_rounded, color: Color(0xFF2563EB), size: 20),
@@ -460,14 +460,14 @@ class AccommodationPage extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0F172A),
+                          color: Colors.white,
                         ),
                       ),
                       Text(
                         '9 October 2026',
                         style: GoogleFonts.inter(
                           fontSize: 11,
-                          color: const Color(0xFF64748B),
+                          color: const Color(0xFF9CA3AF),
                         ),
                       ),
                     ],
@@ -479,7 +479,7 @@ class AccommodationPage extends StatelessWidget {
           Container(
             height: 36,
             width: 1,
-            color: const Color(0xFFE2E8F0),
+            color: const Color(0x1AFFFFFF),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -488,7 +488,7 @@ class AccommodationPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
+                    color: const Color(0x26EF4444),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 20),
@@ -511,14 +511,14 @@ class AccommodationPage extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0F172A),
+                          color: Colors.white,
                         ),
                       ),
                       Text(
                         '11 October 2026',
                         style: GoogleFonts.inter(
                           fontSize: 11,
-                          color: const Color(0xFF64748B),
+                          color: const Color(0xFF9CA3AF),
                         ),
                       ),
                     ],
@@ -536,9 +536,9 @@ class AccommodationPage extends StatelessWidget {
   Widget _buildNearbyResortsList(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF14141F),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x1AFFFFFF)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -556,9 +556,9 @@ class AccommodationPage extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: const Color(0xFF1E1E2A),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: const Color(0x1AFFFFFF)),
                 ),
                 child: const Icon(Icons.hotel_outlined, size: 18, color: Color(0xFF2563EB)),
               ),
@@ -567,14 +567,14 @@ class AccommodationPage extends StatelessWidget {
                 style: GoogleFonts.outfit(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF0F172A),
+                  color: Colors.white,
                 ),
               ),
               subtitle: Text(
                 _nearbyResorts[i].phone,
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: const Color(0xFF64748B),
+                  color: const Color(0xFF9CA3AF),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -584,7 +584,7 @@ class AccommodationPage extends StatelessWidget {
               ),
             ),
             if (i < _nearbyResorts.length - 1)
-              const Divider(color: Color(0xFFF1F5F9), height: 1, indent: 16, endIndent: 16),
+              const Divider(color: Color(0xFF1E1E2A), height: 1, indent: 16, endIndent: 16),
           ],
         ],
       ),

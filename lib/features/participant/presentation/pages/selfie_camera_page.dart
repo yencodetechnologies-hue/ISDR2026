@@ -37,7 +37,11 @@ class _SelfieCameraPageState extends State<SelfieCameraPage> {
       (c) => c.lensDirection == CameraLensDirection.front,
       orElse: () => cameras.first,
     );
-    _controller = CameraController(front, ResolutionPreset.high, enableAudio: false);
+    _controller = CameraController(
+      front,
+      ResolutionPreset.high,
+      enableAudio: false,
+    );
     await _controller!.initialize();
     if (mounted) setState(() {});
   }
@@ -53,7 +57,8 @@ class _SelfieCameraPageState extends State<SelfieCameraPage> {
     setState(() => _busy = true);
     try {
       final boundary =
-          _captureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+          _captureKey.currentContext!.findRenderObject()
+              as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 2.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final bytes = byteData!.buffer.asUint8List();
@@ -71,7 +76,9 @@ class _SelfieCameraPageState extends State<SelfieCameraPage> {
     setState(() => _busy = true);
     try {
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/selfie_${DateTime.now().millisecondsSinceEpoch}.png');
+      final file = File(
+        '${dir.path}/selfie_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
       await file.writeAsBytes(_preview!);
       final res = await _api.createFeedPost(file.path);
       if (!mounted) return;
@@ -86,9 +93,9 @@ class _SelfieCameraPageState extends State<SelfieCameraPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _busy = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to post: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to post: $e')));
       }
     }
   }
@@ -120,23 +127,40 @@ class _SelfieCameraPageState extends State<SelfieCameraPage> {
     return Column(
       children: [
         Expanded(
-          child: RepaintBoundary(
-            key: _captureKey,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CameraPreview(_controller!),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Image.asset(
-                    'assets/Camera_banner_gemini.png',
-                    fit: BoxFit.fitWidth,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          child: Center(
+            // 1:1 capture area — the camera feed fills the square (cropped,
+            // not stretched) and the saved photo is square too.
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: RepaintBoundary(
+                key: _captureKey,
+                child: ClipRect(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          // previewSize is landscape; the preview is shown upright.
+                          width: _controller!.value.previewSize?.height ?? 1,
+                          height: _controller!.value.previewSize?.width ?? 1,
+                          child: CameraPreview(_controller!),
+                        ),
+                      ),
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Image.asset(
+                          'assets/Camera_banner_gemini.png',
+                          fit: BoxFit.fitWidth,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -147,7 +171,11 @@ class _SelfieCameraPageState extends State<SelfieCameraPage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
+                icon: const Icon(
+                  Icons.close_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
               GestureDetector(
@@ -178,9 +206,7 @@ class _SelfieCameraPageState extends State<SelfieCameraPage> {
   Widget _buildPreview() {
     return Column(
       children: [
-        Expanded(
-          child: Image.memory(_preview!, fit: BoxFit.contain),
-        ),
+        Expanded(child: Image.memory(_preview!, fit: BoxFit.contain)),
         Container(
           color: Colors.black,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
@@ -188,13 +214,18 @@ class _SelfieCameraPageState extends State<SelfieCameraPage> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: _busy ? null : () => setState(() => _preview = null),
+                  onPressed: _busy
+                      ? null
+                      : () => setState(() => _preview = null),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: Text('Retake', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  child: Text(
+                    'Retake',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -210,9 +241,15 @@ class _SelfieCameraPageState extends State<SelfieCameraPage> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
                         )
-                      : Text('Post', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+                      : Text(
+                          'Post',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                        ),
                 ),
               ),
             ],

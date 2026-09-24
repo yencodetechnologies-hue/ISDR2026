@@ -231,6 +231,12 @@ class ApiConfig {
   static String get managedEventMySpeakerSessions =>
       '$managedEventsBase/my-speaker-sessions';
 
+  // Participant favorites (hearted schedules)
+  static String get managedEventMyFavorites =>
+      '$managedEventsBase/my-favorites';
+  static String managedEventToggleFavorite(String scheduleId) =>
+      '$managedEventsBase/favorites/$scheduleId';
+
   // Session content: speaker files / polls / questions on one schedule row
   static String sessionContent(String scheduleId) =>
       '$baseUrl/session-content/$scheduleId';

@@ -37,12 +37,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
       final state = context.read<NotificationBloc>().state;
       if (state is NotificationLoaded && state.hasMore) {
         context.read<NotificationBloc>().add(
-              LoadNotifications(
-                page: _currentPage + 1,
-                type: _selectedType,
-                read: _readFilter,
-              ),
-            );
+          LoadNotifications(
+            page: _currentPage + 1,
+            type: _selectedType,
+            read: _readFilter,
+          ),
+        );
         setState(() => _currentPage++);
       }
     }
@@ -61,13 +61,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
       _currentPage = 1;
     });
     context.read<NotificationBloc>().add(
-          LoadNotifications(
-            page: 1,
-            type: _selectedType,
-            read: _readFilter,
-          ),
-        );
+      LoadNotifications(page: 1, type: _selectedType, read: _readFilter),
+    );
   }
+
+  /// Participants see this page in their black theme; everyone else keeps it light.
+  bool get _dark {
+    final s = context.read<AuthBloc>().state;
+    return s is AuthAuthenticated && s.user.userType == UserType.participant;
+  }
+
+  Color get _ink => _dark ? Colors.white : const Color(0xFF0F172A);
+  Color get _accent =>
+      _dark ? const Color(0xFF3B82F6) : const Color(0xFF13275D);
 
   bool _isFilterActive(String key) {
     switch (key) {
@@ -85,8 +91,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAF9),
-      appBar: buildBrandGradientAppBar(
+      backgroundColor: _dark
+          ? const Color(0xFF0A0A12)
+          : const Color(0xFFFAFAF9),
+      appBar: (_dark ? buildDarkAppBar : buildBrandGradientAppBar)(
         title: const Text('Notifications'),
         actions: [
           BlocBuilder<NotificationBloc, NotificationState>(
@@ -106,11 +114,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
           Builder(
             builder: (context) {
               final authState = context.read<AuthBloc>().state;
-              final isSecurity = authState is AuthAuthenticated &&
+              final isSecurity =
+                  authState is AuthAuthenticated &&
                   authState.user.userType == UserType.security;
               return PopupMenuButton<String>(
                 icon: const Icon(Icons.tune_rounded),
-                color: Colors.white,
+                color: _dark ? const Color(0xFF1E1E2A) : Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -133,13 +142,21 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   const PopupMenuItem(value: 'message', child: Text('Message')),
                   if (!isSecurity) ...[
                     const PopupMenuItem(
-                        value: 'visitor', child: Text('Visitor')),
+                      value: 'visitor',
+                      child: Text('Visitor'),
+                    ),
                     const PopupMenuItem(
-                        value: 'maintenance', child: Text('Maintenance')),
+                      value: 'maintenance',
+                      child: Text('Maintenance'),
+                    ),
                     const PopupMenuItem(
-                        value: 'payment', child: Text('Payment')),
+                      value: 'payment',
+                      child: Text('Payment'),
+                    ),
                     const PopupMenuItem(
-                        value: 'complaint', child: Text('Complaint')),
+                      value: 'complaint',
+                      child: Text('Complaint'),
+                    ),
                     const PopupMenuItem(value: 'notice', child: Text('Notice')),
                   ],
                 ],
@@ -150,8 +167,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ),
       body: BlocBuilder<NotificationBloc, NotificationState>(
         builder: (context, state) {
-          final unreadCount =
-              state is NotificationLoaded ? state.unreadCount : 0;
+          final unreadCount = state is NotificationLoaded
+              ? state.unreadCount
+              : 0;
 
           return Column(
             children: [
@@ -193,9 +211,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.12),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.25),
-              ),
+              border: Border.all(color: Colors.white.withOpacity(0.25)),
             ),
             child: const Icon(
               Icons.notifications_active_rounded,
@@ -273,7 +289,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
           final active = _isFilterActive(chip['key']!);
 
           return Material(
-            color: active ? const Color(0xFF13275D) : Colors.white,
+            color: active
+                ? _accent
+                : (_dark ? const Color(0xFF14141F) : Colors.white),
             borderRadius: BorderRadius.circular(20),
             elevation: active ? 2 : 0,
             child: InkWell(
@@ -289,11 +307,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
               },
               borderRadius: BorderRadius.circular(20),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: active ? const Color(0xFF13275D) : const Color(0xFFECECEA),
+                    color: active
+                        ? _accent
+                        : (_dark
+                              ? const Color(0x14FFFFFF)
+                              : const Color(0xFFECECEA)),
                   ),
                 ),
                 child: Text(
@@ -301,7 +326,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     fontSize: 12.5,
-                    color: active ? Colors.white : const Color(0xFF475569),
+                    color: active
+                        ? Colors.white
+                        : (_dark
+                              ? const Color(0xFFCBD5E1)
+                              : const Color(0xFF475569)),
                   ),
                 ),
               ),
@@ -314,9 +343,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Widget _buildBody(NotificationState state) {
     if (state is NotificationLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF13275D)),
-      );
+      return Center(child: CircularProgressIndicator(color: _accent));
     }
 
     if (state is NotificationError) {
@@ -331,7 +358,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       final grouped = _groupNotificationsByDate(state.notifications);
 
       return RefreshIndicator(
-        color: const Color(0xFF13275D),
+        color: _accent,
         onRefresh: () async {
           context.read<NotificationBloc>().add(const RefreshNotifications());
         },
@@ -352,7 +379,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         width: 4,
                         height: 16,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF13275D),
+                          color: _accent,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -362,30 +389,30 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         style: GoogleFonts.sora(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF0F172A),
+                          color: _ink,
                         ),
                       ),
                     ],
                   ),
                 ),
-                ...(entry['notifications'] as List<NotificationModel>)
-                    .map(
-                      (notification) => NotificationItem(
-                        notification: notification,
-                        onTap: () {
-                          if (!notification.read) {
-                            context.read<NotificationBloc>().add(
-                                  MarkAsRead(notification.id),
-                                );
-                          }
-                        },
-                        onDelete: () {
-                          context.read<NotificationBloc>().add(
-                                DeleteNotification(notification.id),
-                              );
-                        },
-                      ),
-                    ),
+                ...(entry['notifications'] as List<NotificationModel>).map(
+                  (notification) => NotificationItem(
+                    notification: notification,
+                    dark: _dark,
+                    onTap: () {
+                      if (!notification.read) {
+                        context.read<NotificationBloc>().add(
+                          MarkAsRead(notification.id),
+                        );
+                      }
+                    },
+                    onDelete: () {
+                      context.read<NotificationBloc>().add(
+                        DeleteNotification(notification.id),
+                      );
+                    },
+                  ),
+                ),
               ],
             );
           },
@@ -428,10 +455,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
 
     return groups.entries.map((entry) {
-      return {
-        'label': entry.key,
-        'notifications': entry.value,
-      };
+      return {'label': entry.key, 'notifications': entry.value};
     }).toList();
   }
 
@@ -446,13 +470,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFF13275D).withOpacity(0.08),
+                color: _accent.withOpacity(_dark ? 0.15 : 0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.notifications_none_rounded,
                 size: 40,
-                color: Color(0xFF13275D),
+                color: _accent,
               ),
             ),
             const SizedBox(height: 18),
@@ -461,7 +485,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               style: GoogleFonts.sora(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF0F172A),
+                color: _ink,
               ),
             ),
             const SizedBox(height: 6),

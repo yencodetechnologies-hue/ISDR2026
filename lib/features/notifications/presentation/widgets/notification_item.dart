@@ -8,11 +8,15 @@ class NotificationItem extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
 
+  /// Dark card for the participant screens' black theme.
+  final bool dark;
+
   const NotificationItem({
     super.key,
     required this.notification,
     this.onTap,
     this.onDelete,
+    this.dark = false,
   });
 
   Color _getTypeColor() {
@@ -70,6 +74,8 @@ class NotificationItem extends StatelessWidget {
     final typeColor = _getTypeColor();
     final typeIcon = _getTypeIcon();
     final isUnread = !notification.read;
+    // Navy is too dark on the black theme, so use a lighter blue there.
+    final accent = dark ? const Color(0xFF3B82F6) : const Color(0xFF13275D);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -94,12 +100,14 @@ class NotificationItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: dark ? const Color(0xFF14141F) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isUnread
-                      ? const Color(0xFF13275D)
-                      : const Color(0xFFECECEA),
+                      ? accent
+                      : (dark
+                            ? const Color(0x14FFFFFF)
+                            : const Color(0xFFECECEA)),
                   width: isUnread ? 1.5 : 1,
                 ),
                 boxShadow: [
@@ -118,9 +126,7 @@ class NotificationItem extends StatelessWidget {
                     Container(
                       width: 4,
                       height: 76,
-                      color: isUnread
-                          ? const Color(0xFF13275D)
-                          : typeColor.withOpacity(0.3),
+                      color: isUnread ? accent : typeColor.withOpacity(0.3),
                     ),
                     Expanded(
                       child: Padding(
@@ -152,7 +158,9 @@ class NotificationItem extends StatelessWidget {
                                             fontWeight: isUnread
                                                 ? FontWeight.bold
                                                 : FontWeight.w600,
-                                            color: const Color(0xFF0F172A),
+                                            color: dark
+                                                ? Colors.white
+                                                : const Color(0xFF0F172A),
                                             height: 1.25,
                                           ),
                                         ),
@@ -161,7 +169,9 @@ class NotificationItem extends StatelessWidget {
                                         Container(
                                           width: 8,
                                           height: 8,
-                                          margin: const EdgeInsets.only(left: 6),
+                                          margin: const EdgeInsets.only(
+                                            left: 6,
+                                          ),
                                           decoration: const BoxDecoration(
                                             shape: BoxShape.circle,
                                             color: Color(0xFF10B981),
@@ -174,7 +184,9 @@ class NotificationItem extends StatelessWidget {
                                     notification.body,
                                     style: GoogleFonts.inter(
                                       fontSize: 12.5,
-                                      color: const Color(0xFF475569),
+                                      color: dark
+                                          ? const Color(0xFFCBD5E1)
+                                          : const Color(0xFF475569),
                                       fontWeight: FontWeight.w500,
                                       height: 1.35,
                                     ),
@@ -191,8 +203,9 @@ class NotificationItem extends StatelessWidget {
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        DateFormat('MMM dd, yyyy • hh:mm a')
-                                            .format(notification.createdAt),
+                                        DateFormat(
+                                          'MMM dd, yyyy • hh:mm a',
+                                        ).format(notification.createdAt),
                                         style: GoogleFonts.inter(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w500,
@@ -218,4 +231,3 @@ class NotificationItem extends StatelessWidget {
     );
   }
 }
-

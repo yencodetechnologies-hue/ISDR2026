@@ -9,6 +9,8 @@ const {
   createSchedule,
   deleteSchedule,
   mySpeakerSessions,
+  myFavorites,
+  toggleFavorite,
 } = require('../controllers/eventScheduleController');
 const {
   listEvents,
@@ -32,6 +34,8 @@ router.get('/', protect, listEvents);
 router.get('/summary', protect, requireManagement, claimSummary);
 router.get('/my-registration', protect, getMyRegistration);
 router.get('/my-speaker-sessions', protect, mySpeakerSessions);
+router.get('/my-favorites', protect, myFavorites);
+router.post('/favorites/:scheduleId', protect, toggleFavorite);
 router.post('/claim-inclusion', protect, claimInclusion);
 router.post('/', protect, requireManagement, uploadSingleImage('photo'), createEvent);
 router.get('/:id', protect, getEvent);

@@ -25,6 +25,10 @@ import 'claimed_inclusion_page.dart';
 import 'available_inclusion_page.dart';
 import 'schedule_detail_page.dart';
 import 'participant_feed_page.dart';
+import 'favorites_page.dart';
+import 'speakers_page.dart';
+import 'upcoming_schedules_page.dart';
+import 'inclusions_page.dart';
 
 // ---------------------------------------------------------------------------
 // Management Theme Palette
@@ -66,6 +70,71 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
   // "Next Session" card. Picking a day tab jumps straight to that day's list.
   final List<Map<String, dynamic>> _upcomingQueue = [];
   DateTime? _selectedScheduleDate;
+
+  // The day's list shows 3 sessions; "More" rolls down the rest.
+  static const _daySessionsShown = 3;
+  bool _showAllDaySessions = false;
+
+  // Ids of the schedules this participant marked hot (saved on their account).
+  final Set<String> _favoriteIds = {};
+
+  Future<void> _loadFavorites() async {
+    final res = await _api.getMyFavorites();
+    if (!mounted || res['success'] != true) return;
+    setState(() {
+      _favoriteIds
+        ..clear()
+        ..addAll(
+          ((res['scheduleIds'] as List?) ?? const []).map((e) => e.toString()),
+        );
+    });
+  }
+
+  /// Flips the hot button right away, then syncs with the server (and flips back
+  /// if the request fails).
+  Future<void> _toggleFavorite(String scheduleId) async {
+    final wasFavorite = _favoriteIds.contains(scheduleId);
+    setState(() {
+      wasFavorite
+          ? _favoriteIds.remove(scheduleId)
+          : _favoriteIds.add(scheduleId);
+    });
+    final res = await _api.toggleFavoriteSchedule(scheduleId);
+    if (!mounted) return;
+    if (res['success'] != true) {
+      setState(() {
+        wasFavorite
+            ? _favoriteIds.add(scheduleId)
+            : _favoriteIds.remove(scheduleId);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['error']?.toString() ?? 'Could not update')),
+      );
+    }
+  }
+
+  void _openSchedules() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const UpcomingSchedulesPage()),
+    );
+  }
+
+  void _openSpeakers() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SpeakersPage()),
+    );
+  }
+
+  Future<void> _openFavorites() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const FavoritesPage()),
+    );
+    // Hot marks may have been removed on the Favorites page.
+    _loadFavorites();
+  }
 
   /// Every day that has a schedule — today (if it still has items) first,
   /// then each future day with upcoming programs, chronological.
@@ -121,6 +190,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
   void initState() {
     super.initState();
     _fetchLiveSchedule();
+    _loadFavorites();
     _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) _fetchLiveSchedule();
     });
@@ -291,19 +361,19 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       label: 'Speakers',
       icon: Icons.groups_rounded,
       color: const Color(0xFF14B8A6),
-      onTap: () => _dummyTap('Speakers'),
+      onTap: _openSpeakers,
     ),
     _ParticipantModuleItem(
       label: 'Schedule',
       icon: Icons.event_note_rounded,
       color: const Color(0xFFF97316),
-      onTap: () => _dummyTap('Schedule'),
+      onTap: _openSchedules,
     ),
     _ParticipantModuleItem(
       label: 'Inclusion',
       icon: Icons.card_giftcard_rounded,
       color: const Color(0xFF0EA5E9),
-      onTap: _showInclusionPicker,
+      onTap: _openInclusions,
     ),
     _ParticipantModuleItem(
       label: 'Committee',
@@ -361,35 +431,12 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     _showMoreModules(overflow);
   }
 
-  /// "Inclusion" combines the Claimed and Available Inclusion pages behind
-  /// one module button — a picker sheet lets the participant choose which.
-  void _showInclusionPicker() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => _ModuleSheet(
-        title: 'Inclusion',
-        items: [
-          _ModuleSheetItem(
-            label: 'Claimed Inclusion',
-            icon: Icons.verified_rounded,
-            color: const Color(0xFF0EA5E9),
-            onTap: () {
-              Navigator.pop(ctx);
-              _onTileTap('Claimed Inclusion');
-            },
-          ),
-          _ModuleSheetItem(
-            label: 'Available Inclusion',
-            icon: Icons.inventory_2_rounded,
-            color: const Color(0xFFF97316),
-            onTap: () {
-              Navigator.pop(ctx);
-              _onTileTap('Available Inclusion');
-            },
-          ),
-        ],
-      ),
+  /// "Inclusion" shows every inclusion day by day, with a "Claimed" banner
+  /// on the ones already claimed that day.
+  void _openInclusions() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const InclusionsPage()),
     );
   }
 
@@ -865,12 +912,12 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       _BottomNavItem(
         label: 'Favorites',
         icon: Icons.favorite_rounded,
-        onTap: () => _dummyTap('Favorites'),
+        onTap: _openFavorites,
       ),
       _BottomNavItem(
         label: 'Speaker',
         icon: Icons.groups_rounded,
-        onTap: () => _dummyTap('Speaker'),
+        onTap: _openSpeakers,
       ),
       _BottomNavItem(
         label: 'QR Pass',
@@ -1766,7 +1813,10 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                     final d = dates[i];
                     final active = d == selected;
                     return GestureDetector(
-                      onTap: () => setState(() => _selectedScheduleDate = d),
+                      onTap: () => setState(() {
+                        _selectedScheduleDate = d;
+                        _showAllDaySessions = false;
+                      }),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
@@ -1837,19 +1887,87 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
               ),
             ),
           )
-        else
-          ...List.generate(items.length, (i) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _scheduleListRow(
-                items[i],
-                _scheduleAccents[i % _scheduleAccents.length],
-              ),
-            );
-          }),
+        else ...[
+          ...List.generate(
+            items.length < _daySessionsShown ? items.length : _daySessionsShown,
+            (i) => _daySessionRow(items, i),
+          ),
+          // Extra sessions roll down below the first three.
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: _showAllDaySessions && items.length > _daySessionsShown
+                ? Column(
+                    children: [
+                      for (var i = _daySessionsShown; i < items.length; i++)
+                        _daySessionRow(items, i),
+                    ],
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+          if (items.length > _daySessionsShown)
+            _moreSessionsButton(items.length - _daySessionsShown),
+        ],
         const SizedBox(height: 4),
         _buildCmeCreditsBanner(),
       ],
+    );
+  }
+
+  Widget _daySessionRow(List<Map<String, dynamic>> items, int i) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: _scheduleListRow(
+        items[i],
+        _scheduleAccents[i % _scheduleAccents.length],
+      ),
+    );
+  }
+
+  /// "More (n)" / "Show less" toggle under the day's first three sessions.
+  Widget _moreSessionsButton(int extra) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () =>
+              setState(() => _showAllDaySessions = !_showAllDaySessions),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF14141F),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _showAllDaySessions ? 'Show less' : 'More ($extra)',
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF60A5FA),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                AnimatedRotation(
+                  turns: _showAllDaySessions ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  child: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 20,
+                    color: Color(0xFF60A5FA),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1972,6 +2090,8 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     final toTime = schedule['toTime']?.toString() ?? '';
     final hall = schedule['hall']?.toString() ?? '';
     final rowAccent = isLive ? const Color(0xFF22C55E) : accent;
+    final scheduleId = schedule['id']?.toString() ?? '';
+    final isFavorite = _favoriteIds.contains(scheduleId);
 
     return Container(
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(14)),
@@ -2092,6 +2212,28 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                                 ),
                               ),
                             ),
+                            if (scheduleId.isNotEmpty)
+                              IconButton(
+                                tooltip: isFavorite
+                                    ? 'Remove hot'
+                                    : 'Mark as hot',
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.only(left: 6),
+                                constraints: const BoxConstraints(
+                                  minWidth: 34,
+                                  minHeight: 34,
+                                ),
+                                onPressed: () => _toggleFavorite(scheduleId),
+                                icon: Icon(
+                                  isFavorite
+                                      ? Icons.local_fire_department_rounded
+                                      : Icons.local_fire_department_outlined,
+                                  size: 22,
+                                  color: isFavorite
+                                      ? const Color(0xFFF97316)
+                                      : Colors.white.withValues(alpha: 0.45),
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -2300,91 +2442,6 @@ class _ModuleSheetItem {
     required this.color,
     required this.onTap,
   });
-}
-
-/// Bottom sheet listing a handful of module shortcuts — used for the
-/// combined "Inclusion" picker and the "More" overflow menu.
-class _ModuleSheet extends StatelessWidget {
-  final String title;
-  final List<_ModuleSheetItem> items;
-
-  const _ModuleSheet({required this.title, required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF14141F),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Text(
-              title,
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 12),
-            for (final item in items)
-              InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: item.onTap,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: item.color,
-                          borderRadius: BorderRadius.circular(11),
-                        ),
-                        child: Icon(item.icon, size: 19, color: Colors.white),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          item.label,
-                          style: GoogleFonts.inter(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.9),
-                          ),
-                        ),
-                      ),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: Colors.white.withValues(alpha: 0.4),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 /// Full page listing every module that didn't fit in the grid, plus Settings.
