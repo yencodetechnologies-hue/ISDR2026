@@ -52,6 +52,7 @@ import FirebaseMessaging
     // production APNs and never arrived. `apnsToken` follows the signed
     // aps-environment instead.
     Messaging.messaging().apnsToken = deviceToken
+    NSLog("APNs token received (%lu bytes)", deviceToken.count)
   }
 
   override func application(
