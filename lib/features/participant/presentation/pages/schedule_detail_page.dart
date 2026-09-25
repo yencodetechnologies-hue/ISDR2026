@@ -11,12 +11,7 @@ import '../widgets/session_content_section.dart';
 
 class _Colors {
   static const bg = Color(0xFF0A0F24);
-  static const card = Color(0xFF111A33);
-  static const panel = Color(0xFF15204A);
   static const line = Color(0x1AFFFFFF);
-  static const muted = Color(0xFF9CA3AF);
-  static const blue = Color(0xFF3B82F6);
-  static const nameBlue = Color(0xFF60A5FA);
   static const live = Color(0xFF22C55E);
 }
 
@@ -136,6 +131,63 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
         now.isBefore(window.end);
     final isPast = window != null && now.isAfter(window.end);
 
+    final dateTile = window == null
+        ? null
+        : _InfoTile(
+            icon: Icons.calendar_month_rounded,
+            color: const Color(0xFF3B82F6),
+            label: 'DATE',
+            value: DateFormat('EEEE,\nd MMM yyyy').format(window.start),
+          );
+    final timeTile = window == null
+        ? null
+        : _InfoTile(
+            icon: Icons.access_time_rounded,
+            color: const Color(0xFF14B8A6),
+            label: 'TIME',
+            value:
+                '${DateFormat('h:mm a').format(window.start)} -\n'
+                '${DateFormat('h:mm a').format(window.end)}',
+          );
+    final hallTile = hall.isEmpty
+        ? null
+        : _InfoTile(
+            icon: Icons.apartment_rounded,
+            color: const Color(0xFF8B5CF6),
+            label: 'HALL',
+            value: hall,
+          );
+    final locationTile = venue.isEmpty
+        ? null
+        : _InfoTile(
+            icon: Icons.location_on_rounded,
+            color: const Color(0xFFE11D48),
+            label: 'LOCATION',
+            value: venue,
+            onTap: () => _openMap(venue),
+          );
+
+    // Two tiles side by side (or one full width when the other is missing).
+    Widget pair(Widget? a, Widget? b) {
+      final tiles = [a, b].whereType<Widget>().toList();
+      if (tiles.isEmpty) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: tiles[0]),
+              if (tiles.length > 1) ...[
+                const SizedBox(width: 10),
+                Expanded(child: tiles[1]),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: _Colors.bg,
       appBar: AppBar(
@@ -144,9 +196,10 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
         scrolledUnderElevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
-        leadingWidth: 64,
+        leadingWidth: 60,
+        toolbarHeight: 56,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 12),
+          padding: const EdgeInsets.only(left: 14),
           child: _CircleButton(
             icon: Icons.arrow_back_rounded,
             onTap: () => Navigator.pop(context),
@@ -155,108 +208,27 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
         title: Text(
           'Program Details',
           style: GoogleFonts.outfit(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
             color: Colors.white,
           ),
         ),
-        actions: const [_ReminderBellButton(), SizedBox(width: 12)],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: _Colors.line),
-        ),
+        actions: const [_ReminderBellButton(), SizedBox(width: 14)],
       ),
       bottomNavigationBar: _isParticipant && _scheduleId.isNotEmpty
           ? _saveButton()
           : null,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 14),
         children: [
           _speakerHeader(speakerName, speakerPhoto, isLive, isPast),
-          const SizedBox(height: 22),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: _Colors.card,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: _Colors.line),
-            ),
-            child: Column(
-              children: [
-                _titlePanel(scheduleName, eventTitle),
-                if (window != null) ...[
-                  const SizedBox(height: 12),
-                  _InfoTile(
-                    icon: Icons.calendar_month_rounded,
-                    color: const Color(0xFF3B82F6),
-                    label: 'DATE',
-                    value: DateFormat('EEEE, d MMM yyyy').format(window.start),
-                  ),
-                  const SizedBox(height: 10),
-                  _InfoTile(
-                    icon: Icons.access_time_rounded,
-                    color: const Color(0xFF14B8A6),
-                    label: 'TIME',
-                    value:
-                        '${DateFormat('h:mm a').format(window.start)} - '
-                        '${DateFormat('h:mm a').format(window.end)}',
-                  ),
-                ],
-                if (hall.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  _InfoTile(
-                    icon: Icons.apartment_rounded,
-                    color: const Color(0xFF8B5CF6),
-                    label: 'HALL',
-                    value: hall,
-                  ),
-                ],
-                if (venue.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  _InfoTile(
-                    icon: Icons.location_on_rounded,
-                    color: const Color(0xFFEF4444),
-                    label: 'LOCATION',
-                    value: venue,
-                    onTap: () => _openMap(venue),
-                  ),
-                ],
-              ],
-            ),
-          ),
+          const SizedBox(height: 10),
+          _titlePanel(scheduleName, eventTitle),
+          pair(dateTile, timeTile),
+          pair(hallTile, locationTile),
           if (description.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: _Colors.card,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _Colors.line),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'ABOUT THIS SESSION',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: .6,
-                      color: _Colors.muted,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    description,
-                    style: GoogleFonts.inter(
-                      fontSize: 13.5,
-                      color: Colors.white.withValues(alpha: 0.9),
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 10),
+            _aboutCard(description),
           ],
           // Files, polls and questions the speaker added to this session.
           if (_scheduleId.isNotEmpty)
@@ -266,191 +238,82 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
     );
   }
 
-  /// Photo with a glowing ring, name ("Dr." white + name in blue), tagline and
-  /// the status pill, with a light-bulb accent at the top right.
+  /// Glowing card: speaker photo, "SPEAKER" pill, name, tagline, status pill
+  /// and the light-bulb quote on the right.
   Widget _speakerHeader(String name, String photo, bool isLive, bool isPast) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    final hasPrefix =
-        parts.length > 1 && parts.first.toLowerCase().startsWith('dr');
-    final prefix = hasPrefix ? '${parts.first} ' : '';
-    final rest = hasPrefix ? parts.skip(1).join(' ') : name.trim();
-    final initials = (hasPrefix ? parts.skip(1) : parts)
-        .where((w) => w.isNotEmpty)
+    final initials = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty && !w.toLowerCase().startsWith('dr'))
         .take(2)
         .map((w) => w[0].toUpperCase())
         .join();
 
     final statusLabel = isLive ? 'LIVE NOW' : (isPast ? 'ENDED' : 'UPCOMING');
-    final statusColors = isLive
-        ? const [Color(0xFF16A34A), Color(0xFF22C55E)]
+    final statusColor = isLive
+        ? const Color(0xFF22C55E)
         : isPast
-        ? const [Color(0xFF475569), Color(0xFF64748B)]
-        : const [Color(0xFF2563EB), Color(0xFF4F46E5)];
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF60A5FA);
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Positioned(
-          right: 0,
-          top: -6,
-          child: Icon(
-            Icons.lightbulb_outline_rounded,
-            size: 38,
-            color: _Colors.nameBlue.withValues(alpha: 0.8),
-          ),
-        ),
-        Row(
-          children: [
-            Container(
-              width: 116,
-              height: 116,
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF3B82F6), Color(0xFFA855F7)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF3B82F6).withValues(alpha: 0.45),
-                    blurRadius: 22,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: CircleAvatar(
-                backgroundColor: const Color(0xFF1E3A8A),
-                backgroundImage: photo.isNotEmpty
-                    ? CachedNetworkImageProvider(photo)
-                    : null,
-                child: photo.isEmpty
-                    ? Text(
-                        initials.isEmpty ? '?' : initials,
-                        style: GoogleFonts.outfit(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      )
-                    : null,
-              ),
-            ),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 36),
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: prefix,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          TextSpan(
-                            text: rest,
-                            style: const TextStyle(color: _Colors.nameBlue),
-                          ),
-                        ],
-                      ),
-                      style: GoogleFonts.outfit(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        height: 1.15,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Inspiring Minds  |  Building Futures',
-                    style: GoogleFonts.inter(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white.withValues(alpha: 0.75),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: statusColors),
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: statusColors.last.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isLive
-                              ? Icons.sensors_rounded
-                              : Icons.person_outline_rounded,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          statusLabel,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.6,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  /// Gradient panel with the graduation-cap art, session title, the event
-  /// name pill and the tooth mark.
-  Widget _titlePanel(String scheduleName, String eventTitle) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+      padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(26),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1B2B5E), _Colors.panel],
+          colors: [Color(0xFF0F1A46), Color(0xFF1A1250), Color(0xFF3B1780)],
         ),
+        border: Border.all(
+          color: const Color(0xFF3B82F6).withValues(alpha: 0.55),
+          width: 1.4,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF3B82F6).withValues(alpha: 0.25),
+            blurRadius: 18,
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 58,
-            height: 58,
+            width: 78,
+            height: 78,
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF2563EB), Color(0xFF1E3A8A)],
+              shape: BoxShape.circle,
+              gradient: const SweepGradient(
+                colors: [
+                  Color(0xFF3B82F6),
+                  Color(0xFFA855F7),
+                  Color(0xFFEC4899),
+                  Color(0xFF3B82F6),
+                ],
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.5),
+                  blurRadius: 20,
+                ),
+              ],
             ),
-            child: const Icon(
-              Icons.school_rounded,
-              size: 34,
-              color: Colors.white,
+            child: CircleAvatar(
+              backgroundColor: const Color(0xFF1E3A8A),
+              backgroundImage: photo.isNotEmpty
+                  ? CachedNetworkImageProvider(photo)
+                  : null,
+              child: photo.isEmpty
+                  ? Text(
+                      initials.isEmpty ? '?' : initials,
+                      style: GoogleFonts.outfit(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    )
+                  : null,
             ),
           ),
           const SizedBox(width: 12),
@@ -458,35 +321,211 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _pill(
+                  Icons.mic_rounded,
+                  'SPEAKER',
+                  const [Color(0xFF7C3AED), Color(0xFF6366F1)],
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  name,
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    height: 1.15,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Inspiring Minds  |  Building Futures',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withValues(alpha: 0.8),
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isLive
+                            ? Icons.sensors_rounded
+                            : Icons.person_outline_rounded,
+                        size: 13,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        statusLabel,
+                        style: GoogleFonts.inter(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 60,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Icon(
+                  Icons.lightbulb_outline_rounded,
+                  size: 24,
+                  color: Color(0xFF38BDF8),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '“Ideas today build better tomorrows”',
+                  textAlign: TextAlign.right,
+                  style: GoogleFonts.dancingScript(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    height: 1.15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Small gradient pill with an icon, e.g. "SPEAKER" or "KEYNOTE".
+  Widget _pill(IconData icon, String label, List<Color> colors) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: colors),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Gradient panel: graduation-cap art, "KEYNOTE"/"SESSION" pill, session
+  /// title, the event name pill and the tooth mark.
+  Widget _titlePanel(String scheduleName, String eventTitle) {
+    final isKeynote = scheduleName.toLowerCase().contains('keynote');
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1D2F8A), Color(0xFF2B2A9E), Color(0xFF4C1D95)],
+        ),
+        border: Border.all(
+          color: const Color(0xFF60A5FA).withValues(alpha: 0.7),
+          width: 1.4,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+            blurRadius: 18,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Icon(
+                Icons.menu_book_rounded,
+                size: 44,
+                color: Color(0xFFE0E7FF),
+              ),
+              Positioned(
+                top: -13,
+                left: 4,
+                child: Icon(
+                  Icons.school_rounded,
+                  size: 33,
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.95),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _pill(
+                  Icons.star_rounded,
+                  isKeynote ? 'KEYNOTE' : 'SESSION',
+                  const [Color(0xFFA855F7), Color(0xFF7C3AED)],
+                ),
+                const SizedBox(height: 6),
                 Text(
                   scheduleName,
                   style: GoogleFonts.outfit(
-                    fontSize: 19,
+                    fontSize: 16.5,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                     height: 1.2,
                   ),
                 ),
                 if (eventTitle.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 7),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
-                      vertical: 5,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _Colors.blue.withValues(alpha: 0.12),
+                      color: const Color(0xFF1E3A8A).withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: _Colors.blue.withValues(alpha: 0.4),
+                        color: const Color(0xFF60A5FA).withValues(alpha: 0.6),
                       ),
                     ),
                     child: Text(
                       eventTitle,
                       style: GoogleFonts.inter(
-                        fontSize: 11.5,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w600,
-                        color: _Colors.nameBlue,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -496,14 +535,107 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
           ),
           const SizedBox(width: 6),
           Opacity(
-            opacity: 0.85,
+            opacity: 0.9,
             child: Image.asset(
               'assets/ISDR 2026 Logo.png',
-              width: 44,
-              height: 44,
+              width: 38,
+              height: 38,
               fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.medical_services_outlined,
+                size: 44,
+                color: Color(0xFF7DD3FC),
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// "About this session" card: document icon, accent line and the text.
+  Widget _aboutCard(String description) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF14163F), Color(0xFF2A1466)],
+        ),
+        border: Border.all(
+          color: const Color(0xFF8B5CF6).withValues(alpha: 0.6),
+          width: 1.2,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -6,
+            bottom: -10,
+            child: Icon(
+              Icons.biotech_rounded,
+              size: 70,
+              color: const Color(0xFF3B82F6).withValues(alpha: 0.18),
+            ),
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF9333EA), Color(0xFF6D28D9)],
+                  ),
+                ),
+                child: const Icon(
+                  Icons.description_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.only(left: 12),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.8),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ABOUT THIS SESSION',
+                        style: GoogleFonts.inter(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: .8,
+                          color: Colors.white.withValues(alpha: 0.85),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        description,
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          color: Colors.white.withValues(alpha: 0.92),
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -520,12 +652,12 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
         child: Material(
           color: Colors.transparent,
           child: Ink(
-            height: 58,
+            height: 48,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: saved
                     ? const [Color(0xFF15803D), Color(0xFF16A34A)]
-                    : const [Color(0xFF1E1B6B), Color(0xFF2563EB)],
+                    : const [Color(0xFF9333EA), Color(0xFF2563EB)],
               ),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
@@ -571,7 +703,7 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
                                 ? 'Saved to My Schedule'
                                 : 'Save to My Schedule',
                             style: GoogleFonts.outfit(
-                              fontSize: 16.5,
+                              fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
@@ -681,27 +813,28 @@ class _InfoTile extends StatelessWidget {
       color: Colors.transparent,
       child: Ink(
         decoration: BoxDecoration(
-          color: const Color(0xFF0E1630),
-          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFF0E1638),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: _Colors.line),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+            padding: const EdgeInsets.fromLTRB(8, 8, 2, 8),
             child: Row(
               children: [
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.18),
+                    color: color.withValues(alpha: 0.25),
                     shape: BoxShape.circle,
+                    border: Border.all(color: color.withValues(alpha: 0.7)),
                   ),
-                  child: Icon(icon, color: color, size: 23),
+                  child: Icon(icon, color: Colors.white, size: 17),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -709,18 +842,18 @@ class _InfoTile extends StatelessWidget {
                       Text(
                         label,
                         style: GoogleFonts.inter(
-                          fontSize: 11,
+                          fontSize: 9.5,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.6,
                           color: color.withValues(alpha: 0.9),
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 2),
                       Text(
                         value,
                         style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),

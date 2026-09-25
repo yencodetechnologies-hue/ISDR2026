@@ -5,7 +5,7 @@ import '../../../../core/services/api_service.dart';
 class _Colors {
   static const ink = Color(0xFFFFFFFF);
   static const primaryBlue = Color(0xFF3B82F6);
-  static const card = Color(0xFF14141F);
+  static const card = Color(0xFF0E1638);
   static const muted = Color(0xFF9CA3AF);
   static const line = Color(0x14FFFFFF);
   static const green = Color(0xFF22C55E);
@@ -104,6 +104,8 @@ class _SessionContentSectionState extends State<SessionContentSection> {
         if (_polls.isNotEmpty)
           _Group(
             title: 'POLLS',
+            icon: Icons.bar_chart_rounded,
+            color: const Color(0xFF10B981),
             children: [
               for (var i = 0; i < _polls.length; i++)
                 _PollCard(
@@ -118,6 +120,8 @@ class _SessionContentSectionState extends State<SessionContentSection> {
         if (_questions.isNotEmpty)
           _Group(
             title: 'QUESTIONS',
+            icon: Icons.help_outline_rounded,
+            color: const Color(0xFF3B82F6),
             children: [
               for (var i = 0; i < _questions.length; i++)
                 _QuestionCard(
@@ -132,6 +136,8 @@ class _SessionContentSectionState extends State<SessionContentSection> {
         if (_canRespond)
           _Group(
             title: 'RATE THIS SESSION',
+            icon: Icons.star_rounded,
+            color: const Color(0xFFF59E0B),
             children: [
               _RateCard(
                 scheduleId: widget.scheduleId,
@@ -143,6 +149,8 @@ class _SessionContentSectionState extends State<SessionContentSection> {
         if (_isSpeaker)
           _Group(
             title: 'RATINGS & COMMENTS',
+            icon: Icons.reviews_rounded,
+            color: const Color(0xFFF59E0B),
             children: [
               _RatingsSummary(summary: _ratingSummary),
               for (final r in _ratings) _RatingTile(rating: r),
@@ -153,37 +161,60 @@ class _SessionContentSectionState extends State<SessionContentSection> {
   }
 }
 
-/// Dark card with a small uppercase heading, like "ABOUT THIS SESSION".
+/// Dark card with a round coloured icon and a small uppercase heading.
 class _Group extends StatelessWidget {
   final String title;
+  final IconData icon;
+  final Color color;
   final List<Widget> children;
 
-  const _Group({required this.title, required this.children});
+  const _Group({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.children,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
         color: _Colors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _Colors.line),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0x2E60A5FA)),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: .6,
-              color: _Colors.muted,
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: Icon(icon, color: Colors.white, size: 19),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: .8,
+                    color: color == const Color(0xFFF59E0B)
+                        ? Colors.white.withValues(alpha: 0.85)
+                        : color,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                ...children,
+              ],
             ),
           ),
-          const SizedBox(height: 10),
-          ...children,
         ],
       ),
     );
@@ -245,10 +276,10 @@ class _PollCardState extends State<_PollCard> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E2A),
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFF151D45),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _Colors.line),
       ),
       child: Column(
@@ -284,21 +315,37 @@ class _PollCardState extends State<_PollCard> {
           else if (canVote)
             Align(
               alignment: Alignment.centerRight,
-              child: FilledButton(
-                onPressed: _selected == null || _sending ? null : _vote,
-                style: FilledButton.styleFrom(
-                  backgroundColor: _Colors.primaryBlue,
+              child: Opacity(
+                opacity: _selected == null ? 0.55 : 1,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF7C3AED), Color(0xFF2563EB)],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: FilledButton.icon(
+                    onPressed: _selected == null || _sending ? null : _vote,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      disabledBackgroundColor: Colors.transparent,
+                      disabledForegroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      shape: const StadiumBorder(),
+                    ),
+                    icon: _sending
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.send_rounded, size: 16),
+                    label: const Text('Submit vote'),
+                  ),
                 ),
-                child: _sending
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Submit vote'),
               ),
             ),
         ],
@@ -313,11 +360,11 @@ class _PollCardState extends State<_PollCard> {
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
             color: chosen
                 ? _Colors.primaryBlue.withValues(alpha: 0.15)
-                : const Color(0xFF14141F),
+                : const Color(0xFF0B1230),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: chosen ? _Colors.primaryBlue : _Colors.line,

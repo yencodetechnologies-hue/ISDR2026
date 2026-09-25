@@ -21,6 +21,7 @@ import 'accommodation_page.dart';
 import 'claimed_inclusion_page.dart';
 import 'available_inclusion_page.dart';
 import 'schedule_detail_page.dart';
+import 'all_sessions_page.dart';
 import 'participant_profile_page.dart';
 import 'participant_feed_page.dart';
 import 'favorites_page.dart';
@@ -1622,7 +1623,16 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
             ),
             const Spacer(),
             GestureDetector(
-              onTap: () => _onTileTap('Upcoming Events'),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AllSessionsPage(
+                    items: List.of(_allItems),
+                    days: _scheduleDates,
+                    initialDay: _selectedScheduleDate,
+                  ),
+                ),
+              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

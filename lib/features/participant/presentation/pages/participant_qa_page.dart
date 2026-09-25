@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
+import 'participant_polls_page.dart';
 
 List<Map<String, dynamic>> _list(dynamic raw) => ((raw as List?) ?? const [])
     .map((e) => Map<String, dynamic>.from(e as Map))
@@ -12,19 +13,6 @@ List<Map<String, dynamic>> _list(dynamic raw) => ((raw as List?) ?? const [])
 Text _title(String text) => Text(
   text,
   style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700),
-);
-
-Widget _sectionLabel(String text) => Padding(
-  padding: const EdgeInsets.only(bottom: 10),
-  child: Text(
-    text,
-    style: GoogleFonts.inter(
-      fontSize: 11,
-      fontWeight: FontWeight.w700,
-      letterSpacing: .6,
-      color: DarkColors.muted,
-    ),
-  ),
 );
 
 Widget _emptyState(IconData icon, String text) => Padding(
@@ -114,6 +102,7 @@ class _ParticipantQaPageState extends State<ParticipantQaPage> {
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _questions = [];
+  bool _pendingOnly = false;
 
   @override
   void initState() {
@@ -141,124 +130,398 @@ class _ParticipantQaPageState extends State<ParticipantQaPage> {
   @override
   Widget build(BuildContext context) {
     final pending = _questions.where((q) => q['myAnswer'] == null).length;
+    final shown = _pendingOnly
+        ? _questions.where((q) => q['myAnswer'] == null).toList()
+        : _questions;
     return Scaffold(
-      backgroundColor: DarkColors.bg,
-      appBar: buildDarkAppBar(title: _title('Q/A')),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _ActionCard(
-                    icon: Icons.record_voice_over_rounded,
-                    color: const Color(0xFF3B82F6),
-                    title: 'Ask a Speaker',
-                    subtitle: 'Send your question',
-                    onTap: () => _open(const AskSpeakerPage()),
+      backgroundColor: const Color(0xFF070B1F),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(40, 6, 40, 10),
+          child: _GradientButton(
+            icon: Icons.calendar_month_rounded,
+            label: 'View All Polls & Q/A',
+            onTap: () => _open(const ParticipantPollsPage()),
+          ),
+        ),
+      ),
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: _load,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(14, 6, 14, 16),
+            children: [
+              _header(),
+              const SizedBox(height: 12),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _ActionCard(
+                        icon: Icons.mic_rounded,
+                        colors: const [Color(0xFF3B1780), Color(0xFF1E1B6B)],
+                        iconColors: const [Color(0xFFA855F7), Color(0xFF7C3AED)],
+                        border: const Color(0xFF8B5CF6),
+                        title: 'Ask a Speaker',
+                        subtitle: 'Send your question',
+                        onTap: () => _open(const AskSpeakerPage()),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ActionCard(
+                        icon: Icons.mark_chat_read_rounded,
+                        colors: const [Color(0xFF0E3B66), Color(0xFF12235E)],
+                        iconColors: const [Color(0xFF06B6D4), Color(0xFF2563EB)],
+                        border: const Color(0xFF22D3EE),
+                        title: 'My Questions',
+                        subtitle: 'View your answers',
+                        onTap: () => _open(const MyQuestionsPage()),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF3B82F6), Color(0xFF7C3AED)],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.question_answer_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      'Questions for You',
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  if (pending > 0) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF4338CA), Color(0xFF6D28D9)],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '$pending TO ANSWER',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: .6,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  // Filter: only the questions still to answer, or all.
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => setState(() => _pendingOnly = !_pendingOnly),
+                    child: Container(
+                      width: 38,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: _pendingOnly
+                            ? const Color(0xFF3B82F6).withValues(alpha: 0.3)
+                            : const Color(0xFF0E1638),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF3B82F6).withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.tune_rounded,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_error != null)
+                _emptyState(Icons.error_outline_rounded, _error!)
+              else if (shown.isEmpty)
+                _emptyState(
+                  Icons.quiz_outlined,
+                  _pendingOnly
+                      ? 'No questions left to answer'
+                      : 'No questions from speakers yet',
+                )
+              else
+                for (final q in shown)
+                  _SessionQuestionCard(
+                    key: ValueKey(q['id']),
+                    question: q,
+                    onAnswered: (text) => setState(() => q['myAnswer'] = text),
+                  ),
+              const SizedBox(height: 4),
+              _tipCard(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Back button, the "Q/A" title with its badge, the tagline and the
+  /// question-bubble art.
+  Widget _header() {
+    return SizedBox(
+      height: 76,
+      child: Stack(
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF111A3D),
+                  border: Border.all(
+                    color: const Color(0xFF3B82F6).withValues(alpha: 0.5),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _ActionCard(
-                    icon: Icons.mark_chat_read_rounded,
-                    color: const Color(0xFF22C55E),
-                    title: 'My Questions',
-                    subtitle: "Speakers' answers",
-                    onTap: () => _open(const MyQuestionsPage()),
+                child: const Icon(
+                  Icons.arrow_back_rounded,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8B5CF6), Color(0xFF4F46E5)],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.help_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Q/A',
+                      style: GoogleFonts.outfit(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Ask  •  Discuss  •  Learn',
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    color: const Color(0xFFBFDBFE),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            _sectionLabel(
-              pending > 0
-                  ? 'QUESTIONS FOR YOU · $pending TO ANSWER'
-                  : 'QUESTIONS FOR YOU',
-            ),
-            if (_loading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_error != null)
-              _emptyState(Icons.error_outline_rounded, _error!)
-            else if (_questions.isEmpty)
-              _emptyState(
-                Icons.quiz_outlined,
-                'No questions from speakers yet',
-              )
-            else
-              for (var i = 0; i < _questions.length; i++)
-                _SessionQuestionCard(
-                  key: ValueKey(_questions[i]['id']),
-                  question: _questions[i],
-                  onAnswered: (text) =>
-                      setState(() => _questions[i]['myAnswer'] = text),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  size: 44,
+                  color: Color(0xFF3B82F6),
                 ),
-          ],
+                const Positioned(
+                  left: 13,
+                  top: 8,
+                  child: Text(
+                    '?',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF60A5FA),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: -8,
+                  bottom: -4,
+                  child: Icon(
+                    Icons.chat_bubble_rounded,
+                    size: 24,
+                    color: const Color(0xFFA855F7).withValues(alpha: 0.9),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tipCard() {
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0E1638), Color(0xFF1B1452)],
         ),
+        border: Border.all(
+          color: const Color(0xFF6366F1).withValues(alpha: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF22D3EE), width: 1.5),
+            ),
+            child: const Icon(
+              Icons.lightbulb_outline_rounded,
+              color: Color(0xFF22D3EE),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your questions make the session more valuable!',
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Be a part of the discussion.',
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ActionCard extends StatelessWidget {
+/// Wide purple-to-blue pill button with an icon, a divider and an arrow.
+class _GradientButton extends StatelessWidget {
   final IconData icon;
-  final Color color;
-  final String title;
-  final String subtitle;
+  final String label;
   final VoidCallback onTap;
 
-  const _ActionCard({
+  const _GradientButton({
     required this.icon,
-    required this.color,
-    required this.title,
-    required this.subtitle,
+    required this.label,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: DarkColors.card,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: DarkColors.line),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      color: Colors.transparent,
+      child: Ink(
+        height: 50,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF9333EA), Color(0xFF2563EB)],
+          ),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+              blurRadius: 14,
+            ),
+          ],
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: onTap,
+          child: Row(
             children: [
+              const SizedBox(width: 22),
+              Icon(icon, color: Colors.white, size: 22),
               Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: Colors.white, size: 21),
+                width: 1,
+                height: 22,
+                margin: const EdgeInsets.symmetric(horizontal: 14),
+                color: Colors.white.withValues(alpha: 0.4),
               ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: GoogleFonts.outfit(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.outfit(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: GoogleFonts.inter(fontSize: 11.5, color: DarkColors.muted),
-              ),
+              const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+              const SizedBox(width: 20),
             ],
           ),
         ),
@@ -267,7 +530,116 @@ class _ActionCard extends StatelessWidget {
   }
 }
 
-/// A speaker's session question: type one answer, or see the one you gave.
+class _ActionCard extends StatelessWidget {
+  final IconData icon;
+  final List<Color> colors;
+  final List<Color> iconColors;
+  final Color border;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _ActionCard({
+    required this.icon,
+    required this.colors,
+    required this.iconColors,
+    required this.border,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: colors,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: border.withValues(alpha: 0.8), width: 1.4),
+          boxShadow: [
+            BoxShadow(color: border.withValues(alpha: 0.25), blurRadius: 14),
+          ],
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(colors: iconColors),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 26),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: GoogleFonts.inter(
+                              fontSize: 11.5,
+                              color: Colors.white.withValues(alpha: 0.75),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: iconColors.last,
+                      ),
+                      child: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A speaker's session question: tap Submit Answer to type one answer, or see
+/// the one you gave.
 class _SessionQuestionCard extends StatefulWidget {
   final Map<String, dynamic> question;
   final ValueChanged<String> onAnswered;
@@ -285,6 +657,7 @@ class _SessionQuestionCard extends StatefulWidget {
 class _SessionQuestionCardState extends State<_SessionQuestionCard> {
   final _controller = TextEditingController();
   bool _sending = false;
+  bool _open = false;
 
   @override
   void dispose() {
@@ -316,49 +689,184 @@ class _SessionQuestionCardState extends State<_SessionQuestionCard> {
     }
   }
 
+  String _ago(DateTime? t) {
+    if (t == null) return '';
+    final d = DateTime.now().difference(t);
+    if (d.inMinutes < 1) return 'Asked just now';
+    if (d.inHours < 1) return 'Asked ${d.inMinutes} min ago';
+    if (d.inDays < 1) {
+      return 'Asked ${d.inHours} hour${d.inHours == 1 ? '' : 's'} ago';
+    }
+    return 'Asked ${d.inDays} day${d.inDays == 1 ? '' : 's'} ago';
+  }
+
   @override
   Widget build(BuildContext context) {
     final q = widget.question;
     final myAnswer = q['myAnswer']?.toString();
+    final answered = myAnswer != null;
     final date = DateTime.tryParse(q['date']?.toString() ?? '')?.toLocal();
+    final asked = DateTime.tryParse(q['createdAt']?.toString() ?? '')?.toLocal();
+    final speaker = q['speakerName']?.toString() ?? '';
     final meta = [
-      q['speakerName']?.toString() ?? '',
-      if (date != null) DateFormat('d MMM').format(date),
-    ].where((s) => s.isNotEmpty).join(' · ');
+      speaker,
+      if (date != null) DateFormat('d MMM yyyy').format(date),
+    ].where((s) => s.isNotEmpty).join('  •  ');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: darkCardDecoration(14),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0C1F4A), Color(0xFF16124A)],
+        ),
+        border: Border.all(
+          color: const Color(0xFF22D3EE).withValues(alpha: 0.55),
+          width: 1.3,
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            q['sessionName']?.toString() ?? '',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-              color: DarkColors.accentLight,
-            ),
-          ),
-          if (meta.isNotEmpty)
-            Text(
-              meta,
-              style: GoogleFonts.inter(fontSize: 11, color: DarkColors.muted),
-            ),
-          const SizedBox(height: 8),
-          Text(
-            q['question']?.toString() ?? '',
-            style: GoogleFonts.outfit(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(2.5),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF3B82F6), Color(0xFFA855F7)],
+                  ),
+                ),
+                child: _avatar(
+                  speaker,
+                  q['speakerPhoto']?.toString() ?? '',
+                  size: 50,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF3B82F6).withValues(alpha: 0.6),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.mic_rounded,
+                            size: 12,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              q['sessionName']?.toString() ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (meta.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        meta,
+                        style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.only(left: 6),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: answered
+                      ? const Color(0xFF22C55E)
+                      : const Color(0xFFA855F7),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
-          if (myAnswer != null) ...[
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: answered ? null : () => setState(() => _open = !_open),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(10, 10, 6, 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFF7C3AED)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.chat_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      q['question']?.toString() ?? '',
+                      style: GoogleFonts.outfit(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  if (!answered)
+                    Icon(
+                      _open
+                          ? Icons.expand_less_rounded
+                          : Icons.chevron_right_rounded,
+                      color: Colors.white70,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (answered) ...[
+            const SizedBox(height: 10),
             Text(
               'YOUR ANSWER',
               style: GoogleFonts.inter(
@@ -372,14 +880,16 @@ class _SessionQuestionCardState extends State<_SessionQuestionCard> {
             Text(
               myAnswer,
               style: GoogleFonts.inter(
-                fontSize: 13.5,
+                fontSize: 13,
                 color: Colors.white,
-                height: 1.45,
+                height: 1.4,
               ),
             ),
-          ] else ...[
+          ] else if (_open) ...[
+            const SizedBox(height: 10),
             TextField(
               controller: _controller,
+              autofocus: true,
               minLines: 2,
               maxLines: 5,
               maxLength: 1000,
@@ -387,19 +897,93 @@ class _SessionQuestionCardState extends State<_SessionQuestionCard> {
               style: GoogleFonts.inter(fontSize: 13.5, color: Colors.white),
               decoration: _boxDecoration('Type your answer'),
             ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton(
-                onPressed: _sending ? null : _submit,
-                style: FilledButton.styleFrom(
-                  backgroundColor: DarkColors.accent,
-                ),
-                child: _spinnerOr(_sending, 'Submit answer'),
-              ),
-            ),
           ],
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Icon(
+                Icons.schedule_rounded,
+                size: 16,
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  _ago(asked),
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    color: Colors.white.withValues(alpha: 0.75),
+                  ),
+                ),
+              ),
+              if (!answered)
+                _answerButton()
+              else
+                Text(
+                  'Answered',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF22C55E),
+                  ),
+                ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  /// "Submit Answer": first tap opens the answer box, the next one sends it.
+  Widget _answerButton() {
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF7C3AED), Color(0xFF2563EB)],
+          ),
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: _sending
+              ? null
+              : (_open ? _submit : () => setState(() => _open = true)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_sending)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                else
+                  const Icon(Icons.chat_rounded, size: 16, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(
+                  'Submit Answer',
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

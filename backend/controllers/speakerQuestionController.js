@@ -173,7 +173,7 @@ const sessionQuestionsForParticipant = async (req, res) => {
     const schedules = await EventSchedule.find({
       _id: { $in: scheduleIds },
       ...visibleScheduleFilter(await participantPackageId(req)),
-    }).select('scheduleName speakerName date fromTime');
+    }).select('scheduleName speakerName speakerPhoto date fromTime');
     const byId = new Map(schedules.map((s) => [String(s._id), s]));
     const me = String(req.userId);
     res.json({
@@ -191,6 +191,7 @@ const sessionQuestionsForParticipant = async (req, res) => {
             createdAt: q.createdAt,
             sessionName: s.scheduleName,
             speakerName: s.speakerName,
+            speakerPhoto: s.speakerPhoto || '',
             date: s.date,
             fromTime: s.fromTime,
           };
@@ -227,6 +228,7 @@ const sessionPollsForParticipant = async (req, res) => {
             question: p.question,
             options: p.options,
             myVote: mine ? mine.option : null,
+            voteCount: p.votes.length,
             createdAt: p.createdAt,
             sessionName: s.scheduleName,
             speakerName: s.speakerName,
