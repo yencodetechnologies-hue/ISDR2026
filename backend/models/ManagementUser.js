@@ -29,7 +29,7 @@ const managementUserSchema = new mongoose.Schema(
     roleTitle: {
       type: String,
       trim: true,
-      default: 'Management Member',
+      default: 'Admin Member',
     },
     password: {
       type: String,

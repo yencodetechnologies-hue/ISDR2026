@@ -495,7 +495,7 @@ class _ManagedEventsTabState extends State<ManagedEventsTab> {
                                           style: GoogleFonts.sora(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF0F172A),
+                                            color: Colors.white,
                                           ),
                                         ),
                                         const SizedBox(height: 4),

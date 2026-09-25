@@ -340,8 +340,9 @@ class _ManagementTeamPageState extends State<ManagementTeamPage> {
                         final isPrimary = id.startsWith('primary_');
                         final name =
                             m['name']?.toString() ?? 'Admin Member';
-                        final role =
-                            m['roleTitle']?.toString() ?? 'Admin Member';
+                        // Older IDs were saved as 'Management Member'.
+                        final role = (m['roleTitle']?.toString() ?? 'Admin Member')
+                            .replaceAll('Management', 'Admin');
                         final mobile = m['mobileNumber']?.toString() ?? '—';
                         final email = m['email']?.toString() ?? '—';
 

@@ -312,7 +312,7 @@ const loginUser = async (req, res) => {
       userPayload.name = managementUser.name || userPayload.name;
       userPayload.mobileNumber = managementUser.mobileNumber || mobile;
       userPayload.managementUserId = managementUser._id.toString();
-      userPayload.roleTitle = managementUser.roleTitle || 'Management Member';
+      userPayload.roleTitle = managementUser.roleTitle || 'Admin Member';
     }
 
     const token = generateToken(
@@ -551,10 +551,10 @@ const listManagementUsers = async (req, res) => {
       if (primaryMobile) {
         allUsers.push({
           _id: `primary_${apt._id}`,
-          name: (apt.ownerName || apt.name || 'Management Member').trim(),
+          name: (apt.ownerName || apt.name || 'Admin Member').trim(),
           mobileNumber: primaryMobile,
           email: (apt.email || '').trim(),
-          roleTitle: 'Management Member',
+          roleTitle: 'Admin Member',
           isActive: apt.isActive !== false,
           createdAt: apt.createdAt,
         });
@@ -567,7 +567,7 @@ const listManagementUsers = async (req, res) => {
         name: u.name,
         mobileNumber: u.mobileNumber,
         email: u.email || '',
-        roleTitle: u.roleTitle || 'Management Member',
+        roleTitle: u.roleTitle || 'Admin Member',
         isActive: u.isActive !== false,
         createdAt: u.createdAt,
       });
@@ -616,7 +616,7 @@ const createManagementUser = async (req, res) => {
       name: String(name).trim(),
       mobileNumber: cleanMobile,
       email: cleanEmail,
-      roleTitle: roleTitle ? String(roleTitle).trim() : 'Management Member',
+      roleTitle: roleTitle ? String(roleTitle).trim() : 'Admin Member',
       password: hashedPassword,
     });
 
@@ -685,7 +685,7 @@ const updateManagementUser = async (req, res) => {
       user.email = cleanEmail;
     }
     if (roleTitle !== undefined) {
-      user.roleTitle = String(roleTitle).trim() || 'Management Member';
+      user.roleTitle = String(roleTitle).trim() || 'Admin Member';
     }
     if (password) {
       if (String(password).length < 6) {
