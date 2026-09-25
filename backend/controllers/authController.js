@@ -88,10 +88,26 @@ function buildManagementPayload(apartment) {
   };
 }
 
-/** Store a device token on the given document (max 10 per account). */
+/**
+ * Store a device token on the given document (max 10 per account). A phone
+ * belongs to one account at a time — the one last logged in — so the token is
+ * first removed from every other account, or that phone would get each
+ * notification once per account it was ever logged into.
+ */
 async function storeFcmToken(doc, fcmToken) {
   if (!fcmToken || typeof fcmToken !== 'string' || fcmToken.trim() === '') return;
   const token = fcmToken.trim();
+  await Promise.all(
+    [Apartment, ManagementUser, EventStaff, EventRegistration, Speaker].map((Model) =>
+      Model.updateMany(
+        {
+          fcmTokens: token,
+          ...(Model === doc.constructor ? { _id: { $ne: doc._id } } : {}),
+        },
+        { $pull: { fcmTokens: token } }
+      )
+    )
+  );
   const tokens = Array.isArray(doc.fcmTokens) ? [...doc.fcmTokens] : [];
   if (tokens.includes(token)) return;
   tokens.push(token);
