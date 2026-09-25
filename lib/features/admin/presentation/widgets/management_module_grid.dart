@@ -90,6 +90,7 @@ const List<_ModuleVisual> _predefinedVisuals = [
   _ModuleVisual('Q&A & Polls', Icons.forum_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Add Exhibitors', Icons.add_business_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Banner', Icons.view_carousel_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('News Ticker', Icons.campaign_rounded, group: 'ACCOUNT'),
   _ModuleVisual(
     'Support Tickets',
     Icons.support_agent_rounded,
@@ -224,6 +225,7 @@ Color _moduleColor(String label) {
     'q&a & polls': Color(0xFF06B6D4),
     'add exhibitors': Color(0xFF10B981),
     'banner': Color(0xFFA855F7),
+    'news ticker': Color(0xFF0EA5E9),
     'support tickets': Color(0xFFEF4444),
   };
   const fallback = [

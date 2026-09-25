@@ -1846,6 +1846,20 @@ class ApiService {
             data: {'text': text},
           ));
 
+  /// The home-screen news ticker: {enabled, text} (one message per line).
+  Future<Map<String, dynamic>> getNewsTicker() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.newsTicker));
+
+  /// Admin switches the ticker on/off and/or changes its text.
+  Future<Map<String, dynamic>> updateNewsTicker({bool? enabled, String? text}) =>
+      _sessionContentCall(() => _dio.put(
+            ApiConfig.newsTicker,
+            data: {
+              if (enabled != null) 'enabled': enabled,
+              if (text != null) 'text': text,
+            },
+          ));
+
   /// The participant-home image banner: {enabled, images: [{id, url}]}.
   Future<Map<String, dynamic>> getHomeBanner() =>
       _sessionContentCall(() => _dio.get(ApiConfig.homeBanner));

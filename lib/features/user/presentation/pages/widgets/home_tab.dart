@@ -165,7 +165,7 @@ class _HomeTabState extends State<HomeTab> {
             // Same news ticker as the participant home.
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 12),
-              child: NewsTickerStrap(),
+              child: AdminNewsTicker(),
             ),
             const SizedBox(height: 12),
             // Same live-show card as the participant and speaker homes.

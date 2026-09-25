@@ -895,7 +895,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
             ),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
-              child: NewsTickerStrap(),
+              child: AdminNewsTicker(),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),

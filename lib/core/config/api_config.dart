@@ -183,6 +183,7 @@ class ApiConfig {
   static String get speakers => '$baseUrl/speakers';
   static String get exhibitors => '$baseUrl/exhibitors';
   static String get homeBanner => '$baseUrl/home-banner';
+  static String get newsTicker => '$baseUrl/news-ticker';
   // Help & Support tickets (participant <-> event staff / admin chat)
   static String get helpTickets => '$baseUrl/support-tickets';
 

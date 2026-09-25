@@ -20,6 +20,7 @@ import '../widgets/management_module_grid.dart';
 import 'manage_speakers_page.dart';
 import 'manage_exhibitors_page.dart';
 import 'manage_banner_page.dart';
+import 'manage_news_ticker_page.dart';
 import '../../../support/presentation/pages/help_tickets_page.dart';
 import 'engagement_overview_page.dart';
 import '../../../user/presentation/pages/user_events_page.dart';
@@ -298,6 +299,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   }
 
   void _navigateToModule(String label) {
+    if (label.trim().toLowerCase() == 'news ticker') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ManageNewsTickerPage()),
+      );
+      return;
+    }
     if (label.trim().toLowerCase() == 'support tickets') {
       Navigator.push(
         context,
@@ -633,6 +641,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'Q&A & Polls',
       'Add Exhibitors',
       'Banner',
+      'News Ticker',
       'Support Tickets',
     ];
     final isHostel = false;
