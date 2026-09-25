@@ -1806,6 +1806,8 @@ class ApiService {
   Future<Map<String, dynamic>> createEventSchedule({
     required String eventId,
     required String speakerId, // picked from the Speakers list
+    // Event package ids whose participants see this schedule.
+    required List<String> packageIds,
     required String scheduleName,
     String hall = '',
     // One entry per date: {date: yyyy-MM-dd, fromTime: HH:mm, toTime: HH:mm}
@@ -1815,6 +1817,7 @@ class ApiService {
     try {
       final formData = FormData.fromMap({
         'speakerId': speakerId,
+        'packageIds': jsonEncode(packageIds),
         'scheduleName': scheduleName,
         'hall': hall,
         'slots': jsonEncode(slots),

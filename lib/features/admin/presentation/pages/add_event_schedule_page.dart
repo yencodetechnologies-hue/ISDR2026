@@ -7,8 +7,9 @@ import '../../../../core/widgets/dark_ui.dart';
 import '../widgets/event_package_sheet.dart' show eventDays;
 import 'manage_speakers_page.dart';
 
-/// Form to add a schedule (speaker session) to an event. The speaker is picked
-/// from the Speakers list (added on the Speakers page).
+/// Form to add a schedule (speaker session) to an event. It's shown only to
+/// participants of the picked packages; the speaker is picked from the
+/// Speakers list (added on the Speakers page).
 class AddEventSchedulePage extends StatefulWidget {
   final Map<String, dynamic> event;
 
@@ -28,6 +29,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   bool _loadingSpeakers = true;
   String? _speakerId;
 
+  final Set<String> _packageIds = {}; // packages whose participants see it
   final Set<String> _dates = {}; // picked event days (yyyy-MM-dd)
   bool _sameTime = true; // one From/To for every picked date
   TimeOfDay? _from; // used when _sameTime
@@ -43,6 +45,19 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   /// Picked event days in calendar order.
   List<({String iso, String label})> get _pickedDays =>
       eventDays(widget.event).where((d) => _dates.contains(d.iso)).toList();
+
+  /// The event's packages as {id, name}.
+  List<({String id, String name})> get _packages =>
+      ((widget.event['packages'] as List?) ?? const [])
+          .whereType<Map>()
+          .map(
+            (p) => (
+              id: p['id']?.toString() ?? '',
+              name: p['name']?.toString() ?? '',
+            ),
+          )
+          .where((p) => p.id.isNotEmpty)
+          .toList();
 
   String get _eventId =>
       widget.event['id']?.toString() ?? widget.event['_id']?.toString() ?? '';
@@ -111,6 +126,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_packageIds.isEmpty) return _toast('Select at least one package');
     if (_speakerId == null) return _toast('Select a speaker');
     if (_dates.isEmpty) return _toast('Select at least one event day');
     final slots = <Map<String, String>>[];
@@ -134,6 +150,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
     final res = await ApiService().createEventSchedule(
       eventId: _eventId,
       speakerId: _speakerId!,
+      packageIds: _packageIds.toList(),
       scheduleName: _name.text.trim(),
       hall: _hall.text.trim(),
       slots: slots,
@@ -272,6 +289,49 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
     );
   }
 
+  /// Which packages' participants see this schedule (one or more).
+  Widget _packageChips() {
+    final packages = _packages;
+    return InputDecorator(
+      decoration: darkInputDecoration(
+        'Packages (who can see it)',
+        Icons.card_membership_outlined,
+      ),
+      child: packages.isEmpty
+          ? const Text(
+              'This event has no packages. Add packages to the event first.',
+              style: TextStyle(color: DarkColors.muted),
+            )
+          : Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: packages.map((p) {
+                final selected = _packageIds.contains(p.id);
+                return FilterChip(
+                  label: Text(p.name),
+                  selected: selected,
+                  showCheckmark: true,
+                  checkmarkColor: Colors.white,
+                  selectedColor: DarkColors.accent,
+                  backgroundColor: DarkColors.card,
+                  side: const BorderSide(color: DarkColors.line),
+                  labelStyle: TextStyle(
+                    color: selected ? Colors.white : DarkColors.muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  onSelected: (_) => setState(() {
+                    if (selected) {
+                      _packageIds.remove(p.id);
+                    } else {
+                      _packageIds.add(p.id);
+                    }
+                  }),
+                );
+              }).toList(),
+            ),
+    );
+  }
+
   /// The event's own days — the speaker can be on any number of these.
   Widget _dayChips() {
     final days = eventDays(widget.event);
@@ -334,6 +394,8 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            _packageChips(),
+            const SizedBox(height: 12),
             _speakerField(),
             const SizedBox(height: 12),
             TextFormField(

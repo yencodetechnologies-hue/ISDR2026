@@ -10,7 +10,7 @@ class _Colors {
   static const card = Color(0xFF14141F);
   static const muted = Color(0xFF9CA3AF);
   static const line = Color(0x14FFFFFF);
-  static const hot = Color(0xFFF97316);
+  static const hot = Color(0xFFEF4444);
 }
 
 /// The participant's hot-marked schedules (saved on their account), grouped
@@ -128,7 +128,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               Icon(
                 _error != null
                     ? Icons.error_outline_rounded
-                    : Icons.local_fire_department_outlined,
+                    : Icons.favorite_border_rounded,
                 size: 44,
                 color: _Colors.muted,
               ),
@@ -146,7 +146,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               Text(
                 _error != null
                     ? 'Pull down to try again.'
-                    : 'Tap the 🔥 hot button on a session to add it here.',
+                    : 'Tap the ♥ heart on a session to add it here.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(fontSize: 12.5, color: _Colors.muted),
               ),
@@ -258,9 +258,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Remove hot',
+                    tooltip: 'Remove from favorites',
                     icon: const Icon(
-                      Icons.local_fire_department_rounded,
+                      Icons.favorite_rounded,
                       color: _Colors.hot,
                     ),
                     onPressed: () => _unfavorite(s),

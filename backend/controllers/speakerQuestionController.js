@@ -4,6 +4,17 @@ const EventRegistration = require('../models/EventRegistration');
 const EventSchedule = require('../models/EventSchedule');
 const SessionQuestion = require('../models/SessionQuestion');
 const SessionPoll = require('../models/SessionPoll');
+const { participantPackageId, visibleScheduleFilter } = require('../utils/schedulePackages');
+
+/** Ids of the speakers who have a session this participant can see. */
+async function visibleSpeakerIds(req) {
+  const ids = await EventSchedule.distinct('speakerId', {
+    apartmentId: req.apartmentId,
+    speakerId: { $ne: null },
+    ...visibleScheduleFilter(await participantPackageId(req)),
+  });
+  return ids.map(String);
+}
 
 const MAX_LENGTH = 1000;
 
@@ -41,11 +52,15 @@ const questionDto = (q, speaker) => ({
     : {}),
 });
 
-// GET /api/speaker-questions/speakers — speakers a participant can ask (A–Z).
+// GET /api/speaker-questions/speakers — speakers a participant can ask (A–Z):
+// those with a session in the participant's package.
 const listSpeakers = async (req, res) => {
   try {
     if (!participantOnly(req, res)) return;
-    const speakers = await Speaker.find({ apartmentId: req.apartmentId }).sort({ name: 1 });
+    const speakers = await Speaker.find({
+      apartmentId: req.apartmentId,
+      _id: { $in: await visibleSpeakerIds(req) },
+    }).sort({ name: 1 });
     res.json({
       success: true,
       speakers: speakers.map((s) => ({ id: s._id.toString(), name: s.name, photo: s.photo || '' })),
@@ -67,6 +82,9 @@ const askQuestion = async (req, res) => {
         .json({ success: false, error: `Question must be under ${MAX_LENGTH} characters` });
     }
     const speaker = await Speaker.findOne({ _id: req.body.speakerId, apartmentId: req.apartmentId });
+    if (speaker && !(await visibleSpeakerIds(req)).includes(String(speaker._id))) {
+      return res.status(404).json({ success: false, error: 'Speaker not found' });
+    }
     if (!speaker) return res.status(404).json({ success: false, error: 'Speaker not found' });
     const reg = await EventRegistration.findById(req.userId).select('name');
     const created = await SpeakerQuestion.create({
@@ -152,9 +170,10 @@ const sessionQuestionsForParticipant = async (req, res) => {
       createdAt: -1,
     });
     const scheduleIds = [...new Set(questions.map((q) => String(q.scheduleId)))];
-    const schedules = await EventSchedule.find({ _id: { $in: scheduleIds } }).select(
-      'scheduleName speakerName date fromTime'
-    );
+    const schedules = await EventSchedule.find({
+      _id: { $in: scheduleIds },
+      ...visibleScheduleFilter(await participantPackageId(req)),
+    }).select('scheduleName speakerName date fromTime');
     const byId = new Map(schedules.map((s) => [String(s._id), s]));
     const me = String(req.userId);
     res.json({
@@ -189,9 +208,10 @@ const sessionPollsForParticipant = async (req, res) => {
     if (!participantOnly(req, res)) return;
     const polls = await SessionPoll.find({ apartmentId: req.apartmentId }).sort({ createdAt: -1 });
     const scheduleIds = [...new Set(polls.map((p) => String(p.scheduleId)))];
-    const schedules = await EventSchedule.find({ _id: { $in: scheduleIds } }).select(
-      'scheduleName speakerName date fromTime'
-    );
+    const schedules = await EventSchedule.find({
+      _id: { $in: scheduleIds },
+      ...visibleScheduleFilter(await participantPackageId(req)),
+    }).select('scheduleName speakerName date fromTime');
     const byId = new Map(schedules.map((s) => [String(s._id), s]));
     const me = String(req.userId);
     res.json({

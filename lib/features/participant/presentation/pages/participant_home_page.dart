@@ -73,6 +73,11 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
   final List<Map<String, dynamic>> _upcomingQueue = [];
   DateTime? _selectedScheduleDate;
 
+  // Every schedule (past ones too) and the event's own days, for the fixed
+  // Day 1, Day 2, ... tabs — those never shift as days pass.
+  final List<Map<String, dynamic>> _allItems = [];
+  final List<DateTime> _eventDayList = [];
+
   // The day's list shows 3 sessions; "More" rolls down the rest.
   static const _daySessionsShown = 3;
   bool _showAllDaySessions = false;
@@ -138,30 +143,44 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     _loadFavorites();
   }
 
-  /// Every day that has a schedule — today (if it still has items) first,
-  /// then each future day with upcoming programs, chronological.
+  /// The event's days, in order (Day 1 = the event's first day). Falls back to
+  /// the days that have schedules if the event has no dates.
   List<DateTime> get _scheduleDates {
-    final seen = <DateTime>{};
-    if (_todayItems.isNotEmpty) {
-      final now = DateTime.now();
-      seen.add(DateTime(now.year, now.month, now.day));
-    }
-    for (final item in _upcomingQueue) {
-      final start = item['start'] as DateTime;
-      seen.add(DateTime(start.year, start.month, start.day));
-    }
-    final list = seen.toList()..sort();
-    return list;
+    if (_eventDayList.isNotEmpty) return _eventDayList;
+    final seen = <DateTime>{
+      for (final item in _allItems)
+        DateTime(
+          (item['start'] as DateTime).year,
+          (item['start'] as DateTime).month,
+          (item['start'] as DateTime).day,
+        ),
+    };
+    return seen.toList()..sort();
   }
 
-  /// All schedule items (today's remaining ones + future days) for one
-  /// calendar day, sorted by start time.
+  /// Each calendar day from the event's start date to its end date.
+  static List<DateTime> _daysOfEvent(Map<String, dynamic> event) {
+    final start = DateTime.tryParse(
+      event['eventDate']?.toString() ?? '',
+    )?.toLocal();
+    if (start == null) return const [];
+    final end =
+        DateTime.tryParse(event['eventEndDate']?.toString() ?? '')?.toLocal() ??
+        start;
+    final days = <DateTime>[];
+    var cursor = DateTime(start.year, start.month, start.day);
+    final last = DateTime(end.year, end.month, end.day);
+    while (!cursor.isAfter(last) && days.length < 60) {
+      days.add(cursor);
+      cursor = DateTime(cursor.year, cursor.month, cursor.day + 1);
+    }
+    return days;
+  }
+
+  /// Every schedule item on one calendar day (finished ones too), sorted by
+  /// start time.
   List<Map<String, dynamic>> _itemsForDate(DateTime date) {
-    final now = DateTime.now();
-    final isToday =
-        date.year == now.year && date.month == now.month && date.day == now.day;
-    final source = isToday ? _todayItems : _upcomingQueue;
-    final items = source.where((item) {
+    final items = _allItems.where((item) {
       final start = item['start'] as DateTime;
       return start.year == date.year &&
           start.month == date.month &&
@@ -229,11 +248,14 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       DateTime? earliestUpcomingTime;
       final todayList = <Map<String, dynamic>>[];
       final upcomingList = <Map<String, dynamic>>[];
+      final allList = <Map<String, dynamic>>[];
+      final eventDays = <DateTime>{};
 
       for (final event in events) {
         final eventId =
             event['id']?.toString() ?? event['_id']?.toString() ?? '';
         if (eventId.isEmpty) continue;
+        eventDays.addAll(_daysOfEvent(event));
         final schedRes = await _api.listEventSchedules(eventId);
         if (schedRes['success'] != true) continue;
         final schedules = List<Map<String, dynamic>>.from(
@@ -265,6 +287,8 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
 
           final isToday =
               d.year == now.year && d.month == now.month && d.day == now.day;
+
+          allList.add({'schedule': s, 'event': event, 'start': start, 'end': end});
 
           // Check if currently LIVE
           if (!now.isBefore(start) && now.isBefore(end)) {
@@ -325,12 +349,26 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
           _upcomingQueue
             ..clear()
             ..addAll(upcomingList);
+          _allItems
+            ..clear()
+            ..addAll(allList);
+          _eventDayList
+            ..clear()
+            ..addAll(eventDays.toList()..sort());
           final dates = _scheduleDates;
           final stillValid =
               _selectedScheduleDate != null &&
               dates.any((d) => d == _selectedScheduleDate);
           if (!stillValid) {
-            _selectedScheduleDate = dates.isNotEmpty ? dates.first : null;
+            // Open on today during the event, else the next day ahead,
+            // else Day 1.
+            final today = DateTime(now.year, now.month, now.day);
+            _selectedScheduleDate = dates.isEmpty
+                ? null
+                : dates.firstWhere(
+                    (d) => !d.isBefore(today),
+                    orElse: () => dates.first,
+                  );
           }
         });
       }
@@ -1672,8 +1710,8 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     );
   }
 
-  /// "Today's Schedule" — day tabs (Day 1, Day 2, ...) with a full list of
-  /// that day's programs below, each row tagged Live or Upcoming.
+  /// "Today's Schedule" — the event's day tabs (Day 1, Day 2, ...) with a full
+  /// list of that day's programs below, each tagged Live, Upcoming or Completed.
   Widget _buildScheduleSection() {
     final dates = _scheduleDates;
     if (dates.isEmpty) return const SizedBox.shrink();
@@ -2004,11 +2042,16 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     final end = item['end'] as DateTime;
     final now = DateTime.now();
     final isLive = !now.isBefore(start) && now.isBefore(end);
+    final isDone = !now.isBefore(end);
     final scheduleName = schedule['scheduleName']?.toString() ?? '';
     final fromTime = schedule['fromTime']?.toString() ?? '';
     final toTime = schedule['toTime']?.toString() ?? '';
     final hall = schedule['hall']?.toString() ?? '';
-    final rowAccent = isLive ? const Color(0xFF22C55E) : accent;
+    final rowAccent = isLive
+        ? const Color(0xFF22C55E)
+        : isDone
+        ? const Color(0xFF64748B)
+        : accent;
     final scheduleId = schedule['id']?.toString() ?? '';
     final isFavorite = _favoriteIds.contains(scheduleId);
 
@@ -2123,7 +2166,11 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                isLive ? 'Live' : 'Upcoming',
+                                isLive
+                                    ? 'Live'
+                                    : isDone
+                                    ? 'Completed'
+                                    : 'Upcoming',
                                 style: GoogleFonts.inter(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
@@ -2134,8 +2181,8 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                             if (scheduleId.isNotEmpty)
                               IconButton(
                                 tooltip: isFavorite
-                                    ? 'Remove hot'
-                                    : 'Mark as hot',
+                                    ? 'Remove from favorites'
+                                    : 'Add to favorites',
                                 visualDensity: VisualDensity.compact,
                                 padding: const EdgeInsets.only(left: 6),
                                 constraints: const BoxConstraints(
@@ -2145,11 +2192,11 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                                 onPressed: () => _toggleFavorite(scheduleId),
                                 icon: Icon(
                                   isFavorite
-                                      ? Icons.local_fire_department_rounded
-                                      : Icons.local_fire_department_outlined,
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
                                   size: 22,
                                   color: isFavorite
-                                      ? const Color(0xFFF97316)
+                                      ? const Color(0xFFEF4444)
                                       : Colors.white.withValues(alpha: 0.45),
                                 ),
                               ),

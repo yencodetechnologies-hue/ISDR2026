@@ -2,6 +2,11 @@ const ManagedEvent = require('../models/ManagedEvent');
 const EventSchedule = require('../models/EventSchedule');
 const EventRegistration = require('../models/EventRegistration');
 const Speaker = require('../models/Speaker');
+const {
+  participantPackageId,
+  visibleScheduleFilter,
+  isScheduleVisible,
+} = require('../utils/schedulePackages');
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -12,6 +17,7 @@ const toDto = (s) => ({
   speakerName: s.speakerName,
   speakerPhoto: s.speakerPhoto || '',
   scheduleName: s.scheduleName,
+  packageIds: s.packageIds || [],
   hall: s.hall || '',
   date: s.date,
   fromTime: s.fromTime,
@@ -40,7 +46,11 @@ const listSchedules = async (req, res) => {
     if (!event) {
       return res.status(404).json({ success: false, error: 'Event not found' });
     }
-    const schedules = await EventSchedule.find({ eventId: event._id }).sort({
+    const packageId = await participantPackageId(req);
+    const schedules = await EventSchedule.find({
+      eventId: event._id,
+      ...visibleScheduleFilter(packageId),
+    }).sort({
       date: 1,
       fromTime: 1,
     });
@@ -50,6 +60,20 @@ const listSchedules = async (req, res) => {
     res.status(500).json({ success: false, error: error.message || 'Server error' });
   }
 };
+
+/** `packageIds` as a list (or a JSON string of one), trimmed and de-duplicated. */
+function readPackageIds(body) {
+  let raw = body.packageIds;
+  if (typeof raw === 'string') {
+    try {
+      raw = JSON.parse(raw);
+    } catch (_) {
+      raw = [raw];
+    }
+  }
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.map((id) => String(id ?? '').trim()).filter(Boolean))];
+}
 
 /**
  * The dates + times to create: `slots` is a JSON list of {date, fromTime, toTime}
@@ -67,7 +91,7 @@ function readSlots(body) {
   }
 }
 
-// POST /api/managed-events/:id/schedules  { speakerId, scheduleName, hall, slots, description }
+// POST /api/managed-events/:id/schedules  { speakerId, packageIds, scheduleName, hall, slots, description }
 const createSchedule = async (req, res) => {
   try {
     const event = await loadOwnedEvent(req, res);
@@ -78,10 +102,18 @@ const createSchedule = async (req, res) => {
     const hall = String(req.body.hall || '').trim();
     const description = String(req.body.description || '').trim();
     const rawSlots = readSlots(req.body);
+    const packageIds = readPackageIds(req.body);
 
     if (!speakerId) return res.status(400).json({ success: false, error: 'Select a speaker' });
     const speaker = await Speaker.findOne({ _id: speakerId, apartmentId: event.apartmentId }).catch(() => null);
     if (!speaker) return res.status(400).json({ success: false, error: 'Speaker not found' });
+    if (packageIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'Select at least one package' });
+    }
+    const eventPackageIds = new Set((event.packages || []).map((p) => String(p.id)));
+    if (packageIds.some((id) => !eventPackageIds.has(id))) {
+      return res.status(400).json({ success: false, error: 'Package not found on this event' });
+    }
     if (!scheduleName) return res.status(400).json({ success: false, error: 'Schedule name is required' });
     if (rawSlots.length === 0) return res.status(400).json({ success: false, error: 'Select at least one date' });
 
@@ -124,6 +156,7 @@ const createSchedule = async (req, res) => {
         speakerName: speaker.name,
         speakerPhoto: speaker.photo || '',
         scheduleName,
+        packageIds,
         hall,
         date: slot.date,
         fromTime: slot.fromTime,
@@ -193,9 +226,12 @@ const myFavorites = async (req, res) => {
     if (req.userType !== 'participant') {
       return res.status(403).json({ success: false, error: 'Only participants have favorites' });
     }
-    const reg = await EventRegistration.findById(req.userId).select('favoriteSchedules');
+    const reg = await EventRegistration.findById(req.userId).select('favoriteSchedules packageId');
     if (!reg) return res.status(404).json({ success: false, error: 'Participant not found' });
-    const schedules = await EventSchedule.find({ _id: { $in: reg.favoriteSchedules } }).sort({
+    const schedules = await EventSchedule.find({
+      _id: { $in: reg.favoriteSchedules },
+      ...visibleScheduleFilter(String(reg.packageId || '')),
+    }).sort({
       date: 1,
       fromTime: 1,
     });
@@ -224,10 +260,12 @@ const toggleFavorite = async (req, res) => {
     if (req.userType !== 'participant') {
       return res.status(403).json({ success: false, error: 'Only participants have favorites' });
     }
-    const schedule = await EventSchedule.findById(req.params.scheduleId).select('_id');
-    if (!schedule) return res.status(404).json({ success: false, error: 'Schedule not found' });
-    const reg = await EventRegistration.findById(req.userId).select('favoriteSchedules');
+    const schedule = await EventSchedule.findById(req.params.scheduleId).select('_id packageIds');
+    const reg = await EventRegistration.findById(req.userId).select('favoriteSchedules packageId');
     if (!reg) return res.status(404).json({ success: false, error: 'Participant not found' });
+    if (!schedule || !isScheduleVisible(schedule, String(reg.packageId || ''))) {
+      return res.status(404).json({ success: false, error: 'Schedule not found' });
+    }
     const isFavorite = reg.favoriteSchedules.some((id) => String(id) === String(schedule._id));
     const updated = await EventRegistration.findByIdAndUpdate(
       reg._id,

@@ -139,7 +139,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
   /// Null = module grid home; set when an apartment account opens a module.
   int? _managementModuleIndex;
-  int _managedEventsCount = 0;
 
   bool get _isPropertyScoped {
     final id = widget.selectedApartmentId;
@@ -176,9 +175,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
         );
       }
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _loadManagedEventsCount();
-    });
     _startAutoRefresh();
   }
 
@@ -188,20 +184,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       if (!mounted) return;
       context.read<AdminBloc>().add(LoadBlocksEvent());
     });
-  }
-
-  Future<void> _loadManagedEventsCount() async {
-    final apt = _apartmentModel;
-    if (apt?.propertyType != PropertyType.events) return;
-    final id = widget.selectedApartmentId;
-    try {
-      final res = await _apiService.listManagedEvents(apartmentId: id);
-      if (!mounted) return;
-      if (res['success'] == true) {
-        final events = res['events'] as List? ?? [];
-        setState(() => _managedEventsCount = events.length);
-      }
-    } catch (_) {}
   }
 
   Future<void> _hydrateApartmentFromApi() async {
@@ -255,9 +237,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
           }
         }
       });
-      if (apt.propertyType == PropertyType.events) {
-        await _loadManagedEventsCount();
-      }
     } catch (_) {}
   }
 
@@ -385,7 +364,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   void _goToManagementGridHome() {
     if (_managementModuleIndex == null) return;
     setState(() => _managementModuleIndex = null);
-    _loadManagedEventsCount();
   }
 
   bool _isApartmentAccount() {
@@ -438,6 +416,177 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     });
   }
 
+  /// Logo + "ISDR 2026" + "Indian Division • IADR", then notifications,
+  /// logout and the profile avatar — the participant home's header.
+  Widget _buildHomeHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: Image.asset(
+              'assets/ISDR 2026 Logo.png',
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.medical_services_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: 'ISDR ',
+                        style: GoogleFonts.outfit(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      TextSpan(
+                        text: '2026',
+                        style: GoogleFonts.outfit(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF60A5FA),
+                        ),
+                      ),
+                    ],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  'Indian Division  •  IADR',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          BlocBuilder<NotificationBloc, NotificationState>(
+            builder: (context, state) {
+              int unreadCount = 0;
+              if (state is NotificationLoaded) {
+                unreadCount = state.unreadCount;
+              } else {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) {
+                    context.read<NotificationBloc>().add(
+                      const LoadUnreadCount(),
+                    );
+                  }
+                });
+              }
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    tooltip: 'Notifications',
+                    icon: const Icon(
+                      Icons.notifications_outlined,
+                      color: Colors.white,
+                    ),
+                    onPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.notifications),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEF4444),
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          IconButton(
+            tooltip: 'Logout',
+            icon: const Icon(Icons.logout_rounded, color: Colors.white),
+            onPressed: () => LogoutConfirmSheet.showLogoutConfirmSheet(
+              context,
+              onLogout: () {
+                context.read<AuthBloc>().add(LogoutEvent());
+                AppNavigation.resetTo(context, AppRoutes.userTypeSelection);
+              },
+            ),
+          ),
+          Builder(
+            builder: (context) {
+              final authState = context.watch<AuthBloc>().state;
+              final photo = authState is AuthAuthenticated
+                  ? (authState.user.profilePic ?? '')
+                  : '';
+              final name = authState is AuthAuthenticated
+                  ? authState.user.name
+                  : '';
+              return Padding(
+                padding: const EdgeInsets.only(left: 2, right: 4),
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MyProfilePage()),
+                  ),
+                  child: CircleAvatar(
+                    radius: 17,
+                    backgroundColor: Colors.white.withValues(alpha: 0.15),
+                    backgroundImage: photo.isNotEmpty
+                        ? NetworkImage(photo)
+                        : null,
+                    child: photo.isEmpty
+                        ? Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : 'M',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildManagementGridHome(AdminLoaded state) {
     final labels = [
       'Brochure',
@@ -448,7 +597,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'Speakers',
       'Scan Inclusion',
     ];
-    final apt = _apartmentModel;
     final isHostel = false;
     final totalRooms = totalRoomCountForProperty(blocks: state.blocks);
     final totalVacancies = vacantRoomCountForProperty(
@@ -456,226 +604,27 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       blocks: state.blocks,
       isHostel: isHostel,
     );
-    final totalUsers = state.regularUsers.length;
 
     return ColoredBox(
       color: const Color(0xFF0A0A12),
       child: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Dark Hero Header
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF0F172A), Color(0xFF1E3A8A)],
-                ),
-              ),
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 16, 22, 34),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                apt?.name ?? 'Test Apartment',
-                                style: GoogleFonts.sora(
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.notifications,
-                                  );
-                                },
-                                child: Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.10),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.notifications_none_rounded,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              GestureDetector(
-                                onTap: () {
-                                  LogoutConfirmSheet.showLogoutConfirmSheet(
-                                    context,
-                                    onLogout: () {
-                                      context.read<AuthBloc>().add(
-                                        LogoutEvent(),
-                                      );
-                                      AppNavigation.resetTo(
-                                        context,
-                                        AppRoutes.userTypeSelection,
-                                      );
-                                    },
-                                  );
-                                },
-                                child: Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.10),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.logout_rounded,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _navigateToModule('Event Staff'),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.06),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.12),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '$totalUsers',
-                                      style: GoogleFonts.sora(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      false
-                                          ? 'Staffs'
-                                          : apt?.propertyType ==
-                                                PropertyType.events
-                                          ? 'Event Staff'
-                                          : 'Users',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 10.5,
-                                        color: Colors.white.withOpacity(0.6),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (apt?.propertyType == PropertyType.events) ...[
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => _navigateToModule('Events'),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.06),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.12),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '$_managedEventsCount',
-                                        style: GoogleFonts.sora(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Events',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 10.5,
-                                          color: Colors.white.withOpacity(0.6),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            // Same header as the participant home: logo + ISDR 2026, then actions.
+            SafeArea(bottom: false, child: _buildHomeHeader()),
+            // Body: banner, live card and module grid
+            const AutoScrollBanner(items: defaultManagementBanners),
+            // Same live-show card as the participant, speaker and staff homes.
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: LiveShowCard(),
             ),
-            // Rounded Body Container for Quick Actions & Module Grid
-            Transform.translate(
-              offset: const Offset(0, -16),
-              child: Container(
-                clipBehavior: Clip.antiAlias,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0A0A12),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const AutoScrollBanner(items: defaultManagementBanners),
-                    // Same live-show card as the participant, speaker and staff homes.
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 14, 16, 0),
-                      child: LiveShowCard(),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
-                      child: ManagementModuleGrid(
-                        moduleLabels: labels,
-                        onModuleTap: _navigateToModule,
-                      ),
-                    ),
-                  ],
-                ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+              child: ManagementModuleGrid(
+                moduleLabels: labels,
+                onModuleTap: _navigateToModule,
               ),
             ),
           ],

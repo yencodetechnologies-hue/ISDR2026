@@ -3,6 +3,7 @@ const EventRegistration = require('../models/EventRegistration');
 const SessionPoll = require('../models/SessionPoll');
 const SessionQuestion = require('../models/SessionQuestion');
 const SessionRating = require('../models/SessionRating');
+const { participantPackageId, isScheduleVisible } = require('../utils/schedulePackages');
 
 const MAX_POLL_OPTIONS = 6;
 const MAX_ANSWER_LENGTH = 1000;
@@ -14,9 +15,13 @@ const MAX_COMMENT_LENGTH = 1000;
  */
 async function loadSession(req, res) {
   const schedule = await EventSchedule.findById(req.params.scheduleId).select(
-    'apartmentId speakerId'
+    'apartmentId speakerId packageIds'
   );
-  if (!schedule || String(schedule.apartmentId) !== String(req.apartmentId)) {
+  if (
+    !schedule ||
+    String(schedule.apartmentId) !== String(req.apartmentId) ||
+    !isScheduleVisible(schedule, await participantPackageId(req))
+  ) {
     res.status(404).json({ success: false, error: 'Session not found' });
     return null;
   }

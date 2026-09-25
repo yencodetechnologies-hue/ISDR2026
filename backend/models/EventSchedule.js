@@ -29,6 +29,8 @@ const eventScheduleSchema = new mongoose.Schema(
     speakerPassword: { type: String, default: '', select: false },
     fcmTokens: { type: [String], default: [] },
     scheduleName: { type: String, required: true, trim: true },
+    // Event package ids whose participants see this schedule; empty = everyone.
+    packageIds: { type: [String], default: [] },
     hall: { type: String, default: '', trim: true },
     date: { type: Date, required: true },
     fromTime: { type: String, required: true, trim: true }, // "HH:mm"
