@@ -29,9 +29,15 @@ const staffImages = upload.fields([
   { name: 'panCard', maxCount: 1 },
 ]);
 const { protect, requireManagement } = require('../middleware/auth');
+const { forgotPassword, verifyOtp, resetPassword } = require('../controllers/passwordResetController');
 
 // @route   POST /api/auth/login
 router.post('/login', loginUser);
+
+// Forgot password: 6-digit code emailed, then a new password.
+router.post('/forgot-password', forgotPassword);
+router.post('/verify-otp', verifyOtp);
+router.post('/reset-password', resetPassword);
 
 // @route   GET /api/auth/me
 router.get('/me', protect, getCurrentUser);
