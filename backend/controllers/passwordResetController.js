@@ -6,6 +6,7 @@ const EventStaff = require('../models/EventStaff');
 const EventRegistration = require('../models/EventRegistration');
 const PasswordResetOtp = require('../models/PasswordResetOtp');
 const { sendMail } = require('../utils/mailer');
+const { otpEmailHtml } = require('../utils/emailTemplates');
 
 const OTP_MINUTES = 10;
 const MAX_ATTEMPTS = 5;
@@ -63,13 +64,7 @@ const forgotPassword = async (req, res) => {
       to: email,
       subject: 'ISDR 2026 - Password reset code',
       text: `Your ISDR 2026 password reset code is ${otp}. It is valid for ${OTP_MINUTES} minutes. If you did not request this, ignore this email.`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:420px">
-        <h2 style="color:#1e3a8a">ISDR 2026</h2>
-        <p>Your password reset code is:</p>
-        <p style="font-size:30px;font-weight:bold;letter-spacing:8px;color:#2563eb">${otp}</p>
-        <p>It is valid for ${OTP_MINUTES} minutes.</p>
-        <p style="color:#6b7280;font-size:12px">If you did not request this, you can ignore this email.</p>
-      </div>`,
+      html: otpEmailHtml(otp, OTP_MINUTES),
     });
 
     res.json({ success: true, message: 'OTP sent to your email' });
