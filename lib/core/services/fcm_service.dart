@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:async';
 import 'dart:io';
@@ -132,10 +133,12 @@ class FCMService {
   /// Initialize local notifications for foreground display
   Future<void> _initializeLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    // Firebase owns the iOS prompt. Asking here as well fires before the
+    // app is active, and iOS then never shows the system dialog.
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
     const initSettings = InitializationSettings(
       android: androidSettings,
@@ -164,6 +167,10 @@ class FCMService {
 
   Future<void> _requestPermissions() async {
     try {
+      if (Platform.isIOS) {
+        await _waitUntilAppIsActive();
+      }
+
       final currentSettings = await _messaging!.getNotificationSettings();
 
       if (currentSettings.authorizationStatus !=
@@ -198,6 +205,33 @@ class FCMService {
       }
     } catch (e) {
       debugPrint('Error checking/requesting notification permissions: $e');
+    }
+  }
+
+  /// iOS will not present the notification alert until the app is resumed.
+  Future<void> _waitUntilAppIsActive() async {
+    final binding = WidgetsBinding.instance;
+    if (binding.lifecycleState == AppLifecycleState.resumed) {
+      return;
+    }
+
+    final completer = Completer<void>();
+    late final AppLifecycleListener listener;
+    listener = AppLifecycleListener(
+      onResume: () {
+        if (!completer.isCompleted) completer.complete();
+      },
+    );
+    if (binding.lifecycleState == AppLifecycleState.resumed &&
+        !completer.isCompleted) {
+      completer.complete();
+    }
+    try {
+      await completer.future.timeout(const Duration(seconds: 8));
+    } catch (_) {
+      debugPrint('App was not resumed; requesting notification permission anyway');
+    } finally {
+      listener.dispose();
     }
   }
 

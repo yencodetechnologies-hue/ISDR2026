@@ -3,6 +3,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:isdr/core/services/fcm_service.dart';
 
 /// Service to handle all app permissions
 class PermissionService {
@@ -44,15 +45,15 @@ class PermissionService {
           return PermissionStatus.granted;
         }
       } else if (Platform.isIOS) {
-        // For iOS, use Firebase Messaging
-        final messaging = FirebaseMessaging.instance;
-        final settings = await messaging.requestPermission(
-          alert: true,
-          badge: true,
-          sound: true,
-          provisional: false,
+        // One prompt only. FCMService asks after the app is active and then
+        // waits for the APNs token. A second requestPermission here races
+        // that prompt and iOS drops it.
+        await FCMService().ensureInitialized();
+        final settings =
+            await FirebaseMessaging.instance.getNotificationSettings();
+        debugPrint(
+          'iOS notification permission: ${settings.authorizationStatus}',
         );
-        debugPrint('iOS notification permission: ${settings.authorizationStatus}');
         return _convertIOSNotificationStatus(settings.authorizationStatus);
       }
     } catch (e) {
