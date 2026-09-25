@@ -236,7 +236,9 @@ class FCMService {
     debugPrint('Foreground message received: ${message.notification?.title}');
     _messageController?.add(message);
 
-    if (message.notification != null) {
+    // iOS already shows the banner itself (setForegroundNotificationPresentationOptions
+    // above), so only Android needs the local copy — otherwise iOS shows it twice.
+    if (message.notification != null && !Platform.isIOS) {
       _showLocalNotification(message);
     }
   }
