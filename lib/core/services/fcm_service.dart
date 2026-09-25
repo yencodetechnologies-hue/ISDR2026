@@ -19,7 +19,9 @@ Future<void> _ensureFirebaseInitialized() async {
 class FCMService {
   static final FCMService _instance = FCMService._internal();
   factory FCMService() => _instance;
-  FCMService._internal();
+  FCMService._internal() {
+    _tokenController = StreamController<String>.broadcast();
+  }
 
   FirebaseMessaging? _messaging;
   FlutterLocalNotificationsPlugin? _localNotifications;
@@ -51,7 +53,6 @@ class FCMService {
       await _ensureFirebaseInitialized();
       _messaging = FirebaseMessaging.instance;
       _localNotifications = FlutterLocalNotificationsPlugin();
-      _tokenController = StreamController<String>.broadcast();
       _messageController = StreamController<RemoteMessage>.broadcast();
 
       _messaging!.onTokenRefresh.listen((newToken) {

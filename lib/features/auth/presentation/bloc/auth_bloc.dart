@@ -6,6 +6,7 @@ import '../../../../core/models/user_model.dart';
 import 'package:flutter/foundation.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../../../core/config/api_config.dart';
+import '../../../../core/services/fcm_service.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -260,8 +261,13 @@ class PasswordResetSuccess extends AuthState {
 // BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
+  late final StreamSubscription<String> _fcmTokenSub;
 
   AuthBloc({required this.authRepository}) : super(AuthInitial()) {
+    // The APNs token often arrives after the first sync attempt.
+    _fcmTokenSub = FCMService().tokenStream.listen((_) {
+      authRepository.syncFcmToken();
+    });
     on<CheckAuthStatusEvent>(_onCheckAuthStatus);
     on<RefreshCurrentUserEvent>(_onRefreshCurrentUser);
     on<LoginEvent>(_onLogin);
@@ -609,5 +615,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(AuthError(message: e.toString()));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _fcmTokenSub.cancel();
+    return super.close();
   }
 }
