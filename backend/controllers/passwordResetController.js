@@ -84,7 +84,7 @@ const verifyOtp = async (req, res) => {
   try {
     const result = await checkOtp(normEmail(req.body.email), req.body.otp);
     if (!result.ok) return res.status(400).json({ success: false, error: result.error });
-    res.json({ success: true, message: 'OTP verified' });
+    res.json({ success: true, verified: true, message: 'OTP verified' });
   } catch (error) {
     console.error('verifyOtp error:', error);
     res.status(500).json({ success: false, error: 'Server error' });

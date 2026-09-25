@@ -258,7 +258,7 @@ class AuthRepository {
 
   Future<void> verifyOtp(String email, String otp) async {
     final response = await _apiService.verifyOtp(email, otp);
-    if (response['success'] != true || response['verified'] != true) {
+    if (response['success'] != true) {
       throw Exception(response['error'] ?? 'Invalid OTP');
     }
   }

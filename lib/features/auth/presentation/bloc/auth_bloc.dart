@@ -526,7 +526,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
       emit(OtpSent(email: event.email));
     } catch (e) {
-      emit(AuthError(message: e.toString()));
+      emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
     }
   }
 
@@ -539,7 +539,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await authRepository.verifyOtp(event.email, event.otp);
       emit(OtpVerified(email: event.email));
     } catch (e) {
-      emit(AuthError(message: e.toString()));
+      emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
     }
   }
 
@@ -556,7 +556,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(const PasswordResetSuccess());
     } catch (e) {
-      emit(AuthError(message: e.toString()));
+      emit(AuthError(message: e.toString().replaceFirst('Exception: ', '')));
     }
   }
 

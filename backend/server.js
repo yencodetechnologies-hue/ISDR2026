@@ -20,6 +20,7 @@ const supportTicketRoutes = require('./routes/supportTicketRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const newsTickerRoutes = require('./routes/newsTickerRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
+const youtubeLiveRoutes = require('./routes/youtubeLiveRoutes');
 const { startReminderScheduler } = require('./utils/reminderScheduler');
 
 if (!process.env.JWT_SECRET) {
@@ -49,6 +50,7 @@ app.use('/api/support-tickets', supportTicketRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/news-ticker', newsTickerRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/youtube-live', youtubeLiveRoutes);
 
 // 404
 app.use((req, res) => {

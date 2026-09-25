@@ -26,6 +26,7 @@ import 'participant_profile_page.dart';
 import 'participant_feed_page.dart';
 import 'favorites_page.dart';
 import '../widgets/news_ticker_strap.dart';
+import '../widgets/youtube_live_capsule.dart';
 import 'speakers_page.dart';
 import 'upcoming_schedules_page.dart';
 import 'participant_qa_page.dart';
@@ -933,7 +934,8 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Admin banner + Today's Schedule (day tabs + list)
+                  // YouTube live capsule, admin banner + Today's Schedule (day tabs + list)
+                  const YoutubeLiveCapsule(),
                   _buildAdminBanner(),
                   const SizedBox(height: 20),
                   _buildScheduleSection(),

@@ -185,6 +185,7 @@ class ApiConfig {
   static String get homeBanner => '$baseUrl/home-banner';
   static String get newsTicker => '$baseUrl/news-ticker';
   static String get certificates => '$baseUrl/certificates';
+  static String get youtubeLive => '$baseUrl/youtube-live';
   // Help & Support tickets (participant <-> event staff / admin chat)
   static String get helpTickets => '$baseUrl/support-tickets';
 
