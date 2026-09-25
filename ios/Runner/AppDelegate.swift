@@ -61,4 +61,17 @@ import FirebaseMessaging
     NSLog("APNs registration failed: %@", error.localizedDescription)
     super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
   }
+
+  override func application(
+    _ application: UIApplication,
+    didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    Messaging.messaging().appDidReceiveMessage(userInfo)
+    super.application(
+      application,
+      didReceiveRemoteNotification: userInfo,
+      fetchCompletionHandler: completionHandler
+    )
+  }
 }
