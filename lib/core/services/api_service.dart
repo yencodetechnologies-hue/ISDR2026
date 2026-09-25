@@ -779,7 +779,7 @@ class ApiService {
       }
       return {
         'success': false,
-        'error': response.data['error'] ?? 'Failed to load management team',
+        'error': response.data['error'] ?? 'Failed to load admin team',
       };
     } on DioException catch (e) {
       final msg = e.response?.data['error'] ?? e.message ?? 'Network error';
@@ -804,7 +804,7 @@ class ApiService {
         'mobileNumber': mobileNumber.trim(),
         'email': email.trim().toLowerCase(),
         'password': password,
-        'roleTitle': roleTitle ?? 'Management Member',
+        'roleTitle': roleTitle ?? 'Admin Member',
       };
       if (apartmentId != null && apartmentId.isNotEmpty) {
         data['apartmentId'] = apartmentId;
@@ -816,13 +816,13 @@ class ApiService {
       if (response.statusCode == 201 || response.statusCode == 200) {
         return {
           'success': true,
-          'message': response.data['message'] ?? 'Management ID added successfully',
+          'message': response.data['message'] ?? 'Admin ID added successfully',
           'user': response.data['user'],
         };
       }
       return {
         'success': false,
-        'error': response.data['error'] ?? 'Failed to add management ID',
+        'error': response.data['error'] ?? 'Failed to add admin ID',
       };
     } on DioException catch (e) {
       final msg = e.response?.data['error'] ?? e.message ?? 'Network error';
@@ -846,7 +846,7 @@ class ApiService {
         'name': name.trim(),
         'mobileNumber': mobileNumber.trim(),
         'email': email.trim().toLowerCase(),
-        'roleTitle': roleTitle ?? 'Management Member',
+        'roleTitle': roleTitle ?? 'Admin Member',
       };
       if (password != null && password.isNotEmpty) {
         data['password'] = password;
@@ -858,13 +858,13 @@ class ApiService {
       if (response.statusCode == 200) {
         return {
           'success': true,
-          'message': response.data['message'] ?? 'Management ID updated successfully',
+          'message': response.data['message'] ?? 'Admin ID updated successfully',
           'user': response.data['user'],
         };
       }
       return {
         'success': false,
-        'error': response.data['error'] ?? 'Failed to update management ID',
+        'error': response.data['error'] ?? 'Failed to update admin ID',
       };
     } on DioException catch (e) {
       final msg = e.response?.data['error'] ?? e.message ?? 'Network error';
@@ -881,12 +881,12 @@ class ApiService {
       if (response.statusCode == 200) {
         return {
           'success': true,
-          'message': response.data['message'] ?? 'Management ID removed successfully',
+          'message': response.data['message'] ?? 'Admin ID removed successfully',
         };
       }
       return {
         'success': false,
-        'error': response.data['error'] ?? 'Failed to remove management ID',
+        'error': response.data['error'] ?? 'Failed to remove admin ID',
       };
     } on DioException catch (e) {
       final msg = e.response?.data['error'] ?? e.message ?? 'Network error';
@@ -1727,6 +1727,23 @@ class ApiService {
         () => _dio.get('${ApiConfig.speakerQuestions}/session-polls'),
       );
 
+  /// Management: all session questions with every participant's answer.
+  Future<Map<String, dynamic>> getAllQuestionsForManagement() =>
+      _sessionContentCall(
+        () => _dio.get('${ApiConfig.engagement}/session-questions'),
+      );
+
+  /// Management: all session polls with vote counts.
+  Future<Map<String, dynamic>> getAllPollsForManagement() => _sessionContentCall(
+        () => _dio.get('${ApiConfig.engagement}/session-polls'),
+      );
+
+  /// Management: participants' questions to speakers and the answers.
+  Future<Map<String, dynamic>> getSpeakerQuestionsForManagement() =>
+      _sessionContentCall(
+        () => _dio.get('${ApiConfig.engagement}/speaker-questions'),
+      );
+
   /// Speakers a participant can ask a question (A–Z).
   Future<Map<String, dynamic>> listAskableSpeakers() => _sessionContentCall(
         () => _dio.get('${ApiConfig.speakerQuestions}/speakers'),
@@ -1799,6 +1816,86 @@ class ApiService {
                     await MultipartFile.fromFile(photoPath, filename: 'speaker.jpg'),
             }),
           ));
+
+  /// Help & Support tickets: a participant's own, or all for staff/admin.
+  Future<Map<String, dynamic>> listHelpTickets() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.helpTickets));
+
+  /// Participant raises a ticket; [category] is emergency / medical / others / app.
+  Future<Map<String, dynamic>> createHelpTicket({
+    required String category,
+    required String description,
+  }) =>
+      _sessionContentCall(() => _dio.post(
+            ApiConfig.helpTickets,
+            data: {'category': category, 'description': description},
+          ));
+
+  /// One ticket with its chat messages.
+  Future<Map<String, dynamic>> getHelpTicket(String ticketId) =>
+      _sessionContentCall(() => _dio.get('${ApiConfig.helpTickets}/$ticketId'));
+
+  /// Event staff / admin close a ticket (the participant can then only read it).
+  Future<Map<String, dynamic>> closeHelpTicket(String ticketId) =>
+      _sessionContentCall(() => _dio.post('${ApiConfig.helpTickets}/$ticketId/close'));
+
+  /// Adds a chat message to a ticket.
+  Future<Map<String, dynamic>> sendHelpMessage(String ticketId, String text) =>
+      _sessionContentCall(() => _dio.post(
+            '${ApiConfig.helpTickets}/$ticketId/messages',
+            data: {'text': text},
+          ));
+
+  /// The participant-home image banner: {enabled, images: [{id, url}]}.
+  Future<Map<String, dynamic>> getHomeBanner() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.homeBanner));
+
+  /// Admin switches the whole banner on or off.
+  Future<Map<String, dynamic>> setHomeBannerEnabled(bool enabled) =>
+      _sessionContentCall(
+        () => _dio.put(ApiConfig.homeBanner, data: {'enabled': enabled}),
+      );
+
+  /// Admin adds one banner image.
+  Future<Map<String, dynamic>> addHomeBannerImage(String imagePath) =>
+      _sessionContentCall(() async => _dio.post(
+            '${ApiConfig.homeBanner}/images',
+            data: FormData.fromMap({
+              'image': await MultipartFile.fromFile(imagePath, filename: 'banner.jpg'),
+            }),
+          ));
+
+  /// Admin removes one banner image.
+  Future<Map<String, dynamic>> deleteHomeBannerImage(String imageId) =>
+      _sessionContentCall(
+        () => _dio.delete('${ApiConfig.homeBanner}/images/$imageId'),
+      );
+
+  /// The property's exhibitors (any login), newest first.
+  Future<Map<String, dynamic>> listExhibitors() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.exhibitors));
+
+  /// Admin adds an exhibitor; [photoPath] is optional.
+  Future<Map<String, dynamic>> createExhibitor({
+    required String shopName,
+    required String category,
+    required String location,
+    String? photoPath,
+  }) =>
+      _sessionContentCall(() async => _dio.post(
+            ApiConfig.exhibitors,
+            data: FormData.fromMap({
+              'shopName': shopName,
+              'category': category,
+              'location': location,
+              if (photoPath != null)
+                'photo':
+                    await MultipartFile.fromFile(photoPath, filename: 'exhibitor.jpg'),
+            }),
+          ));
+
+  Future<Map<String, dynamic>> deleteExhibitor(String exhibitorId) =>
+      _sessionContentCall(() => _dio.delete('${ApiConfig.exhibitors}/$exhibitorId'));
 
   Future<Map<String, dynamic>> deleteSpeaker(String speakerId) =>
       _sessionContentCall(() => _dio.delete('${ApiConfig.speakers}/$speakerId'));

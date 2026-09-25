@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-/// One banner slide: just an image.
+/// One banner slide: just an image — a bundled asset ([imagePath]) or one
+/// from the server ([imageUrl]).
 class BannerItem {
   final String? imagePath;
+  final String? imageUrl;
   final String title;
   final String subtitle;
 
   const BannerItem({
     this.imagePath,
+    this.imageUrl,
     this.title = '',
     this.subtitle = '',
   });
@@ -38,12 +41,18 @@ class _AutoScrollBannerState extends State<AutoScrollBanner> {
   @override
   void initState() {
     super.initState();
-    if (widget.items.length > 1) _startAutoAdvance();
+    _startAutoAdvance();
+  }
+
+  @override
+  void didUpdateWidget(covariant AutoScrollBanner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_page >= widget.items.length) _page = 0;
   }
 
   void _startAutoAdvance() {
     _timer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!_controller.hasClients || widget.items.isEmpty) return;
+      if (!_controller.hasClients || widget.items.length < 2) return;
       final next = (_page + 1) % widget.items.length;
       _controller.animateToPage(
         next,
@@ -74,6 +83,15 @@ class _AutoScrollBannerState extends State<AutoScrollBanner> {
             onPageChanged: (i) => setState(() => _page = i),
             itemBuilder: (_, i) {
               final item = widget.items[i];
+              if (item.imageUrl != null) {
+                return Image.network(
+                  item.imageUrl!,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorBuilder: (_, __, ___) =>
+                      const ColoredBox(color: Color(0xFF14141F)),
+                );
+              }
               return item.imagePath != null
                   ? Image.asset(item.imagePath!, fit: BoxFit.cover, width: double.infinity)
                   : const ColoredBox(color: Color(0xFFF1F5F9));

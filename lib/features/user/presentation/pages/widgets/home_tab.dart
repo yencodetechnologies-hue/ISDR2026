@@ -20,6 +20,7 @@ import '../feed_page.dart';
 import '../my_posts_page.dart';
 import '../terms_and_conditions_page.dart';
 import '../user_events_page.dart';
+import '../../../../support/presentation/pages/help_tickets_page.dart';
 import '../../../../admin/presentation/widgets/auto_scroll_banner.dart';
 
 class HomeTab extends StatefulWidget {
@@ -468,6 +469,11 @@ class _HomeTabState extends State<HomeTab> {
       _QuickOption('Hostel ID', Icons.badge_rounded, _Action.hostelId),
       _QuickOption('Events', Icons.event_rounded, _Action.events),
       _QuickOption('History', Icons.history_rounded, _Action.history),
+      _QuickOption(
+        'Support Tickets',
+        Icons.support_agent_rounded,
+        _Action.supportTickets,
+      ),
       _QuickOption('Create post', Icons.edit_note_rounded, _Action.createPost),
       _QuickOption('My post', Icons.article_rounded, _Action.myPost),
     ];
@@ -494,13 +500,16 @@ class _HomeTabState extends State<HomeTab> {
     }
 
     final options = allOptions.where((o) {
-      // Events Management properties: strictly Profile, Events, and History.
+      // Events properties: Profile, Events, History and Support Tickets.
       if (isEventsProperty) {
         return o.action == _Action.profile ||
             o.action == _Action.events ||
-            o.action == _Action.history;
+            o.action == _Action.history ||
+            o.action == _Action.supportTickets;
       }
-      if (o.action == _Action.events || o.action == _Action.history) {
+      if (o.action == _Action.events ||
+          o.action == _Action.history ||
+          o.action == _Action.supportTickets) {
         return false;
       }
       if (o.action == _Action.createPost || o.action == _Action.myPost) {
@@ -542,6 +551,8 @@ class _HomeTabState extends State<HomeTab> {
         return const Color(0xFFF97316);
       case _Action.history:
         return const Color(0xFF14B8A6);
+      case _Action.supportTickets:
+        return const Color(0xFFEF4444);
       default:
         return const Color(0xFF64748B);
     }
@@ -662,6 +673,14 @@ class _HomeTabState extends State<HomeTab> {
       case _Action.history:
         _navigateToHistory();
         break;
+      case _Action.supportTickets:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const HelpTicketsPage(isParticipant: false),
+          ),
+        );
+        break;
       case _Action.createPost:
         _showCreatePostSheet();
         break;
@@ -728,6 +747,7 @@ enum _Action {
   comingSoon,
   events,
   history,
+  supportTickets,
   createPost,
   myPost,
 }

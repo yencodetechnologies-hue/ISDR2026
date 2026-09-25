@@ -31,6 +31,9 @@ import 'upcoming_schedules_page.dart';
 import '../../../../core/widgets/change_password_page.dart';
 import 'participant_qa_page.dart';
 import 'participant_polls_page.dart';
+import 'participant_exhibitors_page.dart';
+import '../../../support/presentation/pages/help_tickets_page.dart';
+import '../../../admin/presentation/widgets/auto_scroll_banner.dart' show AutoScrollBanner, BannerItem;
 
 // ---------------------------------------------------------------------------
 // Management Theme Palette
@@ -69,7 +72,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
 
   // All not-yet-ended programs on days other than today, chronological.
   // Grouped by calendar day and shown as a day-tab schedule list below the
-  // "Next Session" card. Picking a day tab jumps straight to that day's list.
+  // admin banner. Picking a day tab jumps straight to that day's list.
   final List<Map<String, dynamic>> _upcomingQueue = [];
   DateTime? _selectedScheduleDate;
 
@@ -81,6 +84,24 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
   // The day's list shows 3 sessions; "More" rolls down the rest.
   static const _daySessionsShown = 3;
   bool _showAllDaySessions = false;
+
+  // The admin's image banner (Admin → Banner), shown where the Next Session
+  // card was; empty when switched off.
+  List<String> _bannerUrls = [];
+
+  Future<void> _loadBanner() async {
+    final res = await _api.getHomeBanner();
+    if (!mounted || res['success'] != true || res['banner'] is! Map) return;
+    final banner = Map<String, dynamic>.from(res['banner'] as Map);
+    final urls = banner['enabled'] == false
+        ? <String>[]
+        : ((banner['images'] as List?) ?? const [])
+              .map((i) => (i as Map)['url']?.toString() ?? '')
+              .where((u) => u.isNotEmpty)
+              .toList();
+    if (urls.join() == _bannerUrls.join()) return;
+    setState(() => _bannerUrls = urls);
+  }
 
   // Ids of the schedules this participant marked hot (saved on their account).
   final Set<String> _favoriteIds = {};
@@ -192,28 +213,16 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     return items;
   }
 
-  /// The single closest program that hasn't started yet, across today and
-  /// every future day — shown as the standalone "Next Session" card.
-  Map<String, dynamic>? get _nextSessionItem {
-    final now = DateTime.now();
-    final candidates = [
-      ..._todayItems.where((i) => (i['start'] as DateTime).isAfter(now)),
-      ..._upcomingQueue,
-    ];
-    if (candidates.isEmpty) return null;
-    candidates.sort(
-      (a, b) => (a['start'] as DateTime).compareTo(b['start'] as DateTime),
-    );
-    return candidates.first;
-  }
-
   @override
   void initState() {
     super.initState();
     _fetchLiveSchedule();
     _loadFavorites();
+    _loadBanner();
     _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) _fetchLiveSchedule();
+      if (!mounted) return;
+      _fetchLiveSchedule();
+      _loadBanner(); // picks up the admin switching it on/off
     });
     _cycleTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted || _todayItems.length < 2) return;
@@ -419,13 +428,21 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       label: 'Help &\nSupport',
       icon: Icons.help_rounded,
       color: const Color(0xFF06B6D4),
-      onTap: () => _dummyTap('Help & Support'),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const HelpTicketsPage(isParticipant: true),
+        ),
+      ),
     ),
     _ParticipantModuleItem(
       label: 'Exhibitors',
       icon: Icons.storefront_rounded,
       color: const Color(0xFFEF4444),
-      onTap: () => _dummyTap('Exhibitors'),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ParticipantExhibitorsPage()),
+      ),
     ),
     _ParticipantModuleItem(
       label: 'Q/A',
@@ -860,8 +877,8 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Next Session + Today's Schedule (day tabs + list)
-                  _buildNextSessionCard(),
+                  // Admin banner + Today's Schedule (day tabs + list)
+                  _buildAdminBanner(),
                   const SizedBox(height: 20),
                   _buildScheduleSection(),
                   const SizedBox(height: 20),
@@ -1507,205 +1524,19 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     Color(0xFFF59E0B),
   ];
 
-  /// "Next Session" — the single closest program that hasn't started yet,
-  /// shown as a standalone card above the day-by-day schedule list.
-  Widget _buildNextSessionCard() {
-    final item = _nextSessionItem;
-    if (item == null) return const SizedBox.shrink();
-    final schedule = item['schedule'] as Map<String, dynamic>;
-    final event = item['event'] as Map<String, dynamic>;
-    final scheduleName = schedule['scheduleName']?.toString() ?? '';
-    final speakerName = schedule['speakerName']?.toString() ?? '';
-    final speakerPhoto = schedule['speakerPhoto']?.toString() ?? '';
-    final fromTime = schedule['fromTime']?.toString() ?? '';
-    final toTime = schedule['toTime']?.toString() ?? '';
-    final hall = schedule['hall']?.toString() ?? '';
-    const accent = Color(0xFF2563EB);
-
+  /// The admin's images (Admin → Banner), scrolling to the next one
+  /// automatically. Hidden when switched off or empty.
+  Widget _buildAdminBanner() {
+    if (_bannerUrls.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 10),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF14141F),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ScheduleDetailPage(schedule: schedule, event: event),
-                    ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 20, 40, 14),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 46,
-                        height: 46,
-                        clipBehavior: Clip.antiAlias,
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: accent.withValues(alpha: 0.4),
-                            width: 2,
-                          ),
-                        ),
-                        child: speakerPhoto.isNotEmpty
-                            ? Image.network(
-                                speakerPhoto,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Icon(
-                                  Icons.person_rounded,
-                                  color: accent,
-                                ),
-                              )
-                            : const Icon(Icons.person_rounded, color: accent),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    scheduleName,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Icon(
-                                  Icons.chevron_right_rounded,
-                                  color: Colors.white.withValues(alpha: 0.4),
-                                ),
-                              ],
-                            ),
-                            if (speakerName.isNotEmpty) ...[
-                              const SizedBox(height: 3),
-                              Text(
-                                '|  $speakerName',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                if (fromTime.isNotEmpty &&
-                                    toTime.isNotEmpty) ...[
-                                  Icon(
-                                    Icons.access_time_rounded,
-                                    size: 13,
-                                    color: Colors.white.withValues(alpha: 0.55),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${_fmtTimeStr(fromTime)} - ${_fmtTimeStr(toTime)}',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11.5,
-                                      color: Colors.white.withValues(
-                                        alpha: 0.55,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                                if (hall.isNotEmpty) ...[
-                                  const SizedBox(width: 10),
-                                  Icon(
-                                    Icons.location_on_rounded,
-                                    size: 13,
-                                    color: Colors.white.withValues(alpha: 0.55),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      hall,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 11.5,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.55,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Small notification icon tucked into the card's bottom-right corner.
-          Positioned(
-            right: 12,
-            bottom: 12,
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Icon(
-                Icons.notifications_none_rounded,
-                size: 15,
-                color: Colors.white.withValues(alpha: 0.6),
-              ),
-            ),
-          ),
-          // "Next Session" label overlapping the card's top-left corner.
-          Positioned(
-            left: 12,
-            top: -10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2A2A33),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'Next Session',
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.85),
-                ),
-              ),
-            ),
-          ),
-        ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: AutoScrollBanner(
+          key: ValueKey(_bannerUrls.join()),
+          height: 160,
+          items: [for (final url in _bannerUrls) BannerItem(imageUrl: url)],
+        ),
       ),
     );
   }

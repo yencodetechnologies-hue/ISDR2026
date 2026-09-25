@@ -59,7 +59,7 @@ class _ManagementTeamPageState extends State<ManagementTeamPage> {
         final list = result['users'] as List<dynamic>? ?? [];
         _team = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       } else {
-        _error = result['error'] as String? ?? 'Failed to load management team';
+        _error = result['error'] as String? ?? 'Failed to load admin team';
       }
     });
   }
@@ -83,9 +83,9 @@ class _ManagementTeamPageState extends State<ManagementTeamPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Remove Management ID'),
+        title: const Text('Remove Admin ID'),
         content: Text(
-          'Remove $name as co-management ID? They will no longer be able to log in.',
+          'Remove $name as co-admin ID? They will no longer be able to log in.',
         ),
         actions: [
           TextButton(
@@ -112,7 +112,7 @@ class _ManagementTeamPageState extends State<ManagementTeamPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            result['message'] as String? ?? 'Management ID removed',
+            result['message'] as String? ?? 'Admin ID removed',
           ),
           backgroundColor: AppTheme.secondaryColor,
         ),
@@ -163,7 +163,7 @@ class _ManagementTeamPageState extends State<ManagementTeamPage> {
           ? null
           : AppBar(
               title: Text(
-                'Management IDs',
+                'Admin IDs',
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -204,7 +204,7 @@ class _ManagementTeamPageState extends State<ManagementTeamPage> {
                     ElevatedButton.icon(
                       onPressed: _openAddManagementModal,
                       icon: const Icon(Icons.add_rounded, size: 18),
-                      label: const Text('Add Management ID'),
+                      label: const Text('Add Admin ID'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF3B82F6),
                         foregroundColor: Colors.white,
@@ -226,7 +226,7 @@ class _ManagementTeamPageState extends State<ManagementTeamPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Manage registered management accounts. Existing management users can add or manage team IDs.',
+                  'Manage registered admin accounts. Existing admin users can add or manage team IDs.',
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     color: const Color(0xFF9CA3AF),
@@ -306,8 +306,8 @@ class _ManagementTeamPageState extends State<ManagementTeamPage> {
                           const SizedBox(height: 12),
                           Text(
                             _searchQuery.isNotEmpty
-                                ? 'No management IDs match your search'
-                                : 'No management IDs registered yet',
+                                ? 'No admin IDs match your search'
+                                : 'No admin IDs registered yet',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 15,
@@ -317,7 +317,7 @@ class _ManagementTeamPageState extends State<ManagementTeamPage> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Click "+ Add Management ID" to grant access to another team member.',
+                            'Click "+ Add Admin ID" to grant access to another team member.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 13,
@@ -339,9 +339,9 @@ class _ManagementTeamPageState extends State<ManagementTeamPage> {
                             m['_id']?.toString() ?? m['id']?.toString() ?? '';
                         final isPrimary = id.startsWith('primary_');
                         final name =
-                            m['name']?.toString() ?? 'Management Member';
+                            m['name']?.toString() ?? 'Admin Member';
                         final role =
-                            m['roleTitle']?.toString() ?? 'Management Member';
+                            m['roleTitle']?.toString() ?? 'Admin Member';
                         final mobile = m['mobileNumber']?.toString() ?? '—';
                         final email = m['email']?.toString() ?? '—';
 
@@ -593,7 +593,7 @@ class __AddManagementIdBottomSheetState
       mobileNumber: _mobileController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
-      roleTitle: 'Management Member',
+      roleTitle: 'Admin Member',
       apartmentId: widget.apartmentId,
     );
 
@@ -607,7 +607,7 @@ class __AddManagementIdBottomSheetState
         SnackBar(
           content: Text(
             result['message'] as String? ??
-                'New management ID added successfully',
+                'New admin ID added successfully',
           ),
           backgroundColor: AppTheme.secondaryColor,
         ),
@@ -657,7 +657,7 @@ class __AddManagementIdBottomSheetState
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'Add Management ID',
+                    'Add Admin ID',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -673,7 +673,7 @@ class __AddManagementIdBottomSheetState
               ),
               const SizedBox(height: 4),
               const Text(
-                'This new management ID will have full access to manage all operations for this property.',
+                'This new admin ID will have full access to manage all operations for this property.',
                 style: TextStyle(
                   fontSize: 12,
                   color: Color(0xFF9CA3AF),
@@ -795,7 +795,7 @@ class __AddManagementIdBottomSheetState
                         ),
                       )
                     : const Text(
-                        'Create Management ID',
+                        'Create Admin ID',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -917,7 +917,7 @@ class _EditManagementIdBottomSheetState
         SnackBar(
           content: Text(
             result['message'] as String? ??
-                'Management ID updated successfully',
+                'Admin ID updated successfully',
           ),
           backgroundColor: AppTheme.secondaryColor,
         ),
@@ -969,7 +969,7 @@ class _EditManagementIdBottomSheetState
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'Edit Management ID',
+                    'Edit Admin ID',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -985,7 +985,7 @@ class _EditManagementIdBottomSheetState
               ),
               const SizedBox(height: 4),
               const Text(
-                'Update this management ID\'s details. Leave the password blank to keep it unchanged.',
+                'Update this admin ID\'s details. Leave the password blank to keep it unchanged.',
                 style: TextStyle(
                   fontSize: 12,
                   color: Color(0xFF9CA3AF),

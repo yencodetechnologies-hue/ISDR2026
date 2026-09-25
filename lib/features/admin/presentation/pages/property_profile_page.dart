@@ -101,7 +101,7 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
   String get _pageTitle {
     switch (_propertyType) {
       case PropertyType.events:
-        return 'Events Management Profile';
+        return 'Events Admin Profile';
     }
   }
 
@@ -321,7 +321,7 @@ class _PropertyProfilePageState extends State<PropertyProfilePage> {
                         title: 'Warden Details',
                         icon: Icons.shield_outlined,
                         subtitle:
-                            'Warden can sign in via Management login with warden mobile and property password.',
+                            'Warden can sign in via Admin login with warden mobile and property password.',
                         children: [
                           _buildStyledField(
                             controller: _wardenNameController,

@@ -220,22 +220,6 @@ class InclusionsSectionState extends State<InclusionsSection> {
                       ),
                     ),
                   ),
-                const SizedBox(width: 4),
-                IconButton(
-                  onPressed: _loading ? null : load,
-                  icon: const Icon(
-                    Icons.refresh_rounded,
-                    size: 18,
-                    color: Colors.white60,
-                  ),
-                  tooltip: 'Refresh inclusions',
-                  splashRadius: 18,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 28,
-                    minHeight: 28,
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 12),

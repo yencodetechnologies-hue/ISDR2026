@@ -260,10 +260,10 @@ class _BrochureFullShimmerScreenState extends State<_BrochureFullShimmerScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
+                  color: const Color(0xFF1E293B),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 child: Column(
@@ -320,9 +320,9 @@ class _BrochureFullShimmerScreenState extends State<_BrochureFullShimmerScreen>
                           begin: Alignment(-1.5 + (val * 3), -0.5),
                           end: Alignment(0.5 + (val * 3), 0.5),
                           colors: const [
-                            Color(0xFFE2E8F0),
-                            Color(0xFFCBD5E1),
-                            Color(0xFFE2E8F0),
+                            Color(0xFF1E293B),
+                            Color(0xFF334155),
+                            Color(0xFF1E293B),
                           ],
                         ),
                         boxShadow: const [
@@ -338,12 +338,12 @@ class _BrochureFullShimmerScreenState extends State<_BrochureFullShimmerScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.picture_as_pdf_rounded,
-                                size: 40, color: Colors.white24),
+                                size: 40, color: Colors.white38),
                             SizedBox(height: 12),
                             Text(
                               'Optimizing & caching high-res pages…',
                               style: TextStyle(
-                                color: Colors.white54,
+                                color: Colors.white70,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),

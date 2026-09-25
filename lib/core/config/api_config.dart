@@ -17,7 +17,7 @@ class ApiConfig {
     defaultValue: '',
   );
 
-  /// Base URL: live production server.
+  /// Base URL: live production backend server.
   static String get baseUrl {
     if (_overrideBaseUrl.isNotEmpty) return _overrideBaseUrl;
     return _productionBaseUrl;
@@ -181,6 +181,10 @@ class ApiConfig {
 
   // Speakers (management Speakers page; picked when adding a schedule)
   static String get speakers => '$baseUrl/speakers';
+  static String get exhibitors => '$baseUrl/exhibitors';
+  static String get homeBanner => '$baseUrl/home-banner';
+  // Help & Support tickets (participant <-> event staff / admin chat)
+  static String get helpTickets => '$baseUrl/support-tickets';
 
   // Participant favorites (hearted schedules)
   static String get managedEventMyFavorites =>
@@ -189,6 +193,8 @@ class ApiConfig {
       '$managedEventsBase/favorites/$scheduleId';
 
   // Session content: speaker polls / questions on one schedule row
+  // Management: every Q&A and poll on the property (read-only)
+  static String get engagement => '$baseUrl/engagement';
   // Participant -> speaker questions (private, answered once)
   static String get speakerQuestions => '$baseUrl/speaker-questions';
   static String sessionContent(String scheduleId) =>

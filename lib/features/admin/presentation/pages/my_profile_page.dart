@@ -114,7 +114,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
       return loginRole[0].toUpperCase() + loginRole.substring(1);
     }
     return user.userType == UserType.apartment
-        ? 'Event Management'
+        ? 'Event Admin'
         : user.userType.name[0].toUpperCase() + user.userType.name.substring(1);
   }
 

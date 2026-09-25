@@ -18,6 +18,10 @@ import 'tabs/users_tab.dart';
 import 'tabs/managed_events_tab.dart';
 import '../widgets/management_module_grid.dart';
 import 'manage_speakers_page.dart';
+import 'manage_exhibitors_page.dart';
+import 'manage_banner_page.dart';
+import '../../../support/presentation/pages/help_tickets_page.dart';
+import 'engagement_overview_page.dart';
 import '../../../user/presentation/pages/user_events_page.dart';
 import '../../../participant/presentation/widgets/live_show_card.dart';
 import '../widgets/auto_scroll_banner.dart';
@@ -286,7 +290,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
         buildContent: (state) => UsersTab(state: state, apartment: apt),
       ),
       _PropertyTabItem(
-        label: 'Management IDs',
+        label: 'Admin IDs',
         buildContent: (_) =>
             ManagementTeamPage(apartmentId: apartmentId, hideAppBar: true),
       ),
@@ -294,6 +298,29 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   }
 
   void _navigateToModule(String label) {
+    if (label.trim().toLowerCase() == 'support tickets') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const HelpTicketsPage(isParticipant: false),
+        ),
+      );
+      return;
+    }
+    if (label.trim().toLowerCase() == 'banner') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ManageBannerPage()),
+      );
+      return;
+    }
+    if (label.trim().toLowerCase() == 'q&a & polls') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const EngagementOverviewPage()),
+      );
+      return;
+    }
     // Same flow as the event staff: pick an event, tap an inclusion, then
     // scan the participant's QR or enter their ID number.
     if (label.trim().toLowerCase() == 'scan inclusion') {
@@ -311,6 +338,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const ManageSpeakersPage()),
+      );
+      return;
+    }
+    if (label.trim().toLowerCase() == 'add exhibitors') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ManageExhibitorsPage()),
       );
       return;
     }
@@ -596,6 +630,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'Event Schedules',
       'Speakers',
       'Scan Inclusion',
+      'Q&A & Polls',
+      'Add Exhibitors',
+      'Banner',
+      'Support Tickets',
     ];
     final isHostel = false;
     final totalRooms = totalRoomCountForProperty(blocks: state.blocks);
@@ -686,7 +724,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Management IDs',
+                    'Admin IDs',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -757,7 +795,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                 ),
                 SizedBox(width: 8),
                 Text(
-                  'Management IDs (Static)',
+                  'Admin IDs (Static)',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,

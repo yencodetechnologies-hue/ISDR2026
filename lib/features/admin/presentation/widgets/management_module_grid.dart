@@ -72,7 +72,7 @@ const List<_ModuleVisual> _predefinedVisuals = [
   _ModuleVisual('Ads', Icons.ads_click_rounded, group: 'OPERATIONS'),
   _ModuleVisual('Documents', Icons.description_rounded, group: 'OPERATIONS'),
 
-  _ModuleVisual('Management IDs', Icons.badge_outlined, group: 'ACCOUNT'),
+  _ModuleVisual('Admin IDs', Icons.badge_outlined, group: 'ACCOUNT'),
   _ModuleVisual('Brochure', Icons.menu_book_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Profile', Icons.person_rounded, group: 'ACCOUNT'),
   _ModuleVisual(
@@ -85,6 +85,14 @@ const List<_ModuleVisual> _predefinedVisuals = [
   _ModuleVisual(
     'Scan Inclusion',
     Icons.qr_code_scanner_rounded,
+    group: 'ACCOUNT',
+  ),
+  _ModuleVisual('Q&A & Polls', Icons.forum_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('Add Exhibitors', Icons.add_business_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('Banner', Icons.view_carousel_rounded, group: 'ACCOUNT'),
+  _ModuleVisual(
+    'Support Tickets',
+    Icons.support_agent_rounded,
     group: 'ACCOUNT',
   ),
 ];
@@ -125,7 +133,7 @@ class ManagementModuleGrid extends StatelessWidget {
     }
 
     // Everything in one "MANAGEMENT MODULES" box.
-    final groups = [_ModuleGroupData('MANAGEMENT MODULES', activeVisuals)];
+    final groups = [_ModuleGroupData('ADMIN MODULES', activeVisuals)];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,12 +215,16 @@ Color _moduleColor(String label) {
     'events': Color(0xFFF97316),
     'event staff': Color(0xFF14B8A6),
     'staffs': Color(0xFF14B8A6),
-    'management ids': Color(0xFF0EA5E9),
+    'admin ids': Color(0xFF0EA5E9),
     'profile': Color(0xFF6366F1),
     'send notification': Color(0xFFEF4444),
     'event schedules': Color(0xFF22C55E),
     'speakers': Color(0xFFEC4899),
     'scan inclusion': Color(0xFFF59E0B),
+    'q&a & polls': Color(0xFF06B6D4),
+    'add exhibitors': Color(0xFF10B981),
+    'banner': Color(0xFFA855F7),
+    'support tickets': Color(0xFFEF4444),
   };
   const fallback = [
     Color(0xFF2563EB),

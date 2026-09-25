@@ -6,7 +6,7 @@ extension PropertyTypeExt on PropertyType {
   String get displayName {
     switch (this) {
       case PropertyType.events:
-        return 'Events Management';
+        return 'Events Admin';
     }
   }
 }
