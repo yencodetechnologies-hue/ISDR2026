@@ -1846,6 +1846,36 @@ class ApiService {
             data: {'text': text},
           ));
 
+  /// Event staff / admin scan a participant's entry or exit for today.
+  Future<Map<String, dynamic>> scanAttendance({
+    required String type,
+    String? qrData,
+    String? idNumber,
+  }) =>
+      _sessionContentCall(() => _dio.post(
+            '${ApiConfig.certificates}/scan',
+            data: {
+              'type': type,
+              if (qrData != null) 'qrData': qrData,
+              if (idNumber != null) 'idNumber': idNumber,
+            },
+          ));
+
+  /// Participant: day-by-day entry/exit progress and whether the certificate is open.
+  Future<Map<String, dynamic>> getMyCertificate() =>
+      _sessionContentCall(() => _dio.get('${ApiConfig.certificates}/me'));
+
+  /// Admin: every participant with their certificate status.
+  Future<Map<String, dynamic>> listCertificates() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.certificates));
+
+  /// Admin unlocks the certificates of the selected participants.
+  Future<Map<String, dynamic>> unlockCertificates(List<String> registrationIds) =>
+      _sessionContentCall(() => _dio.post(
+            '${ApiConfig.certificates}/unlock',
+            data: {'registrationIds': registrationIds},
+          ));
+
   /// The home-screen news ticker: {enabled, text} (one message per line).
   Future<Map<String, dynamic>> getNewsTicker() =>
       _sessionContentCall(() => _dio.get(ApiConfig.newsTicker));

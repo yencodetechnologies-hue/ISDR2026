@@ -1102,6 +1102,13 @@ class ClaimInclusionScannerPage extends StatefulWidget {
   final ApiService api;
   final VoidCallback onClaimed;
 
+  /// Overrides for other scans (e.g. entry/exit attendance).
+  final String heading;
+  final String itemLabel;
+  final String successText;
+  final Future<Map<String, dynamic>> Function({String? qrData, String? idNumber})?
+      submit;
+
   const ClaimInclusionScannerPage({
     super.key,
     required this.inclusionName,
@@ -1110,6 +1117,10 @@ class ClaimInclusionScannerPage extends StatefulWidget {
     required this.apartmentId,
     required this.api,
     required this.onClaimed,
+    this.heading = 'Claim Benefit',
+    this.itemLabel = 'Benefit',
+    this.successText = 'Participant is eligible. Benefit claim registered.',
+    this.submit,
   });
 
   @override
@@ -1177,13 +1188,15 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage>
   Future<void> _submit({String? qrData, String? idNumber}) async {
     if (_result != null) return;
     if (!_submitting) setState(() => _submitting = true);
-    final res = await widget.api.claimInclusion(
-      inclusionName: widget.inclusionName,
-      packageId: widget.packageId,
-      qrData: qrData,
-      idNumber: idNumber,
-      apartmentId: widget.apartmentId,
-    );
+    final res = widget.submit != null
+        ? await widget.submit!(qrData: qrData, idNumber: idNumber)
+        : await widget.api.claimInclusion(
+            inclusionName: widget.inclusionName,
+            packageId: widget.packageId,
+            qrData: qrData,
+            idNumber: idNumber,
+            apartmentId: widget.apartmentId,
+          );
     if (!mounted) return;
     setState(() {
       _submitting = false;
@@ -1214,8 +1227,8 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage>
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Claim Benefit',
+            Text(
+              widget.heading,
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.white60,
@@ -1799,12 +1812,12 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage>
           line('Package', packageText),
           line('Date', today),
           line('Venue', venue),
-          line('Benefit', widget.inclusionName),
+          line(widget.itemLabel, widget.inclusionName),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: Colors.black.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
@@ -1814,7 +1827,7 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage>
                         : message!)
                   : (used
                         ? 'This entitlement has already been redeemed.'
-                        : 'Participant is eligible. Benefit claim registered.'),
+                        : widget.successText),
               style: TextStyle(
                 color: statusText,
                 fontWeight: FontWeight.w700,

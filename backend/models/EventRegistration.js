@@ -82,6 +82,19 @@ const eventRegistrationSchema = new mongoose.Schema(
         reclaimedByAdmin: { type: Boolean, default: false },
       },
     ],
+    // Entry/exit scans, one row per event day (YYYY-MM-DD, India time).
+    attendance: [
+      {
+        day: { type: String, required: true },
+        entryAt: { type: Date, default: null },
+        entryBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+        exitAt: { type: Date, default: null },
+        exitBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+      },
+    ],
+    // Admin unlocked the certificate without the required scans.
+    certificateUnlocked: { type: Boolean, default: false },
+    certificateUnlockedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

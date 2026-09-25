@@ -5,10 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../core/navigation/app_navigation.dart';
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/services/api_service.dart';
-import '../../../../core/widgets/logout_confirm_sheet.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../notifications/presentation/bloc/notification_bloc.dart';
 import '../../../admin/presentation/pages/my_profile_page.dart';
@@ -23,15 +21,16 @@ import 'accommodation_page.dart';
 import 'claimed_inclusion_page.dart';
 import 'available_inclusion_page.dart';
 import 'schedule_detail_page.dart';
+import 'participant_profile_page.dart';
 import 'participant_feed_page.dart';
 import 'favorites_page.dart';
 import '../widgets/news_ticker_strap.dart';
 import 'speakers_page.dart';
 import 'upcoming_schedules_page.dart';
-import '../../../../core/widgets/change_password_page.dart';
 import 'participant_qa_page.dart';
 import 'participant_polls_page.dart';
 import 'participant_exhibitors_page.dart';
+import '../../../certificate/presentation/pages/participant_certificate_page.dart';
 import '../../../support/presentation/pages/help_tickets_page.dart';
 import '../../../admin/presentation/widgets/auto_scroll_banner.dart' show AutoScrollBanner, BannerItem;
 
@@ -483,6 +482,15 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       ),
     ),
     _ParticipantModuleItem(
+      label: 'Certificate',
+      icon: Icons.workspace_premium_rounded,
+      color: const Color(0xFFF59E0B),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ParticipantCertificatePage()),
+      ),
+    ),
+    _ParticipantModuleItem(
       label: 'Exhibitors',
       icon: Icons.storefront_rounded,
       color: const Color(0xFFEF4444),
@@ -536,7 +544,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
   ];
 
   /// Opens the same "More" overflow page the module grid's own More tile
-  /// opens — whatever didn't fit in the grid's fixed 2 rows (11 slots), plus Settings.
+  /// opens — whatever didn't fit in the grid's fixed 2 rows (11 slots).
   void _openMoreModules() {
     const crossAxisCount = 6;
     const maxRealSlots = crossAxisCount * 2 - 1;
@@ -563,15 +571,6 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                 onTap: item.onTap,
               ),
             ),
-            _ModuleSheetItem(
-              label: 'Settings',
-              icon: Icons.settings_rounded,
-              color: const Color(0xFF64748B),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const _SettingsPage()),
-              ),
-            ),
           ],
         ),
       ),
@@ -580,10 +579,17 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
 
   void _onTileTap(String title) {
     final lower = title.toLowerCase().trim();
-    if (lower == 'profile') {
+    if (lower == 'qr pass') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const MyProfilePage()),
+      );
+      return;
+    }
+    if (lower == 'profile') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ParticipantProfilePage()),
       );
       return;
     }
@@ -820,7 +826,9 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                 child: GestureDetector(
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const MyProfilePage()),
+                    MaterialPageRoute(
+                      builder: (_) => const ParticipantProfilePage(),
+                    ),
                   ),
                   child: CircleAvatar(
                     radius: 17,
@@ -969,7 +977,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       _BottomNavItem(
         label: 'QR Pass',
         icon: Icons.qr_code_rounded,
-        onTap: () => _onTileTap('Profile'),
+        onTap: () => _onTileTap('qr pass'),
       ),
       _BottomNavItem(
         label: 'More',
@@ -2309,7 +2317,7 @@ class _ModuleSheetItem {
   });
 }
 
-/// Full page listing every module that didn't fit in the grid, plus Settings.
+/// Full page listing every module that didn't fit in the grid.
 class _MoreModulesPage extends StatelessWidget {
   final List<_ModuleSheetItem> items;
 
@@ -2381,122 +2389,7 @@ class _MoreModulesPage extends StatelessWidget {
   }
 }
 
-/// Participant settings — Change Password and Logout.
-class _SettingsPage extends StatelessWidget {
-  const _SettingsPage();
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A12),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0A12),
-        elevation: 0,
-        foregroundColor: Colors.white,
-        title: Text(
-          'Settings',
-          style: GoogleFonts.outfit(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF3B82F6),
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    child: const Icon(
-                      Icons.lock_reset_rounded,
-                      size: 19,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      'Change Password',
-                      style: GoogleFonts.inter(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: Colors.white.withValues(alpha: 0.4),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => LogoutConfirmSheet.showLogoutConfirmSheet(
-              context,
-              onLogout: () {
-                context.read<AuthBloc>().add(LogoutEvent());
-                AppNavigation.resetTo(context, AppRoutes.login);
-              },
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444),
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    child: const Icon(
-                      Icons.logout_rounded,
-                      size: 19,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      'Logout',
-                      style: GoogleFonts.inter(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFFF87171),
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: Colors.white.withValues(alpha: 0.4),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _BottomNavItem {
   final String label;

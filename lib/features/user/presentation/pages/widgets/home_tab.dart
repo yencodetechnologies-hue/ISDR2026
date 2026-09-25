@@ -21,6 +21,7 @@ import '../my_posts_page.dart';
 import '../terms_and_conditions_page.dart';
 import '../user_events_page.dart';
 import '../../../../support/presentation/pages/help_tickets_page.dart';
+import '../../../../certificate/presentation/pages/attendance_scan_page.dart';
 import '../../../../admin/presentation/widgets/auto_scroll_banner.dart';
 
 class HomeTab extends StatefulWidget {
@@ -470,6 +471,11 @@ class _HomeTabState extends State<HomeTab> {
       _QuickOption('Events', Icons.event_rounded, _Action.events),
       _QuickOption('History', Icons.history_rounded, _Action.history),
       _QuickOption(
+        'Entry / Exit Scan',
+        Icons.qr_code_scanner_rounded,
+        _Action.attendanceScan,
+      ),
+      _QuickOption(
         'Support Tickets',
         Icons.support_agent_rounded,
         _Action.supportTickets,
@@ -500,15 +506,18 @@ class _HomeTabState extends State<HomeTab> {
     }
 
     final options = allOptions.where((o) {
-      // Events properties: Profile, Events, History and Support Tickets.
+      // Events properties: Profile, Events, History, Entry / Exit Scan and
+      // Support Tickets.
       if (isEventsProperty) {
         return o.action == _Action.profile ||
             o.action == _Action.events ||
             o.action == _Action.history ||
+            o.action == _Action.attendanceScan ||
             o.action == _Action.supportTickets;
       }
       if (o.action == _Action.events ||
           o.action == _Action.history ||
+          o.action == _Action.attendanceScan ||
           o.action == _Action.supportTickets) {
         return false;
       }
@@ -551,6 +560,8 @@ class _HomeTabState extends State<HomeTab> {
         return const Color(0xFFF97316);
       case _Action.history:
         return const Color(0xFF14B8A6);
+      case _Action.attendanceScan:
+        return const Color(0xFF10B981);
       case _Action.supportTickets:
         return const Color(0xFFEF4444);
       default:
@@ -673,6 +684,12 @@ class _HomeTabState extends State<HomeTab> {
       case _Action.history:
         _navigateToHistory();
         break;
+      case _Action.attendanceScan:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AttendanceScanPage()),
+        );
+        break;
       case _Action.supportTickets:
         Navigator.push(
           context,
@@ -737,6 +754,7 @@ class _HomeTabState extends State<HomeTab> {
 }
 
 enum _Action {
+  attendanceScan,
   profile,
   complaints,
   helpDesk,

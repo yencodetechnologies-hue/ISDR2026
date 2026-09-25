@@ -19,6 +19,7 @@ const homeBannerRoutes = require('./routes/homeBannerRoutes');
 const supportTicketRoutes = require('./routes/supportTicketRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const newsTickerRoutes = require('./routes/newsTickerRoutes');
+const certificateRoutes = require('./routes/certificateRoutes');
 const { startReminderScheduler } = require('./utils/reminderScheduler');
 
 if (!process.env.JWT_SECRET) {
@@ -47,6 +48,7 @@ app.use('/api/home-banner', homeBannerRoutes);
 app.use('/api/support-tickets', supportTicketRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/news-ticker', newsTickerRoutes);
+app.use('/api/certificates', certificateRoutes);
 
 // 404
 app.use((req, res) => {

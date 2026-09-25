@@ -11,7 +11,8 @@ import '../widgets/delegate_badge.dart';
 
 /// Shows the details of the account that is currently logged in.
 class MyProfilePage extends StatefulWidget {
-  const MyProfilePage({super.key});
+  final String? title;
+  const MyProfilePage({super.key, this.title});
 
   @override
   State<MyProfilePage> createState() => _MyProfilePageState();
@@ -137,9 +138,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
         elevation: 0,
         centerTitle: false,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'My Profile',
-          style: TextStyle(
+        title: Text(
+          widget.title ?? (isParticipant ? 'QR Pass' : 'My Profile'),
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w800,
             fontSize: 20,

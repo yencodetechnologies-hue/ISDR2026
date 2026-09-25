@@ -21,6 +21,8 @@ import 'manage_speakers_page.dart';
 import 'manage_exhibitors_page.dart';
 import 'manage_banner_page.dart';
 import 'manage_news_ticker_page.dart';
+import '../../../certificate/presentation/pages/attendance_scan_page.dart';
+import '../../../certificate/presentation/pages/admin_certificates_page.dart';
 import '../../../support/presentation/pages/help_tickets_page.dart';
 import 'engagement_overview_page.dart';
 import '../../../user/presentation/pages/user_events_page.dart';
@@ -299,6 +301,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   }
 
   void _navigateToModule(String label) {
+    final key = label.trim().toLowerCase();
+    if (key == 'entry / exit scan' || key == 'certificate') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => key == 'certificate'
+              ? const AdminCertificatesPage()
+              : const AttendanceScanPage(),
+        ),
+      );
+      return;
+    }
     if (label.trim().toLowerCase() == 'news ticker') {
       Navigator.push(
         context,
@@ -642,6 +656,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'Add Exhibitors',
       'Banner',
       'News Ticker',
+      'Entry / Exit Scan',
+      'Certificate',
       'Support Tickets',
     ];
     final isHostel = false;

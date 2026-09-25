@@ -20,8 +20,26 @@ function generateOtp() {
   return crypto.randomInt(100000, 999999).toString();
 }
 
-async function generateNextIdNumber(eventId) {
-  const registrations = await EventRegistration.find({ eventId })
+/**
+ * True when another participant (in any event) already has this ID number.
+ * "ID1001", "id1001" and "1001" count as the same number, because scanning
+ * looks a participant up by any of these forms across all events.
+ */
+async function idNumberTaken(rawId, excludeRegId) {
+  const upper = String(rawId || '').trim().toUpperCase();
+  if (!upper) return false;
+  const core = upper.startsWith('ID') ? upper.substring(2) : upper;
+  const escape = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const filter = {
+    idNumber: { $in: [...new Set([upper, core, `ID${core}`])].map((v) => new RegExp(`^${escape(v)}$`, 'i')) },
+  };
+  if (excludeRegId) filter._id = { $ne: excludeRegId };
+  return Boolean(await EventRegistration.exists(filter));
+}
+
+// Next free ID number across all events, so no two participants share one.
+async function generateNextIdNumber() {
+  const registrations = await EventRegistration.find({})
     .select('idNumber')
     .lean();
   let maxNumber = 1000;
@@ -631,13 +649,12 @@ async function createParticipantRegistration(event, { name, institution, package
   let finalIdNumber = '';
 
   if (rawIdNumber) {
-    const exists = await EventRegistration.findOne({ eventId: event._id, idNumber: rawIdNumber }).select('_id').lean();
-    if (exists) {
+    if (await idNumberTaken(rawIdNumber)) {
       throw new Error(`ID number "${rawIdNumber}" is already in use by another participant`);
     }
     finalIdNumber = rawIdNumber;
   } else {
-    finalIdNumber = await generateNextIdNumber(event._id);
+    finalIdNumber = await generateNextIdNumber();
   }
 
   const otp = generateOtp();
@@ -677,7 +694,7 @@ async function createParticipantRegistration(event, { name, institution, package
       break;
     } catch (err) {
       if (!rawIdNumber && err?.code === 11000 && /idNumber/.test(err.message || '') && attempt < 4) {
-        finalIdNumber = await generateNextIdNumber(event._id);
+        finalIdNumber = await generateNextIdNumber();
         registration.idNumber = finalIdNumber;
         registration.qrCode = buildQrPayload(registration, event);
         continue;
@@ -811,12 +828,7 @@ const updateRegistration = async (req, res) => {
         return res.status(400).json({ success: false, error: 'ID number cannot be empty' });
       }
       if (rawId !== reg.idNumber) {
-        const exists = await EventRegistration.findOne({
-          eventId: event._id,
-          idNumber: rawId,
-          _id: { $ne: reg._id },
-        }).select('_id').lean();
-        if (exists) {
+        if (await idNumberTaken(rawId, reg._id)) {
           return res.status(400).json({ success: false, error: `ID number "${rawId}" is already in use` });
         }
         reg.idNumber = rawId;
