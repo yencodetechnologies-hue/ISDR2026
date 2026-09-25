@@ -157,6 +157,7 @@ async function sendNotificationToUser(userId, userType, notification) {
       apns: {
         headers: {
           'apns-priority': '10',
+          'apns-push-type': 'alert',
         },
         payload: {
           aps: {

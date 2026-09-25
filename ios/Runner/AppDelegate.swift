@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import UserNotifications
 import FirebaseCore
 import FirebaseMessaging
 
@@ -19,6 +20,18 @@ import FirebaseMessaging
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // Keep this delegate so a foreground push is presented as a banner.
+    // The messaging plugin skips replacing a Flutter app delegate, and that
+    // path was swallowing the alert instead of showing it.
+    UNUserNotificationCenter.current().delegate = self
+  }
+
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    completionHandler([.banner, .list, .badge, .sound])
   }
 
   override func applicationDidBecomeActive(_ application: UIApplication) {

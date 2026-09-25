@@ -270,8 +270,8 @@ class FCMService {
     debugPrint('Foreground message received: ${message.notification?.title}');
     _messageController?.add(message);
 
-    // iOS already shows the banner itself (setForegroundNotificationPresentationOptions
-    // above), so only Android needs the local copy — otherwise iOS shows it twice.
+    // iOS presents the banner in AppDelegate.willPresent. A local copy here
+    // would show a second banner.
     if (message.notification != null && !Platform.isIOS) {
       _showLocalNotification(message);
     }
@@ -292,6 +292,8 @@ class FCMService {
 
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
+      presentBanner: true,
+      presentList: true,
       presentBadge: true,
       presentSound: true,
     );
