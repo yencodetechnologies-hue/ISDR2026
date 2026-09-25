@@ -309,6 +309,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
       _logSignInDetails(user, selectedId, 'CHECK_AUTH / AUTO-LOGIN');
       emit(AuthAuthenticated(user: user, selectedApartmentId: selectedId));
+      // Push notifications: keep this device's token on the server.
+      authRepository.syncFcmToken().ignore();
     } else {
       emit(AuthUnauthenticated());
     }

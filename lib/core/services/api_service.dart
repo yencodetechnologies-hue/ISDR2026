@@ -2011,6 +2011,16 @@ class ApiService {
         () => _dio.post(ApiConfig.managedEventToggleFavorite(scheduleId)),
       );
 
+  /// Ids of the schedules this participant set a start reminder for.
+  Future<Map<String, dynamic>> getMyReminders() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.managedEventMyReminders));
+
+  /// Turns the start reminder for [scheduleId] on/off. Returns {success, reminder}.
+  Future<Map<String, dynamic>> toggleScheduleReminder(String scheduleId) =>
+      _sessionContentCall(
+        () => _dio.post(ApiConfig.managedEventToggleReminder(scheduleId)),
+      );
+
   /// Likes a feed post, or removes the like if already liked.
   /// Returns {success, liked, likeCount}.
   Future<Map<String, dynamic>> toggleFeedPostLike(String postId) =>

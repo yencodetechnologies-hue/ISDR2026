@@ -494,11 +494,22 @@ const updateFcmToken = async (req, res) => {
     if (!fcmToken || typeof fcmToken !== 'string' || fcmToken.trim() === '') {
       return res.status(400).json({ success: false, error: 'fcmToken is required' });
     }
-    const apartment = await Apartment.findById(req.userId);
-    if (!apartment) {
+    let account = null;
+    if (req.userType === 'apartment') {
+      account = req.managementUserId
+        ? await ManagementUser.findById(req.managementUserId)
+        : await Apartment.findById(req.userId);
+    } else if (req.userType === 'user') {
+      account = await EventStaff.findById(req.userId);
+    } else if (req.userType === 'participant') {
+      account = await EventRegistration.findById(req.userId);
+    } else if (req.userType === 'speaker') {
+      account = await Speaker.findById(req.userId);
+    }
+    if (!account) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
-    await storeFcmToken(apartment, fcmToken);
+    await storeFcmToken(account, fcmToken);
     res.json({ success: true });
   } catch (error) {
     console.error('Update FCM token error:', error);

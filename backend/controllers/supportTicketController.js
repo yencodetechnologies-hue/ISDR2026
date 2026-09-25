@@ -3,6 +3,10 @@ const EventRegistration = require('../models/EventRegistration');
 const EventStaff = require('../models/EventStaff');
 const Apartment = require('../models/Apartment');
 const ManagementUser = require('../models/ManagementUser');
+const {
+  sendNotificationToUser,
+  sendNotificationToApartmentByUserType,
+} = require('../utils/fcmService');
 
 const MAX_LENGTH = 2000;
 
@@ -43,6 +47,36 @@ function handleError(res, label, error) {
   }
   console.error(`${label} error:`, error);
   return res.status(500).json({ success: false, error: error.message || 'Server error' });
+}
+
+const CATEGORY_LABELS = {
+  emergency: 'Emergency',
+  medical: 'Medical Issues',
+  others: 'Others',
+  app: 'App related issues',
+};
+
+const preview = (text) => (text.length > 120 ? `${text.slice(0, 117)}...` : text);
+
+/** Push to every event staff member and admin (login + Management IDs) of the property. */
+async function notifyTeam(apartmentId, { title, body, ticketId }) {
+  await sendNotificationToApartmentByUserType(apartmentId, ['apartment', 'management', 'user'], {
+    title,
+    body,
+    type: 'support_ticket',
+    data: { ticketId },
+  });
+}
+
+/** Push to the participant who raised the ticket (as the support team). */
+async function notifyParticipant(ticket, body) {
+  await sendNotificationToUser(ticket.participantId.toString(), 'participant', {
+    title: SUPPORT_TEAM_NAME,
+    body,
+    type: 'support_ticket',
+    data: { ticketId: ticket._id.toString() },
+    apartmentId: ticket.apartmentId,
+  });
 }
 
 /** Summary for the ticket lists. */
@@ -155,6 +189,11 @@ const createTicket = async (req, res) => {
       lastMessageAt: new Date(),
     });
     res.status(201).json({ success: true, ticket: detailDto(ticket, sender) });
+    notifyTeam(req.apartmentId, {
+      title: `New ticket: ${CATEGORY_LABELS[category]}`,
+      body: `${sender.name}: ${preview(description)}`,
+      ticketId: ticket._id.toString(),
+    }).catch((e) => console.error('ticket push failed:', e.message));
   } catch (error) {
     handleError(res, 'createTicket', error);
   }
@@ -203,6 +242,15 @@ const sendMessage = async (req, res) => {
       { new: true }
     );
     res.status(201).json({ success: true, ticket: detailDto(updated, sender) });
+    const push =
+      sender.type === 'participant'
+        ? notifyTeam(req.apartmentId, {
+            title: `${sender.name} · ${CATEGORY_LABELS[updated.category] || 'Support'}`,
+            body: preview(text),
+            ticketId: updated._id.toString(),
+          })
+        : notifyParticipant(updated, preview(text));
+    push.catch((e) => console.error('message push failed:', e.message));
   } catch (error) {
     handleError(res, 'sendMessage', error);
   }
@@ -228,6 +276,10 @@ const closeTicket = async (req, res) => {
       { new: true }
     );
     res.json({ success: true, ticket: detailDto(updated, sender) });
+    notifyParticipant(
+      updated,
+      `Your ${CATEGORY_LABELS[updated.category] || 'support'} ticket was closed. Create a new ticket if you still need help.`
+    ).catch((e) => console.error('close push failed:', e.message));
   } catch (error) {
     handleError(res, 'closeTicket', error);
   }

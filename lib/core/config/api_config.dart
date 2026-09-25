@@ -191,6 +191,10 @@ class ApiConfig {
       '$managedEventsBase/my-favorites';
   static String managedEventToggleFavorite(String scheduleId) =>
       '$managedEventsBase/favorites/$scheduleId';
+  // Participant start reminders (push when the session starts)
+  static String get managedEventMyReminders => '$managedEventsBase/my-reminders';
+  static String managedEventToggleReminder(String scheduleId) =>
+      '$managedEventsBase/reminders/$scheduleId';
 
   // Session content: speaker polls / questions on one schedule row
   // Management: every Q&A and poll on the property (read-only)

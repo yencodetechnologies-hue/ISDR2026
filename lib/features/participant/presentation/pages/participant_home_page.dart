@@ -103,6 +103,52 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     setState(() => _bannerUrls = urls);
   }
 
+  // Ids of the upcoming schedules with a start reminder (push when it starts).
+  final Set<String> _reminderIds = {};
+
+  Future<void> _loadReminders() async {
+    final res = await _api.getMyReminders();
+    if (!mounted || res['success'] != true) return;
+    setState(() {
+      _reminderIds
+        ..clear()
+        ..addAll(
+          ((res['scheduleIds'] as List?) ?? const []).map((e) => e.toString()),
+        );
+    });
+  }
+
+  /// Flips the reminder bell right away, then syncs with the server (and flips
+  /// back if it fails).
+  Future<void> _toggleReminder(String scheduleId, String scheduleName) async {
+    final wasOn = _reminderIds.contains(scheduleId);
+    setState(() {
+      wasOn ? _reminderIds.remove(scheduleId) : _reminderIds.add(scheduleId);
+    });
+    final res = await _api.toggleScheduleReminder(scheduleId);
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    if (res['success'] != true) {
+      setState(() {
+        wasOn ? _reminderIds.add(scheduleId) : _reminderIds.remove(scheduleId);
+      });
+      messenger.showSnackBar(
+        SnackBar(content: Text(res['error']?.toString() ?? 'Could not update')),
+      );
+      return;
+    }
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          wasOn
+              ? 'Reminder off'
+              : "Reminder set — we'll notify you when \"$scheduleName\" starts",
+        ),
+      ),
+    );
+  }
+
   // Ids of the schedules this participant marked hot (saved on their account).
   final Set<String> _favoriteIds = {};
 
@@ -218,6 +264,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     super.initState();
     _fetchLiveSchedule();
     _loadFavorites();
+    _loadReminders();
     _loadBanner();
     _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (!mounted) return;
@@ -2009,6 +2056,30 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                                 ),
                               ),
                             ),
+                            // Remind me when it starts (upcoming sessions only).
+                            if (scheduleId.isNotEmpty && !isLive && !isDone)
+                              IconButton(
+                                tooltip: _reminderIds.contains(scheduleId)
+                                    ? 'Turn off reminder'
+                                    : 'Remind me when it starts',
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.only(left: 6),
+                                constraints: const BoxConstraints(
+                                  minWidth: 34,
+                                  minHeight: 34,
+                                ),
+                                onPressed: () =>
+                                    _toggleReminder(scheduleId, scheduleName),
+                                icon: Icon(
+                                  _reminderIds.contains(scheduleId)
+                                      ? Icons.notifications_active_rounded
+                                      : Icons.notifications_none_rounded,
+                                  size: 22,
+                                  color: _reminderIds.contains(scheduleId)
+                                      ? const Color(0xFFFBBF24)
+                                      : Colors.white.withValues(alpha: 0.45),
+                                ),
+                              ),
                             if (scheduleId.isNotEmpty)
                               IconButton(
                                 tooltip: isFavorite

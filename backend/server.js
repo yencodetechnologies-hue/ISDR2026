@@ -17,6 +17,8 @@ const engagementRoutes = require('./routes/engagementRoutes');
 const exhibitorRoutes = require('./routes/exhibitorRoutes');
 const homeBannerRoutes = require('./routes/homeBannerRoutes');
 const supportTicketRoutes = require('./routes/supportTicketRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const { startReminderScheduler } = require('./utils/reminderScheduler');
 
 if (!process.env.JWT_SECRET) {
   console.error('Error: JWT_SECRET is not set in .env');
@@ -42,6 +44,7 @@ app.use('/api/engagement', engagementRoutes);
 app.use('/api/exhibitors', exhibitorRoutes);
 app.use('/api/home-banner', homeBannerRoutes);
 app.use('/api/support-tickets', supportTicketRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // 404
 app.use((req, res) => {
@@ -59,4 +62,5 @@ const PORT = process.env.PORT || 5000;
 
 connectDB().then(() => {
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  startReminderScheduler();
 });

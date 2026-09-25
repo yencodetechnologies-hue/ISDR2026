@@ -2,6 +2,8 @@ const ManagedEvent = require('../models/ManagedEvent');
 const EventSchedule = require('../models/EventSchedule');
 const EventRegistration = require('../models/EventRegistration');
 const Speaker = require('../models/Speaker');
+const ScheduleReminder = require('../models/ScheduleReminder');
+const { scheduleStartAt } = require('../utils/reminderScheduler');
 const {
   participantPackageId,
   visibleScheduleFilter,
@@ -288,7 +290,68 @@ const toggleFavorite = async (req, res) => {
   }
 };
 
+// GET /api/managed-events/my-reminders  (participant login)
+// Ids of the upcoming schedules this participant wants a start reminder for.
+const myReminders = async (req, res) => {
+  try {
+    if (req.userType !== 'participant') {
+      return res.status(403).json({ success: false, error: 'Only participants have reminders' });
+    }
+    const reminders = await ScheduleReminder.find({ participantId: req.userId, sentAt: null }).select(
+      'scheduleId'
+    );
+    res.json({ success: true, scheduleIds: reminders.map((r) => String(r.scheduleId)) });
+  } catch (error) {
+    console.error('myReminders error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+// POST /api/managed-events/reminders/:scheduleId  (participant login)
+// Turns the start reminder on, or off if it's already on.
+const toggleReminder = async (req, res) => {
+  try {
+    if (req.userType !== 'participant') {
+      return res.status(403).json({ success: false, error: 'Only participants have reminders' });
+    }
+    const reg = await EventRegistration.findById(req.userId).select('packageId');
+    if (!reg) return res.status(404).json({ success: false, error: 'Participant not found' });
+    const schedule = await EventSchedule.findById(req.params.scheduleId).select(
+      'date fromTime packageIds'
+    );
+    if (!schedule || !isScheduleVisible(schedule, String(reg.packageId || ''))) {
+      return res.status(404).json({ success: false, error: 'Schedule not found' });
+    }
+    const removed = await ScheduleReminder.findOneAndDelete({
+      participantId: req.userId,
+      scheduleId: schedule._id,
+      sentAt: null,
+    });
+    if (removed) return res.json({ success: true, reminder: false });
+
+    const startAt = scheduleStartAt(schedule);
+    if (startAt <= new Date()) {
+      return res.status(400).json({ success: false, error: 'This session has already started' });
+    }
+    // Replaces an old, already-sent reminder for the same session if any.
+    await ScheduleReminder.findOneAndUpdate(
+      { participantId: req.userId, scheduleId: schedule._id },
+      { startAt, sentAt: null },
+      { upsert: true }
+    );
+    res.json({ success: true, reminder: true });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({ success: false, error: 'Schedule not found' });
+    }
+    console.error('toggleReminder error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
 module.exports = {
+  myReminders,
+  toggleReminder,
   listSchedules,
   createSchedule,
   deleteSchedule,

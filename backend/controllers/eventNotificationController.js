@@ -2,6 +2,7 @@ const ManagedEvent = require('../models/ManagedEvent');
 const EventRegistration = require('../models/EventRegistration');
 const EventNotification = require('../models/EventNotification');
 const { normalizeInclusions } = require('./managedEventController');
+const { sendNotificationToMultipleUsers } = require('../utils/fcmService');
 
 // POST /api/managed-events/:id/notifications
 // Body: { message, packageId?, inclusionName? }
@@ -83,6 +84,19 @@ const sendNotification = async (req, res) => {
         createdAt: notification.createdAt,
       },
     });
+
+    // Push + in-app notification to each targeted participant (after replying).
+    sendNotificationToMultipleUsers(
+      recipients.map((r) => r._id.toString()),
+      'participant',
+      {
+        title: event.title || 'ISDR 2026',
+        body: message,
+        type: 'event_notification',
+        data: { eventId: event._id.toString(), notificationId: notification._id.toString() },
+        apartmentId: event.apartmentId,
+      }
+    ).catch((e) => console.error('event notification push failed:', e.message));
   } catch (error) {
     console.error('sendNotification error:', error);
     res.status(500).json({ success: false, error: error.message || 'Server error' });

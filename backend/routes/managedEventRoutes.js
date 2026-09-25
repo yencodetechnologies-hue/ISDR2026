@@ -11,6 +11,8 @@ const {
   mySpeakerSessions,
   myFavorites,
   toggleFavorite,
+  myReminders,
+  toggleReminder,
 } = require('../controllers/eventScheduleController');
 const {
   listEvents,
@@ -36,6 +38,9 @@ router.get('/my-registration', protect, getMyRegistration);
 router.get('/my-speaker-sessions', protect, mySpeakerSessions);
 router.get('/my-favorites', protect, myFavorites);
 router.post('/favorites/:scheduleId', protect, toggleFavorite);
+// Participant: remind me when a session starts (push)
+router.get('/my-reminders', protect, myReminders);
+router.post('/reminders/:scheduleId', protect, toggleReminder);
 router.post('/claim-inclusion', protect, claimInclusion);
 router.post('/', protect, requireManagement, uploadSingleImage('photo'), createEvent);
 router.get('/:id', protect, getEvent);

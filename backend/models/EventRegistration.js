@@ -60,6 +60,8 @@ const eventRegistrationSchema = new mongoose.Schema(
     // Login password for the participant app. Every participant is given the same
     // default ('123456') at creation; select:false keeps it out of normal reads.
     password: { type: String, default: '', select: false },
+    // Device tokens for push notifications (set at login / app start).
+    fcmTokens: { type: [String], default: [] },
     otp: { type: String, required: true },
     qrCode: { type: String, required: true },
     status: {

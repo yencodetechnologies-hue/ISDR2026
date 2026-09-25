@@ -82,6 +82,19 @@ class AuthRepository {
   }
 
   /// Saves the latest FCM token after login (iOS often gets APNS/FCM after the login request).
+  /// Sends this device's push token to the server for the logged-in account.
+  Future<void> syncFcmToken() async {
+    try {
+      final token = await FCMService().getTokenForLogin(
+        maxWait: const Duration(seconds: 15),
+      );
+      if (token == null || token.isEmpty) return;
+      await _apiService.updateFcmToken(token);
+    } catch (e) {
+      debugPrint('FCM token sync failed: $e');
+    }
+  }
+
   Future<void> _syncFcmTokenAfterLogin(String? tokenAtLogin) async {
     final token = await FCMService().getTokenForLogin(
       maxWait: const Duration(seconds: 15),
