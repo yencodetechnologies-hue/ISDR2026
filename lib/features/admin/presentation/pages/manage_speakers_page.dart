@@ -52,6 +52,14 @@ class _ManageSpeakersPageState extends State<ManageSpeakersPage> {
     if (added == true) _load();
   }
 
+  Future<void> _edit(Map<String, dynamic> speaker) async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => AddSpeakerPage(speaker: speaker)),
+    );
+    if (saved == true) _load();
+  }
+
   Future<void> _delete(Map<String, dynamic> speaker) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -216,6 +224,11 @@ class _ManageSpeakersPageState extends State<ManageSpeakersPage> {
             ),
           ),
           IconButton(
+            tooltip: 'Edit',
+            icon: const Icon(Icons.edit_outlined, color: Color(0xFF60A5FA)),
+            onPressed: () => _edit(s),
+          ),
+          IconButton(
             tooltip: 'Delete',
             icon: const Icon(
               Icons.delete_outline_rounded,
@@ -230,9 +243,12 @@ class _ManageSpeakersPageState extends State<ManageSpeakersPage> {
 }
 
 /// Photo, name, mobile and password — the speaker logs in with mobile +
-/// password and sees every schedule they're picked for.
+/// password and sees every schedule they're picked for. Given [speaker], the
+/// page edits that speaker (the password is then optional).
 class AddSpeakerPage extends StatefulWidget {
-  const AddSpeakerPage({super.key});
+  final Map<String, dynamic>? speaker;
+
+  const AddSpeakerPage({super.key, this.speaker});
 
   @override
   State<AddSpeakerPage> createState() => _AddSpeakerPageState();
@@ -246,6 +262,19 @@ class _AddSpeakerPageState extends State<AddSpeakerPage> {
   File? _photo;
   bool _saving = false;
   bool _showPassword = false;
+
+  bool get _isEdit => widget.speaker != null;
+  String get _currentPhoto => widget.speaker?['photo']?.toString() ?? '';
+
+  @override
+  void initState() {
+    super.initState();
+    final sp = widget.speaker;
+    if (sp != null) {
+      _name.text = sp['name']?.toString() ?? '';
+      _mobile.text = sp['mobileNumber']?.toString() ?? '';
+    }
+  }
 
   @override
   void dispose() {
@@ -267,12 +296,20 @@ class _AddSpeakerPageState extends State<AddSpeakerPage> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
-    final res = await ApiService().createSpeaker(
-      name: _name.text.trim(),
-      mobileNumber: _mobile.text.trim(),
-      password: _password.text,
-      photoPath: _photo?.path,
-    );
+    final res = _isEdit
+        ? await ApiService().updateSpeaker(
+            id: widget.speaker!['id'].toString(),
+            name: _name.text.trim(),
+            mobileNumber: _mobile.text.trim(),
+            password: _password.text,
+            photoPath: _photo?.path,
+          )
+        : await ApiService().createSpeaker(
+            name: _name.text.trim(),
+            mobileNumber: _mobile.text.trim(),
+            password: _password.text,
+            photoPath: _photo?.path,
+          );
     if (!mounted) return;
     setState(() => _saving = false);
     if (res['success'] == true) {
@@ -280,7 +317,10 @@ class _AddSpeakerPageState extends State<AddSpeakerPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(res['error']?.toString() ?? 'Could not add speaker'),
+          content: Text(
+            res['error']?.toString() ??
+                (_isEdit ? 'Could not save speaker' : 'Could not add speaker'),
+          ),
         ),
       );
     }
@@ -293,7 +333,7 @@ class _AddSpeakerPageState extends State<AddSpeakerPage> {
       backgroundColor: DarkColors.bg,
       appBar: buildDarkAppBar(
         title: Text(
-          'Add Speaker',
+          _isEdit ? 'Edit Speaker' : 'Add Speaker',
           style: GoogleFonts.outfit(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -316,8 +356,11 @@ class _AddSpeakerPageState extends State<AddSpeakerPage> {
                       backgroundColor: DarkColors.field,
                       backgroundImage: _photo != null
                           ? FileImage(_photo!)
-                          : null,
-                      child: _photo == null
+                          : (_currentPhoto.isNotEmpty
+                                ? CachedNetworkImageProvider(_currentPhoto)
+                                    as ImageProvider
+                                : null),
+                      child: _photo == null && _currentPhoto.isEmpty
                           ? const Icon(
                               Icons.person_rounded,
                               size: 44,
@@ -384,7 +427,10 @@ class _AddSpeakerPageState extends State<AddSpeakerPage> {
               controller: _password,
               style: fieldStyle,
               obscureText: !_showPassword,
-              decoration: darkInputDecoration('Password', Icons.lock_outline)
+              decoration: darkInputDecoration(
+                _isEdit ? 'New password (leave blank to keep)' : 'Password',
+                Icons.lock_outline,
+              )
                   .copyWith(
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -398,9 +444,13 @@ class _AddSpeakerPageState extends State<AddSpeakerPage> {
                           setState(() => _showPassword = !_showPassword),
                     ),
                   ),
-              validator: (v) => (v == null || v.trim().length < 6)
-                  ? 'Password must be at least 6 characters'
-                  : null,
+              validator: (v) {
+                final value = v?.trim() ?? '';
+                if (_isEdit && value.isEmpty) return null;
+                return value.length < 6
+                    ? 'Password must be at least 6 characters'
+                    : null;
+              },
             ),
             const SizedBox(height: 20),
             SizedBox(

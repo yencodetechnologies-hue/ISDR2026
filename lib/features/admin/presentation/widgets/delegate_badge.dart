@@ -72,10 +72,6 @@ class DelegateBadge extends StatelessWidget {
                       fitted(displayName, 56, FontWeight.w800, ink),
                       const SizedBox(height: 16),
                     ],
-                    if (idNumber.isNotEmpty) ...[
-                      fitted('ID No: $idNumber', 46, FontWeight.w800, ink),
-                      const SizedBox(height: 14),
-                    ],
                     if (designation.isNotEmpty) ...[
                       fitted(designation, 42, FontWeight.w700, ink),
                       const SizedBox(height: 12),

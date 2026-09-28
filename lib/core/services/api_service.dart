@@ -1817,6 +1817,26 @@ class ApiService {
             }),
           ));
 
+  /// Admin edits a speaker. An empty [password] keeps the current one.
+  Future<Map<String, dynamic>> updateSpeaker({
+    required String id,
+    required String name,
+    required String mobileNumber,
+    String password = '',
+    String? photoPath,
+  }) =>
+      _sessionContentCall(() async => _dio.put(
+            '${ApiConfig.speakers}/$id',
+            data: FormData.fromMap({
+              'name': name,
+              'mobileNumber': mobileNumber,
+              if (password.isNotEmpty) 'password': password,
+              if (photoPath != null)
+                'photo':
+                    await MultipartFile.fromFile(photoPath, filename: 'speaker.jpg'),
+            }),
+          ));
+
   /// Help & Support tickets: a participant's own, or all for staff/admin.
   Future<Map<String, dynamic>> listHelpTickets() =>
       _sessionContentCall(() => _dio.get(ApiConfig.helpTickets));
