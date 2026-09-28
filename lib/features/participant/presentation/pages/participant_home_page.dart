@@ -847,15 +847,15 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
         title: Row(
           children: [
             SizedBox(
-              width: 48,
-              height: 48,
+              width: 58,
+              height: 58,
               child: Image.asset(
                 'assets/ISDR 2026 Logo.png',
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => const Icon(
                   Icons.medical_services_rounded,
                   color: Colors.white,
-                  size: 20,
+                  size: 24,
                 ),
               ),
             ),

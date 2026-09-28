@@ -280,13 +280,13 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
     return Row(
       children: [
         SizedBox(
-          width: 46,
-          height: 46,
+          width: 60,
+          height: 60,
           child: Image.asset(
             'assets/ISDR 2026 Logo.png',
             fit: BoxFit.contain,
             errorBuilder: (_, _, _) =>
-                const Icon(Icons.mic_rounded, color: Colors.white, size: 25),
+                const Icon(Icons.mic_rounded, color: Colors.white, size: 28),
           ),
         ),
         const SizedBox(width: 10),
