@@ -18,6 +18,8 @@ import '../../../../core/widgets/change_password_page.dart';
 import 'speaker_participant_questions_page.dart';
 import '../../../admin/presentation/pages/qr_pass_page.dart';
 import '../../../participant/presentation/pages/accommodation_page.dart';
+import '../../../participant/presentation/pages/all_sessions_page.dart';
+import '../../../participant/presentation/pages/speakers_page.dart';
 import '../../../../core/widgets/get_live_photo_button.dart';
 
 typedef _C = SpeakerColors;
@@ -459,7 +461,10 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
                 ),
               ),
               InkWell(
-                onTap: () => _dummyTap('Full Schedule'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AllSessionsPage()),
+                ),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -906,8 +911,22 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
   Widget _buildBottomNav() {
     final items = <(IconData, String, VoidCallback)>[
       (Icons.home_rounded, 'Home', () {}),
-      (Icons.calendar_month_outlined, 'Schedule', () => _dummyTap('Schedule')),
-      (Icons.groups_outlined, 'Speakers', () => _dummyTap('Speakers')),
+      (
+        Icons.calendar_month_outlined,
+        'Schedule',
+        () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AllSessionsPage()),
+        ),
+      ),
+      (
+        Icons.groups_outlined,
+        'Speakers',
+        () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SpeakersPage()),
+        ),
+      ),
       (
         Icons.qr_code_rounded,
         'QR Pass',

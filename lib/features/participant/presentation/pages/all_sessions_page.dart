@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/services/api_service.dart';
 import 'schedule_detail_page.dart';
 
 /// Every session of the event ("View All" on the home's Today's Schedule),
@@ -16,8 +17,8 @@ class AllSessionsPage extends StatefulWidget {
 
   const AllSessionsPage({
     super.key,
-    required this.items,
-    required this.days,
+    this.items = const [],
+    this.days = const [],
     this.initialDay,
   });
 
@@ -27,23 +28,123 @@ class AllSessionsPage extends StatefulWidget {
 
 class _AllSessionsPageState extends State<AllSessionsPage> {
   DateTime? _day; // null = All Sessions
+  List<Map<String, dynamic>> _items = [];
+  List<DateTime> _days = [];
+  bool _loading = false;
+  final _api = ApiService();
 
   @override
   void initState() {
     super.initState();
     _day = widget.initialDay;
+    if (widget.items.isNotEmpty) {
+      _items = List.of(widget.items);
+      _days = List.of(widget.days);
+    } else {
+      _fetchSessions();
+    }
+  }
+
+  Future<void> _fetchSessions() async {
+    setState(() => _loading = true);
+    try {
+      final eventsRes = await _api.listManagedEvents();
+      if (eventsRes['success'] == true) {
+        final events = List<Map<String, dynamic>>.from(
+          (eventsRes['events'] as List?)?.map(
+                (e) => Map<String, dynamic>.from(e as Map),
+              ) ??
+              [],
+        );
+        final allList = <Map<String, dynamic>>[];
+        final eventDays = <DateTime>{};
+
+        for (final event in events) {
+          final eventId =
+              event['id']?.toString() ?? event['_id']?.toString() ?? '';
+          if (eventId.isEmpty) continue;
+
+          final startStr = event['eventDate']?.toString();
+          final endStr =
+              (event['eventEndDate'] ?? event['eventDate'])?.toString();
+          if (startStr != null) {
+            final startD = DateTime.tryParse(startStr)?.toUtc();
+            final endD =
+                (endStr != null ? DateTime.tryParse(endStr)?.toUtc() : null) ??
+                startD;
+            if (startD != null) {
+              var cur = DateTime.utc(startD.year, startD.month, startD.day);
+              final endClean = DateTime.utc(endD!.year, endD.month, endD.day);
+              while (!cur.isAfter(endClean) && eventDays.length < 60) {
+                eventDays.add(DateTime(cur.year, cur.month, cur.day));
+                cur = cur.add(const Duration(days: 1));
+              }
+            }
+          }
+
+          final schedRes = await _api.listEventSchedules(eventId);
+          if (schedRes['success'] != true) continue;
+          final schedules = List<Map<String, dynamic>>.from(
+            (schedRes['schedules'] as List?)?.map(
+                  (s) => Map<String, dynamic>.from(s as Map),
+                ) ??
+                [],
+          );
+
+          for (final s in schedules) {
+            final d = DateTime.tryParse(s['date']?.toString() ?? '')?.toUtc();
+            if (d == null) continue;
+            final fromParts = s['fromTime'].toString().split(':');
+            final toParts = s['toTime'].toString().split(':');
+            final start = DateTime(
+              d.year,
+              d.month,
+              d.day,
+              int.tryParse(fromParts[0]) ?? 0,
+              fromParts.length > 1 ? int.tryParse(fromParts[1]) ?? 0 : 0,
+            );
+            final end = DateTime(
+              d.year,
+              d.month,
+              d.day,
+              int.tryParse(toParts[0]) ?? 0,
+              toParts.length > 1 ? int.tryParse(toParts[1]) ?? 0 : 0,
+            );
+            allList.add({
+              'schedule': s,
+              'event': event,
+              'start': start,
+              'end': end,
+            });
+            eventDays.add(DateTime(d.year, d.month, d.day));
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _items = allList;
+            _days = eventDays.toList()..sort();
+            _loading = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
   }
 
   static bool _sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   int _dayNumber(DateTime start) {
-    final i = widget.days.indexWhere((d) => _sameDay(d, start));
+    final days = _days.isNotEmpty ? _days : widget.days;
+    final i = days.indexWhere((d) => _sameDay(d, start));
     return i < 0 ? 0 : i + 1;
   }
 
   List<Map<String, dynamic>> get _shown {
-    final list = widget.items
+    final source = _items.isNotEmpty ? _items : widget.items;
+    final list = source
         .where((i) => _day == null || _sameDay(i['start'] as DateTime, _day!))
         .toList();
     list.sort(
@@ -53,7 +154,8 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
   }
 
   String get _eventTitle {
-    for (final i in widget.items) {
+    final source = _items.isNotEmpty ? _items : widget.items;
+    for (final i in source) {
       final t = (i['event'] as Map?)?['title']?.toString() ?? '';
       if (t.isNotEmpty) return t;
     }
@@ -189,7 +291,26 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF070B1F),
+        body: SafeArea(
+          child: Column(
+            children: [
+              _header(),
+              const Expanded(
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFF60A5FA)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final shown = _shown;
+    final days = _days.isNotEmpty ? _days : widget.days;
     return Scaffold(
       backgroundColor: const Color(0xFF070B1F),
       body: SafeArea(
@@ -203,11 +324,11 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
                 padding: const EdgeInsets.fromLTRB(14, 12, 6, 8),
                 children: [
                   _tab('All Sessions', Icons.event_note_rounded, null),
-                  for (var i = 0; i < widget.days.length; i++)
+                  for (var i = 0; i < days.length; i++)
                     _tab(
-                      'Day ${i + 1}  ·  ${DateFormat('d MMM').format(widget.days[i])}',
+                      'Day ${i + 1}  ·  ${DateFormat('d MMM').format(days[i])}',
                       Icons.calendar_today_rounded,
-                      widget.days[i],
+                      days[i],
                     ),
                 ],
               ),

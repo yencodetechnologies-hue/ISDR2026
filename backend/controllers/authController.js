@@ -475,7 +475,7 @@ const updateManagementProfile = async (req, res) => {
   }
 };
 
-// @desc    Upload / replace the management profile photo
+// @desc    Upload / replace profile photo for ANY role (Participant, Speaker, Staff, Admin)
 // @route   PUT /api/auth/management-profile-photo
 // @access  Private
 const updateManagementProfilePhoto = async (req, res) => {
@@ -483,17 +483,43 @@ const updateManagementProfilePhoto = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'Photo is required' });
     }
-    const apartment = await Apartment.findById(req.userId);
-    if (!apartment) {
-      return res.status(404).json({ success: false, error: 'Account not found' });
+    const uploadedUrl = await uploadToCloudinary(req.file.buffer, 'isdr/profiles');
+    let userPayload = null;
+
+    if (req.userType === 'participant') {
+      const reg = await EventRegistration.findById(req.userId);
+      if (!reg) return res.status(404).json({ success: false, error: 'Account not found' });
+      reg.photoUrl = uploadedUrl;
+      await reg.save();
+      const event = await ManagedEvent.findById(reg.eventId).select('title');
+      userPayload = buildParticipantPayload(reg, event);
+    } else if (req.userType === 'speaker') {
+      const speaker = await Speaker.findById(req.userId);
+      if (!speaker) return res.status(404).json({ success: false, error: 'Account not found' });
+      speaker.photo = uploadedUrl;
+      await speaker.save();
+      userPayload = buildSpeakerPayload(speaker);
+    } else if (req.userType === 'user') {
+      const staff = await EventStaff.findById(req.userId);
+      if (!staff) return res.status(404).json({ success: false, error: 'Account not found' });
+      staff.profilePic = uploadedUrl;
+      await staff.save();
+      const apt = await Apartment.findById(staff.apartmentId).select('name');
+      userPayload = buildStaffPayload(staff, apt);
+    } else {
+      const apartment = await Apartment.findById(req.userId);
+      if (!apartment) return res.status(404).json({ success: false, error: 'Account not found' });
+      apartment.profilePic = uploadedUrl;
+      await apartment.save();
+      userPayload = buildManagementPayload(apartment);
     }
-    apartment.profilePic = await uploadToCloudinary(req.file.buffer, 'isdr/profiles');
-    await apartment.save();
+
     res.json({
       success: true,
-      message: 'Profile photo updated',
-      profilePic: apartment.profilePic,
-      user: buildManagementPayload(apartment),
+      message: 'Profile photo updated successfully',
+      profilePic: uploadedUrl,
+      photoUrl: uploadedUrl,
+      user: userPayload,
     });
   } catch (error) {
     console.error('Update profile photo error:', error);

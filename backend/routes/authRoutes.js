@@ -51,7 +51,6 @@ router.put('/management-profile', protect, requireManagement, updateManagementPr
 router.put(
   '/management-profile-photo',
   protect,
-  requireManagement,
   uploadSingleImage('profilePic'),
   updateManagementProfilePhoto
 );
