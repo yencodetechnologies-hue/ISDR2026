@@ -17,6 +17,8 @@ import 'speaker_session_questions_page.dart';
 import '../../../../core/widgets/change_password_page.dart';
 import 'speaker_participant_questions_page.dart';
 import '../../../admin/presentation/pages/qr_pass_page.dart';
+import '../../../participant/presentation/pages/accommodation_page.dart';
+import '../../../../core/widgets/get_live_photo_button.dart';
 
 typedef _C = SpeakerColors;
 
@@ -260,6 +262,8 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
                 ],
                 const SizedBox(height: 14),
                 _buildQuickActions(),
+                const SizedBox(height: 14),
+                const GetLivePhotoButton(),
               ],
             ),
           ),
@@ -740,6 +744,13 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
         [Color(0xFF818CF8), Color(0xFF6366F1)],
         picksSession: true,
       ),
+      _QuickAction(
+        'Accommodation',
+        'Stay details',
+        Icons.hotel_rounded,
+        [Color(0xFF38BDF8), Color(0xFF0284C7)],
+        tint: Color(0xFF38BDF8),
+      ),
     ];
 
     return Container(
@@ -821,6 +832,13 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => const SpeakerParticipantQuestionsPage(),
+                  ),
+                )
+              : a.title == 'Accommodation'
+              ? Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AccommodationPage(),
                   ),
                 )
               : _dummyTap(a.title),

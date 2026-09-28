@@ -28,6 +28,7 @@ import 'favorites_page.dart';
 import '../widgets/news_ticker_strap.dart';
 import '../widgets/youtube_live_capsule.dart';
 import '../../../admin/presentation/pages/brochure_page.dart';
+import '../../../../core/widgets/get_live_photo_button.dart';
 import 'speakers_page.dart';
 import 'upcoming_schedules_page.dart';
 import 'participant_qa_page.dart';
@@ -1077,7 +1078,9 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                     ),
                     child: _buildModuleGrid(_allModuleItems),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
+                  const GetLivePhotoButton(),
+                  const SizedBox(height: 6),
 
                   // YouTube live capsule, admin banner + Today's Schedule (day tabs + list)
                   const YoutubeLiveCapsule(),

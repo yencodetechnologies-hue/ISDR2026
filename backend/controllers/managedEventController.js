@@ -4,6 +4,7 @@ const ManagedEvent = require('../models/ManagedEvent');
 const EventRegistration = require('../models/EventRegistration');
 const Apartment = require('../models/Apartment');
 const { uploadToCloudinary } = require('../middleware/upload');
+const { resolveRegistrationForCode } = require('../utils/passCodeResolver');
 
 /** Every request is scoped to the logged-in management property (from the token or query for participants). */
 function resolveApartmentId(req) {
@@ -981,21 +982,8 @@ const claimInclusion = async (req, res) => {
       return res.status(400).json({ success: false, error: 'ID number or QR data is required' });
     }
 
-    const upper = codeToFind.toUpperCase();
-    const withPrefix = upper.startsWith('ID') ? upper : `ID${upper}`;
-    const withoutPrefix = upper.startsWith('ID') ? upper.substring(2) : upper;
-
-    // Lookup registration by idNumber or qrCode
-    const reg = await EventRegistration.findOne({
-      $or: [
-        { idNumber: codeToFind },
-        { idNumber: upper },
-        { idNumber: withPrefix },
-        { idNumber: withoutPrefix },
-        { qrCode: codeToFind },
-      ],
-      status: { $ne: 'cancelled' },
-    });
+    // Lookup registration by idNumber or qrCode, with support for Admin & Speaker passes
+    const reg = await resolveRegistrationForCode(codeToFind, resolveApartmentId(req));
 
     if (!reg) {
       return res.status(404).json({ success: false, error: 'Participant registration not found' });

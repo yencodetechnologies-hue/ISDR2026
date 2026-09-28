@@ -1922,6 +1922,14 @@ class ApiService {
   Future<Map<String, dynamic>> setYoutubeLive(String url) =>
       _sessionContentCall(() => _dio.put(ApiConfig.youtubeLive, data: {'url': url}));
 
+  /// The admin's Live Photo link: {url} ('' when none is set).
+  Future<Map<String, dynamic>> getLivePhoto() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.livePhoto));
+
+  /// Admin sets the Live Photo link; an empty url removes it.
+  Future<Map<String, dynamic>> setLivePhoto(String url) =>
+      _sessionContentCall(() => _dio.put(ApiConfig.livePhoto, data: {'url': url}));
+
   /// The home-screen news ticker: {enabled, text} (one message per line).
   Future<Map<String, dynamic>> getNewsTicker() =>
       _sessionContentCall(() => _dio.get(ApiConfig.newsTicker));

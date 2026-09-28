@@ -74,6 +74,7 @@ const List<_ModuleVisual> _predefinedVisuals = [
 
   _ModuleVisual('Admin IDs', Icons.badge_outlined, group: 'ACCOUNT'),
   _ModuleVisual('Brochure', Icons.menu_book_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('Accommodation', Icons.hotel_rounded, group: 'ACCOUNT'),
   _ModuleVisual('QR Pass', Icons.qr_code_2_rounded, group: 'ACCOUNT'),
   _ModuleVisual(
     'Send Notification',
@@ -90,6 +91,7 @@ const List<_ModuleVisual> _predefinedVisuals = [
   _ModuleVisual('Q&A & Polls', Icons.forum_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Add Exhibitors', Icons.add_business_rounded, group: 'ACCOUNT'),
   _ModuleVisual('YouTube Live', Icons.live_tv_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('Live Photo', Icons.photo_camera_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Banner', Icons.view_carousel_rounded, group: 'ACCOUNT'),
   _ModuleVisual('News Ticker', Icons.campaign_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Certificate', Icons.workspace_premium_rounded, group: 'ACCOUNT'),
@@ -251,6 +253,7 @@ class _GroupSection extends StatelessWidget {
 Color _moduleColor(String label) {
   const colors = <String, Color>{
     'brochure': Color(0xFF8B5CF6),
+    'accommodation': Color(0xFF0EA5E9),
     'events': Color(0xFFF97316),
     'event staff': Color(0xFF14B8A6),
     'staffs': Color(0xFF14B8A6),
@@ -263,6 +266,7 @@ Color _moduleColor(String label) {
     'q&a & polls': Color(0xFF06B6D4),
     'add exhibitors': Color(0xFF10B981),
     'youtube live': Color(0xFFFF0000),
+    'live photo': Color(0xFFE11D48),
     'banner': Color(0xFFA855F7),
     'news ticker': Color(0xFF0EA5E9),
     'certificate': Color(0xFFF59E0B),

@@ -23,6 +23,8 @@ import '../user_events_page.dart';
 import '../../../../support/presentation/pages/help_tickets_page.dart';
 import '../../../../admin/presentation/pages/qr_pass_page.dart';
 import '../../../../admin/presentation/widgets/auto_scroll_banner.dart';
+import '../../../../participant/presentation/pages/accommodation_page.dart';
+import '../../../../../../core/widgets/get_live_photo_button.dart';
 
 class HomeTab extends StatefulWidget {
   final UserModel user;
@@ -200,6 +202,8 @@ class _HomeTabState extends State<HomeTab> {
                 ),
                 const SizedBox(height: 12),
                 _buildQuickOptionsGrid(),
+                const SizedBox(height: 14),
+                const GetLivePhotoButton(),
                 if (!widget.isHostel &&
                     !_isStaffSchoolOrCollege &&
                     !_isEventsProperty) ...[
@@ -476,6 +480,11 @@ class _HomeTabState extends State<HomeTab> {
         Icons.support_agent_rounded,
         _Action.supportTickets,
       ),
+      _QuickOption(
+        'Accommodation',
+        Icons.hotel_rounded,
+        _Action.accommodation,
+      ),
       _QuickOption('Create post', Icons.edit_note_rounded, _Action.createPost),
       _QuickOption('My post', Icons.article_rounded, _Action.myPost),
     ];
@@ -502,19 +511,21 @@ class _HomeTabState extends State<HomeTab> {
     }
 
     final options = allOptions.where((o) {
-      // Events properties: Profile, Events, History, Entry / Exit Scan and
-      // Support Tickets.
+      // Events properties: Profile, Events, History, Entry / Exit Scan,
+      // Support Tickets and Accommodation.
       if (isEventsProperty) {
         return o.action == _Action.profile ||
             o.action == _Action.events ||
             o.action == _Action.history ||
             o.action == _Action.qrPass ||
-            o.action == _Action.supportTickets;
+            o.action == _Action.supportTickets ||
+            o.action == _Action.accommodation;
       }
       if (o.action == _Action.events ||
           o.action == _Action.history ||
           o.action == _Action.qrPass ||
-          o.action == _Action.supportTickets) {
+          o.action == _Action.supportTickets ||
+          o.action == _Action.accommodation) {
         return false;
       }
       if (o.action == _Action.createPost || o.action == _Action.myPost) {
@@ -560,6 +571,8 @@ class _HomeTabState extends State<HomeTab> {
         return const Color(0xFF8B5CF6);
       case _Action.supportTickets:
         return const Color(0xFFEF4444);
+      case _Action.accommodation:
+        return const Color(0xFF0EA5E9);
       default:
         return const Color(0xFF64748B);
     }
@@ -696,6 +709,14 @@ class _HomeTabState extends State<HomeTab> {
           ),
         );
         break;
+      case _Action.accommodation:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const AccommodationPage(),
+          ),
+        );
+        break;
       case _Action.createPost:
         _showCreatePostSheet();
         break;
@@ -764,6 +785,7 @@ enum _Action {
   events,
   history,
   supportTickets,
+  accommodation,
   createPost,
   myPost,
 }

@@ -146,16 +146,18 @@ class _LoginPageState extends State<LoginPage> {
               _isLoading = false;
             });
           } else if (state is AuthError) {
-            setState(() {
-              _isLoading = false;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppTheme.errorColor,
-                duration: const Duration(seconds: 3),
-              ),
-            );
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppTheme.errorColor,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
           } else if (state is AuthLoading) {
             setState(() {
               _isLoading = true;

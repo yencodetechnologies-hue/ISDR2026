@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const ManagedEvent = require('../models/ManagedEvent');
 const EventRegistration = require('../models/EventRegistration');
+const { resolveRegistrationForCode } = require('../utils/passCodeResolver');
 
 // A certificate opens when entry and exit are both scanned on each of the
 // event's last REQUIRED_DAYS days, or when the admin unlocks it.
@@ -52,20 +53,8 @@ function certificateStatus(reg, event) {
   };
 }
 
-function findRegistration(code) {
-  const upper = code.toUpperCase();
-  const withPrefix = upper.startsWith('ID') ? upper : `ID${upper}`;
-  const withoutPrefix = upper.startsWith('ID') ? upper.substring(2) : upper;
-  return EventRegistration.findOne({
-    $or: [
-      { idNumber: code },
-      { idNumber: upper },
-      { idNumber: withPrefix },
-      { idNumber: withoutPrefix },
-      { qrCode: code },
-    ],
-    status: { $ne: 'cancelled' },
-  });
+function findRegistration(code, apartmentId = null) {
+  return resolveRegistrationForCode(code, apartmentId);
 }
 
 const propertyEventIds = async (req) =>
@@ -89,7 +78,7 @@ const scanAttendance = async (req, res) => {
     const code = String(req.body.idNumber || req.body.qrData || '').trim();
     if (!code) return res.status(400).json({ success: false, error: 'ID number or QR data is required' });
 
-    const reg = await findRegistration(code);
+    const reg = await findRegistration(code, req.apartmentId);
     if (!reg) return res.status(404).json({ success: false, error: 'Participant registration not found' });
     const event = await ManagedEvent.findById(reg.eventId);
     if (!event) return res.status(404).json({ success: false, error: 'Event not found' });
@@ -101,8 +90,11 @@ const scanAttendance = async (req, res) => {
       packageName: reg.packageName || '',
     };
     const today = istDay(new Date());
+    const isVipOrStaff =
+      ['Admin', 'Speaker', 'Event Staff'].includes(reg.participantType) ||
+      reg.packageId === 'vip-all-access';
     const allowedDates = packageAllowedDates(reg, event);
-    if (!allowedDates.includes(today)) {
+    if (!isVipOrStaff && !allowedDates.includes(today)) {
       const pkgLabel = reg.packageName ? ` (${reg.packageName})` : '';
       return res.json({
         success: false,

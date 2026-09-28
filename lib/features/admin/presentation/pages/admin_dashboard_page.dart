@@ -22,7 +22,9 @@ import 'manage_exhibitors_page.dart';
 import 'manage_banner_page.dart';
 import 'manage_news_ticker_page.dart';
 import 'manage_youtube_live_page.dart';
+import 'manage_live_photo_page.dart';
 import 'qr_pass_page.dart';
+import '../../../../core/widgets/get_live_photo_button.dart';
 import '../../../participant/presentation/pages/participant_feed_page.dart';
 import '../../../participant/presentation/pages/awards_page.dart';
 import '../../../certificate/presentation/pages/admin_certificates_page.dart';
@@ -37,6 +39,7 @@ import 'brochure_page.dart';
 import 'my_profile_page.dart';
 import 'event_schedules_page.dart';
 import 'send_notification_page.dart';
+import '../../../participant/presentation/pages/accommodation_page.dart';
 
 class _PropertyTabItem {
   final String label;
@@ -192,7 +195,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     _autoRefreshTimer?.cancel();
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (!mounted) return;
-      context.read<AdminBloc>().add(LoadBlocksEvent());
+      try {
+        context.read<AdminBloc>().add(LoadBlocksEvent());
+      } catch (_) {}
     });
   }
 
@@ -328,6 +333,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       );
       return;
     }
+    if (key == 'live photo') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ManageLivePhotoPage()),
+      ).then((_) => GetLivePhotoButton.reload());
+      return;
+    }
     if (key == 'certificate') {
       Navigator.push(
         context,
@@ -396,6 +408,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const BrochurePage()),
+      );
+      return;
+    }
+    if (label.trim().toLowerCase() == 'accommodation') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AccommodationPage()),
       );
       return;
     }
@@ -671,6 +690,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
   Widget _buildManagementGridHome(AdminLoaded state) {
     final labels = [
       'Brochure',
+      'Accommodation',
       ..._propertyTabs.map((t) => t.label),
       'QR Pass',
       'Send Notification',
@@ -680,6 +700,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'Q&A & Polls',
       'Add Exhibitors',
       'YouTube Live',
+      'Live Photo',
       'Banner',
       'News Ticker',
       'Certificate',
@@ -712,9 +733,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
-              child: ManagementModuleGrid(
-                moduleLabels: labels,
-                onModuleTap: _navigateToModule,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ManagementModuleGrid(
+                    moduleLabels: labels,
+                    onModuleTap: _navigateToModule,
+                  ),
+                  const SizedBox(height: 14),
+                  const GetLivePhotoButton(),
+                ],
               ),
             ),
           ],
