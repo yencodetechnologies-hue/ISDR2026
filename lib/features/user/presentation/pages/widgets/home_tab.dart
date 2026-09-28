@@ -22,6 +22,7 @@ import '../terms_and_conditions_page.dart';
 import '../user_events_page.dart';
 import '../../../../support/presentation/pages/help_tickets_page.dart';
 import '../../../../certificate/presentation/pages/attendance_scan_page.dart';
+import '../../../../admin/presentation/pages/qr_pass_page.dart';
 import '../../../../admin/presentation/widgets/auto_scroll_banner.dart';
 
 class HomeTab extends StatefulWidget {
@@ -470,6 +471,7 @@ class _HomeTabState extends State<HomeTab> {
       _QuickOption('Hostel ID', Icons.badge_rounded, _Action.hostelId),
       _QuickOption('Events', Icons.event_rounded, _Action.events),
       _QuickOption('History', Icons.history_rounded, _Action.history),
+      _QuickOption('QR Pass', Icons.qr_code_2_rounded, _Action.qrPass),
       _QuickOption(
         'Entry / Exit Scan',
         Icons.qr_code_scanner_rounded,
@@ -513,11 +515,13 @@ class _HomeTabState extends State<HomeTab> {
             o.action == _Action.events ||
             o.action == _Action.history ||
             o.action == _Action.attendanceScan ||
+            o.action == _Action.qrPass ||
             o.action == _Action.supportTickets;
       }
       if (o.action == _Action.events ||
           o.action == _Action.history ||
           o.action == _Action.attendanceScan ||
+          o.action == _Action.qrPass ||
           o.action == _Action.supportTickets) {
         return false;
       }
@@ -562,6 +566,8 @@ class _HomeTabState extends State<HomeTab> {
         return const Color(0xFF14B8A6);
       case _Action.attendanceScan:
         return const Color(0xFF10B981);
+      case _Action.qrPass:
+        return const Color(0xFF8B5CF6);
       case _Action.supportTickets:
         return const Color(0xFFEF4444);
       default:
@@ -684,6 +690,14 @@ class _HomeTabState extends State<HomeTab> {
       case _Action.history:
         _navigateToHistory();
         break;
+      case _Action.qrPass:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const QrPassPage(role: 'EVENT STAFF'),
+          ),
+        );
+        break;
       case _Action.attendanceScan:
         Navigator.push(
           context,
@@ -755,6 +769,7 @@ class _HomeTabState extends State<HomeTab> {
 
 enum _Action {
   attendanceScan,
+  qrPass,
   profile,
   complaints,
   helpDesk,

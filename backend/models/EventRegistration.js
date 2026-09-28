@@ -95,6 +95,8 @@ const eventRegistrationSchema = new mongoose.Schema(
     // Admin unlocked the certificate without the required scans.
     certificateUnlocked: { type: Boolean, default: false },
     certificateUnlockedAt: { type: Date, default: null },
+    // Admin reverted the certificate: it stays locked even if the scans earn it.
+    certificateRevoked: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

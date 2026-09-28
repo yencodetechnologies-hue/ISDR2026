@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/app_theme.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
 
@@ -117,8 +118,8 @@ class _LoaderState extends State<_Loader> with AutomaticKeepAliveClientMixin {
   };
 
   Widget _card(Map<String, dynamic> item) => switch (widget.kind) {
-    _Kind.questions => _SessionQuestionCard(item: item),
-    _Kind.polls => _PollCard(item: item),
+    _Kind.questions => _SessionQuestionCard(item: item, onChanged: _load),
+    _Kind.polls => _PollCard(item: item, onChanged: _load),
     _Kind.speakerQuestions => _SpeakerQuestionCard(item: item),
   };
 
@@ -206,8 +207,9 @@ Widget _questionText(String text) => Padding(
 /// A speaker's session question with every participant's answer (collapsible).
 class _SessionQuestionCard extends StatelessWidget {
   final Map<String, dynamic> item;
+  final VoidCallback onChanged;
 
-  const _SessionQuestionCard({required this.item});
+  const _SessionQuestionCard({required this.item, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -232,6 +234,7 @@ class _SessionQuestionCard extends StatelessWidget {
                 answers.length == 1 ? '1 answer' : '${answers.length} answers',
                 style: _small(const Color(0xFF22C55E), weight: FontWeight.w600),
               ),
+              _AdminActions(item: item, isPoll: false, onChanged: onChanged),
             ],
           ),
           children: answers.isEmpty
@@ -285,8 +288,9 @@ class _SessionQuestionCard extends StatelessWidget {
 /// A poll with each option's vote count and share.
 class _PollCard extends StatelessWidget {
   final Map<String, dynamic> item;
+  final VoidCallback onChanged;
 
-  const _PollCard({required this.item});
+  const _PollCard({required this.item, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -311,6 +315,7 @@ class _PollCard extends StatelessWidget {
             total == 1 ? '1 vote' : '$total votes',
             style: _small(DarkColors.muted),
           ),
+          _AdminActions(item: item, isPoll: true, onChanged: onChanged),
         ],
       ),
     );
@@ -450,6 +455,220 @@ class _SpeakerQuestionCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Admin's Edit / Delete buttons on a session poll or question card.
+/// Calls [onChanged] after a successful change so the list reloads.
+class _AdminActions extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final bool isPoll;
+  final VoidCallback onChanged;
+
+  const _AdminActions({
+    required this.item,
+    required this.isPoll,
+    required this.onChanged,
+  });
+
+  String get _scheduleId => item['scheduleId']?.toString() ?? '';
+  String get _id => item['id']?.toString() ?? '';
+
+  void _toast(BuildContext context, String msg) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+
+  Future<void> _edit(BuildContext context) async {
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) => _EditDialog(item: item, isPoll: isPoll),
+    );
+    if (saved == true) onChanged();
+  }
+
+  Future<void> _delete(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isPoll ? 'Delete poll?' : 'Delete question?'),
+        content: Text(
+          isPoll
+              ? 'The poll and all its votes will be removed.'
+              : 'The question and all its answers will be removed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.errorColor),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    final api = ApiService();
+    final res = isPoll
+        ? await api.deleteSessionPoll(_scheduleId, _id)
+        : await api.deleteSessionQuestion(_scheduleId, _id);
+    if (!context.mounted) return;
+    if (res['success'] == true) {
+      _toast(context, isPoll ? 'Poll deleted' : 'Question deleted');
+      onChanged();
+    } else {
+      _toast(context, res['error']?.toString() ?? 'Could not delete');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_scheduleId.isEmpty) return const SizedBox.shrink();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        TextButton.icon(
+          onPressed: () => _edit(context),
+          icon: const Icon(Icons.edit_outlined, size: 16),
+          label: const Text('Edit'),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF60A5FA)),
+        ),
+        TextButton.icon(
+          onPressed: () => _delete(context),
+          icon: const Icon(Icons.delete_outline, size: 16),
+          label: const Text('Delete'),
+          style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
+        ),
+      ],
+    );
+  }
+}
+
+/// Edit a poll (question + options; options lock once someone has voted) or a
+/// session question (text).
+class _EditDialog extends StatefulWidget {
+  final Map<String, dynamic> item;
+  final bool isPoll;
+
+  const _EditDialog({required this.item, required this.isPoll});
+
+  @override
+  State<_EditDialog> createState() => _EditDialogState();
+}
+
+class _EditDialogState extends State<_EditDialog> {
+  late final TextEditingController _question = TextEditingController(
+    text: widget.item['question']?.toString() ?? '',
+  );
+  late final List<TextEditingController> _options = [
+    for (final o in (widget.item['options'] as List?) ?? const [])
+      TextEditingController(text: o.toString()),
+  ];
+  bool _saving = false;
+
+  bool get _optionsLocked =>
+      ((widget.item['totalVotes'] as num?)?.toInt() ?? 0) > 0;
+
+  @override
+  void dispose() {
+    _question.dispose();
+    for (final c in _options) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final question = _question.text.trim();
+    if (question.isEmpty) return;
+    final item = widget.item;
+    final scheduleId = item['scheduleId'].toString();
+    final id = item['id'].toString();
+    List<String>? options;
+    if (widget.isPoll && !_optionsLocked) {
+      options = _options.map((c) => c.text.trim()).where((t) => t.isNotEmpty).toList();
+      if (options.length < 2) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('A poll needs at least 2 options')),
+        );
+        return;
+      }
+    }
+    setState(() => _saving = true);
+    final api = ApiService();
+    final res = widget.isPoll
+        ? await api.updateSessionPoll(scheduleId, id, question: question, options: options)
+        : await api.updateSessionQuestion(scheduleId, id, question);
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (res['success'] == true) {
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['error']?.toString() ?? 'Could not save')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.isPoll ? 'Edit poll' : 'Edit question'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _question,
+              minLines: 1,
+              maxLines: 4,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Question'),
+            ),
+            if (widget.isPoll) ...[
+              const SizedBox(height: 12),
+              if (_optionsLocked)
+                const Text(
+                  'Options can\'t be changed after people have voted.',
+                  style: TextStyle(fontSize: 12),
+                ),
+              for (var i = 0; i < _options.length; i++)
+                TextField(
+                  controller: _options[i],
+                  enabled: !_optionsLocked,
+                  decoration: InputDecoration(labelText: 'Option ${i + 1}'),
+                ),
+              if (!_optionsLocked)
+                TextButton.icon(
+                  onPressed: () => setState(
+                    () => _options.add(TextEditingController()),
+                  ),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Add option'),
+                ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Save'),
+        ),
+      ],
     );
   }
 }

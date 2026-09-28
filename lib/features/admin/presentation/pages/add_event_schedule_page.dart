@@ -13,7 +13,10 @@ import 'manage_speakers_page.dart';
 class AddEventSchedulePage extends StatefulWidget {
   final Map<String, dynamic> event;
 
-  const AddEventSchedulePage({super.key, required this.event});
+  /// When given, the page edits this schedule (one date) instead of adding.
+  final Map<String, dynamic>? schedule;
+
+  const AddEventSchedulePage({super.key, required this.event, this.schedule});
 
   @override
   State<AddEventSchedulePage> createState() => _AddEventSchedulePageState();
@@ -62,9 +65,37 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   String get _eventId =>
       widget.event['id']?.toString() ?? widget.event['_id']?.toString() ?? '';
 
+  bool get _isEdit => widget.schedule != null;
+
   @override
   void initState() {
     super.initState();
+    final s = widget.schedule;
+    if (s != null) {
+      _name.text = s['scheduleName']?.toString() ?? '';
+      _hall.text = s['hall']?.toString() ?? '';
+      _description.text = s['description']?.toString() ?? '';
+      _speakerId = s['speakerId']?.toString();
+      _packageIds.addAll(
+        ((s['packageIds'] as List?) ?? const []).map((id) => id.toString()),
+      );
+      final utc = DateTime.tryParse(s['date']?.toString() ?? '')?.toUtc();
+      if (utc != null) {
+        _dates.add(
+          '${utc.year}-${utc.month.toString().padLeft(2, '0')}-${utc.day.toString().padLeft(2, '0')}',
+        );
+      }
+      TimeOfDay? time(dynamic v) {
+        final p = v?.toString().split(':') ?? const [];
+        if (p.length < 2) return null;
+        final h = int.tryParse(p[0]);
+        final m = int.tryParse(p[1]);
+        return h == null || m == null ? null : TimeOfDay(hour: h, minute: m);
+      }
+
+      _from = time(s['fromTime']);
+      _to = time(s['toTime']);
+    }
     _loadSpeakers();
   }
 
@@ -147,21 +178,35 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
       });
     }
     setState(() => _saving = true);
-    final res = await ApiService().createEventSchedule(
-      eventId: _eventId,
-      speakerId: _speakerId!,
-      packageIds: _packageIds.toList(),
-      scheduleName: _name.text.trim(),
-      hall: _hall.text.trim(),
-      slots: slots,
-      description: _description.text.trim(),
-    );
+    final res = _isEdit
+        ? await ApiService().updateEventSchedule(
+            eventId: _eventId,
+            scheduleId: widget.schedule!['id'].toString(),
+            speakerId: _speakerId!,
+            packageIds: _packageIds.toList(),
+            scheduleName: _name.text.trim(),
+            hall: _hall.text.trim(),
+            slot: slots.first,
+            description: _description.text.trim(),
+          )
+        : await ApiService().createEventSchedule(
+            eventId: _eventId,
+            speakerId: _speakerId!,
+            packageIds: _packageIds.toList(),
+            scheduleName: _name.text.trim(),
+            hall: _hall.text.trim(),
+            slots: slots,
+            description: _description.text.trim(),
+          );
     if (!mounted) return;
     setState(() => _saving = false);
     if (res['success'] == true) {
       Navigator.pop(context, true);
     } else {
-      _toast(res['error']?.toString() ?? 'Failed to add schedule');
+      _toast(
+        res['error']?.toString() ??
+            (_isEdit ? 'Failed to update schedule' : 'Failed to add schedule'),
+      );
     }
   }
 
@@ -362,7 +407,11 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
                     fontWeight: FontWeight.w600,
                   ),
                   onSelected: (_) => setState(() {
-                    if (selected) {
+                    if (_isEdit) {
+                      _dates
+                        ..clear()
+                        ..add(d.iso);
+                    } else if (selected) {
                       _dates.remove(d.iso);
                     } else {
                       _dates.add(d.iso);
@@ -381,7 +430,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
       backgroundColor: DarkColors.bg,
       appBar: buildDarkAppBar(
         title: Text(
-          'Add Schedule',
+          _isEdit ? 'Edit Schedule' : 'Add Schedule',
           style: GoogleFonts.outfit(
             fontSize: 18,
             fontWeight: FontWeight.w700,

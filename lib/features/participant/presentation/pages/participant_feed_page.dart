@@ -85,6 +85,44 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
   String? _sharingId; // post whose photo is being downloaded to share
 
   /// Downloads the post's photo and opens the phone's share sheet with it.
+  /// Deletes one of your own posts after confirming.
+  Future<void> _delete(Map<String, dynamic> post) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete post?'),
+        content: const Text('This photo will be removed from the feed.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final id = post['id'].toString();
+    final res = await _api.deleteFeedPost(id);
+    if (!mounted) return;
+    if (res['success'] == true) {
+      setState(() => _posts.removeWhere((p) => p['id'].toString() == id));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Post deleted')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['error']?.toString() ?? 'Could not delete')),
+      );
+    }
+  }
+
   Future<void> _share(Map<String, dynamic> post) async {
     final id = post['id'].toString();
     final url = post['imageUrl']?.toString() ?? '';
@@ -228,6 +266,17 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
                                             color: _Colors.muted,
                                           ),
                                   ),
+                                  if (post['mine'] == true)
+                                    IconButton(
+                                      tooltip: 'Delete',
+                                      visualDensity: VisualDensity.compact,
+                                      onPressed: () => _delete(post),
+                                      icon: const Icon(
+                                        Icons.delete_outline_rounded,
+                                        size: 21,
+                                        color: Color(0xFFF87171),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),

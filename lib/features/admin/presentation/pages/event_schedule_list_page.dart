@@ -128,6 +128,16 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
     if (added == true) _load();
   }
 
+  Future<void> _edit(Map<String, dynamic> s) async {
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddEventSchedulePage(event: widget.event, schedule: s),
+      ),
+    );
+    if (saved == true) _load();
+  }
+
   Future<void> _delete(Map<String, dynamic> s) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -366,13 +376,25 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
             ),
           ),
           if (!widget.isReadOnly)
-            IconButton(
-              onPressed: () => _delete(s),
-              icon: const Icon(
-                Icons.delete_outline,
-                size: 20,
-                color: AppTheme.errorColor,
-              ),
+            Column(
+              children: [
+                IconButton(
+                  onPressed: () => _edit(s),
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    size: 20,
+                    color: Color(0xFF60A5FA),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _delete(s),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: AppTheme.errorColor,
+                  ),
+                ),
+              ],
             ),
         ],
       ),

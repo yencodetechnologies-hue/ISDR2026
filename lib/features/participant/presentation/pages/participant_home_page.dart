@@ -27,6 +27,7 @@ import 'participant_feed_page.dart';
 import 'favorites_page.dart';
 import '../widgets/news_ticker_strap.dart';
 import '../widgets/youtube_live_capsule.dart';
+import '../../../admin/presentation/pages/brochure_page.dart';
 import 'speakers_page.dart';
 import 'upcoming_schedules_page.dart';
 import 'participant_qa_page.dart';
@@ -34,7 +35,8 @@ import 'participant_polls_page.dart';
 import 'participant_exhibitors_page.dart';
 import '../../../certificate/presentation/pages/participant_certificate_page.dart';
 import '../../../support/presentation/pages/help_tickets_page.dart';
-import '../../../admin/presentation/widgets/auto_scroll_banner.dart' show AutoScrollBanner, BannerItem;
+import '../../../admin/presentation/widgets/auto_scroll_banner.dart'
+    show AutoScrollBanner, BannerItem;
 
 // ---------------------------------------------------------------------------
 // Management Theme Palette
@@ -345,7 +347,12 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
           final isToday =
               d.year == now.year && d.month == now.month && d.day == now.day;
 
-          allList.add({'schedule': s, 'event': event, 'start': start, 'end': end});
+          allList.add({
+            'schedule': s,
+            'event': event,
+            'start': start,
+            'end': end,
+          });
 
           // Check if currently LIVE
           if (!now.isBefore(start) && now.isBefore(end)) {
@@ -417,26 +424,14 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
               _selectedScheduleDate != null &&
               dates.any((d) => d == _selectedScheduleDate);
           if (!stillValid) {
-            // Open on today during the event, else the next day ahead,
-            // else Day 1.
+            // Open on today during the event; on other dates no day is
+            // selected until the participant taps one.
             final today = DateTime(now.year, now.month, now.day);
-            _selectedScheduleDate = dates.isEmpty
-                ? null
-                : dates.firstWhere(
-                    (d) => !d.isBefore(today),
-                    orElse: () => dates.first,
-                  );
+            _selectedScheduleDate = dates.contains(today) ? today : null;
           }
         });
       }
     } catch (_) {}
-  }
-
-  /// Placeholder tap for modules with no real feature behind them yet.
-  void _dummyTap(String feature) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$feature is coming soon')));
   }
 
   /// The full, ordered list of Participant Module tiles — shared by the grid
@@ -467,10 +462,13 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       onTap: _openFavorites,
     ),
     _ParticipantModuleItem(
-      label: 'Certifications',
-      icon: Icons.workspace_premium_rounded,
+      label: 'Brochure',
+      icon: Icons.menu_book_rounded,
       color: const Color(0xFF10B981),
-      onTap: () => _dummyTap('Certifications'),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const BrochurePage()),
+      ),
     ),
     _ParticipantModuleItem(
       label: 'Help &\nSupport',
@@ -1065,24 +1063,14 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(
-              Icons.share_rounded,
-              size: 17,
-              color: Colors.white.withValues(alpha: 0.85),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'FOLLOW US',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                letterSpacing: .3,
-                color: Colors.white.withValues(alpha: 0.85),
-              ),
-            ),
-          ],
+        Text(
+          'FOLLOW US',
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            letterSpacing: .3,
+            color: Colors.white.withValues(alpha: 0.85),
+          ),
         ),
         const SizedBox(height: 10),
         Row(
@@ -1606,9 +1594,11 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     if (dates.isEmpty) return const SizedBox.shrink();
     final selected =
         _selectedScheduleDate != null && dates.contains(_selectedScheduleDate)
-        ? _selectedScheduleDate!
-        : dates.first;
-    final items = _itemsForDate(selected);
+        ? _selectedScheduleDate
+        : null;
+    final items = selected == null
+        ? const <Map<String, dynamic>>[]
+        : _itemsForDate(selected);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1658,84 +1648,102 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
           ],
         ),
         const SizedBox(height: 10),
-        Row(
-          children: [
-            for (var i = 0; i < dates.length; i++) ...[
-              if (i > 0) const SizedBox(width: 8),
-              Expanded(
-                child: Builder(
-                  builder: (_) {
-                    final d = dates[i];
-                    final active = d == selected;
-                    return GestureDetector(
-                      onTap: () => setState(() {
-                        _selectedScheduleDate = d;
-                        _showAllDaySessions = false;
-                      }),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        decoration: BoxDecoration(
-                          color: active
-                              ? const Color(0xFF0D2B28)
-                              : const Color(0xFF14141F),
-                          borderRadius: BorderRadius.circular(5),
-                          border: Border.all(
-                            color: active
-                                ? const Color(0xFF2DD4BF)
-                                : Colors.white.withValues(alpha: 0.08),
-                            width: active ? 1.4 : 1,
-                          ),
-                          boxShadow: active
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(
-                                      0xFF2DD4BF,
-                                    ).withValues(alpha: 0.55),
-                                    blurRadius: 14,
-                                    spreadRadius: 0.5,
+        // Tabs share the width when they fit; with many days they keep a
+        // minimum width and the row scrolls sideways.
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const gap = 8.0;
+            final fitted =
+                (constraints.maxWidth - gap * (dates.length - 1)) /
+                dates.length;
+            final tileWidth = fitted < 64 ? 64.0 : fitted;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              child: Row(
+                children: [
+                  for (var i = 0; i < dates.length; i++) ...[
+                    if (i > 0) const SizedBox(width: gap),
+                    SizedBox(
+                      width: tileWidth,
+                      child: Builder(
+                        builder: (_) {
+                          final d = dates[i];
+                          final active = d == selected;
+                          return GestureDetector(
+                            onTap: () => setState(() {
+                              _selectedScheduleDate = d;
+                              _showAllDaySessions = false;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              decoration: BoxDecoration(
+                                color: active
+                                    ? const Color(0xFF0D2B28)
+                                    : const Color(0xFF14141F),
+                                borderRadius: BorderRadius.circular(5),
+                                border: Border.all(
+                                  color: active
+                                      ? const Color(0xFF2DD4BF)
+                                      : Colors.white.withValues(alpha: 0.08),
+                                  width: active ? 1.4 : 1,
+                                ),
+                                boxShadow: active
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(
+                                            0xFF2DD4BF,
+                                          ).withValues(alpha: 0.55),
+                                          blurRadius: 14,
+                                          spreadRadius: 0.5,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Day ${i + 1}',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: active
+                                          ? const Color(0xFF2DD4BF)
+                                          : Colors.white.withValues(alpha: 0.8),
+                                    ),
                                   ),
-                                ]
-                              : null,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Day ${i + 1}',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: active
-                                    ? const Color(0xFF2DD4BF)
-                                    : Colors.white.withValues(alpha: 0.8),
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    DateFormat('MMM d').format(d),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10.5,
+                                      color: active
+                                          ? const Color(0xFF2DD4BF)
+                                          : Colors.white.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 1),
-                            Text(
-                              DateFormat('MMM d').format(d),
-                              style: GoogleFonts.inter(
-                                fontSize: 10.5,
-                                color: active
-                                    ? const Color(0xFF2DD4BF)
-                                    : Colors.white.withValues(alpha: 0.5),
-                              ),
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ],
+            );
+          },
         ),
         const SizedBox(height: 10),
         if (items.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
             child: Text(
-              'No sessions on this day',
+              selected == null
+                  ? 'Tap a day to see its sessions'
+                  : 'No sessions on this day',
               style: GoogleFonts.inter(
                 fontSize: 12.5,
                 color: Colors.white.withValues(alpha: 0.5),
@@ -2400,8 +2408,6 @@ class _MoreModulesPage extends StatelessWidget {
     );
   }
 }
-
-
 
 class _BottomNavItem {
   final String label;

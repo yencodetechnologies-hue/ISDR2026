@@ -22,6 +22,8 @@ import 'manage_exhibitors_page.dart';
 import 'manage_banner_page.dart';
 import 'manage_news_ticker_page.dart';
 import 'manage_youtube_live_page.dart';
+import 'qr_pass_page.dart';
+import '../../../participant/presentation/pages/awards_page.dart';
 import '../../../certificate/presentation/pages/attendance_scan_page.dart';
 import '../../../certificate/presentation/pages/admin_certificates_page.dart';
 import '../../../support/presentation/pages/help_tickets_page.dart';
@@ -303,6 +305,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
   void _navigateToModule(String label) {
     final key = label.trim().toLowerCase();
+    if (key == 'awards') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AwardsPage(adminMode: true)),
+      );
+      return;
+    }
     if (key == 'youtube live') {
       Navigator.push(
         context,
@@ -407,10 +416,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       );
       return;
     }
-    if (label.trim().toLowerCase() == 'profile') {
+    if (label.trim().toLowerCase() == 'qr pass') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const MyProfilePage()),
+        MaterialPageRoute(
+          builder: (_) =>
+              const QrPassPage(role: 'ADMIN', showProfileLink: true),
+        ),
       );
       return;
     }
@@ -655,7 +667,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     final labels = [
       'Brochure',
       ..._propertyTabs.map((t) => t.label),
-      'Profile',
+      'QR Pass',
       'Send Notification',
       'Event Schedules',
       'Speakers',
@@ -667,6 +679,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'News Ticker',
       'Entry / Exit Scan',
       'Certificate',
+      'Awards',
       'Support Tickets',
     ];
     final isHostel = false;

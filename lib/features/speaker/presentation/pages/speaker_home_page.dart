@@ -16,6 +16,7 @@ import 'speaker_session_polls_page.dart';
 import 'speaker_session_questions_page.dart';
 import '../../../../core/widgets/change_password_page.dart';
 import 'speaker_participant_questions_page.dart';
+import '../../../admin/presentation/pages/qr_pass_page.dart';
 
 typedef _C = SpeakerColors;
 
@@ -896,7 +897,16 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
       (Icons.home_rounded, 'Home', () {}),
       (Icons.calendar_month_outlined, 'Schedule', () => _dummyTap('Schedule')),
       (Icons.groups_outlined, 'Speakers', () => _dummyTap('Speakers')),
-      (Icons.qr_code_rounded, 'QR Pass', () => _dummyTap('QR Pass')),
+      (
+        Icons.qr_code_rounded,
+        'QR Pass',
+        () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const QrPassPage(role: 'SPEAKER'),
+          ),
+        ),
+      ),
       (Icons.grid_view_rounded, 'More', _openMore),
     ];
     return Container(

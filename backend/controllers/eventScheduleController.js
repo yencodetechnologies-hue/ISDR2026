@@ -93,77 +93,74 @@ function readSlots(body) {
   }
 }
 
+/**
+ * Validates a schedule form (create or edit). Returns { error } or the clean
+ * { speaker, scheduleName, hall, description, packageIds, slots }.
+ */
+async function readScheduleForm(event, body) {
+  const speakerId = String(body.speakerId || '').trim();
+  const scheduleName = String(body.scheduleName || '').trim();
+  const hall = String(body.hall || '').trim();
+  const description = String(body.description || '').trim();
+  const rawSlots = readSlots(body);
+  const packageIds = readPackageIds(body);
+
+  if (!speakerId) return { error: 'Select a speaker' };
+  const speaker = await Speaker.findOne({ _id: speakerId, apartmentId: event.apartmentId }).catch(() => null);
+  if (!speaker) return { error: 'Speaker not found' };
+  if (packageIds.length === 0) return { error: 'Select at least one package' };
+  const eventPackageIds = new Set((event.packages || []).map((p) => String(p.id)));
+  if (packageIds.some((id) => !eventPackageIds.has(id))) return { error: 'Package not found on this event' };
+  if (!scheduleName) return { error: 'Schedule name is required' };
+  if (rawSlots.length === 0) return { error: 'Select at least one date' };
+
+  // Each date is a calendar day (sent as yyyy-MM-dd, parsed as UTC midnight); the event
+  // times are stored in UTC, so allow one day of slack for the device's time zone.
+  const DAY = 24 * 60 * 60 * 1000;
+  const utcDay = (d) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const evStart = utcDay(new Date(event.eventDate)) - DAY;
+  const evEnd = utcDay(new Date(event.eventEndDate || event.eventDate)) + DAY;
+  const seenDays = new Set();
+  const slots = [];
+  for (const raw of rawSlots) {
+    const date = new Date(raw && raw.date);
+    const fromTime = String((raw && raw.fromTime) || '').trim();
+    const toTime = String((raw && raw.toTime) || '').trim();
+    if (Number.isNaN(date.getTime())) return { error: 'A valid date is required' };
+    const picked = utcDay(date);
+    if (picked < evStart || picked > evEnd) return { error: 'Schedule date must fall within the event dates' };
+    if (seenDays.has(picked)) return { error: 'The same date was selected twice' };
+    seenDays.add(picked);
+    if (!TIME_REGEX.test(fromTime) || !TIME_REGEX.test(toTime)) return { error: 'From and to time are required' };
+    if (toTime <= fromTime) return { error: 'To time must be after from time' };
+    slots.push({ date, fromTime, toTime });
+  }
+  return { speaker, scheduleName, hall, description, packageIds, slots };
+}
+
 // POST /api/managed-events/:id/schedules  { speakerId, packageIds, scheduleName, hall, slots, description }
 const createSchedule = async (req, res) => {
   try {
     const event = await loadOwnedEvent(req, res);
     if (!event) return;
-
-    const speakerId = String(req.body.speakerId || '').trim();
-    const scheduleName = String(req.body.scheduleName || '').trim();
-    const hall = String(req.body.hall || '').trim();
-    const description = String(req.body.description || '').trim();
-    const rawSlots = readSlots(req.body);
-    const packageIds = readPackageIds(req.body);
-
-    if (!speakerId) return res.status(400).json({ success: false, error: 'Select a speaker' });
-    const speaker = await Speaker.findOne({ _id: speakerId, apartmentId: event.apartmentId }).catch(() => null);
-    if (!speaker) return res.status(400).json({ success: false, error: 'Speaker not found' });
-    if (packageIds.length === 0) {
-      return res.status(400).json({ success: false, error: 'Select at least one package' });
-    }
-    const eventPackageIds = new Set((event.packages || []).map((p) => String(p.id)));
-    if (packageIds.some((id) => !eventPackageIds.has(id))) {
-      return res.status(400).json({ success: false, error: 'Package not found on this event' });
-    }
-    if (!scheduleName) return res.status(400).json({ success: false, error: 'Schedule name is required' });
-    if (rawSlots.length === 0) return res.status(400).json({ success: false, error: 'Select at least one date' });
-
-    // Each date is a calendar day (sent as yyyy-MM-dd, parsed as UTC midnight); the event
-    // times are stored in UTC, so allow one day of slack for the device's time zone.
-    const DAY = 24 * 60 * 60 * 1000;
-    const utcDay = (d) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-    const evStart = utcDay(new Date(event.eventDate)) - DAY;
-    const evEnd = utcDay(new Date(event.eventEndDate || event.eventDate)) + DAY;
-    const seenDays = new Set();
-    const slots = [];
-    for (const raw of rawSlots) {
-      const date = new Date(raw && raw.date);
-      const fromTime = String((raw && raw.fromTime) || '').trim();
-      const toTime = String((raw && raw.toTime) || '').trim();
-      if (Number.isNaN(date.getTime())) return res.status(400).json({ success: false, error: 'A valid date is required' });
-      const picked = utcDay(date);
-      if (picked < evStart || picked > evEnd) {
-        return res
-          .status(400)
-          .json({ success: false, error: 'Schedule date must fall within the event dates' });
-      }
-      if (seenDays.has(picked)) return res.status(400).json({ success: false, error: 'The same date was selected twice' });
-      seenDays.add(picked);
-      if (!TIME_REGEX.test(fromTime) || !TIME_REGEX.test(toTime)) {
-        return res.status(400).json({ success: false, error: 'From and to time are required' });
-      }
-      if (toTime <= fromTime) {
-        return res.status(400).json({ success: false, error: 'To time must be after from time' });
-      }
-      slots.push({ date, fromTime, toTime });
-    }
+    const form = await readScheduleForm(event, req.body);
+    if (form.error) return res.status(400).json({ success: false, error: form.error });
 
     // One row per date, all linked to the speaker (whose login covers them all).
     const created = await EventSchedule.create(
-      slots.map((slot) => ({
+      form.slots.map((slot) => ({
         eventId: event._id,
         apartmentId: event.apartmentId,
-        speakerId: speaker._id,
-        speakerName: speaker.name,
-        speakerPhoto: speaker.photo || '',
-        scheduleName,
-        packageIds,
-        hall,
+        speakerId: form.speaker._id,
+        speakerName: form.speaker.name,
+        speakerPhoto: form.speaker.photo || '',
+        scheduleName: form.scheduleName,
+        packageIds: form.packageIds,
+        hall: form.hall,
         date: slot.date,
         fromTime: slot.fromTime,
         toTime: slot.toTime,
-        description,
+        description: form.description,
       }))
     );
     res.status(201).json({
@@ -173,6 +170,42 @@ const createSchedule = async (req, res) => {
     });
   } catch (error) {
     console.error('createSchedule error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+// PUT /api/managed-events/:id/schedules/:scheduleId  { speakerId, packageIds, scheduleName, hall, date, fromTime, toTime, description }
+// Admin edits one schedule row (a single date).
+const updateSchedule = async (req, res) => {
+  try {
+    const event = await loadOwnedEvent(req, res);
+    if (!event) return;
+    const schedule = await EventSchedule.findOne({ _id: req.params.scheduleId, eventId: event._id }).catch(
+      () => null
+    );
+    if (!schedule) return res.status(404).json({ success: false, error: 'Schedule not found' });
+    const form = await readScheduleForm(event, req.body);
+    if (form.error) return res.status(400).json({ success: false, error: form.error });
+    if (form.slots.length !== 1) {
+      return res.status(400).json({ success: false, error: 'A schedule has exactly one date' });
+    }
+    const [slot] = form.slots;
+    Object.assign(schedule, {
+      speakerId: form.speaker._id,
+      speakerName: form.speaker.name,
+      speakerPhoto: form.speaker.photo || '',
+      scheduleName: form.scheduleName,
+      packageIds: form.packageIds,
+      hall: form.hall,
+      date: slot.date,
+      fromTime: slot.fromTime,
+      toTime: slot.toTime,
+      description: form.description,
+    });
+    await schedule.save();
+    res.json({ success: true, schedule: toDto(schedule) });
+  } catch (error) {
+    console.error('updateSchedule error:', error);
     res.status(500).json({ success: false, error: error.message || 'Server error' });
   }
 };
@@ -354,6 +387,7 @@ module.exports = {
   toggleReminder,
   listSchedules,
   createSchedule,
+  updateSchedule,
   deleteSchedule,
   mySpeakerSessions,
   myFavorites,

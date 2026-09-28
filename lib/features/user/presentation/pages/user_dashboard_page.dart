@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../../core/app_theme.dart';
 import '../../../../core/models/apartment_model.dart';
@@ -107,17 +106,10 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                                 minHeight: 44,
                               ),
                               padding: const EdgeInsets.all(8),
-                              icon: SvgPicture.asset(
-                                'assets/notification.svg',
-                                width: 22,
-                                height: 22,
-                                colorFilter: ColorFilter.mode(
-                                  Theme.of(
-                                        context,
-                                      ).appBarTheme.iconTheme?.color ??
-                                      Colors.white,
-                                  BlendMode.srcIn,
-                                ),
+                              icon: const Icon(
+                                Icons.notifications_none_rounded,
+                                size: 24,
+                                color: Colors.white,
                               ),
                               onPressed: () {
                                 Navigator.pushNamed(

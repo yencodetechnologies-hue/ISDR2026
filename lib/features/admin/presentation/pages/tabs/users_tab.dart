@@ -884,7 +884,7 @@ class _UsersFilterChips extends StatelessWidget {
           final count = counts[index];
 
           return Material(
-            color: selected ? f.color : Colors.white,
+            color: selected ? f.color : const Color(0xFF14141F),
             borderRadius: BorderRadius.circular(20),
             elevation: selected ? 2 : 0,
             shadowColor: f.color.withOpacityCompat(0.35),

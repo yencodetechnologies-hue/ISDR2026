@@ -7,6 +7,7 @@ const { claimSummary } = require('../controllers/claimSummaryController');
 const {
   listSchedules,
   createSchedule,
+  updateSchedule,
   deleteSchedule,
   mySpeakerSessions,
   myFavorites,
@@ -81,6 +82,7 @@ router.post(
   uploadSingleImage('photo'),
   createSchedule
 );
+router.put('/:id/schedules/:scheduleId', protect, requireManagement, updateSchedule);
 router.delete('/:id/schedules/:scheduleId', protect, requireManagement, deleteSchedule);
 
 // Notifications to an event's participants

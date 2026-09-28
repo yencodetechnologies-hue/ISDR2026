@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 
 class _AwardCategoryItem {
@@ -21,8 +21,11 @@ class _AwardCategoryItem {
   });
 }
 
-class AwardsPage extends StatelessWidget {
-  const AwardsPage({super.key});
+class AwardsPage extends StatefulWidget {
+  /// Admin: tapping an award opens the participant picker for its winner.
+  final bool adminMode;
+
+  const AwardsPage({super.key, this.adminMode = false});
 
   static const List<_AwardCategoryItem> _delegateAndPgAwards = [
     _AwardCategoryItem(
@@ -126,24 +129,67 @@ class AwardsPage extends StatelessWidget {
     ),
   ];
 
-  Future<void> _launchUrl(BuildContext context, String urlString) async {
-    final uri = Uri.parse(urlString);
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not open link: $urlString')),
+  @override
+  State<AwardsPage> createState() => _AwardsPageState();
+}
+
+class _AwardsPageState extends State<AwardsPage> {
+  final _api = ApiService();
+
+  /// Award number -> {registrationId, name}.
+  Map<String, Map<String, dynamic>> _winners = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final res = await _api.getAwardWinners();
+    if (!mounted || res['success'] != true || res['winners'] is! Map) return;
+    setState(() {
+      _winners = (res['winners'] as Map).map(
+        (k, v) => MapEntry(k.toString(), Map<String, dynamic>.from(v as Map)),
+      );
+    });
+  }
+
+  void _toast(String msg) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+
+  /// Admin: pick the winner of one award (or remove the current one).
+  Future<void> _pickWinner(_AwardCategoryItem item) async {
+    final current = _winners['${item.number}'];
+    final picked = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF14141F),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _WinnerPickerSheet(
+        award: item,
+        currentId: current?['registrationId']?.toString(),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final id = picked['id']?.toString() ?? '';
+    final res = await _api.setAwardWinner(item.number, id);
+    if (!mounted) return;
+    if (res['success'] == true) {
+      setState(() {
+        if (res['winner'] is Map) {
+          _winners['${item.number}'] = Map<String, dynamic>.from(
+            res['winner'] as Map,
           );
+        } else {
+          _winners.remove('${item.number}');
         }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error opening link: $e')),
-        );
-      }
+      });
+      _toast(id.isEmpty ? 'Winner removed' : 'Winner saved');
+    } else {
+      _toast(res['error']?.toString() ?? 'Could not save');
     }
   }
 
@@ -153,7 +199,7 @@ class AwardsPage extends StatelessWidget {
       backgroundColor: const Color(0xFF0A0A12),
       appBar: buildDarkAppBar(
         title: Text(
-          'Conference Awards',
+          widget.adminMode ? 'Award Winners' : 'Conference Awards',
           style: GoogleFonts.outfit(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -167,49 +213,23 @@ class AwardsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Hero Callout Banner
-            _buildHeroCalloutBanner(),
-            const SizedBox(height: 16),
-
-            // General Guidelines / Important Notes Card
-            _buildGeneralNotesCard(),
-            const SizedBox(height: 20),
-
             // Section 1: Delegates & Post Graduate Awards
             _buildSectionHeader('DELEGATES & POST GRADUATE AWARDS (CAT 1 - 8)'),
             const SizedBox(height: 10),
-            for (final item in _delegateAndPgAwards) ...[
+            for (final item in AwardsPage._delegateAndPgAwards) ...[
               _buildAwardAccordionCard(item),
               const SizedBox(height: 10),
             ],
-            const SizedBox(height: 6),
-            // Apply Button for Cat 3 to 8
-            _buildApplyButton(
-              context: context,
-              title: 'Apply for Categories 3 to 8',
-              subtitle: 'Delegates & Post Graduate Research Awards',
-              url: 'https://tinyurl.com/AWARDS-ISDR-DELIGATES-AND-PGS',
-              accentColor: const Color(0xFF2563EB),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 14),
 
             // Section 2: Under Graduate Students Awards
             _buildSectionHeader('UNDER GRADUATE STUDENTS AWARDS (CAT 9 - 12)'),
             const SizedBox(height: 10),
-            for (final item in _ugAwards) ...[
+            for (final item in AwardsPage._ugAwards) ...[
               _buildAwardAccordionCard(item),
               const SizedBox(height: 10),
             ],
-            const SizedBox(height: 6),
-            // Apply Button for Cat 11 & 12
-            _buildApplyButton(
-              context: context,
-              title: 'Apply for Categories 11 & 12',
-              subtitle: 'Undergraduate Publication & Grant Awards',
-              url: 'https://tinyurl.com/AWARDS-ISDR-UG',
-              accentColor: const Color(0xFF059669),
-            ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 22),
           ],
         ),
       ),
@@ -229,191 +249,101 @@ class AwardsPage extends StatelessWidget {
   }
 
   /// Hero Banner Callout
-  Widget _buildHeroCalloutBanner() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0F172A), Color(0xFF1E3A8A)],
+  Widget _numberBadge(int number) => Container(
+    width: 38,
+    height: 38,
+    decoration: BoxDecoration(
+      color: const Color(0x263B82F6),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: const Color(0x4D3B82F6), width: 1),
+    ),
+    child: Center(
+      child: Text(
+        '$number',
+        style: GoogleFonts.outfit(
+          fontSize: 15,
+          fontWeight: FontWeight.w800,
+          color: const Color(0xFF93C5FD),
         ),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1E3A8A).withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
       ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFBBF24).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: const Color(0xFFFBBF24).withValues(alpha: 0.35),
-                width: 1,
-              ),
-            ),
-            child: Text(
-              'CALLING EXPERTS FROM OUR RESEARCH COMMUNITY!',
-              style: GoogleFonts.inter(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.1,
-                color: const Color(0xFFFBBF24),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Apply & Get Nominated',
-            style: GoogleFonts.outfit(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              height: 1.2,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Prestigious ISDR Conference Research Awards 2026',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF93C5FD),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              const Icon(Icons.event_available_rounded, size: 16, color: Color(0xFFFBBF24)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Deadline: September 15, 2026',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+    ),
+  );
 
-  /// General Notes and Rules Card
-  Widget _buildGeneralNotesCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF14141F),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x1AFFFFFF)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.info_outline_rounded, color: Color(0xFF2563EB), size: 18),
-              const SizedBox(width: 8),
-              Text(
-                'GENERAL GUIDELINES',
-                style: GoogleFonts.outfit(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.6,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildBulletItem(
-            'Categories 1, 2, 9, and 10 will be finalized on the day of the presentation.',
-          ),
-          _buildBulletItem(
-            'Three prizes will be awarded for each category.',
-          ),
-          _buildBulletItem(
-            'Delegates and PGs can apply for a maximum of three award categories (only one application per award).',
-          ),
-          _buildBulletItem(
-            'Undergraduates can apply for a maximum of two award categories (only one application per award).',
-          ),
-          _buildBulletItem(
-            'Last date to apply for award categories: September 15, 2026.',
-            isHighlight: true,
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _titleText(String title) => Text(
+    title,
+    style: GoogleFonts.outfit(
+      fontSize: 14.5,
+      fontWeight: FontWeight.w700,
+      color: Colors.white,
+    ),
+  );
 
-  Widget _buildBulletItem(String text, {bool isHighlight = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: isHighlight ? const Color(0xFFD97706) : const Color(0xFF2563EB),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                height: 1.45,
-                fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w500,
-                color: isHighlight ? const Color(0xFFFBBF24) : const Color(0xFFCBD5E1),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Expandable Accordion Card for Each Award Category
+  /// Award heading. Participants tap it to roll open the winner (or "Yet to
+  /// be announced"); the admin taps it to choose the winner.
   Widget _buildAwardAccordionCard(_AwardCategoryItem item) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF14141F),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x1AFFFFFF)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    final winner = _winners['${item.number}']?['name']?.toString();
+    final decoration = BoxDecoration(
+      color: const Color(0xFF14141F),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: winner != null
+            ? const Color(0x66F59E0B)
+            : const Color(0x1AFFFFFF),
       ),
+    );
+
+    if (widget.adminMode) {
+      return Material(
+        color: Colors.transparent,
+        child: Ink(
+          decoration: decoration,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => _pickWinner(item),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  _numberBadge(item.number),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _titleText(item.title),
+                        const SizedBox(height: 2),
+                        Text(
+                          winner == null
+                              ? 'Tap to choose the winner'
+                              : 'Winner: $winner',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: winner == null
+                                ? const Color(0xFF9CA3AF)
+                                : const Color(0xFFFBBF24),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    winner == null
+                        ? Icons.person_add_alt_1_rounded
+                        : Icons.edit_rounded,
+                    size: 20,
+                    color: const Color(0xFF93C5FD),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: decoration,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Theme(
@@ -423,207 +353,239 @@ class AwardsPage extends StatelessWidget {
             highlightColor: Colors.transparent,
           ),
           child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            leading: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: const Color(0x263B82F6),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0x4D3B82F6), width: 1),
-              ),
-              child: Center(
-                child: Text(
-                  '${item.number}',
-                  style: GoogleFonts.outfit(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF93C5FD),
-                  ),
+            iconColor: const Color(0xFF93C5FD),
+            collapsedIconColor: const Color(0xFF9CA3AF),
+            leading: _numberBadge(item.number),
+            title: _titleText(item.title),
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0x26F59E0B),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0x4DF59E0B)),
                 ),
-              ),
-            ),
-            title: Text(
-              item.title,
-              style: GoogleFonts.outfit(
-                fontSize: 14.5,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-            subtitle: item.subtitle != null
-                ? Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      item.subtitle!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: const Color(0xFF9CA3AF),
-                        fontWeight: FontWeight.w500,
+                child: Row(
+                  children: [
+                    Icon(
+                      winner == null
+                          ? Icons.hourglass_top_rounded
+                          : Icons.emoji_events_rounded,
+                      size: 18,
+                      color: const Color(0xFFFBBF24),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        winner ?? 'Yet to be announced',
+                        style: GoogleFonts.inter(
+                          fontSize: winner == null ? 13 : 14,
+                          fontWeight: winner == null
+                              ? FontWeight.w600
+                              : FontWeight.w700,
+                          color: const Color(0xFFFBBF24),
+                        ),
                       ),
                     ),
-                  )
-                : null,
-            children: [
-              const Divider(color: Color(0xFF1E1E2A), height: 1),
-              const SizedBox(height: 12),
-              if (item.subtitle != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E2A),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0x1AFFFFFF)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.description_outlined, size: 16, color: Color(0xFF2563EB)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          item.subtitle!,
-                          style: GoogleFonts.inter(
-                            fontSize: 11.5,
-                            height: 1.4,
-                            color: const Color(0xFFCBD5E1),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-              ],
-              if (item.description != null) ...[
-                Text(
-                  item.description!,
-                  style: GoogleFonts.inter(
-                    fontSize: 12.5,
-                    height: 1.55,
-                    color: const Color(0xFFCBD5E1),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-              if (item.eligibility != null) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0x26F59E0B),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0x4DF59E0B)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.verified_outlined, size: 16, color: Color(0xFFFBBF24)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Eligibility: ${item.eligibility!}',
-                          style: GoogleFonts.inter(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFFFBBF24),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  /// Apply Action Button
-  Widget _buildApplyButton({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required String url,
-    required Color accentColor,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF14141F),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x1AFFFFFF)),
-        boxShadow: [
-          BoxShadow(
-            color: accentColor.withValues(alpha: 0.10),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => _launchUrl(context, url),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(Icons.open_in_new_rounded, color: accentColor, size: 22),
+/// Admin's list of participants to choose an award winner from.
+class _WinnerPickerSheet extends StatefulWidget {
+  final _AwardCategoryItem award;
+  final String? currentId;
+
+  const _WinnerPickerSheet({required this.award, this.currentId});
+
+  @override
+  State<_WinnerPickerSheet> createState() => _WinnerPickerSheetState();
+}
+
+class _WinnerPickerSheetState extends State<_WinnerPickerSheet> {
+  List<Map<String, dynamic>> _all = [];
+  bool _loading = true;
+  String? _error;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final res = await ApiService().listCertificates();
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      if (res['success'] == true) {
+        _all = (res['participants'] as List? ?? [])
+            .whereType<Map>()
+            .map((p) => Map<String, dynamic>.from(p))
+            .toList();
+      } else {
+        _error = res['error']?.toString() ?? 'Could not load participants';
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _query.trim().toLowerCase();
+    final shown = _all
+        .where(
+          (p) =>
+              q.isEmpty ||
+              '${p['name']} ${p['idNumber']} ${p['mobileNumber']}'
+                  .toLowerCase()
+                  .contains(q),
+        )
+        .toList();
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.75,
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Winner — ${widget.award.title}',
                         style: GoogleFonts.outfit(
-                          fontSize: 14.5,
+                          fontSize: 17,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.inter(
-                          fontSize: 11.5,
-                          color: const Color(0xFF9CA3AF),
-                          fontWeight: FontWeight.w500,
+                    ),
+                    if (widget.currentId != null)
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, <String, dynamic>{'id': ''}),
+                        child: const Text(
+                          'Remove',
+                          style: TextStyle(color: Color(0xFFF87171)),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: accentColor,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    'Apply Now',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+                child: TextField(
+                  onChanged: (v) => setState(() => _query = v),
+                  style: GoogleFonts.inter(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Search name, ID or mobile',
+                    hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: Color(0xFF9CA3AF),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFF1E1E2A),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              Expanded(
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _error != null
+                    ? Center(
+                        child: Text(
+                          _error!,
+                          style: GoogleFonts.inter(color: Colors.white60),
+                        ),
+                      )
+                    : shown.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No participants',
+                          style: GoogleFonts.inter(color: Colors.white60),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: shown.length,
+                        itemBuilder: (_, i) {
+                          final p = shown[i];
+                          final chosen =
+                              p['id']?.toString() == widget.currentId;
+                          return ListTile(
+                            onTap: () => Navigator.pop(context, p),
+                            leading: CircleAvatar(
+                              backgroundColor: const Color(0x263B82F6),
+                              child: Text(
+                                (p['name']?.toString() ?? '?')
+                                    .trim()
+                                    .characters
+                                    .first
+                                    .toUpperCase(),
+                                style: const TextStyle(
+                                  color: Color(0xFF93C5FD),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              p['name']?.toString() ?? '',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            subtitle: Text(
+                              [p['idNumber'], p['mobileNumber']]
+                                  .where(
+                                    (v) => (v?.toString() ?? '').isNotEmpty,
+                                  )
+                                  .join('  •  '),
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: const Color(0xFF9CA3AF),
+                              ),
+                            ),
+                            trailing: chosen
+                                ? const Icon(
+                                    Icons.emoji_events_rounded,
+                                    color: Color(0xFFFBBF24),
+                                  )
+                                : null,
+                          );
+                        },
+                      ),
+              ),
+            ],
           ),
         ),
       ),

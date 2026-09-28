@@ -74,7 +74,7 @@ const List<_ModuleVisual> _predefinedVisuals = [
 
   _ModuleVisual('Admin IDs', Icons.badge_outlined, group: 'ACCOUNT'),
   _ModuleVisual('Brochure', Icons.menu_book_rounded, group: 'ACCOUNT'),
-  _ModuleVisual('Profile', Icons.person_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('QR Pass', Icons.qr_code_2_rounded, group: 'ACCOUNT'),
   _ModuleVisual(
     'Send Notification',
     Icons.notifications_active_rounded,
@@ -94,6 +94,7 @@ const List<_ModuleVisual> _predefinedVisuals = [
   _ModuleVisual('News Ticker', Icons.campaign_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Entry / Exit Scan', Icons.qr_code_scanner_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Certificate', Icons.workspace_premium_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('Awards', Icons.emoji_events_rounded, group: 'ACCOUNT'),
   _ModuleVisual(
     'Support Tickets',
     Icons.support_agent_rounded,
@@ -232,6 +233,7 @@ Color _moduleColor(String label) {
     'news ticker': Color(0xFF0EA5E9),
     'entry / exit scan': Color(0xFF10B981),
     'certificate': Color(0xFFF59E0B),
+    'awards': Color(0xFFEAB308),
     'support tickets': Color(0xFFEF4444),
   };
   const fallback = [

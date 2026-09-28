@@ -11,6 +11,8 @@ const toDto = (p, viewerId) => ({
   imageUrl: p.imageUrl,
   likeCount: (p.likes || []).length,
   liked: !!viewerId && (p.likes || []).some((id) => String(id) === String(viewerId)),
+  // True for the participant who posted it (only they can delete it).
+  mine: !!viewerId && String(p.participantId) === String(viewerId),
   createdAt: p.createdAt,
 });
 
@@ -84,4 +86,20 @@ const toggleLike = async (req, res) => {
   }
 };
 
-module.exports = { listFeedPosts, createFeedPost, toggleLike };
+// DELETE /api/feed-posts/:id — only the participant who posted it.
+const deleteFeedPost = async (req, res) => {
+  try {
+    const post = await FeedPost.findOne({ _id: req.params.id, apartmentId: req.apartmentId }).catch(() => null);
+    if (!post) return res.status(404).json({ success: false, error: 'Post not found' });
+    if (req.userType !== 'participant' || String(post.participantId) !== String(req.userId)) {
+      return res.status(403).json({ success: false, error: 'You can only delete your own posts' });
+    }
+    await post.deleteOne();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('deleteFeedPost error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+module.exports = { listFeedPosts, createFeedPost, toggleLike, deleteFeedPost };

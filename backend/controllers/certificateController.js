@@ -29,12 +29,14 @@ function certificateStatus(reg, event) {
   const complete = (d) => Boolean(d.entryAt && d.exitAt);
   const lastDays = days.slice(-REQUIRED_DAYS);
   const earned = lastDays.length > 0 && lastDays.every(complete);
+  const revoked = Boolean(reg.certificateRevoked);
   return {
     days,
     allScanned: days.length > 0 && days.every(complete),
     earned,
     adminUnlocked: Boolean(reg.certificateUnlocked),
-    unlocked: earned || Boolean(reg.certificateUnlocked),
+    revoked,
+    unlocked: !revoked && (earned || Boolean(reg.certificateUnlocked)),
   };
 }
 
@@ -147,7 +149,7 @@ const listCertificates = async (req, res) => {
       eventId: { $in: events.map((e) => e._id) },
       status: { $ne: 'cancelled' },
     })
-      .select('name idNumber mobileNumber eventId attendance certificateUnlocked')
+      .select('name idNumber mobileNumber eventId attendance certificateUnlocked certificateRevoked')
       .sort({ name: 1 })
       .lean();
     const participants = regs.map((r) => {
@@ -161,6 +163,7 @@ const listCertificates = async (req, res) => {
         totalDays: status.days.length,
         earned: status.earned,
         adminUnlocked: status.adminUnlocked,
+        revoked: status.revoked,
         unlocked: status.unlocked,
       };
     });
@@ -181,7 +184,7 @@ const unlockCertificates = async (req, res) => {
     const events = await propertyEventIds(req);
     const result = await EventRegistration.updateMany(
       { _id: { $in: ids }, eventId: { $in: events.map((e) => e._id) } },
-      { $set: { certificateUnlocked: true, certificateUnlockedAt: new Date() } }
+      { $set: { certificateUnlocked: true, certificateUnlockedAt: new Date(), certificateRevoked: false } }
     );
     res.json({ success: true, unlocked: result.modifiedCount || 0 });
   } catch (error) {
@@ -190,4 +193,24 @@ const unlockCertificates = async (req, res) => {
   }
 };
 
-module.exports = { scanAttendance, myCertificate, listCertificates, unlockCertificates };
+// POST /api/certificates/revert { registrationIds: [] } — admin locks the selected
+// certificates again, whether they were unlocked by the admin or earned by scans.
+const revertCertificates = async (req, res) => {
+  try {
+    const ids = (Array.isArray(req.body.registrationIds) ? req.body.registrationIds : []).filter((id) =>
+      mongoose.Types.ObjectId.isValid(id)
+    );
+    if (!ids.length) return res.status(400).json({ success: false, error: 'Select participants' });
+    const events = await propertyEventIds(req);
+    const result = await EventRegistration.updateMany(
+      { _id: { $in: ids }, eventId: { $in: events.map((e) => e._id) } },
+      { $set: { certificateUnlocked: false, certificateUnlockedAt: null, certificateRevoked: true } }
+    );
+    res.json({ success: true, reverted: result.modifiedCount || 0 });
+  } catch (error) {
+    console.error('revertCertificates error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+module.exports = { scanAttendance, myCertificate, listCertificates, unlockCertificates, revertCertificates };

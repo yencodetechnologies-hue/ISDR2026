@@ -29,7 +29,15 @@ async function loadSession(req, res) {
     req.userType === 'speaker' &&
     !!schedule.speakerId &&
     String(schedule.speakerId) === String(req.userId);
-  return { schedule, isSpeaker };
+  // Admin logins (the owner and Admin IDs) can also edit and delete polls and questions.
+  const canEdit = isSpeaker || req.userType === 'apartment';
+  return { schedule, isSpeaker, canEdit };
+}
+
+function denyEdit(res) {
+  return res
+    .status(403)
+    .json({ success: false, error: 'Only the speaker of this session or the admin can do this' });
 }
 
 function denySpeakerOnly(res) {
@@ -166,7 +174,7 @@ const deletePoll = async (req, res) => {
   try {
     const ctx = await loadSession(req, res);
     if (!ctx) return;
-    if (!ctx.isSpeaker) return denySpeakerOnly(res);
+    if (!ctx.canEdit) return denyEdit(res);
     const removed = await SessionPoll.findOneAndDelete({
       _id: req.params.pollId,
       scheduleId: ctx.schedule._id,
@@ -184,7 +192,7 @@ const updatePoll = async (req, res) => {
   try {
     const ctx = await loadSession(req, res);
     if (!ctx) return;
-    if (!ctx.isSpeaker) return denySpeakerOnly(res);
+    if (!ctx.canEdit) return denyEdit(res);
     const poll = await SessionPoll.findOne({ _id: req.params.pollId, scheduleId: ctx.schedule._id });
     if (!poll) return res.status(404).json({ success: false, error: 'Poll not found' });
 
@@ -276,7 +284,7 @@ const deleteQuestion = async (req, res) => {
   try {
     const ctx = await loadSession(req, res);
     if (!ctx) return;
-    if (!ctx.isSpeaker) return denySpeakerOnly(res);
+    if (!ctx.canEdit) return denyEdit(res);
     const removed = await SessionQuestion.findOneAndDelete({
       _id: req.params.questionId,
       scheduleId: ctx.schedule._id,
@@ -294,7 +302,7 @@ const updateQuestion = async (req, res) => {
   try {
     const ctx = await loadSession(req, res);
     if (!ctx) return;
-    if (!ctx.isSpeaker) return denySpeakerOnly(res);
+    if (!ctx.canEdit) return denyEdit(res);
     const question = String(req.body.question || '').trim();
     if (!question) return res.status(400).json({ success: false, error: 'Enter the question' });
     const updated = await SessionQuestion.findOneAndUpdate(

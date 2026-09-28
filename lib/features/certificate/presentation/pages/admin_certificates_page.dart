@@ -97,6 +97,48 @@ class _AdminCertificatesPageState extends State<AdminCertificatesPage> {
     }
   }
 
+  /// Locks one participant's certificate again.
+  Future<void> _revert(Map<String, dynamic> p) async {
+    final earned = p['earned'] == true;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Revert certificate'),
+        content: Text(
+          earned
+              ? 'Lock the certificate of ${p['name']}? It stays locked even though their scans earned it, until you unlock it again.'
+              : 'Lock the certificate of ${p['name']} again?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Revert'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final res = await _api.revertCertificates([p['id'].toString()]);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          res['success'] == true
+              ? 'Certificate reverted'
+              : res['error']?.toString() ?? 'Could not revert',
+        ),
+      ),
+    );
+    if (res['success'] == true) _load();
+  }
+
   Widget _tab(String label, bool value, int count) {
     final active = _showUnlocked == value;
     return Expanded(
@@ -128,53 +170,216 @@ class _AdminCertificatesPageState extends State<AdminCertificatesPage> {
   Widget _row(Map<String, dynamic> p) {
     final id = p['id'].toString();
     final unlocked = p['unlocked'] == true;
-    final status = !unlocked
-        ? 'Locked'
-        : (p['earned'] == true ? 'Earned by scans' : 'Unlocked by admin');
-    final statusColor = !unlocked
-        ? const Color(0xFFEF4444)
-        : (p['earned'] == true
-              ? const Color(0xFF22C55E)
-              : const Color(0xFFF59E0B));
+    final earned = p['earned'] == true;
+    final selected = _selected.contains(id);
+    final name = p['name']?.toString() ?? '';
+    final scanned = (p['daysScanned'] as num?)?.toInt() ?? 0;
+    final total = (p['totalDays'] as num?)?.toInt() ?? 0;
+
+    final (String status, Color color, IconData icon) = !unlocked
+        ? (p['revoked'] == true
+              ? ('Reverted', const Color(0xFFF87171), Icons.undo_rounded)
+              : ('Locked', const Color(0xFF94A3B8), Icons.lock_rounded))
+        : earned
+        ? ('Earned by scans', const Color(0xFF22C55E), Icons.qr_code_scanner_rounded)
+        : ('Unlocked by admin', const Color(0xFFF59E0B), Icons.admin_panel_settings_rounded);
+
+    final initials = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .take(2)
+        .map((w) => w[0].toUpperCase())
+        .join();
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: darkCardDecoration(),
-      child: ListTile(
-        onTap: unlocked
-            ? null
-            : () => setState(
-                () => _selected.contains(id)
-                    ? _selected.remove(id)
-                    : _selected.add(id),
-              ),
-        leading: unlocked
-            ? Icon(Icons.workspace_premium_rounded, color: statusColor)
-            : Checkbox(
-                value: _selected.contains(id),
-                activeColor: DarkColors.accent,
-                side: const BorderSide(color: DarkColors.muted),
-                onChanged: (v) => setState(
-                  () => v == true ? _selected.add(id) : _selected.remove(id),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF14141F),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: selected
+              ? DarkColors.accent
+              : Colors.white.withValues(alpha: 0.07),
+          width: selected ? 1.5 : 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: unlocked
+              ? null
+              : () => setState(
+                  () => selected ? _selected.remove(id) : _selected.add(id),
                 ),
-              ),
-        title: Text(
-          p['name']?.toString() ?? '',
-          style: GoogleFonts.inter(
-            fontSize: 14.5,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        subtitle: Text(
-          '${p['idNumber'] ?? ''}  •  Days scanned ${p['daysScanned']}/${p['totalDays']}',
-          style: GoogleFonts.inter(fontSize: 12, color: DarkColors.muted),
-        ),
-        trailing: Text(
-          status,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: statusColor,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    // Avatar with initials (a tick when selected).
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: selected
+                            ? DarkColors.accent
+                            : color.withValues(alpha: 0.15),
+                        border: Border.all(
+                          color: selected
+                              ? DarkColors.accent
+                              : color.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: selected
+                          ? const Icon(
+                              Icons.check_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            )
+                          : Text(
+                              initials.isEmpty ? '?' : initials,
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: color,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              p['idNumber']?.toString() ?? '',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: DarkColors.muted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Status pill.
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: color.withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(icon, size: 12, color: color),
+                          const SizedBox(width: 4),
+                          Text(
+                            status,
+                            style: GoogleFonts.inter(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Days scanned progress.
+                Row(
+                  children: [
+                    Text(
+                      'Days scanned',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: DarkColors.muted,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '$scanned / $total',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: total == 0 ? 0 : scanned / total,
+                    minHeight: 6,
+                    backgroundColor: Colors.white.withValues(alpha: 0.07),
+                    valueColor: AlwaysStoppedAnimation(
+                      scanned >= total && total > 0
+                          ? const Color(0xFF22C55E)
+                          : DarkColors.accent,
+                    ),
+                  ),
+                ),
+                if (unlocked) ...[
+                  const SizedBox(height: 10),
+                  Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => _revert(p),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFF87171),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      icon: const Icon(Icons.undo_rounded, size: 16),
+                      label: Text(
+                        'Revert certificate',
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),

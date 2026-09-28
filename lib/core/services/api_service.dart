@@ -1876,6 +1876,24 @@ class ApiService {
             data: {'registrationIds': registrationIds},
           ));
 
+  /// Admin locks the selected certificates again (admin-unlocked or earned by scans).
+  Future<Map<String, dynamic>> revertCertificates(List<String> registrationIds) =>
+      _sessionContentCall(() => _dio.post(
+            '${ApiConfig.certificates}/revert',
+            data: {'registrationIds': registrationIds},
+          ));
+
+  /// Award winners: {winners: {"<awardNumber>": {registrationId, name}}}.
+  Future<Map<String, dynamic>> getAwardWinners() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.awards));
+
+  /// Admin sets an award's winner; an empty id removes it.
+  Future<Map<String, dynamic>> setAwardWinner(int awardNumber, String registrationId) =>
+      _sessionContentCall(() => _dio.put(
+            '${ApiConfig.awards}/$awardNumber',
+            data: {'registrationId': registrationId},
+          ));
+
   /// The admin's YouTube live link: {url} ('' when none is set).
   Future<Map<String, dynamic>> getYoutubeLive() =>
       _sessionContentCall(() => _dio.get(ApiConfig.youtubeLive));
@@ -1990,6 +2008,43 @@ class ApiService {
     }
   }
 
+  /// Admin edits one schedule row. [slot] is {date: yyyy-MM-dd, fromTime, toTime}.
+  Future<Map<String, dynamic>> updateEventSchedule({
+    required String eventId,
+    required String scheduleId,
+    required String speakerId,
+    required List<String> packageIds,
+    required String scheduleName,
+    String hall = '',
+    required Map<String, String> slot,
+    String description = '',
+  }) async {
+    try {
+      final response = await _dio.put(
+        '${ApiConfig.managedEventSchedules(eventId)}/$scheduleId',
+        data: {
+          'speakerId': speakerId,
+          'packageIds': packageIds,
+          'scheduleName': scheduleName,
+          'hall': hall,
+          ...slot,
+          'description': description,
+        },
+      );
+      return {
+        'success': response.data['success'] == true,
+        'schedule': response.data['schedule'],
+        'error': response.data['error'],
+      };
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      return {
+        'success': false,
+        'error': (data is Map ? data['error'] : null) ?? e.message ?? 'Network error',
+      };
+    }
+  }
+
   Future<Map<String, dynamic>> deleteEventSchedule(String eventId, String scheduleId) async {
     try {
       final response =
@@ -2078,6 +2133,12 @@ class ApiService {
   Future<Map<String, dynamic>> toggleFeedPostLike(String postId) =>
       _sessionContentCall(
         () => _dio.post('${ApiConfig.feedPostsBase}/$postId/like'),
+      );
+
+  /// Deletes one of the logged-in participant's own feed posts.
+  Future<Map<String, dynamic>> deleteFeedPost(String postId) =>
+      _sessionContentCall(
+        () => _dio.delete('${ApiConfig.feedPostsBase}/$postId'),
       );
 
   Future<Map<String, dynamic>> createFeedPost(String imagePath) async {

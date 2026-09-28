@@ -46,6 +46,7 @@ const sessionQuestions = async (req, res) => {
         .filter((q) => info.has(String(q.scheduleId)))
         .map((q) => ({
           id: q._id.toString(),
+          scheduleId: String(q.scheduleId),
           question: q.question,
           createdAt: q.createdAt,
           ...info.get(String(q.scheduleId)),
@@ -72,6 +73,7 @@ const sessionPolls = async (req, res) => {
         .filter((p) => info.has(String(p.scheduleId)))
         .map((p) => ({
           id: p._id.toString(),
+          scheduleId: String(p.scheduleId),
           question: p.question,
           options: p.options,
           counts: p.options.map((_, i) => p.votes.filter((v) => v.option === i).length),
