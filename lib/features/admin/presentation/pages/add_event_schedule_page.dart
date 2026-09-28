@@ -67,6 +67,16 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
 
   bool get _isEdit => widget.schedule != null;
 
+  /// Old schedules saved before speakers were linked: just a name, no id.
+  String get _legacySpeakerName =>
+      _isEdit && (widget.schedule!['speakerId']?.toString() ?? '').isEmpty
+      ? widget.schedule!['speakerName']?.toString() ?? ''
+      : '';
+
+  /// Old schedules saved before packages existed (shown to everyone).
+  bool get _hadNoPackages =>
+      _isEdit && ((widget.schedule!['packageIds'] as List?) ?? const []).isEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -157,8 +167,12 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_packageIds.isEmpty) return _toast('Select at least one package');
-    if (_speakerId == null) return _toast('Select a speaker');
+    if (_packageIds.isEmpty && !_hadNoPackages) {
+      return _toast('Select at least one package');
+    }
+    if (_speakerId == null && _legacySpeakerName.isEmpty) {
+      return _toast('Select a speaker');
+    }
     if (_dates.isEmpty) return _toast('Select at least one event day');
     final slots = <Map<String, String>>[];
     for (final day in _pickedDays) {
@@ -182,7 +196,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
         ? await ApiService().updateEventSchedule(
             eventId: _eventId,
             scheduleId: widget.schedule!['id'].toString(),
-            speakerId: _speakerId!,
+            speakerId: _speakerId ?? '',
             packageIds: _packageIds.toList(),
             scheduleName: _name.text.trim(),
             hall: _hall.text.trim(),
@@ -290,9 +304,13 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
       style: const TextStyle(color: Colors.white, fontSize: 15),
       iconEnabledColor: DarkColors.muted,
       decoration: darkInputDecoration('Speaker', Icons.person_outline),
-      hint: const Text(
-        'Select speaker',
-        style: TextStyle(color: DarkColors.muted),
+      hint: Text(
+        _legacySpeakerName.isNotEmpty ? _legacySpeakerName : 'Select speaker',
+        style: TextStyle(
+          color: _legacySpeakerName.isNotEmpty
+              ? Colors.white
+              : DarkColors.muted,
+        ),
       ),
       items: [
         for (final s in _speakers)

@@ -97,7 +97,7 @@ function readSlots(body) {
  * Validates a schedule form (create or edit). Returns { error } or the clean
  * { speaker, scheduleName, hall, description, packageIds, slots }.
  */
-async function readScheduleForm(event, body) {
+async function readScheduleForm(event, body, existing = null) {
   const speakerId = String(body.speakerId || '').trim();
   const scheduleName = String(body.scheduleName || '').trim();
   const hall = String(body.hall || '').trim();
@@ -105,10 +105,17 @@ async function readScheduleForm(event, body) {
   const rawSlots = readSlots(body);
   const packageIds = readPackageIds(body);
 
-  if (!speakerId) return { error: 'Select a speaker' };
-  const speaker = await Speaker.findOne({ _id: speakerId, apartmentId: event.apartmentId }).catch(() => null);
-  if (!speaker) return { error: 'Speaker not found' };
-  if (packageIds.length === 0) return { error: 'Select at least one package' };
+  // Editing an old schedule that only has a speaker name (no linked speaker) or
+  // no packages may keep them as they are.
+  const keepSpeaker = !speakerId && existing && !existing.speakerId && existing.speakerName;
+  let speaker = null;
+  if (!keepSpeaker) {
+    if (!speakerId) return { error: 'Select a speaker' };
+    speaker = await Speaker.findOne({ _id: speakerId, apartmentId: event.apartmentId }).catch(() => null);
+    if (!speaker) return { error: 'Speaker not found' };
+  }
+  const keepNoPackages = existing && (existing.packageIds || []).length === 0;
+  if (packageIds.length === 0 && !keepNoPackages) return { error: 'Select at least one package' };
   const eventPackageIds = new Set((event.packages || []).map((p) => String(p.id)));
   if (packageIds.some((id) => !eventPackageIds.has(id))) return { error: 'Package not found on this event' };
   if (!scheduleName) return { error: 'Schedule name is required' };
@@ -184,16 +191,20 @@ const updateSchedule = async (req, res) => {
       () => null
     );
     if (!schedule) return res.status(404).json({ success: false, error: 'Schedule not found' });
-    const form = await readScheduleForm(event, req.body);
+    const form = await readScheduleForm(event, req.body, schedule);
     if (form.error) return res.status(400).json({ success: false, error: form.error });
     if (form.slots.length !== 1) {
       return res.status(400).json({ success: false, error: 'A schedule has exactly one date' });
     }
     const [slot] = form.slots;
+    if (form.speaker) {
+      Object.assign(schedule, {
+        speakerId: form.speaker._id,
+        speakerName: form.speaker.name,
+        speakerPhoto: form.speaker.photo || '',
+      });
+    }
     Object.assign(schedule, {
-      speakerId: form.speaker._id,
-      speakerName: form.speaker.name,
-      speakerPhoto: form.speaker.photo || '',
       scheduleName: form.scheduleName,
       packageIds: form.packageIds,
       hall: form.hall,
