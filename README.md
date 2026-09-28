@@ -1,6 +1,6 @@
 # isdr
 
-A new Flutter project.
+ISDR 2026 conference app (Flutter) with its Node.js backend in `backend/`.
 
 ## Getting Started
 
