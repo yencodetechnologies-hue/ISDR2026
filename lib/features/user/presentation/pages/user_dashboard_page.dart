@@ -5,6 +5,7 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../../core/app_theme.dart';
 import '../../../../core/models/apartment_model.dart';
 import '../../../../core/utils/current_property_context.dart';
+import '../../../../core/navigation/app_navigation.dart';
 import '../../../../core/routes/app_routes.dart';
 import '../../../../features/notifications/presentation/bloc/notification_bloc.dart';
 import '../bloc/user_bloc.dart';
@@ -155,6 +156,10 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                           context,
                           onLogout: () {
                             context.read<AuthBloc>().add(LogoutEvent());
+                            AppNavigation.resetTo(
+                              context,
+                              AppRoutes.userTypeSelection,
+                            );
                           },
                         );
                       },

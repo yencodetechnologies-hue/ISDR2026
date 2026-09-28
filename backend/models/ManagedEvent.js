@@ -32,6 +32,7 @@ const packageSchema = new mongoose.Schema(
     id: { type: String, required: true, trim: true },
     name: { type: String, required: true, trim: true },
     rate: { type: Number, required: true, min: 0 },
+    entryExitDates: { type: [String], default: [] },
     inclusions: { type: [packageInclusionSchema], default: [] },
     paymentMode: { type: String, enum: ['', 'cash', 'card', 'upi'], default: '' },
   },

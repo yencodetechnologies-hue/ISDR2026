@@ -80,6 +80,7 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
   final _rateController = TextEditingController();
   final _inclusionController = TextEditingController();
   bool _isFree = false;
+  List<String> _entryExitDates = [];
   List<Map<String, dynamic>> _inclusions = [];
   String? _error;
 
@@ -87,12 +88,19 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
   void initState() {
     super.initState();
     final p = widget.existing;
+    final allDays = eventDays(widget.event).map((d) => d.iso).toList();
     if (p != null) {
       _nameController.text = p['name']?.toString() ?? '';
       final rate = num.tryParse(p['rate']?.toString() ?? '') ?? 0;
       _isFree = rate == 0;
       _rateController.text = rate == 0 ? '' : rate.toString();
       _inclusions = normalizeInclusions(p['inclusions']);
+      final savedDates = (p['entryExitDates'] as List? ?? [])
+          .map((d) => d.toString())
+          .toList();
+      _entryExitDates = savedDates.isNotEmpty ? savedDates : List<String>.from(allDays);
+    } else {
+      _entryExitDates = List<String>.from(allDays);
     }
   }
 
@@ -125,6 +133,26 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
     setState(() => inc['dates'] = dates);
   }
 
+  void _toggleEntryExitDay(String iso, bool on) {
+    setState(() {
+      if (on) {
+        if (!_entryExitDates.contains(iso)) _entryExitDates.add(iso);
+      } else {
+        _entryExitDates.remove(iso);
+      }
+    });
+  }
+
+  void _toggleAllEntryExitDays(List<({String iso, String label})> days) {
+    setState(() {
+      if (_entryExitDates.length == days.length) {
+        _entryExitDates.clear();
+      } else {
+        _entryExitDates = days.map((d) => d.iso).toList();
+      }
+    });
+  }
+
   void _submit() {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
@@ -144,11 +172,17 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
       }
       rate = parsed;
     }
+    final days = eventDays(widget.event);
+    if (days.isNotEmpty && _entryExitDates.isEmpty) {
+      setState(() => _error = 'Please select at least one day for Entry & Exit');
+      return;
+    }
     Navigator.pop(context, {
       if (widget.existing?['id'] != null) 'id': widget.existing!['id'],
       'name': name,
       'rate': rate,
       'paymentMode': '',
+      'entryExitDates': _entryExitDates,
       'inclusions': _inclusions,
     });
   }
@@ -173,7 +207,7 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: const Color(0xFF3B82F6), width: 1.5),
+      borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 1.5),
     ),
   );
 
@@ -265,13 +299,14 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
       borderRadius: BorderRadius.circular(8),
       onTap: () => _toggleDay(inc, d.iso, !on),
       child: Container(
-        height: 36,
+        height: 38,
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: on ? const Color(0x2622C55E) : Colors.white,
+          color: on ? const Color(0x2622C55E) : const Color(0xFF0A0A12),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: on ? const Color(0xFFBBF7D0) : const Color(0x1AFFFFFF),
+            color: on ? const Color(0xFF22C55E) : const Color(0x26FFFFFF),
+            width: on ? 1.2 : 1.0,
           ),
         ),
         child: Row(
@@ -284,8 +319,8 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: on ? const Color(0xFF86EFAC) : const Color(0xFFCBD5E1),
+                  fontWeight: FontWeight.w700,
+                  color: on ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
                 ),
               ),
             ),
@@ -375,7 +410,7 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
           if (days.isEmpty)
             const Text(
               'Set the event dates to pick days.',
-              style: TextStyle(fontSize: 12, color: const Color(0xFF9CA3AF)),
+              style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
             )
           else
             LayoutBuilder(
@@ -417,7 +452,7 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
         expand: false,
         builder: (context, scrollController) => Container(
           decoration: const BoxDecoration(
-            color: const Color(0xFF14141F),
+            color: Color(0xFF14141F),
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -545,6 +580,139 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                       decoration: _dec('Package name *'),
                     ),
                     const SizedBox(height: 18),
+                    _section('Entry & Exit Access *', icon: Icons.login_rounded),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF14141F),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: (days.isNotEmpty && _entryExitDates.isEmpty)
+                              ? const Color(0x66EF4444)
+                              : const Color(0x1AFFFFFF),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Authorized Entry & Exit Days',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      days.isEmpty
+                                          ? 'No event dates configured'
+                                          : '${_entryExitDates.length} of ${days.length} days selected (mandatory)',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: (days.isNotEmpty && _entryExitDates.isEmpty)
+                                            ? const Color(0xFFFCA5A5)
+                                            : const Color(0xFF9CA3AF),
+                                        fontWeight: (days.isNotEmpty && _entryExitDates.isEmpty)
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (days.isNotEmpty)
+                                TextButton(
+                                  onPressed: () => _toggleAllEntryExitDays(days),
+                                  style: TextButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  ),
+                                  child: Text(
+                                    _entryExitDates.length == days.length
+                                        ? 'Deselect All'
+                                        : 'Select All',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF60A5FA),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          if (days.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            LayoutBuilder(
+                              builder: (context, c) {
+                                const gap = 8.0;
+                                const cols = 3;
+                                final w = (c.maxWidth - gap * (cols - 1)) / cols;
+                                return Wrap(
+                                  spacing: gap,
+                                  runSpacing: gap,
+                                  children: days.map((d) {
+                                    final on = _entryExitDates.contains(d.iso);
+                                    return SizedBox(
+                                      width: w,
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(8),
+                                        onTap: () => _toggleEntryExitDay(d.iso, !on),
+                                        child: Container(
+                                          height: 38,
+                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                          decoration: BoxDecoration(
+                                            color: on
+                                                ? const Color(0x2622C55E)
+                                                : const Color(0xFF0A0A12),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: on
+                                                  ? const Color(0xFFBBF7D0)
+                                                  : const Color(0x1AFFFFFF),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              TickBox(
+                                                value: on,
+                                                onChanged: (v) => _toggleEntryExitDay(d.iso, v),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  d.label,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    fontSize: 12.5,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: on
+                                                        ? const Color(0xFF86EFAC)
+                                                        : const Color(0xFFE2E8F0),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                );
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
                     _section('Inclusions', icon: Icons.checklist_rounded),
                     Row(
                       children: [
@@ -609,7 +777,7 @@ class _EventPackageSheetState extends State<EventPackageSheet> {
                   12 + MediaQuery.of(context).padding.bottom,
                 ),
                 decoration: const BoxDecoration(
-                  color: const Color(0xFF14141F),
+                  color: Color(0xFF14141F),
                   border: Border(top: BorderSide(color: Color(0xFF1E1E2A))),
                 ),
                 child: Row(

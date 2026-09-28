@@ -1,0 +1,616 @@
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+/* ------------------------------------------------------------------ */
+/* Basics                                                              */
+/* ------------------------------------------------------------------ */
+
+export function Icon({
+  name,
+  size = 22,
+  color,
+  outline,
+  className = "",
+}: {
+  name: string;
+  size?: number;
+  color?: string;
+  outline?: boolean;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`ms ${outline ? "ms-outline" : ""} ${className}`}
+      style={{ fontSize: size, width: size, height: size, color }}
+      aria-hidden
+    >
+      {name}
+    </span>
+  );
+}
+
+export function Spinner({ size = 26, color = "#3B82F6" }: { size?: number; color?: string }) {
+  return (
+    <span
+      className="inline-block rounded-full border-[3px] border-white/10"
+      style={{ width: size, height: size, borderTopColor: color, animation: "spin 0.8s linear infinite" }}
+    />
+  );
+}
+
+export function Loading({ label }: { label?: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-20 text-sm text-muted">
+      <Spinner />
+      {label}
+    </div>
+  );
+}
+
+export function Empty({ icon = "inbox", title, subtitle, action }: { icon?: string; title: string; subtitle?: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center px-6 py-16 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent/10">
+        <Icon name={icon} outline size={30} color="#3B82F6" />
+      </div>
+      <div className="mt-4 text-base font-bold">{title}</div>
+      {subtitle && <div className="mt-1.5 max-w-sm text-sm text-muted">{subtitle}</div>}
+      {action && <div className="mt-5">{action}</div>}
+    </div>
+  );
+}
+
+export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div className="flex flex-col items-center px-6 py-16 text-center">
+      <Icon name="error" outline size={40} color="#EF4444" />
+      <div className="mt-3 text-sm text-white/80">{message}</div>
+      {onRetry && (
+        <Button variant="outline" className="mt-4" onClick={onRetry}>
+          Retry
+        </Button>
+      )}
+    </div>
+  );
+}
+
+type BtnVariant = "primary" | "outline" | "ghost" | "danger" | "success";
+
+export function Button({
+  children,
+  onClick,
+  variant = "primary",
+  loading,
+  disabled,
+  icon,
+  className = "",
+  type = "button",
+  full,
+  small,
+  title,
+}: {
+  children?: React.ReactNode;
+  onClick?: () => void;
+  variant?: BtnVariant;
+  loading?: boolean;
+  disabled?: boolean;
+  icon?: string;
+  className?: string;
+  type?: "button" | "submit";
+  full?: boolean;
+  small?: boolean;
+  title?: string;
+}) {
+  const styles: Record<BtnVariant, string> = {
+    primary: "bg-accent text-white hover:bg-blue-500",
+    outline: "border border-white/20 text-white hover:bg-white/5",
+    ghost: "text-accent hover:bg-accent/10",
+    danger: "bg-danger text-white hover:bg-red-500",
+    success: "bg-success text-white hover:bg-green-500",
+  };
+  return (
+    <button
+      type={type}
+      title={title}
+      onClick={onClick}
+      disabled={disabled || loading}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+        small ? "px-3 py-1.5 text-xs" : "px-4 py-2.5 text-sm"
+      } ${full ? "w-full" : ""} ${styles[variant]} ${className}`}
+    >
+      {loading ? <Spinner size={16} color="#fff" /> : icon && <Icon name={icon} size={small ? 16 : 18} />}
+      {children}
+    </button>
+  );
+}
+
+export function IconButton({
+  icon,
+  onClick,
+  title,
+  color = "#fff",
+  size = 22,
+  badge,
+  disabled,
+  outline,
+}: {
+  icon: string;
+  onClick?: () => void;
+  title?: string;
+  color?: string;
+  size?: number;
+  badge?: number;
+  disabled?: boolean;
+  outline?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onClick={onClick}
+      disabled={disabled}
+      className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-40"
+    >
+      <Icon name={icon} size={size} color={color} outline={outline} />
+      {!!badge && badge > 0 && (
+        <span className="absolute right-1 top-1 min-w-[16px] rounded-full bg-danger px-1 text-center text-[10px] font-bold leading-4 text-white">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
+export function Avatar({ src, name, size = 44 }: { src?: string | null; name?: string; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  const initials = (name ?? "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase())
+    .join("");
+  return (
+    <div
+      className="flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-field font-bold text-white/80"
+      style={{ width: size, height: size, fontSize: size * 0.36 }}
+    >
+      {src && !failed ? (
+        <img src={src} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} />
+      ) : (
+        initials || <Icon name="person" size={size * 0.55} color="#9CA3AF" />
+      )}
+    </div>
+  );
+}
+
+export function Pill({ children, color = "#3B82F6" }: { children: React.ReactNode; color?: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold"
+      style={{ background: `${color}22`, color }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Form controls                                                       */
+/* ------------------------------------------------------------------ */
+
+export function Field({ label, children, hint, error }: { label?: string; children: React.ReactNode; hint?: string; error?: string | null }) {
+  return (
+    <div>
+      {label && <label className="label">{label}</label>}
+      {children}
+      {hint && !error && <div className="mt-1 text-xs text-muted">{hint}</div>}
+      {error && <div className="mt-1 text-xs font-medium text-danger">{error}</div>}
+    </div>
+  );
+}
+
+export function Input(props: React.InputHTMLAttributes<HTMLInputElement> & { icon?: string }) {
+  const { icon, className = "", ...rest } = props;
+  if (!icon) return <input {...rest} className={`input ${className}`} />;
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+        <Icon name={icon} outline size={20} color="#9CA3AF" />
+      </span>
+      <input {...rest} className={`input pl-10 ${className}`} />
+    </div>
+  );
+}
+
+export function PasswordInput(props: React.InputHTMLAttributes<HTMLInputElement> & { icon?: string }) {
+  const [show, setShow] = useState(false);
+  const { icon = "lock", className = "", ...rest } = props;
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+        <Icon name={icon} outline size={20} color="#9CA3AF" />
+      </span>
+      <input {...rest} type={show ? "text" : "password"} className={`input pl-10 pr-11 ${className}`} />
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={() => setShow((s) => !s)}
+        className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center"
+      >
+        <Icon name={show ? "visibility_off" : "visibility"} outline size={20} color="#9CA3AF" />
+      </button>
+    </div>
+  );
+}
+
+export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const { className = "", ...rest } = props;
+  return <textarea rows={3} {...rest} className={`input resize-y ${className}`} />;
+}
+
+export function Select({
+  value,
+  onChange,
+  options,
+  placeholder,
+  disabled,
+  className = "",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className={`input appearance-none pr-10 disabled:opacity-50 ${value ? "" : "text-muted"} ${className}`}
+      >
+        {placeholder !== undefined && <option value="">{placeholder}</option>}
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+        <Icon name="expand_more" size={20} color="#9CA3AF" />
+      </span>
+    </div>
+  );
+}
+
+export function Switch({
+  checked,
+  onChange,
+  disabled,
+  color = "#3B82F6",
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+  color?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={(e) => {
+        e.stopPropagation();
+        onChange(!checked);
+      }}
+      className="relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50"
+      style={{ background: checked ? color : "#374151" }}
+    >
+      <span
+        className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all"
+        style={{ left: checked ? 22 : 2 }}
+      />
+    </button>
+  );
+}
+
+export function Checkbox({
+  checked,
+  onChange,
+  label,
+  color = "#3B82F6",
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label?: React.ReactNode;
+  color?: string;
+}) {
+  return (
+    <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+      <span
+        onClick={(e) => {
+          e.preventDefault();
+          onChange(!checked);
+        }}
+        className="flex h-5 w-5 items-center justify-center rounded-md border-2"
+        style={{ borderColor: checked ? color : "#6B7280", background: checked ? color : "transparent" }}
+      >
+        {checked && <Icon name="check" size={16} color="#fff" />}
+      </span>
+      {label && <span onClick={() => onChange(!checked)}>{label}</span>}
+    </label>
+  );
+}
+
+/** A photo chooser: preview + choose/remove. */
+export function PhotoInput({
+  file,
+  url,
+  onFile,
+  onRemove,
+  label = "Photo",
+  round,
+}: {
+  file: File | null;
+  url?: string | null;
+  onFile: (f: File) => void;
+  onRemove?: () => void;
+  label?: string;
+  round?: boolean;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  useEffect(() => {
+    if (!file) {
+      setPreview(null);
+      return;
+    }
+    const u = URL.createObjectURL(file);
+    setPreview(u);
+    return () => URL.revokeObjectURL(u);
+  }, [file]);
+  const shown = preview ?? url ?? null;
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className={`flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden border border-line bg-field ${
+          round ? "rounded-full" : "rounded-xl"
+        }`}
+      >
+        {shown ? <img src={shown} alt="" className="h-full w-full object-cover" /> : <Icon name="image" outline size={30} color="#6B7280" />}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" small icon="photo_camera" onClick={() => ref.current?.click()}>
+          {shown ? `Change ${label.toLowerCase()}` : `Choose ${label.toLowerCase()}`}
+        </Button>
+        {shown && onRemove && (
+          <Button variant="ghost" small icon="delete" onClick={onRemove} className="!text-danger">
+            Remove
+          </Button>
+        )}
+      </div>
+      <input
+        ref={ref}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFile(f);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
+
+export function SearchBox({ value, onChange, placeholder = "Search..." }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+        <Icon name="search" size={20} color="#9CA3AF" />
+      </span>
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="input pl-10 pr-10" />
+      {value && (
+        <button className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center" onClick={() => onChange("")}>
+          <Icon name="close" size={18} color="#9CA3AF" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function Tabs<T extends string>({
+  tabs,
+  value,
+  onChange,
+}: {
+  tabs: { value: T; label: string; count?: number }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="flex gap-1 overflow-x-auto rounded-xl bg-field p-1">
+      {tabs.map((t) => (
+        <button
+          key={t.value}
+          onClick={() => onChange(t.value)}
+          className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition ${
+            value === t.value ? "bg-accent text-white" : "text-muted hover:text-white"
+          }`}
+        >
+          {t.label}
+          {t.count !== undefined && <span className="ml-1 opacity-70">({t.count})</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Page chrome                                                         */
+/* ------------------------------------------------------------------ */
+
+/** A page with a top bar (back button, title, actions) and centred content. */
+export function Page({
+  title,
+  subtitle,
+  actions,
+  back = true,
+  onBack,
+  children,
+  width = 760,
+  bottom,
+  noPad,
+}: {
+  title?: React.ReactNode;
+  subtitle?: React.ReactNode;
+  actions?: React.ReactNode;
+  back?: boolean;
+  onBack?: () => void;
+  children: React.ReactNode;
+  width?: number;
+  bottom?: React.ReactNode;
+  noPad?: boolean;
+}) {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-bg">
+      <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur">
+        <div className="mx-auto flex h-14 items-center gap-1 px-2" style={{ maxWidth: width }}>
+          {back ? (
+            <IconButton icon="arrow_back" title="Back" onClick={onBack ?? (() => (window.history.length > 1 ? navigate(-1) : navigate("/")))} />
+          ) : (
+            <span className="w-2" />
+          )}
+          <div className="min-w-0 flex-1 px-1">
+            <div className="truncate text-[17px] font-bold">{title}</div>
+            {subtitle && <div className="truncate text-xs text-muted">{subtitle}</div>}
+          </div>
+          {actions && <div className="flex shrink-0 items-center">{actions}</div>}
+        </div>
+      </header>
+      <main className={`mx-auto ${noPad ? "" : "px-4 py-4"} ${bottom ? "pb-24" : ""}`} style={{ maxWidth: width }}>
+        {children}
+      </main>
+      {bottom}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Overlays                                                            */
+/* ------------------------------------------------------------------ */
+
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  width = 520,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title?: React.ReactNode;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  width?: number;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="animate-fade fixed inset-0 z-[90] flex items-end justify-center sm:items-center sm:p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70" />
+      <div
+        className="animate-sheet relative flex max-h-[92vh] w-full flex-col rounded-t-2xl border border-line bg-card sm:rounded-2xl"
+        style={{ maxWidth: width }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {title !== undefined && (
+          <div className="flex items-center gap-2 border-b border-line py-2 pl-5 pr-2">
+            <div className="min-w-0 flex-1 truncate text-base font-bold">{title}</div>
+            <IconButton icon="close" title="Close" onClick={onClose} />
+          </div>
+        )}
+        <div className="flex-1 overflow-y-auto p-5">{children}</div>
+        {footer && <div className="flex gap-2 border-t border-line p-4">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+type ToastKind = "info" | "success" | "error";
+const ToastCtx = createContext<(msg: string, kind?: ToastKind) => void>(() => {});
+
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [toasts, setToasts] = useState<{ id: number; msg: string; kind: ToastKind }[]>([]);
+  const show = useCallback((msg: string, kind: ToastKind = "info") => {
+    const id = Date.now() + Math.random();
+    setToasts((t) => [...t, { id, msg, kind }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
+  }, []);
+  return (
+    <ToastCtx.Provider value={show}>
+      {children}
+      <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[100] flex flex-col items-center gap-2 px-4">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className="animate-sheet pointer-events-auto max-w-md rounded-xl px-4 py-3 text-sm font-medium text-white shadow-xl"
+            style={{ background: t.kind === "error" ? "#DC2626" : t.kind === "success" ? "#16A34A" : "#1F2937" }}
+          >
+            {t.msg}
+          </div>
+        ))}
+      </div>
+    </ToastCtx.Provider>
+  );
+}
+
+export const useToast = () => useContext(ToastCtx);
+
+type ConfirmOpts = { title: string; message?: string; confirm?: string; cancel?: string; danger?: boolean };
+const ConfirmCtx = createContext<(o: ConfirmOpts) => Promise<boolean>>(async () => false);
+
+export function ConfirmProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<(ConfirmOpts & { resolve: (v: boolean) => void }) | null>(null);
+  const ask = useCallback((o: ConfirmOpts) => new Promise<boolean>((resolve) => setState({ ...o, resolve })), []);
+  const close = (v: boolean) => {
+    state?.resolve(v);
+    setState(null);
+  };
+  return (
+    <ConfirmCtx.Provider value={ask}>
+      {children}
+      <Modal open={!!state} onClose={() => close(false)} width={420}>
+        {state && (
+          <div>
+            <div className="text-lg font-bold">{state.title}</div>
+            {state.message && <div className="mt-2 whitespace-pre-wrap text-sm text-white/70">{state.message}</div>}
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => close(false)}>
+                {state.cancel ?? "Cancel"}
+              </Button>
+              <Button variant={state.danger ? "danger" : "primary"} onClick={() => close(true)}>
+                {state.confirm ?? "OK"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </ConfirmCtx.Provider>
+  );
+}
+
+export const useConfirm = () => useContext(ConfirmCtx);

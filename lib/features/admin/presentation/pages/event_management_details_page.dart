@@ -397,6 +397,38 @@ class _EventManagementDetailsPageState
               ],
             ),
             const SizedBox(height: 8),
+            Builder(
+              builder: (_) {
+                final eeDates = (p['entryExitDates'] as List? ?? [])
+                    .map((d) => d.toString())
+                    .toList();
+                final count = eeDates.isNotEmpty ? eeDates.length : days.length;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0x1F22C55E),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0x4D22C55E)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.login_rounded, size: 14, color: Color(0xFF22C55E)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Entry & Exit: $count of ${days.length} ${days.length == 1 ? 'day' : 'days'} authorized',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF86EFAC),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
             if (inclusions.isEmpty)
               const Text(
                 'No inclusions added.',

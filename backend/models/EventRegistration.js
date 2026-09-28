@@ -33,7 +33,7 @@ const eventRegistrationSchema = new mongoose.Schema(
     mobileNumber: { type: String, required: true, trim: true, index: true },
     email: { type: String, default: '', trim: true, lowercase: true },
     institution: { type: String, default: '', trim: true },
-    title: { type: String, enum: ['', 'Dr', 'Mr', 'Ms', 'Prof', 'Baby'], default: '' },
+    title: { type: String, enum: ['', 'Dr', 'Mr', 'Ms', 'Prof'], default: '' },
     firstName: { type: String, default: '', trim: true },
     middleName: { type: String, default: '', trim: true },
     lastName: { type: String, default: '', trim: true },

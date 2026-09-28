@@ -24,6 +24,7 @@ class TickBox extends StatelessWidget {
           (states) => value ? green : const Color(0x26EF4444),
         ),
         side: BorderSide(color: color, width: 1.6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
       ),

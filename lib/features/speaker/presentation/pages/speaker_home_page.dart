@@ -740,13 +740,6 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
         [Color(0xFF818CF8), Color(0xFF6366F1)],
         picksSession: true,
       ),
-      _QuickAction(
-        'Green Room',
-        'Check-in & updates',
-        Icons.door_front_door_rounded,
-        [Color(0xFF4ADE80), Color(0xFF16A34A)],
-        tint: Color(0xFF22C55E),
-      ),
     ];
 
     return Container(

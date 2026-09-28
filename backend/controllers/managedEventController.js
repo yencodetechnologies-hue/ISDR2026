@@ -196,7 +196,10 @@ function normalizePackages(raw) {
     const id = String(p?.id || crypto.randomBytes(6).toString('hex')).trim();
     const rawMode = String(p?.paymentMode || '').trim().toLowerCase();
     const paymentMode = rate > 0 && ['cash', 'card', 'upi'].includes(rawMode) ? rawMode : '';
-    return { id, name, rate, paymentMode, inclusions };
+    const entryExitDates = Array.isArray(p?.entryExitDates)
+      ? p.entryExitDates.map(String).filter(Boolean)
+      : [];
+    return { id, name, rate, paymentMode, entryExitDates, inclusions };
   });
 }
 
@@ -241,6 +244,7 @@ function publicEventDto(event) {
           name: p.name,
           rate: p.rate,
           paymentMode: p.paymentMode || '',
+          entryExitDates: Array.isArray(p.entryExitDates) ? p.entryExitDates : [],
           inclusions: normalizeInclusions(p.inclusions),
         }))
       : [],
@@ -539,7 +543,7 @@ const listRegistrations = async (req, res) => {
   }
 };
 
-const PARTICIPANT_TITLES = ['Dr', 'Mr', 'Ms', 'Prof', 'Baby'];
+const PARTICIPANT_TITLES = ['Dr', 'Mr', 'Ms', 'Prof'];
 const PARTICIPANT_GENDERS = ['male', 'female', 'other'];
 const FOOD_PREFERENCES = ['veg', 'non-veg'];
 const PARTICIPANT_PAYMENT_MODES = ['cash', 'card', 'upi'];

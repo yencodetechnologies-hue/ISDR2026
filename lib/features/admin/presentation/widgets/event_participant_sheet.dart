@@ -33,7 +33,7 @@ class EventParticipantSheet extends StatefulWidget {
 }
 
 class _EventParticipantSheetState extends State<EventParticipantSheet> {
-  static const _titles = ['Dr', 'Mr', 'Ms', 'Prof', 'Baby'];
+  static const _titles = ['Dr', 'Mr', 'Ms', 'Prof'];
 
   final _type = TextEditingController();
   final _first = TextEditingController();
@@ -102,8 +102,9 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
         _packageId = pid;
       } else if (v('packageName').isNotEmpty) {
         for (final p in widget.packages) {
-          if (p['name']?.toString() == v('packageName'))
+          if (p['name']?.toString() == v('packageName')) {
             _packageId = p['id']?.toString();
+          }
         }
       }
     } else {
@@ -309,7 +310,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
         expand: false,
         builder: (context, scrollController) => Container(
           decoration: const BoxDecoration(
-            color: const Color(0xFF14141F),
+            color: Color(0xFF14141F),
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -356,34 +357,6 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                       hint: 'e.g. Delegate, Speaker, Organizer',
                     ),
                     _drop(
-                      label: 'Title',
-                      value: _title,
-                      items: _titles
-                          .map(
-                            (t) => DropdownMenuItem(value: t, child: Text(t)),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _title = v ?? ''),
-                    ),
-                    _text(_first, 'First name'),
-                    _text(_middle, 'Middle name', required: false),
-                    _text(_last, 'Last name'),
-                    _drop(
-                      label: 'Gender',
-                      value: _gender,
-                      items: const [
-                        DropdownMenuItem(value: 'male', child: Text('Male')),
-                        DropdownMenuItem(
-                          value: 'female',
-                          child: Text('Female'),
-                        ),
-                        DropdownMenuItem(value: 'other', child: Text('Other')),
-                      ],
-                      onChanged: (v) => setState(() => _gender = v ?? ''),
-                    ),
-                    _text(_designation, 'Designation'),
-                    _text(_institution, 'Organization'),
-                    _drop(
                       label: 'Package',
                       value: _packageId ?? '',
                       items: widget.packages
@@ -404,40 +377,124 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                         }
                       }),
                     ),
-                    _text(
-                      _idNumber,
-                      'ID no.',
-                      hint: widget.registration == null
-                          ? 'Leave blank to create one (e.g. UG4006)'
-                          : 'e.g. UG4006',
-                      caps: TextCapitalization.characters,
-                      onChanged: (v) {
-                        final upper = v.toUpperCase();
-                        if (upper != v) {
-                          _idNumber.value = _idNumber.value.copyWith(
-                            text: upper,
-                            selection: TextSelection.collapsed(
-                              offset: upper.length,
-                            ),
-                          );
-                        }
-                        setState(() {});
-                      },
-                    ),
-                    if (idTaken)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 12),
-                        child: Text(
-                          'This ID number is already used for this event.',
-                          style: TextStyle(
-                            color: AppTheme.errorColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 105,
+                          child: _drop(
+                            label: 'Title',
+                            value: _title,
+                            items: _titles
+                                .map(
+                                  (t) => DropdownMenuItem(value: t, child: Text(t)),
+                                )
+                                .toList(),
+                            onChanged: (v) => setState(() => _title = v ?? ''),
                           ),
                         ),
-                      ),
-                    _text(_mobile, 'Mobile no.', type: TextInputType.phone),
-                    _text(_email, 'Email', type: TextInputType.emailAddress),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _text(_first, 'First name'),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _text(_middle, 'Middle name', required: false),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _text(_last, 'Last name'),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _drop(
+                            label: 'Gender',
+                            value: _gender,
+                            items: const [
+                              DropdownMenuItem(value: 'male', child: Text('Male')),
+                              DropdownMenuItem(
+                                value: 'female',
+                                child: Text('Female'),
+                              ),
+                              DropdownMenuItem(value: 'other', child: Text('Other')),
+                            ],
+                            onChanged: (v) => setState(() => _gender = v ?? ''),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _text(_designation, 'Designation'),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _text(_institution, 'Organization'),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _text(
+                                _idNumber,
+                                'ID no.',
+                                hint: widget.registration == null
+                                    ? 'Leave blank to create'
+                                    : 'e.g. UG4006',
+                                caps: TextCapitalization.characters,
+                                onChanged: (v) {
+                                  final upper = v.toUpperCase();
+                                  if (upper != v) {
+                                    _idNumber.value = _idNumber.value.copyWith(
+                                      text: upper,
+                                      selection: TextSelection.collapsed(
+                                        offset: upper.length,
+                                      ),
+                                    );
+                                  }
+                                  setState(() {});
+                                },
+                              ),
+                              if (idTaken)
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 12),
+                                  child: Text(
+                                    'This ID number is already used for this event.',
+                                    style: TextStyle(
+                                      color: AppTheme.errorColor,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _text(_mobile, 'Mobile no.', type: TextInputType.phone),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _text(_email, 'Email', type: TextInputType.emailAddress),
+                        ),
+                      ],
+                    ),
                     _drop(
                       label: 'Food preference',
                       value: _food,
@@ -450,19 +507,29 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                       ],
                       onChanged: (v) => setState(() => _food = v ?? ''),
                     ),
-                    _drop(
-                      label: 'Payment mode',
-                      value: _free ? '' : _paymentMode,
-                      required: _paid,
-                      enabled: !_free,
-                      items: const [
-                        DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                        DropdownMenuItem(value: 'card', child: Text('Card')),
-                        DropdownMenuItem(value: 'upi', child: Text('UPI')),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _drop(
+                            label: 'Payment mode',
+                            value: _free ? '' : _paymentMode,
+                            required: _paid,
+                            enabled: !_free,
+                            items: const [
+                              DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                              DropdownMenuItem(value: 'card', child: Text('Card')),
+                              DropdownMenuItem(value: 'upi', child: Text('UPI')),
+                            ],
+                            onChanged: (v) => setState(() => _paymentMode = v ?? ''),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _text(_utr, 'UTR no.', required: false),
+                        ),
                       ],
-                      onChanged: (v) => setState(() => _paymentMode = v ?? ''),
                     ),
-                    _text(_utr, 'UTR no.', required: false),
                     _text(_address, 'Address', required: false, maxLines: 2),
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -482,7 +549,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                                     _existingPhotoUrl.isEmpty)
                                 ? const Icon(
                                     Icons.person,
-                                    color: const Color(0xFF9CA3AF),
+                                    color: Color(0xFF9CA3AF),
                                   )
                                 : null,
                           ),

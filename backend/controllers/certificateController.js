@@ -20,15 +20,27 @@ function eventDays(event) {
   return out;
 }
 
+/** Authorized entry & exit dates for the participant's package (fallback to all event days). */
+function packageAllowedDates(reg, event) {
+  if (!event) return [];
+  const pkg = (event.packages || []).find(
+    (p) => (reg.packageId && p.id === reg.packageId) || (reg.packageName && p.name === reg.packageName)
+  );
+  if (pkg && Array.isArray(pkg.entryExitDates) && pkg.entryExitDates.length > 0) {
+    return pkg.entryExitDates;
+  }
+  return eventDays(event);
+}
+
 /** Day-by-day entry/exit progress and whether the certificate is open. */
 function certificateStatus(reg, event) {
-  const days = eventDays(event).map((date) => {
+  const allowed = packageAllowedDates(reg, event);
+  const days = allowed.map((date) => {
     const a = (reg.attendance || []).find((x) => x.day === date) || {};
     return { date, entryAt: a.entryAt || null, exitAt: a.exitAt || null };
   });
   const complete = (d) => Boolean(d.entryAt && d.exitAt);
-  const lastDays = days.slice(-REQUIRED_DAYS);
-  const earned = lastDays.length > 0 && lastDays.every(complete);
+  const earned = days.length > 0 && days.every(complete);
   const revoked = Boolean(reg.certificateRevoked);
   return {
     days,
@@ -59,12 +71,12 @@ function findRegistration(code) {
 const propertyEventIds = async (req) =>
   (
     await ManagedEvent.find({ apartmentId: new mongoose.Types.ObjectId(String(req.apartmentId)) })
-      .select('_id title eventDate eventEndDate')
+      .select('_id title eventDate eventEndDate packages')
       .lean()
   );
 
 // POST /api/certificates/scan { type: 'entry'|'exit', qrData?, idNumber? } — event staff / admin.
-// Entry and exit can each be scanned once per participant per event day.
+// Entry and exit can each be scanned once per participant per event day allowed by their package.
 const scanAttendance = async (req, res) => {
   try {
     if (req.userType === 'participant' || req.userType === 'speaker') {
@@ -82,10 +94,21 @@ const scanAttendance = async (req, res) => {
     const event = await ManagedEvent.findById(reg.eventId);
     if (!event) return res.status(404).json({ success: false, error: 'Event not found' });
 
-    const registration = { name: reg.name, idNumber: reg.idNumber, institution: reg.institution };
+    const registration = {
+      name: reg.name,
+      idNumber: reg.idNumber,
+      institution: reg.institution,
+      packageName: reg.packageName || '',
+    };
     const today = istDay(new Date());
-    if (!eventDays(event).includes(today)) {
-      return res.json({ success: false, error: 'Today is not an event day', registration });
+    const allowedDates = packageAllowedDates(reg, event);
+    if (!allowedDates.includes(today)) {
+      const pkgLabel = reg.packageName ? ` (${reg.packageName})` : '';
+      return res.json({
+        success: false,
+        error: `Your package${pkgLabel} is not valid for entry/exit today (${today})`,
+        registration,
+      });
     }
 
     let day = reg.attendance.find((a) => a.day === today);
@@ -149,7 +172,7 @@ const listCertificates = async (req, res) => {
       eventId: { $in: events.map((e) => e._id) },
       status: { $ne: 'cancelled' },
     })
-      .select('name idNumber mobileNumber eventId attendance certificateUnlocked certificateRevoked')
+      .select('name idNumber mobileNumber eventId packageId packageName attendance certificateUnlocked certificateRevoked')
       .sort({ name: 1 })
       .lean();
     const participants = regs.map((r) => {
