@@ -2,7 +2,7 @@ const FeedPost = require('../models/FeedPost');
 const EventRegistration = require('../models/EventRegistration');
 const { uploadToCloudinary } = require('../middleware/upload');
 
-const toDto = (p, viewerId) => ({
+const toDto = (p, viewerId, isAdmin = false) => ({
   id: p._id.toString(),
   eventId: p.eventId ? p.eventId.toString() : null,
   participantId: p.participantId.toString(),
@@ -13,6 +13,8 @@ const toDto = (p, viewerId) => ({
   liked: !!viewerId && (p.likes || []).some((id) => String(id) === String(viewerId)),
   // True for the participant who posted it (only they can delete it).
   mine: !!viewerId && String(p.participantId) === String(viewerId),
+  // The poster or an admin may delete it.
+  canDelete: isAdmin || (!!viewerId && String(p.participantId) === String(viewerId)),
   createdAt: p.createdAt,
 });
 
@@ -23,7 +25,8 @@ const listFeedPosts = async (req, res) => {
     const posts = await FeedPost.find({ apartmentId: req.apartmentId })
       .sort({ createdAt: -1 })
       .limit(200);
-    res.json({ success: true, posts: posts.map((p) => toDto(p, req.userId)) });
+    const isAdmin = req.userType === 'apartment';
+    res.json({ success: true, posts: posts.map((p) => toDto(p, req.userId, isAdmin)) });
   } catch (error) {
     console.error('listFeedPosts error:', error);
     res.status(500).json({ success: false, error: error.message || 'Server error' });
@@ -86,12 +89,13 @@ const toggleLike = async (req, res) => {
   }
 };
 
-// DELETE /api/feed-posts/:id — only the participant who posted it.
+// DELETE /api/feed-posts/:id — the participant who posted it, or an admin.
 const deleteFeedPost = async (req, res) => {
   try {
     const post = await FeedPost.findOne({ _id: req.params.id, apartmentId: req.apartmentId }).catch(() => null);
     if (!post) return res.status(404).json({ success: false, error: 'Post not found' });
-    if (req.userType !== 'participant' || String(post.participantId) !== String(req.userId)) {
+    const isOwner = req.userType === 'participant' && String(post.participantId) === String(req.userId);
+    if (!isOwner && req.userType !== 'apartment') {
       return res.status(403).json({ success: false, error: 'You can only delete your own posts' });
     }
     await post.deleteOne();

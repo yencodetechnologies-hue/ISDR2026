@@ -106,35 +106,180 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     setState(() => _bannerUrls = urls);
   }
 
-  // Ids of the upcoming schedules with a start reminder (push when it starts).
-  final Set<String> _reminderIds = {};
+  // Upcoming schedules with a reminder: scheduleId -> minutes before the start
+  // (0 = at the start).
+  final Map<String, int> _reminders = {};
+
+  /// Reminder choices, in minutes before the session starts.
+  static const _reminderChoices = [0, 5, 10, 15, 30, 60];
+
+  static String _reminderLabel(int minutes) => minutes == 0
+      ? 'At session start'
+      : minutes == 60
+      ? '1 hour before'
+      : '$minutes min before';
 
   Future<void> _loadReminders() async {
     final res = await _api.getMyReminders();
     if (!mounted || res['success'] != true) return;
     setState(() {
-      _reminderIds
-        ..clear()
-        ..addAll(
-          ((res['scheduleIds'] as List?) ?? const []).map((e) => e.toString()),
+      _reminders.clear();
+      final map = res['reminders'];
+      if (map is Map) {
+        map.forEach(
+          (k, v) => _reminders[k.toString()] = (v as num?)?.toInt() ?? 0,
         );
+      } else {
+        for (final id in (res['scheduleIds'] as List?) ?? const []) {
+          _reminders[id.toString()] = 0;
+        }
+      }
     });
   }
 
-  /// Flips the reminder bell right away, then syncs with the server (and flips
-  /// back if it fails).
-  Future<void> _toggleReminder(String scheduleId, String scheduleName) async {
-    final wasOn = _reminderIds.contains(scheduleId);
+  /// Asks when to be reminded (or to turn it off), then saves it.
+  Future<void> _pickReminder(
+    String scheduleId,
+    String scheduleName,
+    DateTime start,
+  ) async {
+    final current = _reminders[scheduleId];
+    // -1 = turn off.
+    final picked = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: const Color(0xFF14141F),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.notifications_active_rounded,
+                    color: Color(0xFFFBBF24),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Remind me',
+                      style: GoogleFonts.outfit(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  scheduleName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    color: Colors.white.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+            ),
+            for (final minutes in _reminderChoices)
+              Builder(
+                builder: (_) {
+                  // Choices whose time has already passed can't be picked.
+                  final open = start
+                      .subtract(Duration(minutes: minutes))
+                      .isAfter(DateTime.now());
+                  final selected = current == minutes;
+                  return ListTile(
+                    enabled: open,
+                    onTap: () => Navigator.pop(ctx, minutes),
+                    leading: Icon(
+                      minutes == 0
+                          ? Icons.play_circle_outline_rounded
+                          : Icons.schedule_rounded,
+                      color: open
+                          ? const Color(0xFF60A5FA)
+                          : Colors.white.withValues(alpha: 0.25),
+                    ),
+                    title: Text(
+                      _reminderLabel(minutes),
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: open
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    trailing: selected
+                        ? const Icon(
+                            Icons.check_circle_rounded,
+                            color: Color(0xFF22C55E),
+                          )
+                        : null,
+                  );
+                },
+              ),
+            if (current != null)
+              ListTile(
+                onTap: () => Navigator.pop(ctx, -1),
+                leading: const Icon(
+                  Icons.notifications_off_outlined,
+                  color: Color(0xFFF87171),
+                ),
+                title: Text(
+                  'Turn off reminder',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFF87171),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final minutes = picked < 0 ? null : picked;
+    if (minutes == current) return;
+
     setState(() {
-      wasOn ? _reminderIds.remove(scheduleId) : _reminderIds.add(scheduleId);
+      minutes == null
+          ? _reminders.remove(scheduleId)
+          : _reminders[scheduleId] = minutes;
     });
-    final res = await _api.toggleScheduleReminder(scheduleId);
+    final res = await _api.setScheduleReminder(scheduleId, minutes);
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     if (res['success'] != true) {
       setState(() {
-        wasOn ? _reminderIds.add(scheduleId) : _reminderIds.remove(scheduleId);
+        current == null
+            ? _reminders.remove(scheduleId)
+            : _reminders[scheduleId] = current;
       });
       messenger.showSnackBar(
         SnackBar(content: Text(res['error']?.toString() ?? 'Could not update')),
@@ -144,9 +289,11 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          wasOn
+          minutes == null
               ? 'Reminder off'
-              : "Reminder set — we'll notify you when \"$scheduleName\" starts",
+              : minutes == 0
+              ? 'Reminder set — we\'ll notify you when "$scheduleName" starts'
+              : 'Reminder set — ${_reminderLabel(minutes)} "$scheduleName"',
         ),
       ),
     );
@@ -2087,23 +2234,26 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                             // Remind me when it starts (upcoming sessions only).
                             if (scheduleId.isNotEmpty && !isLive && !isDone)
                               IconButton(
-                                tooltip: _reminderIds.contains(scheduleId)
-                                    ? 'Turn off reminder'
-                                    : 'Remind me when it starts',
+                                tooltip: _reminders.containsKey(scheduleId)
+                                    ? 'Reminder: ${_reminderLabel(_reminders[scheduleId]!)}'
+                                    : 'Remind me',
                                 visualDensity: VisualDensity.compact,
                                 padding: const EdgeInsets.only(left: 6),
                                 constraints: const BoxConstraints(
                                   minWidth: 34,
                                   minHeight: 34,
                                 ),
-                                onPressed: () =>
-                                    _toggleReminder(scheduleId, scheduleName),
+                                onPressed: () => _pickReminder(
+                                  scheduleId,
+                                  scheduleName,
+                                  start,
+                                ),
                                 icon: Icon(
-                                  _reminderIds.contains(scheduleId)
+                                  _reminders.containsKey(scheduleId)
                                       ? Icons.notifications_active_rounded
                                       : Icons.notifications_none_rounded,
                                   size: 22,
-                                  color: _reminderIds.contains(scheduleId)
+                                  color: _reminders.containsKey(scheduleId)
                                       ? const Color(0xFFFBBF24)
                                       : Colors.white.withValues(alpha: 0.45),
                                 ),

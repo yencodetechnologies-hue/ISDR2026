@@ -2148,6 +2148,21 @@ class ApiService {
         () => _dio.post(ApiConfig.managedEventToggleReminder(scheduleId)),
       );
 
+  /// Sets when to be reminded about a session: [minutesBefore] its start
+  /// (0 = at the start), or turns the reminder off when [minutesBefore] is null.
+  Future<Map<String, dynamic>> setScheduleReminder(
+    String scheduleId,
+    int? minutesBefore,
+  ) =>
+      _sessionContentCall(
+        () => _dio.post(
+          ApiConfig.managedEventToggleReminder(scheduleId),
+          data: minutesBefore == null
+              ? {'remove': true}
+              : {'minutesBefore': minutesBefore},
+        ),
+      );
+
   /// Likes a feed post, or removes the like if already liked.
   /// Returns {success, liked, likeCount}.
   Future<Map<String, dynamic>> toggleFeedPostLike(String postId) =>

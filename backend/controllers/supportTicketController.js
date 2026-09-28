@@ -79,6 +79,16 @@ async function notifyParticipant(ticket, body) {
   });
 }
 
+/** Full ticket plus, for staff/admin only, the participant's mobile to call them. */
+async function detailFor(t, sender) {
+  const dto = detailDto(t, sender);
+  if (sender.type !== 'participant') {
+    const reg = await EventRegistration.findById(t.participantId).select('mobileNumber').lean();
+    dto.participantMobile = (reg && reg.mobileNumber) || '';
+  }
+  return dto;
+}
+
 /** Summary for the ticket lists. */
 const summaryDto = (t) => {
   const last = t.messages[t.messages.length - 1];
@@ -93,6 +103,8 @@ const summaryDto = (t) => {
     messageCount: t.messages.length,
     lastMessage: last ? { senderType: last.senderType, text: last.text } : null,
     lastMessageAt: t.lastMessageAt,
+    lastParticipantAt:
+      [...t.messages].reverse().find((m) => m.senderType === 'participant')?.createdAt || t.createdAt,
     createdAt: t.createdAt,
   };
 };
@@ -188,7 +200,7 @@ const createTicket = async (req, res) => {
       messages: [{ senderType: 'participant', senderId: sender.id, senderName: sender.name, text: description }],
       lastMessageAt: new Date(),
     });
-    res.status(201).json({ success: true, ticket: detailDto(ticket, sender) });
+    res.status(201).json({ success: true, ticket: await detailFor(ticket, sender) });
     notifyTeam(req.apartmentId, {
       title: `New ticket: ${CATEGORY_LABELS[category]}`,
       body: `${sender.name}: ${preview(description)}`,
@@ -206,7 +218,7 @@ const getTicket = async (req, res) => {
     if (!sender) return forbidden(res);
     const ticket = await loadTicket(req, res, sender);
     if (!ticket) return;
-    res.json({ success: true, ticket: detailDto(ticket, sender) });
+    res.json({ success: true, ticket: await detailFor(ticket, sender) });
   } catch (error) {
     handleError(res, 'getTicket', error);
   }
@@ -241,7 +253,7 @@ const sendMessage = async (req, res) => {
       },
       { new: true }
     );
-    res.status(201).json({ success: true, ticket: detailDto(updated, sender) });
+    res.status(201).json({ success: true, ticket: await detailFor(updated, sender) });
     const push =
       sender.type === 'participant'
         ? notifyTeam(req.apartmentId, {
@@ -275,7 +287,7 @@ const closeTicket = async (req, res) => {
       { status: 'closed', closedAt: new Date(), closedByName: sender.name },
       { new: true }
     );
-    res.json({ success: true, ticket: detailDto(updated, sender) });
+    res.json({ success: true, ticket: await detailFor(updated, sender) });
     notifyParticipant(
       updated,
       `Your ${CATEGORY_LABELS[updated.category] || 'support'} ticket was closed. Create a new ticket if you still need help.`

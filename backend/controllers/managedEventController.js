@@ -37,21 +37,30 @@ async function idNumberTaken(rawId, excludeRegId) {
   return Boolean(await EventRegistration.exists(filter));
 }
 
-// Next free ID number across all events, so no two participants share one.
-async function generateNextIdNumber() {
-  const registrations = await EventRegistration.find({})
-    .select('idNumber')
-    .lean();
-  let maxNumber = 1000;
-  for (const r of registrations) {
-    const raw = String(r.idNumber || '').trim().toUpperCase();
-    const digits = raw.startsWith('ID') ? raw.substring(2) : raw;
-    const num = parseInt(digits, 10);
-    if (!isNaN(num) && num > maxNumber && (raw === `ID${num}` || raw === String(num))) {
-      maxNumber = num;
-    }
+/**
+ * A new ID number: the first two letters of the package name plus four random
+ * digits, e.g. "UG students" -> UG4006, "PG students" -> PG3454, "Staff" -> ST5678
+ * ("ID" when there is no package). The digits are not used by any other
+ * participant, so the whole ID is unique across all events.
+ */
+async function generateNextIdNumber(packageName = '') {
+  const letters = String(packageName || '').replace(/[^A-Za-z]/g, '').toUpperCase();
+  const prefix = letters.length >= 2 ? letters.slice(0, 2) : 'ID';
+  const registrations = await EventRegistration.find({}).select('idNumber').lean();
+  const usedDigits = new Set(
+    registrations
+      .map((r) => (String(r.idNumber || '').match(/(\d+)$/) || [])[1])
+      .filter(Boolean)
+  );
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const digits = String(crypto.randomInt(1000, 10000));
+    if (!usedDigits.has(digits)) return `${prefix}${digits}`;
   }
-  return `ID${maxNumber + 1}`;
+  // Four-digit numbers nearly used up: fall back to five digits.
+  for (;;) {
+    const digits = String(crypto.randomInt(10000, 100000));
+    if (!usedDigits.has(digits)) return `${prefix}${digits}`;
+  }
 }
 
 const QUESTION_TYPES = ['short_text', 'long_text', 'single_choice', 'checkboxes'];
@@ -654,7 +663,7 @@ async function createParticipantRegistration(event, { name, institution, package
     }
     finalIdNumber = rawIdNumber;
   } else {
-    finalIdNumber = await generateNextIdNumber();
+    finalIdNumber = await generateNextIdNumber(packageName);
   }
 
   const otp = generateOtp();
@@ -694,7 +703,7 @@ async function createParticipantRegistration(event, { name, institution, package
       break;
     } catch (err) {
       if (!rawIdNumber && err?.code === 11000 && /idNumber/.test(err.message || '') && attempt < 4) {
-        finalIdNumber = await generateNextIdNumber();
+        finalIdNumber = await generateNextIdNumber(packageName);
         registration.idNumber = finalIdNumber;
         registration.qrCode = buildQrPayload(registration, event);
         continue;

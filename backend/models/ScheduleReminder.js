@@ -17,6 +17,9 @@ const scheduleReminderSchema = new mongoose.Schema(
       required: true,
     },
     startAt: { type: Date, required: true },
+    // How long before the start to notify (0 = at the start) and that instant.
+    minutesBefore: { type: Number, default: 0 },
+    remindAt: { type: Date, default: null },
     sentAt: { type: Date, default: null },
   },
   { timestamps: true }
@@ -24,5 +27,6 @@ const scheduleReminderSchema = new mongoose.Schema(
 
 scheduleReminderSchema.index({ participantId: 1, scheduleId: 1 }, { unique: true });
 scheduleReminderSchema.index({ sentAt: 1, startAt: 1 });
+scheduleReminderSchema.index({ sentAt: 1, remindAt: 1 });
 
 module.exports = mongoose.model('ScheduleReminder', scheduleReminderSchema);

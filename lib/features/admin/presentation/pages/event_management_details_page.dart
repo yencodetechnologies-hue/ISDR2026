@@ -290,18 +290,6 @@ class _EventManagementDetailsPageState
     );
   }
 
-  String _suggestNextIdNumber() {
-    int maxNum = 1000;
-    for (final r in _registrations) {
-      final raw = (r['idNumber'] ?? '').toString().trim().toUpperCase();
-      final digits = raw.startsWith('ID') ? raw.substring(2) : raw;
-      final n = int.tryParse(digits);
-      if (n != null && n > maxNum && (raw == 'ID$n' || raw == '$n')) {
-        maxNum = n;
-      }
-    }
-    return 'ID${maxNum + 1}';
-  }
 
   Future<void> _openParticipantSheet([Map<String, dynamic>? reg]) async {
     final selfId = reg == null ? null : (reg['id'] ?? reg['_id']);
@@ -320,7 +308,6 @@ class _EventManagementDetailsPageState
         packages: _packages,
         registration: reg,
         existingIdNumbers: existingIds,
-        suggestedIdNumber: reg == null ? _suggestNextIdNumber() : null,
         api: _api,
       ),
     );

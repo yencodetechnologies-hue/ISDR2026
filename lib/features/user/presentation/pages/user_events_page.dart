@@ -287,6 +287,93 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
     );
   }
 
+  /// Entry or exit scan for today (once per participant per day).
+  void _openAttendanceScan(String type) {
+    final label = type == 'entry' ? 'Entry' : 'Exit';
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ClaimInclusionScannerPage(
+          inclusionName: '$label Scan',
+          packageId: '',
+          event: _event ?? const {},
+          apartmentId: widget.apartmentId,
+          api: _api,
+          onClaimed: () {},
+          heading: 'Attendance',
+          itemLabel: 'Scan',
+          successText: '$label recorded for today.',
+          submit: ({String? qrData, String? idNumber}) => _api.scanAttendance(
+            type: type,
+            qrData: qrData,
+            idNumber: idNumber,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _attendanceButton(
+    String type,
+    String title,
+    IconData icon,
+    Color color,
+  ) {
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _openAttendanceScan(type),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withValues(alpha: 0.5)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const Text(
+                        'Tap to scan',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openHistorySheet() {
     Navigator.push(
       context,
@@ -333,6 +420,38 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
                 children: [
                   _buildEventHeader(),
                   const SizedBox(height: 18),
+                  const Text(
+                    'Entry & Exit',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Once per participant per day — both are needed for the certificate.',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      _attendanceButton(
+                        'entry',
+                        'Entry Scan',
+                        Icons.login_rounded,
+                        const Color(0xFF22C55E),
+                      ),
+                      const SizedBox(width: 10),
+                      _attendanceButton(
+                        'exit',
+                        'Exit Scan',
+                        Icons.logout_rounded,
+                        const Color(0xFFEF4444),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
                   const Text(
                     'Packages & Inclusions',
                     style: TextStyle(

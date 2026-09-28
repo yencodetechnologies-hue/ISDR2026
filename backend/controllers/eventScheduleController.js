@@ -11,6 +11,8 @@ const {
 } = require('../utils/schedulePackages');
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+// Reminder choices: at the start, or this many minutes before.
+const REMINDER_MINUTES = [0, 5, 10, 15, 30, 60];
 
 const toDto = (s) => ({
   id: s._id.toString(),
@@ -342,9 +344,14 @@ const myReminders = async (req, res) => {
       return res.status(403).json({ success: false, error: 'Only participants have reminders' });
     }
     const reminders = await ScheduleReminder.find({ participantId: req.userId, sentAt: null }).select(
-      'scheduleId'
+      'scheduleId minutesBefore'
     );
-    res.json({ success: true, scheduleIds: reminders.map((r) => String(r.scheduleId)) });
+    res.json({
+      success: true,
+      scheduleIds: reminders.map((r) => String(r.scheduleId)),
+      // scheduleId -> minutes before the start (0 = at the start).
+      reminders: Object.fromEntries(reminders.map((r) => [String(r.scheduleId), r.minutesBefore || 0])),
+    });
   } catch (error) {
     console.error('myReminders error:', error);
     res.status(500).json({ success: false, error: error.message || 'Server error' });
@@ -366,24 +373,34 @@ const toggleReminder = async (req, res) => {
     if (!schedule || !isScheduleVisible(schedule, String(reg.packageId || ''))) {
       return res.status(404).json({ success: false, error: 'Schedule not found' });
     }
-    const removed = await ScheduleReminder.findOneAndDelete({
-      participantId: req.userId,
-      scheduleId: schedule._id,
-      sentAt: null,
-    });
-    if (removed) return res.json({ success: true, reminder: false });
+    const mine = { participantId: req.userId, scheduleId: schedule._id, sentAt: null };
+    // Body: { minutesBefore } sets/changes the reminder, { remove: true } turns it
+    // off; an empty body toggles (older app versions).
+    const hasChoice = req.body && req.body.minutesBefore !== undefined;
+    if ((req.body && req.body.remove === true) || !hasChoice) {
+      const removed = await ScheduleReminder.findOneAndDelete(mine);
+      if (removed || req.body.remove === true) return res.json({ success: true, reminder: false });
+    }
 
+    const minutesBefore = hasChoice ? Number(req.body.minutesBefore) : 0;
+    if (!REMINDER_MINUTES.includes(minutesBefore)) {
+      return res.status(400).json({ success: false, error: 'Choose when to be reminded' });
+    }
     const startAt = scheduleStartAt(schedule);
+    const remindAt = new Date(startAt.getTime() - minutesBefore * 60 * 1000);
     if (startAt <= new Date()) {
       return res.status(400).json({ success: false, error: 'This session has already started' });
+    }
+    if (remindAt <= new Date()) {
+      return res.status(400).json({ success: false, error: 'That time has already passed' });
     }
     // Replaces an old, already-sent reminder for the same session if any.
     await ScheduleReminder.findOneAndUpdate(
       { participantId: req.userId, scheduleId: schedule._id },
-      { startAt, sentAt: null },
+      { startAt, minutesBefore, remindAt, sentAt: null },
       { upsert: true }
     );
-    res.json({ success: true, reminder: true });
+    res.json({ success: true, reminder: true, minutesBefore });
   } catch (error) {
     if (error.name === 'CastError') {
       return res.status(404).json({ success: false, error: 'Schedule not found' });

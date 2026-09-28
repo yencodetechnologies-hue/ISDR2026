@@ -59,6 +59,108 @@ class _HelpTicketsPageState extends State<HelpTicketsPage> {
   String? _error;
   List<Map<String, dynamic>> _tickets = [];
 
+  /// Staff/admin filter: all, active, inactive or closed.
+  String _filter = 'all';
+
+  /// An open ticket turns inactive after this long without a participant message.
+  static const _inactiveAfter = Duration(hours: 5);
+
+  String _statusOf(Map<String, dynamic> t) {
+    if (t['status'] == 'closed') return 'closed';
+    final last = DateTime.tryParse(
+      (t['lastParticipantAt'] ?? t['createdAt'])?.toString() ?? '',
+    );
+    if (last == null) return 'active';
+    return DateTime.now().difference(last.toLocal()) > _inactiveAfter
+        ? 'inactive'
+        : 'active';
+  }
+
+  List<Map<String, dynamic>> get _shown => widget.isParticipant || _filter == 'all'
+      ? _tickets
+      : _tickets.where((t) => _statusOf(t) == _filter).toList();
+
+  Widget _filters() {
+    const options = [
+      ('all', 'All', Icons.all_inbox_rounded, Color(0xFF3B82F6)),
+      ('active', 'Active', Icons.bolt_rounded, Color(0xFF22C55E)),
+      ('inactive', 'Inactive', Icons.hourglass_bottom_rounded, Color(0xFFF59E0B)),
+      ('closed', 'Closed', Icons.lock_outline_rounded, Color(0xFF94A3B8)),
+    ];
+    int count(String key) => key == 'all'
+        ? _tickets.length
+        : _tickets.where((t) => _statusOf(t) == key).length;
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          for (final (key, label, icon, color) in options)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => setState(() => _filter = key),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: _filter == key ? color : const Color(0xFF14141F),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _filter == key
+                          ? color
+                          : Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        icon,
+                        size: 16,
+                        color: _filter == key ? Colors.white : color,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        label,
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: _filter == key
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _filter == key
+                              ? Colors.white.withValues(alpha: 0.25)
+                              : color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${count(key)}',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: _filter == key ? Colors.white : color,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -133,7 +235,11 @@ class _HelpTicketsPageState extends State<HelpTicketsPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                 children: [
-                  if (_error != null || _tickets.isEmpty)
+                  if (!widget.isParticipant && _error == null) ...[
+                    _filters(),
+                    const SizedBox(height: 12),
+                  ],
+                  if (_error != null || _shown.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 80),
                       child: Column(
@@ -150,7 +256,9 @@ class _HelpTicketsPageState extends State<HelpTicketsPage> {
                             _error ??
                                 (widget.isParticipant
                                     ? 'No tickets yet.\nTap "Add" if you need help.'
-                                    : 'No support tickets yet'),
+                                    : _filter == 'all'
+                                    ? 'No support tickets yet'
+                                    : 'No $_filter tickets'),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.inter(
                               fontSize: 13.5,
@@ -161,7 +269,7 @@ class _HelpTicketsPageState extends State<HelpTicketsPage> {
                       ),
                     )
                   else
-                    for (final t in _tickets) _card(t),
+                    for (final t in _shown) _card(t),
                 ],
               ),
       ),

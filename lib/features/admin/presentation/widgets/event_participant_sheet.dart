@@ -149,7 +149,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
       'Designation': _designation.text,
       'Organization': _institution.text,
       'Package': _packageId ?? '',
-      'ID no.': _idNumber.text,
+      if (widget.registration != null) 'ID no.': _idNumber.text,
       'Mobile number': _mobile.text,
       'Email': _email.text,
       'Food preference': _food,
@@ -407,7 +407,9 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                     _text(
                       _idNumber,
                       'ID no.',
-                      hint: 'e.g. ID1001',
+                      hint: widget.registration == null
+                          ? 'Leave blank to create one (e.g. UG4006)'
+                          : 'e.g. UG4006',
                       caps: TextCapitalization.characters,
                       onChanged: (v) {
                         final upper = v.toUpperCase();

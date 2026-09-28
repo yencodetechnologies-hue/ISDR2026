@@ -20,7 +20,10 @@ class _Colors {
 /// Every participant's posted selfie, newest first — no restriction on who
 /// can see whose photo.
 class ParticipantFeedPage extends StatefulWidget {
-  const ParticipantFeedPage({super.key});
+  /// Admin: view every post and delete any of them; no posting.
+  final bool adminMode;
+
+  const ParticipantFeedPage({super.key, this.adminMode = false});
 
   @override
   State<ParticipantFeedPage> createState() => _ParticipantFeedPageState();
@@ -266,7 +269,8 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
                                             color: _Colors.muted,
                                           ),
                                   ),
-                                  if (post['mine'] == true)
+                                  if (post['canDelete'] == true ||
+                                      post['mine'] == true)
                                     IconButton(
                                       tooltip: 'Delete',
                                       visualDensity: VisualDensity.compact,
@@ -287,7 +291,9 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
                   ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: _SelfieFab(onTap: _openCamera),
+      floatingActionButton: widget.adminMode
+          ? null
+          : _SelfieFab(onTap: _openCamera),
     );
   }
 }

@@ -67,6 +67,9 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
 
   bool get _isEdit => widget.schedule != null;
 
+  /// Packages the schedule was saved with that no longer exist on the event.
+  int _removedPackages = 0;
+
   /// Old schedules saved before speakers were linked: just a name, no id.
   String get _legacySpeakerName =>
       _isEdit && (widget.schedule!['speakerId']?.toString() ?? '').isEmpty
@@ -86,9 +89,13 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
       _hall.text = s['hall']?.toString() ?? '';
       _description.text = s['description']?.toString() ?? '';
       _speakerId = s['speakerId']?.toString();
-      _packageIds.addAll(
-        ((s['packageIds'] as List?) ?? const []).map((id) => id.toString()),
-      );
+      // Keep only packages the event still has; note any that were deleted.
+      final saved = ((s['packageIds'] as List?) ?? const [])
+          .map((id) => id.toString())
+          .toList();
+      final current = _packages.map((p) => p.id).toSet();
+      _packageIds.addAll(saved.where(current.contains));
+      _removedPackages = saved.length - _packageIds.length;
       final utc = DateTime.tryParse(s['date']?.toString() ?? '')?.toUtc();
       if (utc != null) {
         _dates.add(
@@ -462,6 +469,32 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
           padding: const EdgeInsets.all(16),
           children: [
             _packageChips(),
+            if (_removedPackages > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 8, left: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: Color(0xFFFBBF24),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _removedPackages == 1
+                            ? 'The package this schedule was saved with has been deleted from the event. Select its package again.'
+                            : '$_removedPackages packages this schedule was saved with have been deleted from the event. Select its packages again.',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFFFBBF24),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 12),
             _speakerField(),
             const SizedBox(height: 12),

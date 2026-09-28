@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
@@ -155,10 +156,74 @@ class _TicketChatPageState extends State<TicketChatPage> {
     _ => 'Participant',
   };
 
+  /// Participant's name and mobile with a Call button (staff/admin view).
+  Widget _participantBar(String name, String mobile) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF14141F),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.person_rounded,
+            size: 20,
+            color: DarkColors.accentLight,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (name.isNotEmpty)
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                Text(
+                  mobile,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: .3,
+                    color: DarkColors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          FilledButton.icon(
+            onPressed: () => launchUrl(Uri(scheme: 'tel', path: mobile)),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF16A34A),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.call_rounded, size: 18),
+            label: const Text('Call'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final category = helpCategoryOf(_ticket?['category']?.toString());
     final participant = (_ticket?['participantName']?.toString() ?? '').trim();
+    // Sent to staff/admin only, so participants never see a call button.
+    final mobile = (_ticket?['participantMobile']?.toString() ?? '').trim();
 
     return Scaffold(
       backgroundColor: DarkColors.bg,
@@ -213,6 +278,8 @@ class _TicketChatPageState extends State<TicketChatPage> {
                   if (participant.isNotEmpty)
                     Text(
                       participant,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
                         fontSize: 11.5,
                         color: DarkColors.muted,
@@ -226,6 +293,7 @@ class _TicketChatPageState extends State<TicketChatPage> {
       ),
       body: Column(
         children: [
+          if (mobile.isNotEmpty) _participantBar(participant, mobile),
           if (_closed) _closedBanner(),
           Expanded(
             child: _ticket == null

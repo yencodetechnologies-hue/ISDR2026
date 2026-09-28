@@ -92,9 +92,9 @@ const List<_ModuleVisual> _predefinedVisuals = [
   _ModuleVisual('YouTube Live', Icons.live_tv_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Banner', Icons.view_carousel_rounded, group: 'ACCOUNT'),
   _ModuleVisual('News Ticker', Icons.campaign_rounded, group: 'ACCOUNT'),
-  _ModuleVisual('Entry / Exit Scan', Icons.qr_code_scanner_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Certificate', Icons.workspace_premium_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Awards', Icons.emoji_events_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('Feed', Icons.photo_library_rounded, group: 'ACCOUNT'),
   _ModuleVisual(
     'Support Tickets',
     Icons.support_agent_rounded,
@@ -161,8 +161,43 @@ class _GroupSection extends StatelessWidget {
 
   const _GroupSection({required this.group, required this.onModuleTap});
 
+  /// Tiles on the home: two rows of four. Beyond that, the last slot is "More".
+  static const _homeSlots = 8;
+
+  static const _moreTile = _ModuleVisual(
+    'More',
+    Icons.grid_view_rounded,
+    group: 'ACCOUNT',
+  );
+
+  static const _gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
+    // 4 across: management labels are longer than the participant
+    // ones and would break mid-word in 6 narrow columns.
+    crossAxisCount: 4,
+    mainAxisSpacing: 6,
+    crossAxisSpacing: 2,
+    childAspectRatio: 0.95,
+  );
+
+  /// The modules that don't fit on the home, on their own page, 4 per row.
+  void _openMore(BuildContext context, List<_ModuleVisual> extras) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _MoreModulesPage(
+          extras: extras,
+          onModuleTap: onModuleTap,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final items = group.items;
+    final overflow = items.length > _homeSlots;
+    final shown = overflow ? items.sublist(0, _homeSlots - 1) : items;
+    final extras = overflow ? items.sublist(_homeSlots - 1) : <_ModuleVisual>[];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -190,17 +225,16 @@ class _GroupSection extends StatelessWidget {
             shrinkWrap: true,
             padding: EdgeInsets.zero,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: group.items.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              // 4 across: management labels are longer than the participant
-              // ones and would break mid-word in 6 narrow columns.
-              crossAxisCount: 4,
-              mainAxisSpacing: 6,
-              crossAxisSpacing: 2,
-              childAspectRatio: 0.95,
-            ),
+            itemCount: shown.length + (overflow ? 1 : 0),
+            gridDelegate: _gridDelegate,
             itemBuilder: (context, index) {
-              final item = group.items[index];
+              if (index == shown.length) {
+                return _ModuleTile(
+                  item: _moreTile,
+                  onTap: () => _openMore(context, extras),
+                );
+              }
+              final item = shown[index];
               return _ModuleTile(
                 item: item,
                 onTap: () => onModuleTap(item.label),
@@ -231,10 +265,11 @@ Color _moduleColor(String label) {
     'youtube live': Color(0xFFFF0000),
     'banner': Color(0xFFA855F7),
     'news ticker': Color(0xFF0EA5E9),
-    'entry / exit scan': Color(0xFF10B981),
     'certificate': Color(0xFFF59E0B),
     'awards': Color(0xFFEAB308),
+    'feed': Color(0xFFEC4899),
     'support tickets': Color(0xFFEF4444),
+    'more': Color(0xFF64748B),
   };
   const fallback = [
     Color(0xFF2563EB),
@@ -303,6 +338,74 @@ class _ModuleTileState extends State<_ModuleTile> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// "More" — the admin modules that don't fit in the home's two rows.
+class _MoreModulesPage extends StatelessWidget {
+  final List<_ModuleVisual> extras;
+  final ValueChanged<String> onModuleTap;
+
+  const _MoreModulesPage({required this.extras, required this.onModuleTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A12),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0A0A12),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          'More',
+          style: GoogleFonts.outfit(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 6, bottom: 8, left: 2),
+            child: Text(
+              'MORE MODULES',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: .5,
+                color: const Color(0xFF9CA3AF),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF14141F),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: GridView.builder(
+              shrinkWrap: true,
+              padding: EdgeInsets.zero,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: extras.length,
+              gridDelegate: _GroupSection._gridDelegate,
+              itemBuilder: (_, index) {
+                final item = extras[index];
+                return _ModuleTile(
+                  item: item,
+                  onTap: () => onModuleTap(item.label),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

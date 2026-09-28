@@ -23,8 +23,8 @@ import 'manage_banner_page.dart';
 import 'manage_news_ticker_page.dart';
 import 'manage_youtube_live_page.dart';
 import 'qr_pass_page.dart';
+import '../../../participant/presentation/pages/participant_feed_page.dart';
 import '../../../participant/presentation/pages/awards_page.dart';
-import '../../../certificate/presentation/pages/attendance_scan_page.dart';
 import '../../../certificate/presentation/pages/admin_certificates_page.dart';
 import '../../../support/presentation/pages/help_tickets_page.dart';
 import 'engagement_overview_page.dart';
@@ -305,6 +305,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
 
   void _navigateToModule(String label) {
     final key = label.trim().toLowerCase();
+    if (key == 'feed') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const ParticipantFeedPage(adminMode: true),
+        ),
+      );
+      return;
+    }
     if (key == 'awards') {
       Navigator.push(
         context,
@@ -319,14 +328,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       );
       return;
     }
-    if (key == 'entry / exit scan' || key == 'certificate') {
+    if (key == 'certificate') {
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => key == 'certificate'
-              ? const AdminCertificatesPage()
-              : const AttendanceScanPage(),
-        ),
+        MaterialPageRoute(builder: (_) => const AdminCertificatesPage()),
       );
       return;
     }
@@ -677,9 +682,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'YouTube Live',
       'Banner',
       'News Ticker',
-      'Entry / Exit Scan',
       'Certificate',
       'Awards',
+      'Feed',
       'Support Tickets',
     ];
     final isHostel = false;

@@ -29,7 +29,15 @@ const fmt12 = (hhmm) => {
 
 let running = false;
 
-/** Sends every reminder whose session has started, once. */
+/** When a reminder is due: its remindAt, or the start for older reminders. */
+const dueFilter = (before) => ({
+  $or: [
+    { remindAt: { $lte: before } },
+    { remindAt: null, startAt: { $lte: before } },
+  ],
+});
+
+/** Sends every reminder whose time has come, once. */
 async function sendDueReminders() {
   if (running) return;
   running = true;
@@ -37,10 +45,10 @@ async function sendDueReminders() {
     const now = new Date();
     // Too late to be useful — mark them done without a push.
     await ScheduleReminder.updateMany(
-      { sentAt: null, startAt: { $lt: new Date(now.getTime() - MAX_LATE_MS) } },
+      { sentAt: null, ...dueFilter(new Date(now.getTime() - MAX_LATE_MS)) },
       { sentAt: now }
     );
-    const due = await ScheduleReminder.find({ sentAt: null, startAt: { $lte: now } });
+    const due = await ScheduleReminder.find({ sentAt: null, ...dueFilter(now) });
     if (!due.length) return;
 
     const schedules = await EventSchedule.find({
@@ -65,7 +73,10 @@ async function sendDueReminders() {
         .filter(Boolean)
         .join(' · ');
       await sendNotificationToUser(String(reminder.participantId), 'participant', {
-        title: `Starting now: ${schedule.scheduleName}`,
+        title:
+          reminder.minutesBefore > 0
+            ? `Starts in ${reminder.minutesBefore >= 60 ? '1 hour' : `${reminder.minutesBefore} min`}: ${schedule.scheduleName}`
+            : `Starting now: ${schedule.scheduleName}`,
         body: details,
         type: 'schedule_reminder',
         data: { scheduleId: String(schedule._id) },
