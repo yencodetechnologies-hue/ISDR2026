@@ -224,9 +224,9 @@ async function sendNotificationToMultipleUsers(userIds, userType, notification) 
 /**
  * Send notification to specific account types of a property:
  * 'apartment' (admin login), 'management' (Admin IDs), 'user' (event staff),
- * 'participant', 'speaker'. [excludeIds] are account ids to skip (e.g. the sender).
+ * 'participant', 'speaker'.
  */
-async function sendNotificationToApartmentByUserType(apartmentId, userTypes, notification, excludeIds = []) {
+async function sendNotificationToApartmentByUserType(apartmentId, userTypes, notification) {
   try {
     const allUsers = [];
 
@@ -254,10 +254,8 @@ async function sendNotificationToApartmentByUserType(apartmentId, userTypes, not
       allUsers.push(...speakers.map((s) => ({ id: s._id, type: 'speaker' })));
     }
 
-    const skip = new Set(excludeIds.map(String));
     const results = [];
     for (const user of allUsers) {
-      if (skip.has(user.id.toString())) continue;
       const result = await sendNotificationToUser(user.id.toString(), user.type, {
         ...notification,
         apartmentId,
