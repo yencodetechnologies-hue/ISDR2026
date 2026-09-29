@@ -26,6 +26,8 @@ const managementUserSchema = new mongoose.Schema(
       lowercase: true,
       default: '',
     },
+    // QR pass number (ADM0001 / SPK0001 / STF0001…), assigned by utils/passNumber.js.
+    passNumber: { type: String, default: '', trim: true },
     roleTitle: {
       type: String,
       trim: true,

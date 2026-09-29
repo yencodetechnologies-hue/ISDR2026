@@ -225,11 +225,11 @@ export function QrPass() {
   );
 }
 
-/** A short pass code from the role and account id, e.g. "ADM-3F2A1C". */
+/** Older pass code from the role and account id, e.g. "ADM3F2A1C" — shown only until the saved pass number loads. */
 export function passCode(role: string, userId: string) {
   const prefix = role === "ADMIN" ? "ADM" : role === "SPEAKER" ? "SPK" : "STF";
   const tail = userId.length > 6 ? userId.slice(-6) : userId;
-  return `${prefix}-${tail.toUpperCase()}`;
+  return `${prefix}${tail.toUpperCase()}`;
 }
 
 /** QR Pass for admins, speakers and event staff (?role=ADMIN|SPEAKER|EVENT STAFF, &profile=1 adds the profile link). */
@@ -238,8 +238,16 @@ export function RoleQrPass() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const role = params.get("role") || "EVENT STAFF";
+  // Saved pass number (ADM0001 / SPK0001 / STF0001…); older logins don't have it yet, so ask the server.
+  const [passNumber, setPassNumber] = useState<string>(String(user?.passNumber ?? ""));
+  useEffect(() => {
+    get("/auth/me").then((res: any) => {
+      const n = String(res?.user?.passNumber ?? "");
+      if (n) setPassNumber(n);
+    });
+  }, []);
   if (!user) return null;
-  const code = passCode(role, String(user.id ?? user._id ?? ""));
+  const code = passNumber || passCode(role, String(user.id ?? user._id ?? ""));
   return (
     <Page title="QR Pass" back={false} width={1000}>
       <div className="grid gap-6 lg:grid-cols-[400px_1fr]">

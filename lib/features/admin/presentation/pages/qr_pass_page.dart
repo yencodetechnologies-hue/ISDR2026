@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/services/api_service.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../widgets/delegate_badge.dart';
@@ -14,23 +15,32 @@ class QrPassPage extends StatelessWidget {
   /// Show a "My Profile & Password" link (admin replaced its Profile tile).
   final bool showProfileLink;
 
-  const QrPassPage({super.key, required this.role, this.showProfileLink = false});
+  const QrPassPage({
+    super.key,
+    required this.role,
+    this.showProfileLink = false,
+  });
 
-  /// A short pass code from the role and account id, e.g. "ADM-3F2A1C".
+  /// Older pass code from the role and account id, e.g. "ADM3F2A1C" — shown only
+  /// until the account's saved pass number (ADM0001, SPK0001, STF0001…) loads.
   static String passCode(String role, String userId) {
     final prefix = switch (role) {
       'ADMIN' => 'ADM',
       'SPEAKER' => 'SPK',
       _ => 'STF',
     };
-    final tail = userId.length > 6 ? userId.substring(userId.length - 6) : userId;
-    return '$prefix-${tail.toUpperCase()}';
+    final tail = userId.length > 6
+        ? userId.substring(userId.length - 6)
+        : userId;
+    return '$prefix${tail.toUpperCase()}';
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
-    final UserModel? user = authState is AuthAuthenticated ? authState.user : null;
+    final UserModel? user = authState is AuthAuthenticated
+        ? authState.user
+        : null;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
@@ -45,14 +55,19 @@ class QrPassPage extends StatelessWidget {
       ),
       body: user == null
           ? const Center(
-              child: Text('Not logged in', style: TextStyle(color: Colors.white70)),
+              child: Text(
+                'Not logged in',
+                style: TextStyle(color: Colors.white70),
+              ),
             )
-          : _body(context, user),
+          : _PassNumber(
+              fallback: passCode(role, user.id),
+              builder: (code) => _body(context, user, code),
+            ),
     );
   }
 
-  Widget _body(BuildContext context, UserModel user) {
-    final code = passCode(role, user.id);
+  Widget _body(BuildContext context, UserModel user, String code) {
     final registration = {
       'name': user.name,
       'title': '',
@@ -95,9 +110,10 @@ class QrPassPage extends StatelessWidget {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    [code, user.mobileNumber]
-                        .where((v) => v.isNotEmpty)
-                        .join('   •   '),
+                    [
+                      code,
+                      user.mobileNumber,
+                    ].where((v) => v.isNotEmpty).join('   •   '),
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 13,
@@ -134,4 +150,35 @@ class QrPassPage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Loads the account's saved pass number (ADM0001 / SPK0001 / STF0001…) from
+/// GET /auth/me; shows [fallback] until it arrives or if it can't be loaded.
+class _PassNumber extends StatefulWidget {
+  final String fallback;
+  final Widget Function(String code) builder;
+
+  const _PassNumber({required this.fallback, required this.builder});
+
+  @override
+  State<_PassNumber> createState() => _PassNumberState();
+}
+
+class _PassNumberState extends State<_PassNumber> {
+  String? _passNumber;
+
+  @override
+  void initState() {
+    super.initState();
+    ApiService().getCurrentUser().then((res) {
+      final n = res['success'] == true && res['user'] is Map
+          ? (res['user'] as Map)['passNumber']?.toString() ?? ''
+          : '';
+      if (mounted && n.isNotEmpty) setState(() => _passNumber = n);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      widget.builder(_passNumber ?? widget.fallback);
 }

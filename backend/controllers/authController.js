@@ -8,6 +8,7 @@ const EventRegistration = require('../models/EventRegistration');
 const ManagedEvent = require('../models/ManagedEvent');
 const Speaker = require('../models/Speaker');
 const { uploadToCloudinary } = require('../middleware/upload');
+const { ensurePassNumber } = require('../utils/passNumber');
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
@@ -71,6 +72,7 @@ function buildManagementPayload(apartment) {
     email: propertyEmail || '',
     mobileNumber: loginMobile,
     userType: 'apartment',
+    passNumber: apartment.passNumber || '',
     status: 'approved',
     apartmentId,
     isActive: apartment.isActive,
@@ -172,6 +174,7 @@ function buildSpeakerPayload(speaker) {
     email: '',
     mobileNumber: speaker.mobileNumber,
     userType: 'speaker',
+    passNumber: speaker.passNumber || '',
     status: 'approved',
     isActive: true,
     profilePic: speaker.photo || null,
@@ -197,6 +200,7 @@ async function loginSpeaker(req, res, identifier, passwordStr, fcmToken) {
     return res.status(401).json({ error: 'Invalid email/mobile number or password' });
   }
   await storeFcmToken(speaker, fcmToken);
+  await ensurePassNumber(speaker);
   const token = generateToken(speaker._id, speaker.apartmentId, { speaker: true });
   return res.json({
     message: 'Login successful',
@@ -249,6 +253,7 @@ async function loginStaff(req, res, identifier, passwordStr, fcmToken) {
     return res.status(403).json({ error: 'This event account is not active. Please contact management.' });
   }
   await storeFcmToken(staff, fcmToken);
+  await ensurePassNumber(staff);
   const token = generateToken(staff._id, staff.apartmentId);
   return res.json({
     message: 'Login successful',
@@ -306,6 +311,7 @@ const loginUser = async (req, res) => {
     }
 
     await storeFcmToken(managementUser || apartment, fcmToken);
+    await ensurePassNumber(managementUser || apartment);
 
     const userPayload = buildManagementPayload(apartment);
     if (managementUser) {
@@ -313,6 +319,7 @@ const loginUser = async (req, res) => {
       userPayload.mobileNumber = managementUser.mobileNumber || mobile;
       userPayload.managementUserId = managementUser._id.toString();
       userPayload.roleTitle = managementUser.roleTitle || 'Admin Member';
+      userPayload.passNumber = managementUser.passNumber || '';
     }
 
     const token = generateToken(
@@ -346,11 +353,13 @@ const getCurrentUser = async (req, res) => {
     if (req.userType === 'speaker') {
       const speaker = await Speaker.findById(req.userId);
       if (!speaker) return res.status(404).json({ error: 'User not found' });
+      await ensurePassNumber(speaker);
       return res.json({ user: buildSpeakerPayload(speaker) });
     }
     if (req.userType === 'user') {
       const staff = await EventStaff.findById(req.userId);
       if (!staff) return res.status(404).json({ error: 'User not found' });
+      await ensurePassNumber(staff);
       const apt = await Apartment.findById(staff.apartmentId).select('name');
       return res.json({ user: buildStaffPayload(staff, apt) });
     }
@@ -358,7 +367,11 @@ const getCurrentUser = async (req, res) => {
     if (!apartment) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json({ user: buildManagementPayload(apartment) });
+    const payload = buildManagementPayload(apartment);
+    // An Admin ID login has its own pass number; the property login uses the property's.
+    const mUser = req.managementUserId ? await ManagementUser.findById(req.managementUserId) : null;
+    payload.passNumber = await ensurePassNumber(mUser || apartment);
+    res.json({ user: payload });
   } catch (error) {
     console.error('Get current user error:', error);
     res.status(500).json({ error: error.message || 'Server error' });

@@ -10,9 +10,9 @@ const EventStaff = require('../models/EventStaff');
  * Resolves an EventRegistration document for any scanned QR data or ID number.
  * Supports:
  *  1. Regular delegate ticket payloads and ID numbers.
- *  2. Admin pass codes: ADM-XXXXXX
- *  3. Speaker pass codes: SPK-XXXXXX
- *  4. Event Staff pass codes: STF-XXXXXX
+ *  2. Admin pass numbers: ADM0001 (and the older ADM-XXXXXX / ADMXXXXXX codes)
+ *  3. Speaker pass numbers: SPK0001 (and SPK-XXXXXX / SPKXXXXXX)
+ *  4. Event Staff pass numbers: STF0001 (and STF-XXXXXX / STFXXXXXX)
  *
  * If a pass code belongs to an Admin, Speaker, or Event Staff without an existing
  * registration record, an all-access registration is automatically provisioned
@@ -41,11 +41,28 @@ async function resolveRegistrationForCode(rawCode, apartmentIdHint = null) {
 
   if (reg) return reg;
 
-  // 2. Check for role badge passCode format: ADM-XXXXXX, SPK-XXXXXX, STF-XXXXXX
-  const match = upper.match(/^(ADM|SPK|STF)-([0-9A-F]{6})$/i);
-  let rolePrefix = match ? match[1].toUpperCase() : null;
+  // 2. Role pass: saved pass number (ADM0001) or the older code from the account id
+  //    (ADM-XXXXXX, or ADMXXXXXX without the dash).
+  const numberMatch = upper.match(/^(ADM|SPK|STF)(\d{4,})$/);
+  const match = upper.match(/^(ADM|SPK|STF)-?([0-9A-F]{6})$/i);
+  let rolePrefix = numberMatch ? numberMatch[1] : match ? match[1].toUpperCase() : null;
   let tailHex = match ? match[2].toLowerCase() : null;
   let rawObjectId = null;
+
+  // Saved pass numbers first (a 4-digit number can't be mistaken for a 6-char id tail).
+  let byNumber = null;
+  if (numberMatch) {
+    const models =
+      rolePrefix === 'ADM' ? [Apartment, ManagementUser] : rolePrefix === 'SPK' ? [Speaker] : [EventStaff];
+    for (const Model of models) {
+      const found = await Model.findOne({ passNumber: upper }).lean();
+      if (found) {
+        byNumber = { Model, user: found };
+        break;
+      }
+    }
+    if (!byNumber && !tailHex) return null;
+  }
 
   if (!rolePrefix && mongoose.Types.ObjectId.isValid(code)) {
     rawObjectId = code;
@@ -61,8 +78,29 @@ async function resolveRegistrationForCode(rawCode, apartmentIdHint = null) {
   let roleTitle = '';
   let userApartmentId = apartmentIdHint;
 
+  if (byNumber) {
+    user = byNumber.user;
+    if (byNumber.Model === Speaker) {
+      role = 'Speaker';
+      roleTitle = 'Faculty / Speaker';
+      userApartmentId = user.apartmentId?.toString() || userApartmentId;
+    } else if (byNumber.Model === Apartment) {
+      role = 'Admin';
+      roleTitle = 'Organizing Committee / Admin';
+      userApartmentId = user._id.toString();
+    } else if (byNumber.Model === ManagementUser) {
+      role = 'Admin';
+      roleTitle = user.roleTitle || 'Admin Member';
+      userApartmentId = user.apartmentId?.toString();
+    } else {
+      role = 'Event Staff';
+      roleTitle = user.roleTitle || 'Event Staff';
+      userApartmentId = user.apartmentId?.toString();
+    }
+  }
+
   // Case A: Speaker
-  if (rolePrefix === 'SPK' || (!rolePrefix && rawObjectId)) {
+  if (!user && (rolePrefix === 'SPK' || (!rolePrefix && rawObjectId))) {
     if (rawObjectId) {
       user = await Speaker.findById(rawObjectId).lean();
     } else {

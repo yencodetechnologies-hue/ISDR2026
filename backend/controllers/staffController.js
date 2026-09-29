@@ -17,6 +17,7 @@ function buildStaffPayload(staff, apartment) {
     secondaryMobileNumber: staff.secondaryMobileNumber || undefined,
     gender: staff.gender || undefined,
     userType: 'user',
+    passNumber: staff.passNumber || '',
     status: staff.status,
     isActive: staff.isActive,
     profilePic: staff.profilePic || null,

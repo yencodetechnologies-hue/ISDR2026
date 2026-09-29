@@ -11,6 +11,8 @@ const eventStaffSchema = new mongoose.Schema(
       index: true,
     },
     name: { type: String, required: [true, 'Name is required'], trim: true },
+    // QR pass number (ADM0001 / SPK0001 / STF0001…), assigned by utils/passNumber.js.
+    passNumber: { type: String, default: '', trim: true },
     username: { type: String, required: true, unique: true, trim: true, lowercase: true },
     email: {
       type: String,

@@ -7,6 +7,8 @@ const bcrypt = require('bcryptjs');
  */
 const apartmentSchema = new mongoose.Schema(
   {
+    // Admin QR pass number (ADM0001 / SPK0001 / STF0001…), assigned by utils/passNumber.js.
+    passNumber: { type: String, default: '', trim: true },
     name: {
       type: String,
       required: [true, 'Name is required'],
