@@ -80,9 +80,80 @@ class _LoaderState extends State<_Loader> with AutomaticKeepAliveClientMixin {
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _items = [];
+  final _search = TextEditingController();
+  String _query = '';
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  /// Everything a card shows: question, session, speaker, participant,
+  /// answers and poll options.
+  String _searchText(Map<String, dynamic> item) {
+    final parts = <String>[
+      for (final k in const [
+        'question',
+        'sessionName',
+        'speakerName',
+        'participantName',
+        'answer',
+      ])
+        item[k]?.toString() ?? '',
+      for (final o in (item['options'] as List?) ?? const []) o.toString(),
+      for (final a in _list(item['answers'])) ...[
+        a['name']?.toString() ?? '',
+        a['text']?.toString() ?? '',
+      ],
+    ];
+    return parts.join(' ').toLowerCase();
+  }
+
+  List<Map<String, dynamic>> get _shown {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return _items;
+    return _items.where((i) => _searchText(i).contains(q)).toList();
+  }
+
+  String get _searchHint => switch (widget.kind) {
+    _Kind.questions => 'Search question, session, speaker, answer…',
+    _Kind.polls => 'Search poll, option, session, speaker…',
+    _Kind.speakerQuestions => 'Search question, participant, speaker…',
+  };
+
+  Widget _searchBox() {
+    return TextField(
+      controller: _search,
+      onChanged: (v) => setState(() => _query = v),
+      style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+      decoration: InputDecoration(
+        hintText: _searchHint,
+        hintStyle: GoogleFonts.inter(fontSize: 13, color: DarkColors.muted),
+        prefixIcon: const Icon(Icons.search_rounded, color: DarkColors.muted),
+        suffixIcon: _query.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.clear_rounded, color: DarkColors.muted),
+                onPressed: () {
+                  _search.clear();
+                  setState(() => _query = '');
+                },
+              ),
+        isDense: true,
+        filled: true,
+        fillColor: DarkColors.field,
+        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -127,13 +198,27 @@ class _LoaderState extends State<_Loader> with AutomaticKeepAliveClientMixin {
   Widget build(BuildContext context) {
     super.build(context);
     if (_loading) return const Center(child: CircularProgressIndicator());
+    final shown = _shown;
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          if (_error != null || _items.isEmpty)
+          if (_error == null && _items.isNotEmpty) ...[
+            _searchBox(),
+            const SizedBox(height: 14),
+          ],
+          if (_error == null && _items.isNotEmpty && shown.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Text(
+                'No results for "${_query.trim()}"',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(fontSize: 13, color: DarkColors.muted),
+              ),
+            )
+          else if (_error != null || _items.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 60),
               child: Column(
@@ -158,7 +243,7 @@ class _LoaderState extends State<_Loader> with AutomaticKeepAliveClientMixin {
               ),
             )
           else
-            for (final item in _items) _card(item),
+            for (final item in shown) _card(item),
         ],
       ),
     );
