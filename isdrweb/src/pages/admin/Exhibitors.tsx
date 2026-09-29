@@ -16,6 +16,7 @@ import {
   useToast,
 } from "@/components/ui";
 import { del, formData, get, post } from "@/lib/api";
+import ExportMenu from "@/components/ExportMenu";
 import { idOf } from "@/lib/format";
 
 export default function ManageExhibitors() {
@@ -67,9 +68,19 @@ export default function ManageExhibitors() {
       title="Exhibitors"
       subtitle={items ? `${items.length} ${items.length === 1 ? "exhibitor" : "exhibitors"}` : undefined}
       actions={
-        <Button icon="add" onClick={() => setAdding(true)}>
-          Add Exhibitor
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <ExportMenu
+            title="Exhibitors"
+            rows={items}
+            columns={[
+              { header: "Name", value: (e: any) => e.name, width: 30 },
+              { header: "Stall number", value: (e: any) => e.stallNumber, width: 14 },
+            ]}
+          />
+          <Button icon="add" onClick={() => setAdding(true)}>
+            Add Exhibitor
+          </Button>
+        </div>
       }
     >
       {error ? (

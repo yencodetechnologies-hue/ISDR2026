@@ -2,6 +2,7 @@ const Apartment = require('../models/Apartment');
 const ManagementUser = require('../models/ManagementUser');
 const EventStaff = require('../models/EventStaff');
 const { uploadToCloudinary } = require('../middleware/upload');
+const { assignMissing } = require('../utils/passNumber');
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 const STATUSES = ['pending', 'approved', 'rejected'];
@@ -132,6 +133,8 @@ const registerStaff = async (req, res) => {
 // @route   GET /api/auth/users
 const listStaff = async (req, res) => {
   try {
+    // Every event staff account gets a pass number (STF0001…) so the list can be exported with QR passes.
+    await assignMissing('STF');
     const apartment = await Apartment.findById(req.apartmentId).select('name').lean();
     const staff = await EventStaff.find({ apartmentId: req.apartmentId }).sort({ createdAt: -1 });
     res.json({

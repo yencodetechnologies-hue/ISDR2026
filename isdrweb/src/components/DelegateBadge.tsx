@@ -173,20 +173,28 @@ function loadImage(src: string) {
   });
 }
 
+/** The badge template, loaded once (the ZIP export draws many badges). */
+let templateImage: Promise<HTMLImageElement> | null = null;
+
 /**
- * Saves the badge as a PNG: the template and text are redrawn on a canvas
- * with the badge layout; the QR comes from the rendered badge's SVG.
+ * Draws the badge as a PNG: the template and text are redrawn on a canvas with
+ * the badge layout. The QR comes from the rendered badge's SVG when [container]
+ * is given, otherwise it is generated from data.qrCode.
  */
-export async function downloadBadgePng(container: HTMLElement | null, data: BadgeData) {
+export async function renderBadgeBlob(data: BadgeData, container: HTMLElement | null = null) {
   const OX = -CROP_LEFT;
   const OY = -CROP_TOP;
   const canvas = document.createElement("canvas");
   canvas.width = BADGE_W;
   canvas.height = BADGE_H;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return false;
+  if (!ctx) return null;
   const family = getComputedStyle(document.body).fontFamily || "sans-serif";
-  ctx.drawImage(await loadImage(asset("delegate_badge_template-clean.png")), OX, OY, TEMPLATE_W, TEMPLATE_H);
+  templateImage ??= loadImage(asset("delegate_badge_template-clean.png")).catch((e) => {
+    templateImage = null; // try again next time
+    throw e;
+  });
+  ctx.drawImage(await templateImage, OX, OY, TEMPLATE_W, TEMPLATE_H);
 
   const fit = (
     text: string,
@@ -246,20 +254,33 @@ export async function downloadBadgePng(container: HTMLElement | null, data: Badg
       );
   }
   const svg = container?.querySelector("svg");
-  if (svg && v(data.qrCode)) {
+  if (v(data.qrCode)) {
     ctx.fillStyle = "#fff";
     ctx.fillRect(OX + 440, OY + 830, 320, 320);
-    const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" }));
-    try {
+    if (svg) {
+      const url = URL.createObjectURL(
+        new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" }),
+      );
+      try {
+        ctx.drawImage(await loadImage(url), OX + 444, OY + 834, 312, 312);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    } else {
+      const QR = await import("qrcode");
+      const url = await QR.toDataURL(v(data.qrCode), { margin: 0, width: 624 });
       ctx.drawImage(await loadImage(url), OX + 444, OY + 834, 312, 312);
-    } finally {
-      URL.revokeObjectURL(url);
     }
   }
   if (v(data.idNumber))
     fit(v(data.idNumber).split("").join(" "), ID_SIZE, 800, INK, OX + TEMPLATE_W / 2, OY + 1190, ID_W, true);
 
-  const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
+  return new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
+}
+
+/** Saves the badge as a PNG (QR taken from the rendered badge in [container]). */
+export async function downloadBadgePng(container: HTMLElement | null, data: BadgeData) {
+  const blob = await renderBadgeBlob(data, container);
   if (!blob) return false;
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);

@@ -17,6 +17,8 @@ import {
 } from "@/components/ui";
 import { LivePhotoButton, ModuleGrid, SectionTitle } from "@/components/widgets";
 import { get, post } from "@/lib/api";
+import ExportMenu from "@/components/ExportMenu";
+import { fullNameOf } from "@/lib/exporter";
 import { ClaimHistoryModal } from "./ClaimHistory";
 import { ScannerModal } from "./Scanner";
 import { useAuth } from "@/lib/auth";
@@ -332,6 +334,38 @@ export function StaffEventDetail() {
               </div>
               <div className="w-full pb-3 sm:w-72">
                 <SearchBox value={search} onChange={setSearch} placeholder="Search participants..." />
+              </div>
+              <div className="pb-3">
+                <ExportMenu
+                  title={`${event?.title || "Event"} - Participants`}
+                  rows={filtered}
+                  columns={[
+                    { header: "ID no.", value: (r: any) => r.idNumber, width: 10 },
+                    { header: "Name", value: (r: any) => fullNameOf(r), width: 24 },
+                    { header: "Package", value: (r: any) => r.packageName, width: 14 },
+                    { header: "Mobile", value: (r: any) => r.mobileNumber, width: 14 },
+                    { header: "Email", value: (r: any) => r.email, width: 24 },
+                    {
+                      header: "Status",
+                      value: (r: any) => cap(String(r.status ?? "registered").replace("_", " ")),
+                      width: 12,
+                    },
+                  ]}
+                  qr={{
+                    code: (r: any) => String(r.qrCode || r.idNumber || ""),
+                    badge: (r: any) => ({
+                      name: r.name,
+                      title: r.title,
+                      participantType: r.participantType,
+                      participantTypeColor: r.participantTypeColor,
+                      idNumber: r.idNumber,
+                      designation: r.designation,
+                      institution: r.institution,
+                      qrCode: r.qrCode || r.idNumber,
+                    }),
+                    fileName: (r: any) => `${r.idNumber || "SPOT"} - ${fullNameOf(r) || "Participant"}`,
+                  }}
+                />
               </div>
             </div>
             {filtered.length === 0 ? (

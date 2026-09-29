@@ -25,9 +25,11 @@ import {
   useToast,
 } from "@/components/ui";
 import { del, get, post, put } from "@/lib/api";
+import ExportMenu from "@/components/ExportMenu";
+import type { QrConfig } from "@/lib/exporter";
 import { cap, fullName, idOf } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
-import { useLogout, useProfilePhoto } from "../common/Profile";
+import { passCode, useLogout, useProfilePhoto } from "../common/Profile";
 import { ModuleGrid, tickerTextFromLines } from "@/components/widgets";
 
 /* =========================================================================
@@ -296,6 +298,30 @@ export function SendNotification() {
    ENGAGEMENT OVERVIEW
 ========================================================================= */
 
+/** Date + time for downloads. */
+const when = (v: any) => {
+  const d = v ? new Date(v) : null;
+  return d && !isNaN(d.getTime()) ? d.toLocaleString() : "";
+};
+
+/**
+ * Team member's QR pass number (ADM0001 / STF0001…); the older id-based code until
+ * the backend has assigned one. The main admin row's id is "primary_<property id>".
+ */
+const teamPass = (u: any, role: string) =>
+  String(u.passNumber || passCode(role, String(idOf(u)).replace(/^primary_/, "")));
+const teamQr = (role: string): QrConfig<any> => ({
+  code: (u) => teamPass(u, role),
+  badge: (u) => ({
+    name: u.name,
+    participantType: role,
+    idNumber: teamPass(u, role),
+    designation: role === "ADMIN" ? String(u.roleTitle || "Admin Member").replace("Management", "Admin") : "",
+    qrCode: teamPass(u, role),
+  }),
+  fileName: (u) => `${teamPass(u, role)} - ${u.name || role}`,
+});
+
 export function EngagementOverview() {
   const toast = useToast();
   const confirm = useConfirm();
@@ -368,7 +394,67 @@ export function EngagementOverview() {
     ) : null;
 
   return (
-    <Page title="Engagement Overview" subtitle="Session Q&A, polls and speaker questions across the conference">
+    <Page
+      title="Engagement Overview"
+      subtitle="Session Q&A, polls and speaker questions across the conference"
+      actions={
+        data &&
+        (tab === "questions" ? (
+          <ExportMenu
+            title="Session Q&A"
+            rows={match(data.questions)}
+            columns={[
+              { header: "Session", value: (q: any) => q.scheduleName, width: 22 },
+              { header: "Question", value: (q: any) => q.question, width: 34 },
+              { header: "Answers", value: (q: any) => (q.answers ?? []).length, width: 9 },
+              {
+                header: "Answered by",
+                value: (q: any) =>
+                  (q.answers ?? []).map((a: any) => `${a.name || "Participant"}: ${a.text ?? ""}`).join("\n"),
+                width: 40,
+              },
+              { header: "Asked on", value: (q: any) => when(q.createdAt), width: 18 },
+            ]}
+          />
+        ) : tab === "polls" ? (
+          <ExportMenu
+            title="Polls"
+            rows={match(data.polls)}
+            columns={[
+              { header: "Session", value: (p: any) => p.scheduleName, width: 22 },
+              { header: "Question", value: (p: any) => p.question, width: 32 },
+              {
+                header: "Results",
+                value: (p: any) =>
+                  (p.options ?? [])
+                    .map((o: string, i: number) => {
+                      const c = (p.counts ?? [])[i] ?? 0;
+                      const pct = Math.round((c / (Number(p.totalVotes) || 1)) * 100);
+                      return `${o}: ${c} (${pct}%)`;
+                    })
+                    .join("\n"),
+                width: 34,
+              },
+              { header: "Total votes", value: (p: any) => p.totalVotes ?? 0, width: 11 },
+              { header: "Created on", value: (p: any) => when(p.createdAt), width: 18 },
+            ]}
+          />
+        ) : (
+          <ExportMenu
+            title="Speaker Q&A"
+            rows={match(data.speakerQs)}
+            columns={[
+              { header: "Speaker", value: (q: any) => q.speakerName, width: 18 },
+              { header: "Asked by", value: (q: any) => q.participantName, width: 18 },
+              { header: "Question", value: (q: any) => q.question, width: 32 },
+              { header: "Answer", value: (q: any) => q.answer, width: 32 },
+              { header: "Status", value: (q: any) => (q.answered ? "Answered" : "Unanswered"), width: 12 },
+              { header: "Asked on", value: (q: any) => when(q.createdAt), width: 18 },
+            ]}
+          />
+        ))
+      }
+    >
       <Tabs
         value={tab}
         onChange={setTab}
@@ -533,6 +619,30 @@ export function ManageCertificates() {
             <div className="w-full sm:w-80">
               <SearchBox value={search} onChange={setSearch} placeholder="Search participants..." />
             </div>
+            <ExportMenu
+              title="Certificates"
+              rows={filtered}
+              columns={[
+                { header: "Participant", value: (c: any) => fullName(c) || c.name, width: 24 },
+                { header: "ID no.", value: (c: any) => c.idNumber, width: 11 },
+                { header: "Mobile", value: (c: any) => c.mobileNumber, width: 14 },
+                {
+                  header: "Days scanned",
+                  value: (c: any) => (c.totalDays != null ? `${c.daysScanned ?? 0} / ${c.totalDays}` : ""),
+                  width: 12,
+                },
+                {
+                  header: "Status",
+                  value: (c: any) =>
+                    (c.revoked ?? c.certificateRevoked)
+                      ? "Revoked"
+                      : (c.unlocked ?? c.certificateUnlocked)
+                        ? "Unlocked"
+                        : "Locked",
+                  width: 11,
+                },
+              ]}
+            />
           </div>
           {filtered.length === 0 ? (
             <div className="p-5">
@@ -693,10 +803,42 @@ export function ManagementTeam() {
       subtitle="Admin IDs and event staff accounts"
       actions={
         tab === "mgmt" ? (
-          <Button icon="person_add" onClick={() => openForm(null)}>
-            Add Admin ID
-          </Button>
-        ) : undefined
+          <div className="flex flex-wrap gap-2">
+            <ExportMenu
+              title="Admin IDs"
+              rows={users}
+              columns={[
+                { header: "Pass no.", value: (u: any) => teamPass(u, "ADMIN"), width: 12 },
+                { header: "Name", value: (u: any) => u.name, width: 24 },
+                {
+                  header: "Role",
+                  value: (u: any) => String(u.roleTitle || "Admin Member").replace("Management", "Admin"),
+                  width: 16,
+                },
+                { header: "Mobile", value: (u: any) => u.mobileNumber, width: 14 },
+                { header: "Email", value: (u: any) => u.email, width: 26 },
+              ]}
+              qr={teamQr("ADMIN")}
+            />
+            <Button icon="person_add" onClick={() => openForm(null)}>
+              Add Admin ID
+            </Button>
+          </div>
+        ) : (
+          <ExportMenu
+            title="Event Staff"
+            rows={staff}
+            columns={[
+              { header: "Pass no.", value: (u: any) => teamPass(u, "EVENT STAFF"), width: 12 },
+              { header: "Name", value: (u: any) => u.name, width: 24 },
+              { header: "Mobile", value: (u: any) => u.mobileNumber, width: 14 },
+              { header: "Email", value: (u: any) => u.email, width: 26 },
+              { header: "Approval", value: (u: any) => cap(u.status ?? "pending"), width: 11 },
+              { header: "Status", value: (u: any) => (u.isActive ? "Active" : "Inactive"), width: 10 },
+            ]}
+            qr={teamQr("EVENT STAFF")}
+          />
+        )
       }
     >
       <Tabs

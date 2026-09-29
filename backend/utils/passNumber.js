@@ -66,4 +66,4 @@ async function ensurePassNumber(doc) {
   return doc.passNumber;
 }
 
-module.exports = { ensurePassNumber };
+module.exports = { ensurePassNumber, assignMissing };

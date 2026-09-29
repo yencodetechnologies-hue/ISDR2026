@@ -32,7 +32,14 @@ if (!process.env.JWT_SECRET) {
 
 const app = express();
 
-app.use(cors());
+// Browsers may call the API only from the website (and local dev). The mobile app
+// sends no Origin header, so CORS doesn't apply to it.
+const ALLOWED_ORIGINS = [
+  'https://isdr-2026.vercel.app',
+  'http://localhost:3100', // isdrweb `npm run dev`
+  'http://localhost:4173', // isdrweb `npm run preview`
+];
+app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 

@@ -18,7 +18,12 @@ import {
   useToast,
 } from "@/components/ui";
 import { del, formData, get, post, put } from "@/lib/api";
+import ExportMenu from "@/components/ExportMenu";
+import { passCode } from "../common/Profile";
 import { idOf } from "@/lib/format";
+
+/** Speaker's QR pass number (SPK0001…); the older id-based code until the backend has assigned one. */
+const speakerPass = (s: any) => String(s.passNumber || passCode("SPEAKER", idOf(s)));
 
 export default function ManageSpeakers() {
   const toast = useToast();
@@ -91,9 +96,34 @@ export default function ManageSpeakers() {
       title="Speakers"
       subtitle={speakers ? `${speakers.length} ${speakers.length === 1 ? "speaker" : "speakers"}` : undefined}
       actions={
-        <Button icon="add" onClick={() => openEdit()}>
-          Add Speaker
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <ExportMenu
+            title="Speakers"
+            rows={speakers}
+            columns={[
+              { header: "Pass no.", value: (s: any) => speakerPass(s), width: 12 },
+              { header: "Name", value: (s: any) => s.name, width: 24 },
+              { header: "Mobile no.", value: (s: any) => s.mobileNumber ?? s.mobile, width: 14 },
+              { header: "Designation", value: (s: any) => s.designation, width: 18 },
+              { header: "Institution", value: (s: any) => s.institution, width: 22 },
+            ]}
+            qr={{
+              code: speakerPass,
+              badge: (s: any) => ({
+                name: s.name,
+                participantType: "SPEAKER",
+                idNumber: speakerPass(s),
+                designation: s.designation ?? "",
+                institution: s.institution ?? "",
+                qrCode: speakerPass(s),
+              }),
+              fileName: (s: any) => `${speakerPass(s)} - ${s.name || "Speaker"}`,
+            }}
+          />
+          <Button icon="add" onClick={() => openEdit()}>
+            Add Speaker
+          </Button>
+        </div>
       }
     >
       {error ? (

@@ -17,6 +17,7 @@ import {
   useToast,
 } from "@/components/ui";
 import { del, get, post, put } from "@/lib/api";
+import ExportMenu from "@/components/ExportMenu";
 import { useAuth } from "@/lib/auth";
 import { cap, fmtShortDateTime, idOf, parseDate, timeAgo } from "@/lib/format";
 
@@ -155,10 +156,35 @@ export function HelpTickets() {
       back={false}
       width={1000}
       actions={
-        isParticipant && (
+        isParticipant ? (
           <Button icon="add" onClick={() => setAdding(true)}>
             New Ticket
           </Button>
+        ) : (
+          <ExportMenu
+            title="Support Tickets"
+            rows={shown}
+            columns={[
+              { header: "Category", value: (t: any) => categoryOf(t.category).label, width: 16 },
+              { header: "Participant", value: (t: any) => t.participantName, width: 20 },
+              { header: "Description", value: (t: any) => t.description, width: 40 },
+              { header: "Status", value: (t: any) => cap(t.status ?? "open"), width: 10 },
+              { header: "Messages", value: (t: any) => Number(t.messageCount) || 1, width: 10 },
+              {
+                header: "Created",
+                value: (t: any) => (t.createdAt ? new Date(t.createdAt).toLocaleString() : ""),
+                width: 18,
+              },
+              {
+                header: "Last activity",
+                value: (t: any) => {
+                  const v = t.lastMessageAt ?? t.createdAt;
+                  return v ? new Date(v).toLocaleString() : "";
+                },
+                width: 18,
+              },
+            ]}
+          />
         )
       }
     >

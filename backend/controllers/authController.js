@@ -8,7 +8,7 @@ const EventRegistration = require('../models/EventRegistration');
 const ManagedEvent = require('../models/ManagedEvent');
 const Speaker = require('../models/Speaker');
 const { uploadToCloudinary } = require('../middleware/upload');
-const { ensurePassNumber } = require('../utils/passNumber');
+const { ensurePassNumber, assignMissing } = require('../utils/passNumber');
 
 const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
 
@@ -579,6 +579,8 @@ const listManagementUsers = async (req, res) => {
   try {
     const apartmentId = req.apartmentId;
 
+    // Every admin gets a pass number (ADM0001…) so the list can be exported with QR passes.
+    await assignMissing('ADM');
     const apt = await Apartment.findById(apartmentId);
     const addedUsers = await ManagementUser.find({ apartmentId }).sort({ createdAt: -1 });
 
@@ -594,6 +596,7 @@ const listManagementUsers = async (req, res) => {
           mobileNumber: primaryMobile,
           email: (apt.email || '').trim(),
           roleTitle: 'Admin Member',
+          passNumber: apt.passNumber || '',
           isActive: apt.isActive !== false,
           createdAt: apt.createdAt,
         });
@@ -607,6 +610,7 @@ const listManagementUsers = async (req, res) => {
         mobileNumber: u.mobileNumber,
         email: u.email || '',
         roleTitle: u.roleTitle || 'Admin Member',
+        passNumber: u.passNumber || '',
         isActive: u.isActive !== false,
         createdAt: u.createdAt,
       });

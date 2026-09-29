@@ -21,6 +21,7 @@ import {
   useToast,
 } from "@/components/ui";
 import { del, formData, get, post, put } from "@/lib/api";
+import ExportMenu from "@/components/ExportMenu";
 import { fmtDate, fmtTimeStr, idOf, parseDate } from "@/lib/format";
 
 /* =========================================================================
@@ -57,6 +58,19 @@ export function ScheduleTable({
         <div className="flex-1 text-sm text-muted">
           {schedules.length} {schedules.length === 1 ? "session" : "sessions"}
         </div>
+        <ExportMenu
+          small
+          title="Schedules"
+          rows={schedules}
+          columns={[
+            { header: "Session", value: (s: any) => s.scheduleName, width: 30 },
+            { header: "Speaker", value: (s: any) => s.speakerName, width: 20 },
+            { header: "Date", value: (s: any) => fmtDate(parseDate(s.date)), width: 14 },
+            { header: "From", value: (s: any) => fmtTimeStr(s.fromTime), width: 10 },
+            { header: "To", value: (s: any) => fmtTimeStr(s.toTime), width: 10 },
+            { header: "Hall", value: (s: any) => s.hall, width: 14 },
+          ]}
+        />
         <Button small icon="add" onClick={onAdd}>
           Add Schedule
         </Button>

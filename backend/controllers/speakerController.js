@@ -5,6 +5,7 @@ const ManagementUser = require('../models/ManagementUser');
 const EventStaff = require('../models/EventStaff');
 const EventRegistration = require('../models/EventRegistration');
 const { uploadToCloudinary } = require('../middleware/upload');
+const { assignMissing } = require('../utils/passNumber');
 
 /** Last 10 digits of a phone-like string, or '' if there are fewer than 10 digits. */
 function normalizeMobile10(raw) {
@@ -17,6 +18,7 @@ const toDto = (s) => ({
   name: s.name,
   photo: s.photo || '',
   mobileNumber: s.mobileNumber,
+  passNumber: s.passNumber || '',
   createdAt: s.createdAt,
 });
 
@@ -44,6 +46,8 @@ async function mobileTakenMessage(mobile, exceptSpeakerId = null) {
 // GET /api/speakers — the property's speakers, A–Z.
 const listSpeakers = async (req, res) => {
   try {
+    // Every speaker gets a pass number (SPK0001…) so the list can be exported with QR passes.
+    await assignMissing('SPK');
     const speakers = await Speaker.find({ apartmentId: req.apartmentId }).sort({ name: 1 });
     res.json({ success: true, speakers: speakers.map(toDto) });
   } catch (error) {
