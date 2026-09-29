@@ -58,14 +58,17 @@ const CATEGORY_LABELS = {
 
 const preview = (text) => (text.length > 120 ? `${text.slice(0, 117)}...` : text);
 
-/** Push to every event staff member and admin (login + Management IDs) of the property. */
-async function notifyTeam(apartmentId, { title, body, ticketId }) {
-  await sendNotificationToApartmentByUserType(apartmentId, ['apartment', 'management', 'user'], {
-    title,
-    body,
-    type: 'support_ticket',
-    data: { ticketId },
-  });
+/**
+ * Push to every event staff member and admin (login + Management IDs) of the
+ * property, except [excludeId] (the team member who just replied).
+ */
+async function notifyTeam(apartmentId, { title, body, ticketId }, excludeId = null) {
+  await sendNotificationToApartmentByUserType(
+    apartmentId,
+    ['apartment', 'management', 'user'],
+    { title, body, type: 'support_ticket', data: { ticketId } },
+    excludeId ? [excludeId] : []
+  );
 }
 
 /** Push to the participant who raised the ticket (as the support team). */
@@ -261,15 +264,30 @@ const sendMessage = async (req, res) => {
       { new: true }
     );
     res.status(201).json({ success: true, ticket: await detailFor(updated, sender) });
-    const push =
+    const category = CATEGORY_LABELS[updated.category] || 'Support';
+    const pushes =
       sender.type === 'participant'
-        ? notifyTeam(req.apartmentId, {
-            title: `${sender.name} · ${CATEGORY_LABELS[updated.category] || 'Support'}`,
-            body: preview(text),
-            ticketId: updated._id.toString(),
-          })
-        : notifyParticipant(updated, preview(text));
-    push.catch((e) => console.error('message push failed:', e.message));
+        ? [
+            notifyTeam(req.apartmentId, {
+              title: `${sender.name} · ${category}`,
+              body: preview(text),
+              ticketId: updated._id.toString(),
+            }),
+          ]
+        : [
+            notifyParticipant(updated, preview(text)),
+            // The rest of the team sees the reply too (not the one who sent it).
+            notifyTeam(
+              req.apartmentId,
+              {
+                title: `${sender.name} replied · ${category}`,
+                body: `To ${updated.participantName || 'Participant'}: ${preview(text)}`,
+                ticketId: updated._id.toString(),
+              },
+              sender.id
+            ),
+          ];
+    Promise.all(pushes).catch((e) => console.error('message push failed:', e.message));
   } catch (error) {
     handleError(res, 'sendMessage', error);
   }
