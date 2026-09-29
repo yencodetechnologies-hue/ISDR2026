@@ -35,8 +35,18 @@ export default function ScheduleDetail() {
     toast(!was ? "Saved to My Schedule" : "Removed from My Schedule", "success");
   };
 
-  if (!data) return <Page title="Program Details"><Loading /></Page>;
-  if (!data.schedule) return <Page title="Program Details"><ErrorState message={data.error || "Session not found"} /></Page>;
+  if (!data)
+    return (
+      <Page title="Program Details">
+        <Loading />
+      </Page>
+    );
+  if (!data.schedule)
+    return (
+      <Page title="Program Details">
+        <ErrorState message={data.error || "Session not found"} />
+      </Page>
+    );
 
   const s = data.schedule;
   const venue = String(data.event?.venue ?? "");
@@ -45,18 +55,24 @@ export default function ScheduleDetail() {
   const isLive = !!w && now >= w.start && now < w.end;
   const isPast = !!w && now >= w.end;
   const status = isLive ? "LIVE NOW" : isPast ? "ENDED" : "UPCOMING";
-  const isKeynote = String(s.scheduleName ?? "").toLowerCase().includes("keynote");
+  const isKeynote = String(s.scheduleName ?? "")
+    .toLowerCase()
+    .includes("keynote");
 
-  const tile = (icon: string, color: string, label: string, value: React.ReactNode, href?: string) => {
+  const row = (icon: string, color: string, label: string, value: React.ReactNode, href?: string) => {
     const body = (
-      <div className="card flex h-full gap-3 p-3.5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: `${color}22` }}>
-          <Icon name={icon} size={20} color={color} />
+      <div className={`flex gap-3 px-5 py-3.5 ${href ? "transition hover:bg-white/[0.03]" : ""}`}>
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+          style={{ background: `${color}22` }}
+        >
+          <Icon name={icon} size={19} color={color} />
         </div>
-        <div className="min-w-0">
-          <div className="text-[10.5px] font-bold tracking-wider text-muted">{label}</div>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs text-muted">{label}</div>
           <div className="mt-0.5 text-sm font-semibold">{value}</div>
         </div>
+        {href && <Icon name="open_in_new" size={16} color="#6B7280" />}
       </div>
     );
     return href ? (
@@ -69,45 +85,73 @@ export default function ScheduleDetail() {
   };
 
   return (
-    <Page title="Program Details">
-      <div className="card p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Pill color={isLive ? "#EF4444" : isPast ? "#9CA3AF" : "#3B82F6"}>{status}</Pill>
-          <Pill color="#8B5CF6">{isKeynote ? "KEYNOTE" : "SESSION"}</Pill>
-        </div>
-        <div className="mt-3 text-xl font-extrabold">{s.scheduleName}</div>
-        {data.event?.title && <div className="mt-1 text-sm text-muted">{data.event.title}</div>}
-        {s.speakerName && (
-          <div className="mt-4 flex items-center gap-3 rounded-xl bg-field p-3">
-            <Avatar src={s.speakerPhoto} name={s.speakerName} size={48} />
-            <div>
-              <div className="text-[10.5px] font-bold tracking-wider text-muted">SPEAKER</div>
-              <div className="font-bold">{s.speakerName}</div>
+    <Page
+      eyebrow={data.event?.title}
+      title={s.scheduleName}
+      actions={
+        isParticipant && (
+          <Button
+            variant={saved ? "outline" : "primary"}
+            icon={saved ? "bookmark_added" : "bookmark_add"}
+            onClick={toggleSaved}
+          >
+            {saved ? "Saved to My Schedule" : "Save to My Schedule"}
+          </Button>
+        )
+      }
+    >
+      <div className="grid gap-5 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <div className="card p-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <Pill color={isLive ? "#EF4444" : isPast ? "#9CA3AF" : "#3B82F6"}>{status}</Pill>
+              <Pill color="#8B5CF6">{isKeynote ? "KEYNOTE" : "SESSION"}</Pill>
             </div>
+            {s.speakerName && (
+              <div className="mt-5 flex items-center gap-4">
+                <Avatar src={s.speakerPhoto} name={s.speakerName} size={60} />
+                <div>
+                  <div className="eyebrow">Speaker</div>
+                  <div className="mt-0.5 text-lg font-semibold">{s.speakerName}</div>
+                </div>
+              </div>
+            )}
+            {s.description && (
+              <div className="mt-6 border-t border-line pt-5">
+                <div className="eyebrow flex items-center gap-2">
+                  <Icon name="description" size={16} />
+                  About this session
+                </div>
+                <div className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-white/85">
+                  {s.description}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        {w && tile("calendar_month", "#3B82F6", "DATE", `${weekdayLong(w.start)}, ${w.start.getDate()} ${monthShort(w.start)} ${w.start.getFullYear()}`)}
-        {w && tile("schedule", "#14B8A6", "TIME", `${fmtTime(w.start)} - ${fmtTime(w.end)}`)}
-        {s.hall && tile("apartment", "#8B5CF6", "HALL", s.hall)}
-        {venue && tile("location_on", "#E11D48", "LOCATION", venue, `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue)}`)}
-      </div>
-      {s.description && (
-        <div className="card mt-3 p-4">
-          <div className="flex items-center gap-2 text-[11px] font-bold tracking-wider text-muted">
-            <Icon name="description" size={16} />
-            ABOUT THIS SESSION
-          </div>
-          <div className="mt-2 whitespace-pre-wrap text-sm text-white/85">{s.description}</div>
+          <SessionContent scheduleId={scheduleId} />
         </div>
-      )}
-      <SessionContent scheduleId={scheduleId} />
-      {isParticipant && (
-        <Button full className="mt-5 py-3" variant={saved ? "outline" : "primary"} icon={saved ? "bookmark_added" : "bookmark_add"} onClick={toggleSaved}>
-          {saved ? "Saved to My Schedule" : "Save to My Schedule"}
-        </Button>
-      )}
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <div className="card divide-y divide-line overflow-hidden">
+            {w &&
+              row(
+                "calendar_month",
+                "#3B82F6",
+                "Date",
+                `${weekdayLong(w.start)}, ${w.start.getDate()} ${monthShort(w.start)} ${w.start.getFullYear()}`,
+              )}
+            {w && row("schedule", "#14B8A6", "Time", `${fmtTime(w.start)} - ${fmtTime(w.end)}`)}
+            {s.hall && row("apartment", "#8B5CF6", "Hall", s.hall)}
+            {venue &&
+              row(
+                "location_on",
+                "#E11D48",
+                "Location",
+                venue,
+                `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue)}`,
+              )}
+          </div>
+        </aside>
+      </div>
     </Page>
   );
 }

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-refresh/only-export-components */
 import { useEffect, useRef, useState } from "react";
-import { Icon, Loading, Page, Spinner, useToast } from "@/components/ui";
+import { Button, Icon, Loading, Page, Spinner, useToast } from "@/components/ui";
 import { asset, get } from "@/lib/api";
 import { fmtDMon, parseDate } from "@/lib/format";
 
@@ -26,7 +26,12 @@ export function CertificateImage({ name }: { name: string }) {
       <img src={CERT_IMG} alt="Certificate" className="block w-full" />
       <div
         className="absolute flex items-center justify-center overflow-hidden"
-        style={{ left: `${NAME_BOX.left * 100}%`, top: `${NAME_BOX.top * 100}%`, width: `${NAME_BOX.width * 100}%`, height: `${NAME_BOX.height * 100}%` }}
+        style={{
+          left: `${NAME_BOX.left * 100}%`,
+          top: `${NAME_BOX.top * 100}%`,
+          width: `${NAME_BOX.width * 100}%`,
+          height: `${NAME_BOX.height * 100}%`,
+        }}
       >
         <span className="whitespace-nowrap font-extrabold text-[#1E3A8A]" style={{ fontSize: size }}>
           {name}
@@ -55,7 +60,10 @@ export async function downloadCertificatePdf(name: string) {
   doc.setFontSize(size);
   const maxW = w * NAME_BOX.width;
   while (doc.getTextWidth(name) > maxW && size > 8) doc.setFontSize(--size);
-  doc.text(name, w * (NAME_BOX.left + NAME_BOX.width / 2), h * (NAME_BOX.top + NAME_BOX.height / 2), { align: "center", baseline: "middle" });
+  doc.text(name, w * (NAME_BOX.left + NAME_BOX.width / 2), h * (NAME_BOX.top + NAME_BOX.height / 2), {
+    align: "center",
+    baseline: "middle",
+  });
   doc.save("ISDR2026_Certificate.pdf");
 }
 
@@ -96,15 +104,32 @@ export default function ParticipantCertificate() {
   );
 
   return (
-    <Page title="Certificate" width={640}>
+    <Page
+      title="Certificate"
+      subtitle={
+        unlocked
+          ? "Your certificate is ready to download"
+          : "Get your entry and exit scanned on all event days to unlock your certificate."
+      }
+      back={false}
+      width={960}
+      actions={
+        data &&
+        unlocked && (
+          <Button icon="download" loading={downloading} onClick={download}>
+            Download PDF
+          </Button>
+        )
+      }
+    >
       {error ? (
         <div className="py-16 text-center text-muted">{error}</div>
       ) : !data ? (
         <Loading />
       ) : (
         <>
-          <div className="card px-2 pb-3.5 pt-4">
-            <div className="mb-3.5 pl-2 text-[11px] font-bold tracking-wider text-muted">ATTENDANCE</div>
+          <div className="card px-3 pb-5 pt-5">
+            <div className="eyebrow mb-4 pl-3">Attendance</div>
             {days.length === 0 ? (
               <div className="pl-2 text-[12.5px] text-muted">Event dates are not set yet</div>
             ) : (
@@ -117,21 +142,38 @@ export default function ParticipantCertificate() {
                   return (
                     <div key={i} className="flex-1">
                       <div className="flex items-center">
-                        <div className="h-[3px] flex-1" style={{ background: i === 0 ? "transparent" : complete ? "#22C55E" : "rgba(255,255,255,0.08)" }} />
+                        <div
+                          className="h-[3px] flex-1"
+                          style={{
+                            background: i === 0 ? "transparent" : complete ? "#22C55E" : "rgba(255,255,255,0.08)",
+                          }}
+                        />
                         <div
                           className="flex h-[26px] w-[26px] items-center justify-center rounded-full border-2 text-[11px] font-bold"
-                          style={{ borderColor: color, background: complete || partial ? color : "transparent", color: partial ? "#fff" : "#9CA3AF" }}
+                          style={{
+                            borderColor: color,
+                            background: complete || partial ? color : "transparent",
+                            color: partial ? "#fff" : "#9CA3AF",
+                          }}
                         >
                           {complete ? <Icon name="check" size={16} color="#fff" /> : i + 1}
                         </div>
                         <div
                           className="h-[3px] flex-1"
                           style={{
-                            background: i === days.length - 1 ? "transparent" : done(days[i + 1]) ? "#22C55E" : "rgba(255,255,255,0.08)",
+                            background:
+                              i === days.length - 1
+                                ? "transparent"
+                                : done(days[i + 1])
+                                  ? "#22C55E"
+                                  : "rgba(255,255,255,0.08)",
                           }}
                         />
                       </div>
-                      <div className="mt-1.5 text-center text-[11px] font-semibold" style={{ color: complete ? "#fff" : "#9CA3AF" }}>
+                      <div
+                        className="mt-1.5 text-center text-[11px] font-semibold"
+                        style={{ color: complete ? "#fff" : "#9CA3AF" }}
+                      >
                         {date ? fmtDMon(date) : `Day ${i + 1}`}
                       </div>
                       <div className="mt-1 space-y-0.5">
@@ -144,7 +186,7 @@ export default function ParticipantCertificate() {
               </div>
             )}
           </div>
-          <div className="relative mt-4 overflow-hidden rounded-xl">
+          <div className="relative mt-5 overflow-hidden rounded-xl border border-line shadow-2xl shadow-black/40">
             {unlocked ? (
               <>
                 <CertificateImage name={name} />
@@ -170,11 +212,6 @@ export default function ParticipantCertificate() {
               </>
             )}
           </div>
-          {!unlocked && (
-            <div className="mt-3.5 text-center text-[12.5px] text-muted">
-              Get your entry and exit scanned on all event days to unlock your certificate.
-            </div>
-          )}
         </>
       )}
     </Page>

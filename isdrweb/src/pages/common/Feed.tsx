@@ -1,7 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Avatar, Button, Empty, ErrorState, Icon, IconButton, Loading, Page, Spinner, useConfirm, useToast } from "@/components/ui";
+import {
+  Avatar,
+  Button,
+  Empty,
+  ErrorState,
+  IconButton,
+  Loading,
+  Page,
+  Spinner,
+  useConfirm,
+  useToast,
+} from "@/components/ui";
 import { asset, del, get, post } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtShortDateTime, idOf, parseDate } from "@/lib/format";
@@ -39,7 +50,15 @@ export function Feed() {
   };
 
   const remove = async (p: any) => {
-    if (!(await confirm({ title: "Delete post?", message: "This photo will be removed from the feed.", confirm: "Delete", danger: true }))) return;
+    if (
+      !(await confirm({
+        title: "Delete post?",
+        message: "This photo will be removed from the feed.",
+        confirm: "Delete",
+        danger: true,
+      }))
+    )
+      return;
     const res = await del(`/feed-posts/${idOf(p)}`);
     if (res.success) {
       setPosts((l) => (l ?? []).filter((q) => idOf(q) !== idOf(p)));
@@ -70,27 +89,54 @@ export function Feed() {
   };
 
   return (
-    <Page title="Feed">
+    <Page
+      title="Feed"
+      subtitle="Selfies from the conference"
+      back={false}
+      actions={
+        !adminMode && (
+          <Button
+            icon="photo_camera"
+            onClick={() => navigate("/feed/camera")}
+            className="!bg-gradient-to-r from-pink-500 to-orange-400"
+          >
+            Take a Selfie
+          </Button>
+        )
+      }
+    >
       {error ? (
         <ErrorState message={error} onRetry={load} />
       ) : !posts ? (
         <Loading />
       ) : posts.length === 0 ? (
-        <Empty icon="photo_camera" title="No posts yet" subtitle={adminMode ? undefined : "Tap the camera to share the first selfie."} />
+        <Empty
+          icon="photo_camera"
+          title="No posts yet"
+          subtitle={adminMode ? undefined : "Click Take a Selfie to share the first one."}
+        />
       ) : (
-        <div className="mx-auto max-w-lg space-y-4">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {posts.map((p) => (
             <div key={idOf(p)} className="card overflow-hidden">
-              <div className="flex items-center gap-2.5 p-3">
-                <Avatar src={p.participantPhoto} name={p.participantName} size={36} />
+              <div className="flex items-center gap-2.5 px-4 py-3">
+                <Avatar src={p.participantPhoto} name={p.participantName} size={34} />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-bold">{p.participantName || "Participant"}</div>
+                  <div className="truncate text-sm font-semibold">{p.participantName || "Participant"}</div>
                   <div className="text-[11px] text-muted">{fmtShortDateTime(parseDate(p.createdAt))}</div>
                 </div>
               </div>
-              {p.imageUrl && <img src={p.imageUrl} alt="" className="aspect-square w-full bg-field object-cover" />}
+              {p.imageUrl && (
+                <img src={p.imageUrl} alt="" loading="lazy" className="aspect-square w-full bg-field object-cover" />
+              )}
               <div className="flex items-center gap-1 px-2 py-1.5">
-                <IconButton icon="favorite" outline={!p.liked} color={p.liked ? "#EF4444" : "#fff"} title="Like" onClick={() => like(p)} />
+                <IconButton
+                  icon="favorite"
+                  outline={!p.liked}
+                  color={p.liked ? "#EF4444" : "#fff"}
+                  title="Like"
+                  onClick={() => like(p)}
+                />
                 <span className="text-sm font-semibold">{Number(p.likeCount) || 0}</span>
                 <span className="flex-1" />
                 {sharing === idOf(p) ? (
@@ -107,15 +153,6 @@ export function Feed() {
             </div>
           ))}
         </div>
-      )}
-      {!adminMode && (
-        <button
-          onClick={() => navigate("/feed/camera")}
-          title="Take a selfie"
-          className="fixed bottom-6 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-orange-400 shadow-xl"
-        >
-          <Icon name="photo_camera" size={28} />
-        </button>
       )}
     </Page>
   );
@@ -200,8 +237,9 @@ export function SelfieCamera() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-black">
-      <div className="flex items-center p-2">
+      <div className="flex items-center gap-2 p-3">
         <IconButton icon="close" title="Close" onClick={() => navigate(-1)} />
+        <span className="font-semibold">Take a Selfie</span>
       </div>
       <div className="flex flex-1 items-center justify-center p-2">
         <div className="relative aspect-square w-full max-w-[min(90vw,70vh)] overflow-hidden rounded-xl bg-[#111]">

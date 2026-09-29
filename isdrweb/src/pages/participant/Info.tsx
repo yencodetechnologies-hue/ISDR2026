@@ -6,16 +6,20 @@ type Person = { name: string; role: string; img?: string; lines?: string[] };
 
 function PersonCard({ p }: { p: Person }) {
   return (
-    <div className="card flex items-center gap-3 p-3">
+    <div className="card card-hover flex items-center gap-4 p-4">
       {p.img ? (
-        <img src={asset(p.img)} alt="" className="h-16 w-16 shrink-0 rounded-xl bg-field object-cover object-top" />
+        <img
+          src={asset(p.img)}
+          alt=""
+          className="h-[72px] w-[72px] shrink-0 rounded-lg bg-field object-cover object-top"
+        />
       ) : (
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-field">
+        <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-lg bg-field">
           <Icon name="person" size={30} color="#6B7280" />
         </div>
       )}
       <div className="min-w-0">
-        <div className="font-bold">{p.name}</div>
+        <div className="font-semibold">{p.name}</div>
         <div className="text-sm font-semibold text-[#60A5FA]">{p.role}</div>
         {p.lines?.map((l) => (
           <div key={l} className="mt-0.5 whitespace-pre-line text-xs text-muted">
@@ -27,22 +31,35 @@ function PersonCard({ p }: { p: Person }) {
   );
 }
 
-function Accordion({ title, subtitle, items, numbered = true }: { title: string; subtitle?: string; items: string[]; numbered?: boolean }) {
+function Accordion({
+  title,
+  subtitle,
+  items,
+  numbered = true,
+}: {
+  title: string;
+  subtitle?: string;
+  items: string[];
+  numbered?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <div className="card overflow-hidden">
-      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-3 p-3.5 text-left">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/15">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-white/[0.03]"
+      >
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/15">
           <Icon name="groups" size={20} color="#60A5FA" />
         </div>
         <div className="flex-1">
-          <div className="font-bold">{title}</div>
+          <div className="font-semibold">{title}</div>
           <div className="text-xs text-muted">{subtitle ?? `${items.length} Members`}</div>
         </div>
         <Icon name={open ? "expand_less" : "expand_more"} color="#9CA3AF" />
       </button>
       {open && (
-        <div className="grid gap-1.5 border-t border-line p-3.5 sm:grid-cols-2">
+        <div className="grid gap-2 border-t border-line px-5 py-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((n, i) => (
             <div key={n} className="flex items-center gap-2 text-sm">
               {numbered && <span className="w-6 text-right text-xs font-bold text-muted">{i + 1}.</span>}
@@ -56,7 +73,10 @@ function Accordion({ title, subtitle, items, numbered = true }: { title: string;
 }
 
 const Header = ({ children }: { children: React.ReactNode }) => (
-  <div className="mb-2.5 mt-6 text-[12px] font-extrabold tracking-wider text-white/70">{children}</div>
+  <div className="mb-4 mt-10 flex items-center gap-3">
+    <h2 className="text-sm font-semibold uppercase tracking-[0.1em] text-white/85">{children}</h2>
+    <div className="h-px flex-1 bg-line" />
+  </div>
 );
 
 /* ------------------------------------------------------------------ */
@@ -74,8 +94,16 @@ const LEADS: Person[] = [
   { name: "DR. K. GNANA SHANMUGHAM", role: "Chairman, Scientific Committee", img: "DR.-K.-GNANA-SHANMUGHAM.webp" },
   { name: "DR. RAGAVENDRA JAYESH", role: "Conference Advisor", img: "DR.-RAGAVENDRA-JAYESH-1.webp" },
   { name: "DR. PONNUDURAI ARANGANNAL", role: "Conference Advisor", img: "DR.-PONNUDURAI-ARANGANNAL-1.webp" },
-  { name: "DR. BADRI THIRUVENKATACHARI", role: "Co-Chairman, Scientific Committee", img: "DR.-BADRI-THIRUVENKATACHARI-1.webp" },
-  { name: "DR. S. KISHORE KUMAR", role: "Joint Secretary", img: "DR.-S.-KISHORE-KUMAR-Organising-Committee.jpg-1.webp" },
+  {
+    name: "DR. BADRI THIRUVENKATACHARI",
+    role: "Co-Chairman, Scientific Committee",
+    img: "DR.-BADRI-THIRUVENKATACHARI-1.webp",
+  },
+  {
+    name: "DR. S. KISHORE KUMAR",
+    role: "Joint Secretary",
+    img: "DR.-S.-KISHORE-KUMAR-Organising-Committee.jpg-1.webp",
+  },
   { name: "DR. N. ARAVINDHA BABU", role: "Treasurer", img: "DR.N.-ARAVINDHA-BABU.webp" },
   { name: "DR. A. VENKATESH", role: "Convener, Preconference Courses", img: "DR.-A.-VENKATESH.webp" },
   { name: "DR. NALINI ASWATH", role: "Convener Pre Conference Course Committee", img: "DR.-NALINI-ASWATH-1.webp" },
@@ -138,11 +166,20 @@ const SUB_COMMITTEES: { title: string; members: string[] }[] = [
     ],
   },
   { title: "Reception & Hospitality Committee", members: ["Dr. Anitha Balaji", "Dr. Sree Devi V", "Dr. Tamil selvi"] },
-  { title: "Student Committee", members: ["Dr. Gold Pearlin Mary", "Dr. E. Tulasi Ram", "Dr. Geeta Priya", "Dr. D. Ramya"] },
-  { title: "Banquet and Cultural Night", members: ["Dr. Vijay Ebenezer", "Dr. Balakrishnan", "Dr. Saravana Kumar", "Dr. Prakash"] },
+  {
+    title: "Student Committee",
+    members: ["Dr. Gold Pearlin Mary", "Dr. E. Tulasi Ram", "Dr. Geeta Priya", "Dr. D. Ramya"],
+  },
+  {
+    title: "Banquet and Cultural Night",
+    members: ["Dr. Vijay Ebenezer", "Dr. Balakrishnan", "Dr. Saravana Kumar", "Dr. Prakash"],
+  },
   { title: "Awards Committee", members: ["Dr. N. Geetha priya", "Dr. Seetha lakshmi", "Dr. Amudha", "Dr. Mathangi"] },
   { title: "Website & Media", members: ["Dr. Janani Balachandran", "Dr. Abarna J"] },
-  { title: "Student Conference", members: ["Dr. Sumathi Jones", "Dr. N. Gold Pearlin Mary", "Dr. Malathy", "Dr. Kavya", "Dr. Durga Devi"] },
+  {
+    title: "Student Conference",
+    members: ["Dr. Sumathi Jones", "Dr. N. Gold Pearlin Mary", "Dr. Malathy", "Dr. Kavya", "Dr. Durga Devi"],
+  },
   {
     title: "Publications & Souvenir",
     members: [
@@ -156,12 +193,26 @@ const SUB_COMMITTEES: { title: string; members: string[] }[] = [
       "Dr. Suganya",
     ],
   },
-  { title: "Travel & Accommodation", members: ["Dr. T. Puhazhendi", "Dr. Rajasekar K.V", "Dr. Gowri Shankar", "Dr. Abirami", "Dr. Aravind Vishnu"] },
+  {
+    title: "Travel & Accommodation",
+    members: ["Dr. T. Puhazhendi", "Dr. Rajasekar K.V", "Dr. Gowri Shankar", "Dr. Abirami", "Dr. Aravind Vishnu"],
+  },
   {
     title: "Trade Committee",
-    members: ["Dr. Manigandan", "Dr. V. Balakumar", "Dr. Vikram", "Dr. Mansoor", "Dr. A. Karthick", "Dr. Rajith Varma", "Dr. Nilofer Farzana"],
+    members: [
+      "Dr. Manigandan",
+      "Dr. V. Balakumar",
+      "Dr. Vikram",
+      "Dr. Mansoor",
+      "Dr. A. Karthick",
+      "Dr. Rajith Varma",
+      "Dr. Nilofer Farzana",
+    ],
   },
-  { title: "Technical Committee", members: ["Dr. Siva Kumar", "Dr. Savitha", "Dr. Rajasekar", "Dr. Manoj", "Dr. Sadhana", "Mr. Vijay"] },
+  {
+    title: "Technical Committee",
+    members: ["Dr. Siva Kumar", "Dr. Savitha", "Dr. Rajasekar", "Dr. Manoj", "Dr. Sadhana", "Mr. Vijay"],
+  },
 ];
 
 const CHAIR_MESSAGE =
@@ -170,10 +221,14 @@ const CHAIR_MESSAGE =
 export function Committee() {
   const [msgOpen, setMsgOpen] = useState(false);
   return (
-    <Page title="Organising Committee">
-      <div className="card p-4">
+    <Page title="Organising Committee" subtitle="36th ISDR International Conference 2026">
+      <div className="card p-6">
         <div className="flex items-center gap-3">
-          <img src={asset("DR-J.-SRI-NISHA.webp")} alt="" className="h-16 w-16 rounded-full bg-field object-cover object-top" />
+          <img
+            src={asset("DR-J.-SRI-NISHA.webp")}
+            alt=""
+            className="h-16 w-16 rounded-full bg-field object-cover object-top"
+          />
           <div>
             <div className="text-xs font-bold tracking-wider text-muted">From the Organising Chairperson</div>
             <div className="font-bold">DR. J. SRI NISHA</div>
@@ -181,7 +236,9 @@ export function Committee() {
           </div>
         </div>
         <div className="mt-3 text-xs font-bold tracking-wider text-white/70">DEAR COLLEAGUES,</div>
-        <p className={`mt-1.5 text-sm leading-relaxed text-white/85 ${msgOpen ? "" : "line-clamp-4"}`}>{CHAIR_MESSAGE}</p>
+        <p className={`mt-1.5 text-sm leading-relaxed text-white/85 ${msgOpen ? "" : "line-clamp-4"}`}>
+          {CHAIR_MESSAGE}
+        </p>
         <button onClick={() => setMsgOpen((o) => !o)} className="mt-1 text-xs font-semibold text-accent">
           {msgOpen ? "Show less" : "Read more"}
         </button>
@@ -189,13 +246,15 @@ export function Committee() {
           <div className="mt-3 border-t border-line pt-3 text-sm">
             <div className="font-bold">DR. J. SRI NISHA</div>
             <div className="whitespace-pre-line text-xs text-muted">
-              {"Vice President, BIHER\nChairperson - Sree Balaji Group of Institutions\nOrganising Chairman - 36th ISDR"}
+              {
+                "Vice President, BIHER\nChairperson - Sree Balaji Group of Institutions\nOrganising Chairman - 36th ISDR"
+              }
             </div>
           </div>
         )}
       </div>
       <Header>ORGANISING LEADERSHIP &amp; CONVENERS</Header>
-      <div className="grid gap-2.5 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {LEADS.map((p) => (
           <PersonCard key={p.name + p.role} p={p} />
         ))}
@@ -215,7 +274,12 @@ export function Committee() {
 /* ------------------------------------------------------------------ */
 
 const OFFICE_BEARERS: Person[] = [
-  { name: "DR. RITU DUGGAL", role: "President", img: "DR.-RITU-DUGGAL.webp", lines: ["Chief & Professor, Department of Orthodontics, CDER, AIIMS, New Delhi"] },
+  {
+    name: "DR. RITU DUGGAL",
+    role: "President",
+    img: "DR.-RITU-DUGGAL.webp",
+    lines: ["Chief & Professor, Department of Orthodontics, CDER, AIIMS, New Delhi"],
+  },
   {
     name: "DR. MAHESH VERMA",
     role: "President Elect",
@@ -232,7 +296,9 @@ const OFFICE_BEARERS: Person[] = [
     name: "DR. DEEPAK CHANDRA",
     role: "Vice President",
     img: "DR.-DEEPAK-CHANDRA.webp",
-    lines: ["Professor & Head, Department of Orthodontics & Dentofacial Orthopedics, SRM Kattankulathur Dental College & Hospital, Chennai"],
+    lines: [
+      "Professor & Head, Department of Orthodontics & Dentofacial Orthopedics, SRM Kattankulathur Dental College & Hospital, Chennai",
+    ],
   },
   {
     name: "DR. NAMITA SHANBHAG",
@@ -252,7 +318,12 @@ const OFFICE_BEARERS: Person[] = [
     img: "DR.-PREETHA-BALAJI.webp",
     lines: ["Department of Oral & Maxillofacial Surgery, Balaji Dental & Craniofacial Hospital, Chennai"],
   },
-  { name: "DR. ANIL KOHLI", role: "Editor-In-Chief - IJDR", img: "DR.-ANIL-KOHLI.webp", lines: ["Former President, DCI, New Delhi"] },
+  {
+    name: "DR. ANIL KOHLI",
+    role: "Editor-In-Chief - IJDR",
+    img: "DR.-ANIL-KOHLI.webp",
+    lines: ["Former President, DCI, New Delhi"],
+  },
   {
     name: "DR. S. KISHORE KUMAR",
     role: "Treasurer",
@@ -297,29 +368,33 @@ const CONF_TEXT = [
 
 export function AboutIsdr() {
   return (
-    <Page title="About ISDR">
-      <div className="card p-4">
-        <img src={asset("logo.png")} alt="ISDR" className="mx-auto h-20 object-contain" />
-        <div className="mt-3 text-lg font-extrabold">Indian Society for Dental Research</div>
-        {ABOUT_TEXT.map((t) => (
-          <p key={t.slice(0, 20)} className="mt-2.5 text-sm leading-relaxed text-white/85">
-            {t}
-          </p>
-        ))}
-      </div>
-      <div className="card mt-4 p-4">
-        <div className="text-lg font-extrabold">36th ISDR International Conference 2026</div>
-        <div className="mt-2 rounded-xl bg-accent/10 p-3 text-center text-sm font-semibold italic text-[#93C5FD]">
-          “Translational Dental Research: Bridging Science and Care”
+    <Page title="About ISDR" subtitle="Indian Division of the IADR since 1986">
+      <div className="grid gap-5 lg:grid-cols-5">
+        <div className="card p-6 lg:col-span-3">
+          <div className="flex items-center gap-4">
+            <img src={asset("logo.png")} alt="ISDR" className="h-16 object-contain" />
+            <div className="text-lg font-semibold">Indian Society for Dental Research</div>
+          </div>
+          {ABOUT_TEXT.map((t) => (
+            <p key={t.slice(0, 20)} className="mt-3 text-sm leading-relaxed text-white/80">
+              {t}
+            </p>
+          ))}
         </div>
-        {CONF_TEXT.map((t) => (
-          <p key={t.slice(0, 20)} className="mt-2.5 text-sm leading-relaxed text-white/85">
-            {t}
-          </p>
-        ))}
+        <div className="card self-start p-6 lg:col-span-2">
+          <div className="text-lg font-extrabold">36th ISDR International Conference 2026</div>
+          <div className="mt-2 rounded-xl bg-accent/10 p-3 text-center text-sm font-semibold italic text-[#93C5FD]">
+            “Translational Dental Research: Bridging Science and Care”
+          </div>
+          {CONF_TEXT.map((t) => (
+            <p key={t.slice(0, 20)} className="mt-2.5 text-sm leading-relaxed text-white/85">
+              {t}
+            </p>
+          ))}
+        </div>
       </div>
       <Header>ISDR Office Bearers</Header>
-      <div className="grid gap-2.5 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {OFFICE_BEARERS.map((p) => (
           <PersonCard key={p.name} p={p} />
         ))}
@@ -342,7 +417,12 @@ export function AboutIsdr() {
 /* ------------------------------------------------------------------ */
 
 const KEYNOTES: Person[] = [
-  { name: "DR MURUGABASKAR", role: "Research Scientist", img: "DR-MURUGABASKAR.webp", lines: ["Boston Children’s Hospital / Harvard Medical School"] },
+  {
+    name: "DR MURUGABASKAR",
+    role: "Research Scientist",
+    img: "DR-MURUGABASKAR.webp",
+    lines: ["Boston Children’s Hospital / Harvard Medical School"],
+  },
   {
     name: "DR. PAVITHRA KRISHNASWAMI",
     role: "Senior Scientist",
@@ -368,9 +448,17 @@ const PATRONS: Person[] = [
     name: "DR. J. SRI NISHA",
     role: "Vice President",
     img: "DR-J.-SRI-NISHA.webp",
-    lines: ["Bharath Institute of Higher Education and Research\nChairperson – Sree Balaji Group of Institutions", "Organising Chairman – 36th ISDR"],
+    lines: [
+      "Bharath Institute of Higher Education and Research\nChairperson – Sree Balaji Group of Institutions",
+      "Organising Chairman – 36th ISDR",
+    ],
   },
-  { name: "ER. N. ELAMARAN", role: "Managing Director", img: "ER.-N.-ELAMARAN.webp", lines: ["Sree Balaji Group of Institutions", "Patron – 36th ISDR"] },
+  {
+    name: "ER. N. ELAMARAN",
+    role: "Managing Director",
+    img: "ER.-N.-ELAMARAN.webp",
+    lines: ["Sree Balaji Group of Institutions", "Patron – 36th ISDR"],
+  },
 ];
 
 const CONF_COMMITTEE: Person[] = [
@@ -389,9 +477,11 @@ const STUDENT_COMMITTEE: Person[] = [
 export function StudentConference() {
   return (
     <Page title="Student Conference">
-      <div className="card bg-gradient-to-br from-[#1E3A8A] to-[#14141F] p-5 text-center">
-        <div className="text-[11px] font-bold tracking-widest text-[#93C5FD]">36TH ISDR INTERNATIONAL CONFERENCE 2026</div>
-        <div className="mt-1 text-2xl font-extrabold">Student’s Conference</div>
+      <div className="card bg-gradient-to-br from-[#1E3A8A] to-[#14141F] px-6 py-10 text-center">
+        <div className="text-[11px] font-bold tracking-widest text-[#93C5FD]">
+          36TH ISDR INTERNATIONAL CONFERENCE 2026
+        </div>
+        <div className="mt-2 text-3xl font-extrabold">Student’s Conference</div>
         <div className="mt-1 text-sm text-white/80">Your Research. Your Discovery. Your Global Stage.</div>
         <div className="mt-3 flex items-center justify-center gap-1 text-xs text-white/70">
           <Icon name="location_on" size={14} />
@@ -399,7 +489,7 @@ export function StudentConference() {
         </div>
       </div>
       <Header>KEYNOTE SPEAKERS</Header>
-      <div className="grid gap-2.5 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {KEYNOTES.map((p) => (
           <PersonCard key={p.name} p={p} />
         ))}
@@ -407,43 +497,49 @@ export function StudentConference() {
       <Header>PREAMBLE</Header>
       <div className="card p-4 text-sm leading-relaxed text-white/85">
         <p>
-          The 36th ISDR International Conference 2026, Student’s Conference, hosted by Sree Balaji Dental College &amp; Hospital, BIHER, Chennai,
-          invites students to present innovative work through Oral and Poster Presentations.
+          The 36th ISDR International Conference 2026, Student’s Conference, hosted by Sree Balaji Dental College &amp;
+          Hospital, BIHER, Chennai, invites students to present innovative work through Oral and Poster Presentations.
         </p>
         <p className="mt-2.5">
-          Organized by the Indian Society for Dental Research (ISDR), the Indian Division of the IADR, this premier scientific conference provides
-          a platform to showcase research, interact with renowned national and international experts, receive valuable feedback, and build global
-          collaborations.
+          Organized by the Indian Society for Dental Research (ISDR), the Indian Division of the IADR, this premier
+          scientific conference provides a platform to showcase research, interact with renowned national and
+          international experts, receive valuable feedback, and build global collaborations.
         </p>
       </div>
       <div className="card mt-3 p-4">
         <div className="text-[11px] font-bold tracking-wider text-muted">CONFERENCE THEME</div>
-        <div className="mt-1 font-semibold italic text-[#93C5FD]">“Translational Dental Research: Bridging Science and Care”</div>
+        <div className="mt-1 font-semibold italic text-[#93C5FD]">
+          “Translational Dental Research: Bridging Science and Care”
+        </div>
         <div className="mt-1.5 text-sm text-white/80">
-          Highlights advances in diagnostics, biomaterials, regenerative dentistry, precision dentistry, artificial intelligence, digital health,
-          and public health.
+          Highlights advances in diagnostics, biomaterials, regenerative dentistry, precision dentistry, artificial
+          intelligence, digital health, and public health.
         </div>
       </div>
       <Header>PATRONS</Header>
-      <div className="grid gap-2.5 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {PATRONS.map((p) => (
           <PersonCard key={p.name} p={p} />
         ))}
       </div>
       <Header>CONFERENCE ORGANISING COMMITTEE</Header>
-      <div className="grid gap-2.5 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {CONF_COMMITTEE.map((p) => (
           <PersonCard key={p.name} p={p} />
         ))}
       </div>
       <Header>STUDENTS CONFERENCE ORGANISING COMMITTEE</Header>
-      <div className="grid gap-2.5 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {STUDENT_COMMITTEE.map((p) => (
           <PersonCard key={p.name} p={p} />
         ))}
       </div>
       <Header>RECEPTION &amp; HOSPITALITY</Header>
-      <Accordion title="Reception & Hospitality" subtitle="3 Committee Members" items={["Dr. Malathy", "Dr. Kavya", "Dr. Durga Devi"]} />
+      <Accordion
+        title="Reception & Hospitality"
+        subtitle="3 Committee Members"
+        items={["Dr. Malathy", "Dr. Kavya", "Dr. Durga Devi"]}
+      />
     </Page>
   );
 }
@@ -475,69 +571,78 @@ const tel = (p: string) => `tel:${p.replace(/[^0-9+]/g, "")}`;
 
 export function Accommodation() {
   return (
-    <Page title="Accommodation">
-      <div className="card p-4">
-        <div className="text-[11px] font-bold tracking-wider text-[#38BDF8]">VENUE STAY</div>
-        <div className="mt-1 text-lg font-extrabold">In-House Accommodation</div>
-        <div className="mt-1 flex items-center gap-1 text-sm text-white/75">
-          <Icon name="location_on" size={16} />
-          Kaldan Samudhra Palace Resort, Mahabalipuram
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-2.5">
-          <div className="rounded-xl bg-field p-3">
-            <div className="text-[11px] font-bold tracking-wider text-muted">FULL ROOM</div>
-            <div className="text-xl font-extrabold">₹20,000/-</div>
-            <div className="text-xs text-muted">per day</div>
+    <Page title="Accommodation" subtitle="Stay options near the conference venue">
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div>
+          <div className="card p-6">
+            <div className="text-[11px] font-bold tracking-wider text-[#38BDF8]">VENUE STAY</div>
+            <div className="mt-1 text-lg font-extrabold">In-House Accommodation</div>
+            <div className="mt-1 flex items-center gap-1 text-sm text-white/75">
+              <Icon name="location_on" size={16} />
+              Kaldan Samudhra Palace Resort, Mahabalipuram
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              <div className="rounded-xl bg-field p-3">
+                <div className="text-[11px] font-bold tracking-wider text-muted">FULL ROOM</div>
+                <div className="text-xl font-extrabold">₹20,000/-</div>
+                <div className="text-xs text-muted">per day</div>
+              </div>
+              <div className="rounded-xl bg-field p-3">
+                <div className="text-[11px] font-bold tracking-wider text-muted">SHARED ROOM</div>
+                <div className="text-xl font-extrabold">₹10,000/-</div>
+                <div className="text-xs text-muted">twin sharing / day</div>
+              </div>
+            </div>
+            <div className="mt-3 text-sm text-white/80">
+              The registered delegates are requested to contact for in-house accommodation @ Kaldan Samudhra Palace.
+            </div>
           </div>
-          <div className="rounded-xl bg-field p-3">
-            <div className="text-[11px] font-bold tracking-wider text-muted">SHARED ROOM</div>
-            <div className="text-xl font-extrabold">₹10,000/-</div>
-            <div className="text-xs text-muted">twin sharing / day</div>
+          <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-5">
+            <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-amber-400">
+              <Icon name="warning" size={18} />
+              IMPORTANT PAYMENT NOTICE
+            </div>
+            <div className="mt-1 text-sm text-white/85">
+              Please do not make accommodation payments to the registration QR code or conference bank account.
+            </div>
           </div>
         </div>
-        <div className="mt-3 text-sm text-white/80">
-          The registered delegates are requested to contact for in-house accommodation @ Kaldan Samudhra Palace.
-        </div>
-      </div>
-      <div className="mt-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
-        <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-amber-400">
-          <Icon name="warning" size={18} />
-          IMPORTANT PAYMENT NOTICE
-        </div>
-        <div className="mt-1 text-sm text-white/85">
-          Please do not make accommodation payments to the registration QR code or conference bank account.
-        </div>
-      </div>
-      <div className="card mt-3 flex items-center gap-3 p-4">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15">
-          <Icon name="support_agent" color="#60A5FA" />
-        </div>
-        <div className="flex-1">
-          <div className="font-bold">Ms. Radhika</div>
-          <div className="text-xs text-muted">Accommodation &amp; Details</div>
-          <div className="text-sm font-semibold">9940211202</div>
-        </div>
-        <a href={tel("9940211202")} className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-semibold">
-          <Icon name="call" size={18} />
-          Call
-        </a>
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2.5">
-        <div className="card p-3.5">
-          <div className="text-[11px] font-bold tracking-wider text-[#22C55E]">CHECK-IN</div>
-          <div className="text-lg font-extrabold">12:00 Noon</div>
-          <div className="text-xs text-muted">9 October 2026</div>
-        </div>
-        <div className="card p-3.5">
-          <div className="text-[11px] font-bold tracking-wider text-[#F87171]">CHECK-OUT</div>
-          <div className="text-lg font-extrabold">12:00 Noon</div>
-          <div className="text-xs text-muted">11 October 2026</div>
+        <div>
+          <div className="card flex items-center gap-3 p-5">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15">
+              <Icon name="support_agent" color="#60A5FA" />
+            </div>
+            <div className="flex-1">
+              <div className="font-bold">Ms. Radhika</div>
+              <div className="text-xs text-muted">Accommodation &amp; Details</div>
+              <div className="text-sm font-semibold">9940211202</div>
+            </div>
+            <a
+              href={tel("9940211202")}
+              className="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-semibold"
+            >
+              <Icon name="call" size={18} />
+              Call
+            </a>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-5">
+            <div className="card p-5">
+              <div className="text-[11px] font-bold tracking-wider text-[#22C55E]">CHECK-IN</div>
+              <div className="mt-1 text-xl font-extrabold">12:00 Noon</div>
+              <div className="text-xs text-muted">9 October 2026</div>
+            </div>
+            <div className="card p-5">
+              <div className="text-[11px] font-bold tracking-wider text-[#F87171]">CHECK-OUT</div>
+              <div className="mt-1 text-xl font-extrabold">12:00 Noon</div>
+              <div className="text-xs text-muted">11 October 2026</div>
+            </div>
+          </div>
         </div>
       </div>
       <Header>OTHER NEARBY RESORTS &amp; HOTELS</Header>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {RESORTS.map(([name, phone]) => (
-          <a key={name} href={tel(phone)} className="card flex items-center gap-3 p-3 hover:bg-[#191926]">
+          <a key={name} href={tel(phone)} className="card card-hover flex items-center gap-3 p-4">
             <Icon name="hotel" color="#38BDF8" />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold">{name}</div>

@@ -60,7 +60,8 @@ export const fmtDayDate = (d: Date | null | undefined) => (d ? `${weekday(d)}, $
 /** Mon, 5 Oct 2026 · 2:30 PM */
 export const fmtDateTime = (d: Date | null | undefined) => (d ? `${fmtDayDate(d)} · ${fmtTime(d)}` : "");
 /** 5 Oct, 2:30 PM */
-export const fmtShortDateTime = (d: Date | null | undefined) => (d ? `${d.getDate()} ${monthShort(d)}, ${fmtTime(d)}` : "");
+export const fmtShortDateTime = (d: Date | null | undefined) =>
+  d ? `${d.getDate()} ${monthShort(d)}, ${fmtTime(d)}` : "";
 /** 5 Oct */
 export const fmtDMon = (d: Date | null | undefined) => (d ? `${d.getDate()} ${monthShort(d)}` : "");
 

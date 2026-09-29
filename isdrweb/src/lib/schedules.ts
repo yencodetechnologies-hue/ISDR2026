@@ -20,10 +20,17 @@ export function daysOfEvent(event: any): Date[] {
 }
 
 /** Every managed event with all its schedules, as timed items (like the app's _fetchLiveSchedule). */
-export async function loadAllSchedules(): Promise<{ events: any[]; items: ScheduleItem[]; days: Date[]; error?: string }> {
+/** Every event's schedules; with `onlyEventId`, just that event's (the participant's own event). */
+export async function loadAllSchedules(onlyEventId?: string | null): Promise<{
+  events: any[];
+  items: ScheduleItem[];
+  days: Date[];
+  error?: string;
+}> {
   const ev = await get("/managed-events");
   if (!ev.success) return { events: [], items: [], days: [], error: ev.error };
-  const events: any[] = ev.events ?? [];
+  const all: any[] = ev.events ?? [];
+  const events = onlyEventId ? all.filter((e) => idOf(e) === onlyEventId) : all;
   const items: ScheduleItem[] = [];
   const dayKeys = new Map<number, Date>();
   const results = await Promise.all(
@@ -51,7 +58,11 @@ export async function loadAllSchedules(): Promise<{ events: any[]; items: Schedu
 export async function loadSchedule(eventId: string, scheduleId: string) {
   const [ev, sc] = await Promise.all([get(`/managed-events/${eventId}`), get(`/managed-events/${eventId}/schedules`)]);
   const schedule = ((sc.schedules ?? []) as any[]).find((s) => idOf(s) === scheduleId) ?? null;
-  return { event: ev.event ?? null, schedule, error: !schedule ? sc.error || ev.error || "Session not found" : undefined };
+  return {
+    event: ev.event ?? null,
+    schedule,
+    error: !schedule ? sc.error || ev.error || "Session not found" : undefined,
+  };
 }
 
 export const scheduleHref = (item: { event: any; schedule: any }) =>

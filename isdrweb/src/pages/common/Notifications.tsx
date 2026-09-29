@@ -6,9 +6,9 @@ import { fmtTime, idOf, monthLong, parseDate, startOfDay } from "@/lib/format";
 
 type Filter = { key: string; type?: string; read?: boolean };
 const FILTERS: (Filter & { label: string })[] = [
-  { key: "all", label: "All" },
   { key: "unread", label: "Unread", read: false },
   { key: "read", label: "Read", read: true },
+  { key: "all", label: "All" },
   { key: "message", label: "Message", type: "message" },
   { key: "maintenance", label: "Maintenance", type: "maintenance" },
   { key: "complaint", label: "Complaint", type: "complaint" },
@@ -35,7 +35,6 @@ export default function Notifications() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [menu, setMenu] = useState(false);
 
   const load = useCallback(
     async (p: number) => {
@@ -92,100 +91,132 @@ export default function Notifications() {
     else groups.push({ label, list: [n] });
   }
 
+  const filterIcon: Record<string, string> = {
+    all: "inbox",
+    unread: "mark_email_unread",
+    read: "drafts",
+    message: "chat",
+    maintenance: "build",
+    complaint: "report",
+    notice: "campaign",
+  };
+
   return (
     <Page
       title="Notifications"
-      actions={
-        <>
-          {unread > 0 && <IconButton icon="done_all" title="Mark all as read" onClick={markAll} />}
-          <div className="relative">
-            <IconButton icon="tune" title="Filter" onClick={() => setMenu((m) => !m)} />
-            {menu && (
-              <div className="absolute right-0 top-11 z-40 w-44 overflow-hidden rounded-xl border border-line bg-field py-1 shadow-xl">
-                {FILTERS.map((f) => (
-                  <button
-                    key={f.key}
-                    onClick={() => {
-                      setFilter(f);
-                      setMenu(false);
-                    }}
-                    className="flex w-full items-center justify-between px-4 py-2 text-left text-sm hover:bg-white/5"
-                  >
-                    {f.label}
-                    {filter.key === f.key && <Icon name="check" size={18} color="#3B82F6" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
+      subtitle={
+        unread > 0
+          ? `${unread} unread · Click a notification to mark it as read`
+          : "All caught up · No new alerts right now"
       }
+      actions={
+        unread > 0 && (
+          <Button variant="outline" icon="done_all" onClick={markAll}>
+            Mark all as read
+          </Button>
+        )
+      }
+      width={1100}
     >
-      <div className="mb-3 flex gap-2 overflow-x-auto">
-        {FILTERS.slice(0, 3).map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f)}
-            className={`rounded-full px-4 py-1.5 text-sm font-semibold ${filter.key === f.key ? "bg-accent text-white" : "bg-field text-muted"}`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-      <div className="mb-3 text-sm text-muted">
-        {unread > 0 ? `${unread} unread · Tap a notification to mark it as read` : "All caught up · No new alerts right now"}
-      </div>
-      {loading ? (
-        <Loading />
-      ) : error ? (
-        <ErrorState message={error} onRetry={() => load(1)} />
-      ) : items.length === 0 ? (
-        <Empty icon="notifications_off" title="No notifications" subtitle="You're all caught up!" />
-      ) : (
-        <div className="space-y-5">
-          {groups.map((g) => (
-            <div key={g.label}>
-              <div className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">{g.label}</div>
-              <div className="space-y-2">
-                {g.list.map((n) => {
-                  const d = parseDate(n.createdAt);
-                  return (
-                    <div
-                      key={idOf(n)}
-                      onClick={() => markRead(n)}
-                      className={`card flex cursor-pointer gap-3 p-3.5 ${n.read ? "opacity-70" : "border-accent/30"}`}
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/15">
-                        <Icon name="notifications" size={20} color="#60A5FA" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start gap-2">
-                          <div className="flex-1 text-sm font-bold">{n.title}</div>
-                          {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />}
-                        </div>
-                        <div className="mt-0.5 whitespace-pre-wrap text-[13px] text-white/75">{n.body}</div>
-                        {d && (
-                          <div className="mt-1 text-[11px] text-muted">
-                            {d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })} • {fmtTime(d)}
-                          </div>
-                        )}
-                      </div>
-                      <span onClick={(e) => e.stopPropagation()}>
-                        <IconButton icon="delete" outline title="Delete" color="#EF4444" size={20} onClick={() => remove(n)} />
-                      </span>
-                    </div>
-                  );
-                })}
+      <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <div className="card flex gap-1 overflow-x-auto p-2 lg:flex-col">
+            {FILTERS.map((f, i) => (
+              <div key={f.key} className="contents">
+                {i === 3 && <div className="eyebrow mx-2 mb-1 mt-3 hidden text-[10px] lg:block">By type</div>}
+                <button
+                  onClick={() => setFilter(f)}
+                  className={`flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                    filter.key === f.key ? "bg-accent/15 text-white" : "text-white/65 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <Icon
+                    name={filterIcon[f.key] ?? "label"}
+                    size={18}
+                    outline={filter.key !== f.key}
+                    color={filter.key === f.key ? "#60A5FA" : undefined}
+                  />
+                  {f.label}
+                </button>
               </div>
+            ))}
+          </div>
+        </aside>
+        <div>
+          {loading ? (
+            <Loading />
+          ) : error ? (
+            <ErrorState message={error} onRetry={() => load(1)} />
+          ) : items.length === 0 ? (
+            <Empty icon="notifications_off" title="No notifications" subtitle="You're all caught up!" />
+          ) : (
+            <div className="space-y-6">
+              {groups.map((g) => (
+                <div key={g.label}>
+                  <div className="eyebrow mb-2">{g.label}</div>
+                  <div className="card divide-y divide-line overflow-hidden">
+                    {g.list.map((n) => {
+                      const d = parseDate(n.createdAt);
+                      return (
+                        <div
+                          key={idOf(n)}
+                          onClick={() => markRead(n)}
+                          className={`group flex cursor-pointer gap-4 px-5 py-4 transition hover:bg-white/[0.03] ${n.read ? "" : "bg-accent/[0.05]"}`}
+                        >
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${n.read ? "bg-white/5" : "bg-accent/15"}`}
+                          >
+                            <Icon name="notifications" size={20} color={n.read ? "#9CA3AF" : "#60A5FA"} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start gap-2">
+                              <div
+                                className={`flex-1 text-sm ${n.read ? "font-medium text-white/80" : "font-semibold"}`}
+                              >
+                                {n.title}
+                              </div>
+                              {d && <div className="shrink-0 text-xs text-muted">{fmtTime(d)}</div>}
+                            </div>
+                            <div className="mt-0.5 whitespace-pre-wrap text-[13px] text-white/65">{n.body}</div>
+                            {d && (
+                              <div className="mt-1.5 text-[11px] text-muted">
+                                {d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-center gap-2">
+                            {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />}
+                            <span
+                              onClick={(e) => e.stopPropagation()}
+                              className="opacity-60 transition group-hover:opacity-100"
+                            >
+                              <IconButton
+                                icon="delete"
+                                outline
+                                title="Delete"
+                                color="#EF4444"
+                                size={19}
+                                onClick={() => remove(n)}
+                              />
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              {hasMore && (
+                <div className="flex justify-center">
+                  <Button variant="outline" loading={loadingMore} onClick={() => load(page + 1)}>
+                    Load more
+                  </Button>
+                </div>
+              )}
             </div>
-          ))}
-          {hasMore && (
-            <Button variant="outline" full loading={loadingMore} onClick={() => load(page + 1)}>
-              Load more
-            </Button>
           )}
         </div>
-      )}
+      </div>
     </Page>
   );
 }

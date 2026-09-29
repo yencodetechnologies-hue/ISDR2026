@@ -23,7 +23,15 @@ export function NotificationBell() {
       clearInterval(t);
     };
   }, [location.pathname]);
-  return <IconButton icon="notifications" outline title="Notifications" badge={count} onClick={() => navigate("/notifications")} />;
+  return (
+    <IconButton
+      icon="notifications"
+      outline
+      title="Notifications"
+      badge={count}
+      onClick={() => navigate("/notifications")}
+    />
+  );
 }
 
 /** Ticker text from the admin's lines (one message per line). */
@@ -56,13 +64,16 @@ export function NewsTicker() {
   if (!text) return null;
   const secs = Math.max(12, text.length * 0.18);
   return (
-    <div className="flex items-center overflow-hidden rounded-xl bg-[#1E3A8A]">
-      <span className="z-10 flex shrink-0 items-center gap-1 bg-[#1D4ED8] px-3 py-2 text-xs font-bold">
+    <div className="flex items-center overflow-hidden rounded-xl border border-[#1D4ED8]/50 bg-[#1E3A8A]/70">
+      <span className="z-10 flex shrink-0 items-center gap-1.5 bg-[#1D4ED8] px-4 py-2.5 text-xs font-bold tracking-wide">
         <Icon name="campaign" size={16} />
         NEWS
       </span>
-      <div className="relative flex-1 overflow-hidden py-2">
-        <div className="flex w-max whitespace-nowrap text-[13px] font-medium" style={{ animation: `ticker ${secs}s linear infinite` }}>
+      <div className="relative flex-1 overflow-hidden py-2.5">
+        <div
+          className="flex w-max whitespace-nowrap text-[13px] font-medium"
+          style={{ animation: `ticker ${secs}s linear infinite` }}
+        >
           <span className="pr-10">{text}</span>
           <span className="pr-10">{text}</span>
         </div>
@@ -83,7 +94,7 @@ export function YoutubeLiveCapsule() {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="mb-3 flex items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 hover:bg-red-500/15"
+      className="flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 transition hover:bg-red-500/15"
     >
       <span className="flex items-center gap-1.5 rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-extrabold">
         <span className="h-1.5 w-1.5 rounded-full bg-white" />
@@ -96,7 +107,7 @@ export function YoutubeLiveCapsule() {
 }
 
 /** Auto-scrolling image banner. */
-export function BannerCarousel({ urls, height = 160 }: { urls: string[]; height?: number }) {
+export function BannerCarousel({ urls, height = 220 }: { urls: string[]; height?: number }) {
   const [i, setI] = useState(0);
   useEffect(() => {
     if (urls.length < 2) return;
@@ -106,8 +117,11 @@ export function BannerCarousel({ urls, height = 160 }: { urls: string[]; height?
   if (!urls.length) return null;
   const idx = i % urls.length;
   return (
-    <div className="relative overflow-hidden rounded-2xl" style={{ height }}>
-      <div className="flex h-full transition-transform duration-500" style={{ transform: `translateX(-${idx * 100}%)` }}>
+    <div className="relative overflow-hidden rounded-xl border border-line" style={{ height }}>
+      <div
+        className="flex h-full transition-transform duration-500"
+        style={{ transform: `translateX(-${idx * 100}%)` }}
+      >
         {urls.map((u) => (
           <img key={u} src={u} alt="" className="h-full w-full shrink-0 object-cover" />
         ))}
@@ -190,7 +204,7 @@ export function ReminderSheet({
             key={m}
             disabled={!open}
             onClick={() => onPick(m)}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm hover:bg-white/5 disabled:opacity-30"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm hover:bg-white/5 disabled:opacity-30"
           >
             <Icon name={m === 0 ? "play_circle" : "schedule"} outline color="#60A5FA" />
             <span className={`flex-1 ${selected ? "font-bold" : ""}`}>{reminderLabel(m)}</span>
@@ -199,7 +213,10 @@ export function ReminderSheet({
         );
       })}
       {current !== undefined && (
-        <button onClick={() => onPick(-1)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-[#F87171] hover:bg-white/5">
+        <button
+          onClick={() => onPick(-1)}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-[#F87171] hover:bg-white/5"
+        >
           <Icon name="notifications_off" outline color="#F87171" />
           Turn off reminder
         </button>
@@ -208,47 +225,43 @@ export function ReminderSheet({
   );
 }
 
-export type NavItem = { label: string; icon: string; to?: string; onClick?: () => void };
+export type ModuleItem = {
+  label: string;
+  icon: string;
+  color: string;
+  to?: string;
+  onClick?: () => void;
+  sub?: string;
+};
 
-/** Fixed bottom navigation bar. */
-export function BottomNav({ items, active }: { items: NavItem[]; active: number }) {
+/** Grid of link cards (icon, label, optional sub-line). */
+export function ModuleGrid({
+  items,
+  cols = "grid-cols-2 sm:grid-cols-3 xl:grid-cols-4",
+}: {
+  items: ModuleItem[];
+  cols?: string;
+}) {
   const navigate = useNavigate();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-[760px]">
-        {items.map((it, i) => (
-          <button
-            key={it.label}
-            onClick={() => (it.onClick ? it.onClick() : it.to && navigate(it.to))}
-            className="flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold"
-            style={{ color: i === active ? "#60A5FA" : "#9CA3AF" }}
-          >
-            <Icon name={it.icon} size={24} outline={i !== active} />
-            {it.label}
-          </button>
-        ))}
-      </div>
-    </nav>
-  );
-}
-
-export type ModuleItem = { label: string; icon: string; color: string; to?: string; onClick?: () => void };
-
-/** Grid of module tiles. */
-export function ModuleGrid({ items, cols = "grid-cols-4 sm:grid-cols-6" }: { items: ModuleItem[]; cols?: string }) {
-  const navigate = useNavigate();
-  return (
-    <div className={`grid gap-2 ${cols}`}>
+    <div className={`grid gap-3 ${cols}`}>
       {items.map((m) => (
         <button
           key={m.label}
           onClick={() => (m.onClick ? m.onClick() : m.to && navigate(m.to))}
-          className="flex flex-col items-center gap-1.5 rounded-xl px-1 py-3 hover:bg-white/5"
+          className="card card-hover group flex items-center gap-3 p-3.5 text-left"
         >
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: `${m.color}22` }}>
-            <Icon name={m.icon} size={26} color={m.color} />
+          <span
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+            style={{ background: `${m.color}22` }}
+          >
+            <Icon name={m.icon} size={21} color={m.color} />
           </span>
-          <span className="text-center text-[11.5px] font-medium leading-tight text-white/85">{m.label}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold">{m.label}</span>
+            {m.sub && <span className="block truncate text-xs text-muted">{m.sub}</span>}
+          </span>
+          <Icon name="arrow_forward" size={17} color="#6B7280" className="transition group-hover:translate-x-0.5" />
         </button>
       ))}
     </div>
@@ -257,9 +270,38 @@ export function ModuleGrid({ items, cols = "grid-cols-4 sm:grid-cols-6" }: { ite
 
 export function SectionTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="mb-2.5 mt-6 flex items-center gap-2">
-      <div className="flex-1 text-[13px] font-extrabold uppercase tracking-wide text-white/85">{children}</div>
+    <div className="mb-3 mt-8 flex items-center gap-2">
+      <h2 className="flex-1 text-lg font-semibold">{children}</h2>
       {action}
     </div>
+  );
+}
+
+/** "Get your live photos" gallery button — shown on every home when the admin has set a link. */
+export function LivePhotoButton() {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    get("/live-photo").then((r) => r.success && setUrl(String(r.url ?? "").trim()));
+  }, []);
+  if (!url) return null;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="group flex items-center gap-4 rounded-xl bg-gradient-to-r from-[#E11D48] via-[#BE123C] to-[#9333EA] px-5 py-4 transition hover:brightness-110"
+    >
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/15">
+        <Icon name="photo_camera" />
+      </span>
+      <span className="flex-1">
+        <span className="flex items-center gap-1.5 text-[10.5px] font-extrabold tracking-widest text-white/80">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#4ADE80]" />
+          LIVE GALLERY
+        </span>
+        <span className="block text-base font-bold">Get your live photos</span>
+      </span>
+      <Icon name="open_in_new" size={20} className="transition group-hover:translate-x-0.5" />
+    </a>
   );
 }

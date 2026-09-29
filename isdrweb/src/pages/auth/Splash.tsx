@@ -19,7 +19,10 @@ export default function Splash() {
       <img src={asset("splash.png")} alt="ISDR 2026" className="h-full w-full object-contain" />
       <div className="absolute inset-x-0 bottom-10 flex justify-center">
         <div className="h-1.5 w-40 overflow-hidden rounded-full bg-white/25">
-          <div className="h-full w-1/2 rounded-full bg-[#26D6FE]" style={{ animation: "ticker 1.2s linear infinite" }} />
+          <div
+            className="h-full w-1/2 rounded-full bg-[#26D6FE]"
+            style={{ animation: "ticker 1.2s linear infinite" }}
+          />
         </div>
       </div>
     </div>

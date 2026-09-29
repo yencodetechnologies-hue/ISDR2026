@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AuthLayout from "@/components/AuthLayout";
 import { Button, Icon, Input, PasswordInput, useToast } from "@/components/ui";
 import { post } from "@/lib/api";
 
@@ -73,8 +74,8 @@ export default function ForgotPassword() {
   );
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10">
-      <div className="card w-full max-w-sm p-6">
+    <AuthLayout>
+      <div>
         <div className="flex items-center justify-between gap-2 text-xs text-muted">
           {["Email", "OTP", "Password"].map((s, i) => (
             <div key={s} className="flex items-center gap-1.5">
@@ -88,13 +89,18 @@ export default function ForgotPassword() {
             </div>
           ))}
         </div>
-        <div className="mt-6 text-xl font-extrabold">{title}</div>
-        <div className="mt-1 text-sm text-muted">{subtitle}</div>
-        <div className="mt-5 space-y-3">
+        <h2 className="mt-8 text-3xl font-bold tracking-tight">{title}</h2>
+        <div className="mt-2 text-sm text-muted">{subtitle}</div>
+        <div className="mt-6 space-y-3">
           {step === 0 && (
             <>
               <label className="label">Email Address</label>
-              <Input icon="mail" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Registered account email" />
+              <Input
+                icon="mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Registered account email"
+              />
               <Button full loading={busy} icon="send" onClick={requestOtp}>
                 Send OTP
               </Button>
@@ -159,10 +165,14 @@ export default function ForgotPassword() {
             </>
           )}
         </div>
-        <button onClick={() => navigate("/login", { replace: true })} className="mt-6 w-full text-center text-sm font-semibold text-accent">
+        <button
+          onClick={() => navigate("/login", { replace: true })}
+          className="mt-8 flex w-full items-center justify-center gap-1.5 border-t border-line pt-5 text-sm font-semibold text-accent hover:underline"
+        >
+          <Icon name="arrow_back" size={17} />
           Back to Login
         </button>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

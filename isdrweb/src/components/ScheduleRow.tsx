@@ -115,45 +115,68 @@ export function ScheduleRow({
   const fav = actions?.favorites.has(id) ?? false;
   const rem = actions?.reminders.get(id);
   return (
-    <div onClick={() => navigate(scheduleHref(item))} className="card flex cursor-pointer items-center gap-3 p-3 hover:bg-[#191926]">
-      <Avatar src={s.speakerPhoto} name={s.speakerName} size={42} />
-      <div className="min-w-0 flex-1">
-        <div className="text-xs font-semibold" style={{ color }}>
-          {showDate && `${item.start.getDate()}/${item.start.getMonth() + 1} · `}
-          {fmtTime(item.start)} - {fmtTime(item.end)}
-          {s.speakerName && <span className="text-white/60"> · {s.speakerName}</span>}
-        </div>
-        <div className="truncate text-sm font-bold">{s.scheduleName}</div>
-        {s.hall && (
-          <div className="flex items-center gap-1 text-[11px] text-white/45">
-            <Icon name="location_on" size={12} />
-            {s.hall}
+    <div
+      onClick={() => navigate(scheduleHref(item))}
+      className="card card-hover group flex cursor-pointer items-stretch overflow-hidden"
+    >
+      <div className="flex w-[92px] shrink-0 flex-col justify-center border-r border-line bg-white/[0.02] px-3 py-3 text-center sm:w-[108px]">
+        {showDate && (
+          <div className="text-[10.5px] font-semibold text-muted">
+            {item.start.getDate()}/{item.start.getMonth() + 1}
           </div>
         )}
+        <div className="text-[13px] font-bold" style={{ color }}>
+          {fmtTime(item.start)}
+        </div>
+        <div className="text-[11px] text-muted">{fmtTime(item.end)}</div>
       </div>
-      <span className="rounded-full px-2 py-1 text-[10px] font-extrabold" style={{ background: `${color}2e`, color }}>
-        {isLive ? "Live" : isDone ? "Completed" : "Upcoming"}
-      </span>
-      {actions && (
-        <span className="flex" onClick={(e) => e.stopPropagation()}>
-          {!isLive && !isDone && (
-            <IconButton
-              icon={rem !== undefined ? "notifications_active" : "notifications"}
-              outline={rem === undefined}
-              title={rem !== undefined ? `Reminder: ${reminderLabel(rem)}` : "Remind me"}
-              color={rem !== undefined ? "#FBBF24" : "rgba(255,255,255,0.45)"}
-              onClick={() => actions.openReminder(item)}
-            />
-          )}
-          <IconButton
-            icon="favorite"
-            outline={!fav}
-            title={fav ? "Remove from favorites" : "Add to favorites"}
-            color={fav ? "#EF4444" : "rgba(255,255,255,0.45)"}
-            onClick={() => actions.toggleFav(id)}
-          />
+      <div className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3">
+        <Avatar src={s.speakerPhoto} name={s.speakerName} size={40} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[15px] font-semibold group-hover:text-[#93C5FD]">{s.scheduleName}</div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
+            {s.speakerName && (
+              <span className="flex items-center gap-1">
+                <Icon name="mic" size={13} outline />
+                {s.speakerName}
+              </span>
+            )}
+            {s.hall && (
+              <span className="flex items-center gap-1">
+                <Icon name="location_on" size={13} outline />
+                {s.hall}
+              </span>
+            )}
+          </div>
+        </div>
+        <span
+          className="hidden items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-bold sm:inline-flex"
+          style={{ background: `${color}22`, color }}
+        >
+          {isLive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />}
+          {isLive ? "Live" : isDone ? "Completed" : "Upcoming"}
         </span>
-      )}
+        {actions && (
+          <span className="flex" onClick={(e) => e.stopPropagation()}>
+            {!isLive && !isDone && (
+              <IconButton
+                icon={rem !== undefined ? "notifications_active" : "notifications"}
+                outline={rem === undefined}
+                title={rem !== undefined ? `Reminder: ${reminderLabel(rem)}` : "Remind me"}
+                color={rem !== undefined ? "#FBBF24" : "rgba(255,255,255,0.45)"}
+                onClick={() => actions.openReminder(item)}
+              />
+            )}
+            <IconButton
+              icon="favorite"
+              outline={!fav}
+              title={fav ? "Remove from favorites" : "Add to favorites"}
+              color={fav ? "#EF4444" : "rgba(255,255,255,0.45)"}
+              onClick={() => actions.toggleFav(id)}
+            />
+          </span>
+        )}
+      </div>
     </div>
   );
 }

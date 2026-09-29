@@ -48,13 +48,23 @@ export function Loading({ label }: { label?: string }) {
   );
 }
 
-export function Empty({ icon = "inbox", title, subtitle, action }: { icon?: string; title: string; subtitle?: string; action?: React.ReactNode }) {
+export function Empty({
+  icon = "inbox",
+  title,
+  subtitle,
+  action,
+}: {
+  icon?: string;
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col items-center px-6 py-16 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent/10">
-        <Icon name={icon} outline size={30} color="#3B82F6" />
+    <div className="flex flex-col items-center rounded-xl border border-dashed border-white/10 px-6 py-14 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent/10">
+        <Icon name={icon} outline size={28} color="#3B82F6" />
       </div>
-      <div className="mt-4 text-base font-bold">{title}</div>
+      <div className="mt-4 text-base font-semibold">{title}</div>
       {subtitle && <div className="mt-1.5 max-w-sm text-sm text-muted">{subtitle}</div>}
       {action && <div className="mt-5">{action}</div>}
     </div>
@@ -63,7 +73,7 @@ export function Empty({ icon = "inbox", title, subtitle, action }: { icon?: stri
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="flex flex-col items-center px-6 py-16 text-center">
+    <div className="flex flex-col items-center rounded-xl border border-dashed border-red-500/25 px-6 py-14 text-center">
       <Icon name="error" outline size={40} color="#EF4444" />
       <div className="mt-3 text-sm text-white/80">{message}</div>
       {onRetry && (
@@ -103,8 +113,8 @@ export function Button({
   title?: string;
 }) {
   const styles: Record<BtnVariant, string> = {
-    primary: "bg-accent text-white hover:bg-blue-500",
-    outline: "border border-white/20 text-white hover:bg-white/5",
+    primary: "bg-accent text-white shadow-sm shadow-accent/25 hover:bg-blue-500",
+    outline: "border border-white/15 bg-white/[0.02] text-white hover:border-white/25 hover:bg-white/5",
     ghost: "text-accent hover:bg-accent/10",
     danger: "bg-danger text-white hover:bg-red-500",
     success: "bg-success text-white hover:bg-green-500",
@@ -115,7 +125,7 @@ export function Button({
       title={title}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+      className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
         small ? "px-3 py-1.5 text-xs" : "px-4 py-2.5 text-sm"
       } ${full ? "w-full" : ""} ${styles[variant]} ${className}`}
     >
@@ -151,7 +161,7 @@ export function IconButton({
       aria-label={title}
       onClick={onClick}
       disabled={disabled}
-      className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-40"
+      className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition hover:bg-white/10 disabled:opacity-40"
     >
       <Icon name={icon} size={size} color={color} outline={outline} />
       {!!badge && badge > 0 && (
@@ -200,7 +210,17 @@ export function Pill({ children, color = "#3B82F6" }: { children: React.ReactNod
 /* Form controls                                                       */
 /* ------------------------------------------------------------------ */
 
-export function Field({ label, children, hint, error }: { label?: string; children: React.ReactNode; hint?: string; error?: string | null }) {
+export function Field({
+  label,
+  children,
+  hint,
+  error,
+}: {
+  label?: string;
+  children: React.ReactNode;
+  hint?: string;
+  error?: string | null;
+}) {
   return (
     <div>
       {label && <label className="label">{label}</label>}
@@ -382,10 +402,14 @@ export function PhotoInput({
           round ? "rounded-full" : "rounded-xl"
         }`}
       >
-        {shown ? <img src={shown} alt="" className="h-full w-full object-cover" /> : <Icon name="image" outline size={30} color="#6B7280" />}
+        {shown ? (
+          <img src={shown} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <Icon name="image" outline size={30} color="#6B7280" />
+        )}
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" small icon="photo_camera" onClick={() => ref.current?.click()}>
+        <Button variant="outline" small icon="upload" onClick={() => ref.current?.click()}>
           {shown ? `Change ${label.toLowerCase()}` : `Choose ${label.toLowerCase()}`}
         </Button>
         {shown && onRemove && (
@@ -409,15 +433,31 @@ export function PhotoInput({
   );
 }
 
-export function SearchBox({ value, onChange, placeholder = "Search..." }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+export function SearchBox({
+  value,
+  onChange,
+  placeholder = "Search...",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
   return (
     <div className="relative">
       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
         <Icon name="search" size={20} color="#9CA3AF" />
       </span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="input pl-10 pr-10" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="input pl-10 pr-10"
+      />
       {value && (
-        <button className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center" onClick={() => onChange("")}>
+        <button
+          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center"
+          onClick={() => onChange("")}
+        >
           <Icon name="close" size={18} color="#9CA3AF" />
         </button>
       )}
@@ -435,20 +475,152 @@ export function Tabs<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex gap-1 overflow-x-auto rounded-xl bg-field p-1">
-      {tabs.map((t) => (
-        <button
-          key={t.value}
-          onClick={() => onChange(t.value)}
-          className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition ${
-            value === t.value ? "bg-accent text-white" : "text-muted hover:text-white"
-          }`}
-        >
-          {t.label}
-          {t.count !== undefined && <span className="ml-1 opacity-70">({t.count})</span>}
-        </button>
-      ))}
+    <div className="flex gap-1 overflow-x-auto border-b border-line">
+      {tabs.map((t) => {
+        const on = value === t.value;
+        return (
+          <button
+            key={t.value}
+            onClick={() => onChange(t.value)}
+            className={`relative -mb-px flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold transition ${
+              on ? "border-accent text-white" : "border-transparent text-muted hover:text-white"
+            }`}
+          >
+            {t.label}
+            {t.count !== undefined && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${on ? "bg-accent/20 text-[#93C5FD]" : "bg-white/5 text-muted"}`}
+              >
+                {t.count}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
+  );
+}
+
+/** Pill-style filter chips (a row of toggle buttons). */
+export function Chips<T extends string>({
+  items,
+  value,
+  onChange,
+}: {
+  items: { value: T; label: string; icon?: string; color?: string; count?: number }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((it) => {
+        const on = it.value === value;
+        const c = it.color ?? "#3B82F6";
+        return (
+          <button
+            key={it.value}
+            onClick={() => onChange(it.value)}
+            className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition"
+            style={{
+              borderColor: on ? c : "rgba(255,255,255,0.1)",
+              background: on ? `${c}22` : "transparent",
+              color: on ? c : "#9CA3AF",
+            }}
+          >
+            {it.icon && <Icon name={it.icon} size={16} />}
+            {it.label}
+            {it.count !== undefined && <span className="opacity-75">{it.count}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** A card with a titled header row and a body. */
+export function Panel({
+  title,
+  subtitle,
+  icon,
+  iconColor = "#3B82F6",
+  action,
+  children,
+  className = "",
+  bodyClass = "p-5",
+}: {
+  title?: React.ReactNode;
+  subtitle?: React.ReactNode;
+  icon?: string;
+  iconColor?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  bodyClass?: string;
+}) {
+  return (
+    <section className={`card overflow-hidden ${className}`}>
+      {title !== undefined && (
+        <div className="flex items-center gap-3 border-b border-line px-5 py-3.5">
+          {icon && (
+            <span
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+              style={{ background: `${iconColor}22` }}
+            >
+              <Icon name={icon} size={18} color={iconColor} />
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[15px] font-semibold">{title}</div>
+            {subtitle && <div className="truncate text-xs text-muted">{subtitle}</div>}
+          </div>
+          {action}
+        </div>
+      )}
+      <div className={bodyClass}>{children}</div>
+    </section>
+  );
+}
+
+/** A metric card: icon, big value, label. */
+export function StatCard({
+  icon,
+  color,
+  label,
+  value,
+  hint,
+  onClick,
+}: {
+  icon: string;
+  color: string;
+  label: string;
+  value: React.ReactNode;
+  hint?: string;
+  onClick?: () => void;
+}) {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag
+      onClick={onClick}
+      className={`card relative overflow-hidden p-5 text-left ${onClick ? "card-hover cursor-pointer" : ""}`}
+    >
+      <div
+        className="absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-20 blur-2xl"
+        style={{ background: color }}
+      />
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[13px] font-medium text-muted">{label}</div>
+          <div className="mt-2 text-3xl font-extrabold tracking-tight">{value}</div>
+          {hint && <div className="mt-1 text-xs text-muted">{hint}</div>}
+        </div>
+        <span
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+          style={{ background: `${color}22` }}
+        >
+          <Icon name={icon} size={22} color={color} />
+        </span>
+      </div>
+    </Tag>
   );
 }
 
@@ -456,7 +628,7 @@ export function Tabs<T extends string>({
 /* Page chrome                                                         */
 /* ------------------------------------------------------------------ */
 
-/** A page with a top bar (back button, title, actions) and centred content. */
+/** A page inside the website shell: back link, title, subtitle, actions, then the content. */
 export function Page({
   title,
   subtitle,
@@ -464,9 +636,8 @@ export function Page({
   back = true,
   onBack,
   children,
-  width = 760,
-  bottom,
-  noPad,
+  width = 1200,
+  eyebrow,
 }: {
   title?: React.ReactNode;
   subtitle?: React.ReactNode;
@@ -474,32 +645,34 @@ export function Page({
   back?: boolean;
   onBack?: () => void;
   children: React.ReactNode;
+  /** Max content width in px (forms use a narrower column). */
   width?: number;
-  bottom?: React.ReactNode;
-  noPad?: boolean;
+  eyebrow?: React.ReactNode;
 }) {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur">
-        <div className="mx-auto flex h-14 items-center gap-1 px-2" style={{ maxWidth: width }}>
-          {back ? (
-            <IconButton icon="arrow_back" title="Back" onClick={onBack ?? (() => (window.history.length > 1 ? navigate(-1) : navigate("/")))} />
-          ) : (
-            <span className="w-2" />
-          )}
-          <div className="min-w-0 flex-1 px-1">
-            <div className="truncate text-[17px] font-bold">{title}</div>
-            {subtitle && <div className="truncate text-xs text-muted">{subtitle}</div>}
+    <main className="mx-auto w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8" style={{ maxWidth: Math.max(width, 480) + 64 }}>
+      {back && (
+        <button
+          onClick={onBack ?? (() => (window.history.length > 1 ? navigate(-1) : navigate("/")))}
+          className="mb-3 inline-flex items-center gap-1 text-[13px] font-medium text-muted transition hover:text-white"
+        >
+          <Icon name="arrow_back" size={17} />
+          Back
+        </button>
+      )}
+      {(title || actions) && (
+        <div className="mb-6 flex flex-wrap items-end gap-x-4 gap-y-3">
+          <div className="min-w-0 flex-1">
+            {eyebrow && <div className="eyebrow mb-1">{eyebrow}</div>}
+            <h1 className="text-2xl font-bold tracking-tight sm:text-[28px]">{title}</h1>
+            {subtitle && <div className="mt-1 text-sm text-muted">{subtitle}</div>}
           </div>
-          {actions && <div className="flex shrink-0 items-center">{actions}</div>}
+          {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
         </div>
-      </header>
-      <main className={`mx-auto ${noPad ? "" : "px-4 py-4"} ${bottom ? "pb-24" : ""}`} style={{ maxWidth: width }}>
-        {children}
-      </main>
-      {bottom}
-    </div>
+      )}
+      {children}
+    </main>
   );
 }
 
@@ -530,21 +703,21 @@ export function Modal({
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="animate-fade fixed inset-0 z-[90] flex items-end justify-center sm:items-center sm:p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/70" />
+    <div className="animate-fade fixed inset-0 z-[90] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
-        className="animate-sheet relative flex max-h-[92vh] w-full flex-col rounded-t-2xl border border-line bg-card sm:rounded-2xl"
+        className="animate-sheet relative flex max-h-[90vh] w-full flex-col rounded-2xl border border-line bg-card shadow-2xl"
         style={{ maxWidth: width }}
         onClick={(e) => e.stopPropagation()}
       >
         {title !== undefined && (
-          <div className="flex items-center gap-2 border-b border-line py-2 pl-5 pr-2">
-            <div className="min-w-0 flex-1 truncate text-base font-bold">{title}</div>
+          <div className="flex items-center gap-2 border-b border-line py-3 pl-6 pr-3">
+            <div className="min-w-0 flex-1 truncate text-lg font-semibold">{title}</div>
             <IconButton icon="close" title="Close" onClick={onClose} />
           </div>
         )}
-        <div className="flex-1 overflow-y-auto p-5">{children}</div>
-        {footer && <div className="flex gap-2 border-t border-line p-4">{footer}</div>}
+        <div className="flex-1 overflow-y-auto p-6">{children}</div>
+        {footer && <div className="flex justify-end gap-2 border-t border-line px-6 py-4">{footer}</div>}
       </div>
     </div>
   );
@@ -563,14 +736,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastCtx.Provider value={show}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[100] flex flex-col items-center gap-2 px-4">
+      <div className="pointer-events-none fixed bottom-6 right-4 z-[100] flex w-[min(380px,calc(100vw-2rem))] flex-col items-end gap-2 sm:right-6">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="animate-sheet pointer-events-auto max-w-md rounded-xl px-4 py-3 text-sm font-medium text-white shadow-xl"
+            className="animate-sheet pointer-events-auto flex w-full items-start gap-2.5 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white shadow-2xl"
             style={{ background: t.kind === "error" ? "#DC2626" : t.kind === "success" ? "#16A34A" : "#1F2937" }}
           >
-            {t.msg}
+            <Icon name={t.kind === "error" ? "error" : t.kind === "success" ? "check_circle" : "info"} size={19} />
+            <span className="flex-1">{t.msg}</span>
           </div>
         ))}
       </div>

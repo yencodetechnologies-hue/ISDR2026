@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button, Checkbox, Icon, Input, PasswordInput, useToast } from "@/components/ui";
-import { asset } from "@/lib/api";
+import AuthLayout from "@/components/AuthLayout";
+import { Button, Checkbox, Input, PasswordInput, useToast } from "@/components/ui";
 import { homeFor, useAuth } from "@/lib/auth";
 
 const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -23,7 +23,8 @@ export default function Login() {
     const id = identifier.trim();
     const errs: typeof errors = {};
     if (!id) errs.id = "Please enter your email or mobile number";
-    else if (!/^\d{10}$/.test(id) && !EMAIL_RE.test(id)) errs.id = "Please enter a valid email or 10-digit mobile number";
+    else if (!/^\d{10}$/.test(id) && !EMAIL_RE.test(id))
+      errs.id = "Please enter a valid email or 10-digit mobile number";
     if (!password) errs.pw = "Please enter your password";
     else if (password.length < 6) errs.pw = "Password must be at least 6 characters";
     setErrors(errs);
@@ -43,53 +44,54 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-10">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 flex flex-col items-center">
-          <img src={asset("ISDR 2026 Logo.png")} alt="ISDR 2026" className="h-20 object-contain" />
+    <AuthLayout>
+      <form onSubmit={submit}>
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Welcome Back</h2>
+          <div className="mt-2 text-sm text-muted">Sign in to access your portal</div>
         </div>
-        <form onSubmit={submit} className="card p-6">
-          <div className="flex flex-col items-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/15">
-              <Icon name="person" size={26} color="#3B82F6" />
-            </div>
-            <div className="mt-3 text-xl font-extrabold">Welcome Back</div>
-            <div className="mt-1 text-xs text-muted">Sign in to access your portal</div>
+        <div className="mt-8 space-y-4">
+          <div>
+            <label className="label">Email or mobile number</label>
+            <Input
+              icon="mail"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="Email or mobile number"
+              autoComplete="username"
+              disabled={loading}
+            />
+            {errors.id && <div className="mt-1 text-xs text-danger">{errors.id}</div>}
           </div>
-          <div className="mt-6 space-y-3">
-            <div>
-              <Input
-                icon="mail"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Email or mobile number"
-                autoComplete="username"
-                disabled={loading}
-              />
-              {errors.id && <div className="mt-1 text-xs text-danger">{errors.id}</div>}
-            </div>
-            <div>
-              <PasswordInput
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                autoComplete="current-password"
-                disabled={loading}
-              />
-              {errors.pw && <div className="mt-1 text-xs text-danger">{errors.pw}</div>}
-            </div>
+          <div>
+            <label className="label">Password</label>
+            <PasswordInput
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              autoComplete="current-password"
+              disabled={loading}
+            />
+            {errors.pw && <div className="mt-1 text-xs text-danger">{errors.pw}</div>}
           </div>
-          <div className="mt-3 flex items-center justify-between">
-            <Checkbox checked={remember} onChange={setRemember} label={<span className="text-xs">Remember me</span>} />
-            <Link to="/forgot-password" className="text-xs font-semibold text-accent">
-              Forgot Password?
-            </Link>
-          </div>
-          <Button type="submit" full loading={loading} className="mt-5 py-3">
-            Login
-          </Button>
-        </form>
-      </div>
-    </div>
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+          <Checkbox
+            checked={remember}
+            onChange={setRemember}
+            label={<span className="text-sm text-white/75">Remember me</span>}
+          />
+          <Link to="/forgot-password" className="text-sm font-semibold text-accent hover:underline">
+            Forgot Password?
+          </Link>
+        </div>
+        <Button type="submit" full loading={loading} icon="login" className="mt-6 py-3">
+          Login
+        </Button>
+        <div className="mt-8 border-t border-line pt-5 text-center text-xs text-muted">
+          One login for delegates, speakers, event staff and admins.
+        </div>
+      </form>
+    </AuthLayout>
   );
 }

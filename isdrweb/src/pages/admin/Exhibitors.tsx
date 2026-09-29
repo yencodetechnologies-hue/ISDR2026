@@ -34,7 +34,9 @@ export default function ManageExhibitors() {
     if (!res.success) return setError(res.error || "Could not load exhibitors");
     setItems(res.exhibitors ?? []);
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const save = async () => {
     if (!name.trim()) return toast("Enter the exhibitor name", "error");
@@ -54,35 +56,84 @@ export default function ManageExhibitors() {
   const remove = async (e: any) => {
     if (!(await confirm({ title: `Remove ${e.name}?`, confirm: "Remove", danger: true }))) return;
     const res = await del(`/exhibitors/${idOf(e)}`);
-    if (res.success) { setItems((l) => (l ?? []).filter((x) => idOf(x) !== idOf(e))); toast("Removed", "success"); }
-    else toast(res.error || "Could not remove", "error");
+    if (res.success) {
+      setItems((l) => (l ?? []).filter((x) => idOf(x) !== idOf(e)));
+      toast("Removed", "success");
+    } else toast(res.error || "Could not remove", "error");
   };
 
   return (
-    <Page title="Exhibitors" actions={<Button small icon="add" onClick={() => setAdding(true)}>Add</Button>}>
-      {error ? <ErrorState message={error} onRetry={load} /> : !items ? <Loading /> : items.length === 0 ? (
-        <Empty icon="storefront" title="No exhibitors yet" action={<Button icon="add" onClick={() => setAdding(true)}>Add Exhibitor</Button>} />
+    <Page
+      title="Exhibitors"
+      subtitle={items ? `${items.length} ${items.length === 1 ? "exhibitor" : "exhibitors"}` : undefined}
+      actions={
+        <Button icon="add" onClick={() => setAdding(true)}>
+          Add Exhibitor
+        </Button>
+      }
+    >
+      {error ? (
+        <ErrorState message={error} onRetry={load} />
+      ) : !items ? (
+        <Loading />
+      ) : items.length === 0 ? (
+        <Empty
+          icon="storefront"
+          title="No exhibitors yet"
+          action={
+            <Button icon="add" onClick={() => setAdding(true)}>
+              Add Exhibitor
+            </Button>
+          }
+        />
       ) : (
-        <div className="space-y-2.5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((e) => (
-            <div key={idOf(e)} className="card flex items-center gap-3 p-3.5">
-              <Avatar src={e.photoUrl} name={e.name} size={44} />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-bold">{e.name}</div>
-                {e.stallNumber && <div className="text-xs text-muted">Stall {e.stallNumber}</div>}
+            <div key={idOf(e)} className="card group relative overflow-hidden">
+              <div className="flex h-32 items-center justify-center bg-field">
+                {e.photoUrl ? (
+                  <img src={e.photoUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <Avatar name={e.name} size={56} />
+                )}
               </div>
-              <IconButton icon="delete" outline color="#EF4444" title="Remove" onClick={() => remove(e)} />
+              <div className="flex items-center gap-2 p-4">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold">{e.name}</div>
+                  <div className="text-xs text-muted">
+                    {e.stallNumber ? `Stall ${e.stallNumber}` : "No stall number"}
+                  </div>
+                </div>
+                <IconButton icon="delete" outline color="#EF4444" title="Remove" onClick={() => remove(e)} />
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      <Modal open={adding} onClose={() => setAdding(false)} title="Add Exhibitor">
-        <div className="space-y-3">
+      <Modal
+        open={adding}
+        onClose={() => setAdding(false)}
+        title="Add Exhibitor"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setAdding(false)}>
+              Cancel
+            </Button>
+            <Button loading={saving} onClick={save}>
+              Add Exhibitor
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
           <PhotoInput file={photo} url={null} onFile={setPhoto} label="Logo" />
-          <Field label="Name"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Exhibitor / company name" /></Field>
-          <Field label="Stall Number"><Input value={stallNumber} onChange={(e) => setStallNumber(e.target.value)} placeholder="e.g. A-12" /></Field>
-          <Button full loading={saving} onClick={save}>Add Exhibitor</Button>
+          <Field label="Name">
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Exhibitor / company name" />
+          </Field>
+          <Field label="Stall Number">
+            <Input value={stallNumber} onChange={(e) => setStallNumber(e.target.value)} placeholder="e.g. A-12" />
+          </Field>
         </div>
       </Modal>
     </Page>

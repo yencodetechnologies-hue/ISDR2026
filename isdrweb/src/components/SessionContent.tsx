@@ -4,11 +4,25 @@ import { get, post } from "@/lib/api";
 import { idOf } from "@/lib/format";
 import { Button, Icon, Spinner, TextArea, useToast } from "./ui";
 
-export function StarRow({ value, size = 22, onChange }: { value: number; size?: number; onChange?: (v: number) => void }) {
+export function StarRow({
+  value,
+  size = 22,
+  onChange,
+}: {
+  value: number;
+  size?: number;
+  onChange?: (v: number) => void;
+}) {
   return (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((i) => (
-        <button key={i} type="button" disabled={!onChange} onClick={() => onChange?.(i)} className="disabled:cursor-default">
+        <button
+          key={i}
+          type="button"
+          disabled={!onChange}
+          onClick={() => onChange?.(i)}
+          className="disabled:cursor-default"
+        >
           <Icon name="star" outline={i > value} size={size} color={i <= value ? "#F59E0B" : "#6B7280"} />
         </button>
       ))}
@@ -16,23 +30,44 @@ export function StarRow({ value, size = 22, onChange }: { value: number; size?: 
   );
 }
 
-function Group({ title, icon, color, children }: { title: string; icon: string; color: string; children: React.ReactNode }) {
+function Group({
+  title,
+  icon,
+  color,
+  children,
+}: {
+  title: string;
+  icon: string;
+  color: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="card mt-3 flex gap-3 p-3.5">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ background: color }}>
-        <Icon name={icon} size={19} color="#fff" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="mb-2 text-[11px] font-bold tracking-wider" style={{ color }}>
-          {title}
+    <section className="card mt-5 overflow-hidden first:mt-0">
+      <div className="flex items-center gap-3 border-b border-line px-5 py-3.5">
+        <div
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+          style={{ background: `${color}26` }}
+        >
+          <Icon name={icon} size={18} color={color} />
         </div>
-        {children}
+        <div className="text-[15px] font-semibold capitalize">{title.toLowerCase()}</div>
       </div>
-    </div>
+      <div className="p-5">{children}</div>
+    </section>
   );
 }
 
-function PollCard({ scheduleId, poll, canRespond, onUpdated }: { scheduleId: string; poll: any; canRespond: boolean; onUpdated: (p: any) => void }) {
+function PollCard({
+  scheduleId,
+  poll,
+  canRespond,
+  onUpdated,
+}: {
+  scheduleId: string;
+  poll: any;
+  canRespond: boolean;
+  onUpdated: (p: any) => void;
+}) {
   const toast = useToast();
   const [selected, setSelected] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
@@ -62,9 +97,16 @@ function PollCard({ scheduleId, poll, canRespond, onUpdated }: { scheduleId: str
               disabled={!canVote}
               onClick={() => setSelected(i)}
               className="flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm disabled:cursor-default"
-              style={{ borderColor: chosen ? "#3B82F6" : "rgba(255,255,255,0.1)", background: chosen ? "rgba(59,130,246,0.12)" : undefined }}
+              style={{
+                borderColor: chosen ? "#3B82F6" : "rgba(255,255,255,0.1)",
+                background: chosen ? "rgba(59,130,246,0.12)" : undefined,
+              }}
             >
-              <Icon name={chosen ? "radio_button_checked" : "radio_button_unchecked"} size={18} color={chosen ? "#3B82F6" : "#6B7280"} />
+              <Icon
+                name={chosen ? "radio_button_checked" : "radio_button_unchecked"}
+                size={18}
+                color={chosen ? "#3B82F6" : "#6B7280"}
+              />
               {o}
             </button>
           );
@@ -122,7 +164,13 @@ function QuestionCard({
       ) : (
         canRespond && (
           <>
-            <TextArea className="mt-2" maxLength={1000} value={text} onChange={(e) => setText(e.target.value)} placeholder="Type your answer" />
+            <TextArea
+              className="mt-2"
+              maxLength={1000}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Type your answer"
+            />
             <div className="mt-2 flex justify-end">
               <Button small icon="send" loading={sending} disabled={!text.trim()} onClick={send}>
                 Submit answer
@@ -163,7 +211,13 @@ function RateCard({ scheduleId, myRating, onRated }: { scheduleId: string; myRat
   return (
     <div>
       <StarRow value={stars} size={30} onChange={setStars} />
-      <TextArea className="mt-2" maxLength={1000} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment (optional)" />
+      <TextArea
+        className="mt-2"
+        maxLength={1000}
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Add a comment (optional)"
+      />
       <div className="mt-2 flex items-center gap-2">
         <div className="flex-1 text-xs text-muted">You can rate a session only once.</div>
         <Button small icon="star" loading={sending} disabled={!stars} onClick={send}>
@@ -219,20 +273,36 @@ export function SessionContent({ scheduleId }: { scheduleId: string }) {
       {polls.length > 0 && (
         <Group title="POLLS" icon="bar_chart" color="#10B981">
           {polls.map((p, i) => (
-            <PollCard key={idOf(p)} scheduleId={scheduleId} poll={p} canRespond={canRespond} onUpdated={(v) => update("polls", i, v)} />
+            <PollCard
+              key={idOf(p)}
+              scheduleId={scheduleId}
+              poll={p}
+              canRespond={canRespond}
+              onUpdated={(v) => update("polls", i, v)}
+            />
           ))}
         </Group>
       )}
       {questions.length > 0 && (
         <Group title="QUESTIONS" icon="help" color="#3B82F6">
           {questions.map((q, i) => (
-            <QuestionCard key={idOf(q)} scheduleId={scheduleId} question={q} canRespond={canRespond} onUpdated={(v) => update("questions", i, v)} />
+            <QuestionCard
+              key={idOf(q)}
+              scheduleId={scheduleId}
+              question={q}
+              canRespond={canRespond}
+              onUpdated={(v) => update("questions", i, v)}
+            />
           ))}
         </Group>
       )}
       {canRespond && (
         <Group title="RATE THIS SESSION" icon="star" color="#F59E0B">
-          <RateCard scheduleId={scheduleId} myRating={data?.myRating ?? null} onRated={(r) => setData((d: any) => ({ ...d, myRating: r }))} />
+          <RateCard
+            scheduleId={scheduleId}
+            myRating={data?.myRating ?? null}
+            onRated={(r) => setData((d: any) => ({ ...d, myRating: r }))}
+          />
         </Group>
       )}
       {isSpeaker && (

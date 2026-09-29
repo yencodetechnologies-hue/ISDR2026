@@ -321,17 +321,35 @@ class InclusionsSectionState extends State<InclusionsSection> {
                 ),
               ),
             ),
-          for (final item in _days[i].items) _row(item),
+          // Two tiles per row, equal width; a row is as tall as its taller tile.
+          for (var r = 0; r < _days[i].items.length; r += 2)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _tile(_days[i].items[r])),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: r + 1 < _days[i].items.length
+                          ? _tile(_days[i].items[r + 1])
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ],
     );
   }
 
-  Widget _row(_DayInclusion item) {
+  Widget _tile(_DayInclusion item) {
     final claimed = item.claimedAt != null;
+    final color = claimed ? _Colors.claimed : _Colors.accent;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: claimed ? _Colors.claimed.withValues(alpha: 0.08) : _Colors.card,
         borderRadius: BorderRadius.circular(14),
@@ -341,94 +359,87 @@ class InclusionsSectionState extends State<InclusionsSection> {
               : _Colors.line,
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: (claimed ? _Colors.claimed : _Colors.accent).withValues(
-                  alpha: 0.15,
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                claimed
-                    ? Icons.check_circle_rounded
-                    : Icons.card_giftcard_rounded,
-                size: 20,
-                color: claimed ? _Colors.claimed : _Colors.accent,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
-                  style: GoogleFonts.outfit(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  claimed
-                      ? '${item.byAdmin ? 'Claimed by admin' : 'Claimed'} at '
-                            '${DateFormat('h:mm a').format(item.claimedAt!)}'
-                      : 'Not claimed yet',
-                  style: GoogleFonts.inter(
-                    fontSize: 11.5,
-                    color: claimed ? _Colors.claimed : _Colors.muted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (claimed)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 22),
-              color: _Colors.claimed,
-              child: Text(
-                item.byAdmin ? 'CLAIMED\nBY ADMIN' : 'CLAIMED',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                  color: Colors.white,
-                ),
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.only(right: 14),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(
-                  'Available',
-                  style: GoogleFonts.inter(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                    color: _Colors.muted,
+                child: Icon(
+                  claimed
+                      ? Icons.check_circle_rounded
+                      : Icons.card_giftcard_rounded,
+                  size: 18,
+                  color: color,
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Status tag, pinned to the tile's top-right.
+              Expanded(
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: claimed
+                          ? _Colors.claimed
+                          : Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: claimed
+                          ? null
+                          : Border.all(
+                              color: Colors.white.withValues(alpha: 0.1),
+                            ),
+                    ),
+                    child: Text(
+                      claimed
+                          ? (item.byAdmin ? 'CLAIMED BY ADMIN' : 'CLAIMED')
+                          : 'Available',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: claimed ? 9.5 : 10.5,
+                        fontWeight: claimed ? FontWeight.w800 : FontWeight.w600,
+                        letterSpacing: claimed ? 0.6 : 0,
+                        color: claimed ? Colors.white : _Colors.muted,
+                      ),
+                    ),
                   ),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            item.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.outfit(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            claimed
+                ? '${item.byAdmin ? 'By admin' : 'Claimed'} at '
+                      '${DateFormat('h:mm a').format(item.claimedAt!)}'
+                : 'Not claimed yet',
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: claimed ? _Colors.claimed : _Colors.muted,
+            ),
+          ),
         ],
       ),
     );

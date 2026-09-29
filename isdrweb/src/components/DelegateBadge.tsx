@@ -11,6 +11,10 @@ const CROP_TOP = 25;
 const BADGE_W = 1080;
 const BADGE_H = 1404;
 const INK = "#0F172A";
+// ID number under the QR: smaller than before and kept clear of the "Scan Verification" text.
+const ID_SIZE = 40;
+const ID_W = 760;
+const ID_LEFT = (TEMPLATE_W - ID_W) / 2;
 
 export type BadgeData = {
   name?: string;
@@ -25,7 +29,19 @@ export type BadgeData = {
 const v = (s: any) => String(s ?? "").trim();
 
 /** One line of text shrunk to fit its width. */
-function Fit({ text, size, weight, color, width }: { text: string; size: number; weight: number; color: string; width: number }) {
+function Fit({
+  text,
+  size,
+  weight,
+  color,
+  width,
+}: {
+  text: string;
+  size: number;
+  weight: number;
+  color: string;
+  width: number;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
   const [scale, setScale] = useState(1);
   useEffect(() => {
@@ -65,11 +81,20 @@ export default function DelegateBadge({ data, innerRef }: { data: BadgeData; inn
   const qr = v(data.qrCode);
 
   return (
-    <div ref={box} className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: `${BADGE_W} / ${BADGE_H}` }}>
+    <div
+      ref={box}
+      className="relative w-full overflow-hidden rounded-xl"
+      style={{ aspectRatio: `${BADGE_W} / ${BADGE_H}` }}
+    >
       <div
         ref={innerRef}
         className="absolute left-0 top-0 origin-top-left"
-        style={{ width: BADGE_W, height: BADGE_H, transform: `scale(${scale})`, visibility: scale ? "visible" : "hidden" }}
+        style={{
+          width: BADGE_W,
+          height: BADGE_H,
+          transform: `scale(${scale})`,
+          visibility: scale ? "visible" : "hidden",
+        }}
       >
         <div className="absolute" style={{ left: -CROP_LEFT, top: -CROP_TOP, width: TEMPLATE_W, height: TEMPLATE_H }}>
           <img src={asset("delegate_badge_template.png")} alt="" className="absolute inset-0 h-full w-full" />
@@ -88,7 +113,10 @@ export default function DelegateBadge({ data, innerRef }: { data: BadgeData; inn
               </div>
             )}
             {v(data.institution) && (
-              <div className="line-clamp-2 text-center" style={{ fontSize: 38, fontWeight: 700, color: INK, lineHeight: 1.25 }}>
+              <div
+                className="line-clamp-2 text-center"
+                style={{ fontSize: 38, fontWeight: 700, color: INK, lineHeight: 1.25 }}
+              >
                 {v(data.institution)}
               </div>
             )}
@@ -102,10 +130,11 @@ export default function DelegateBadge({ data, innerRef }: { data: BadgeData; inn
             <div
               className="absolute text-center"
               style={{
-                left: 0,
-                top: 1160,
-                width: TEMPLATE_W,
-                fontSize: 52,
+                left: ID_LEFT,
+                top: 1166,
+                width: ID_W,
+                fontSize: ID_SIZE,
+                whiteSpace: "nowrap",
                 fontWeight: 800,
                 color: INK,
                 fontFamily: "ui-monospace, Consolas, monospace",
@@ -145,7 +174,16 @@ export async function downloadBadgePng(container: HTMLElement | null, data: Badg
   const family = getComputedStyle(document.body).fontFamily || "sans-serif";
   ctx.drawImage(await loadImage(asset("delegate_badge_template.png")), OX, OY, TEMPLATE_W, TEMPLATE_H);
 
-  const fit = (text: string, size: number, weight: number, color: string, cx: number, cy: number, maxW: number, mono = false) => {
+  const fit = (
+    text: string,
+    size: number,
+    weight: number,
+    color: string,
+    cx: number,
+    cy: number,
+    maxW: number,
+    mono = false,
+  ) => {
     ctx.font = `${weight} ${size}px ${mono ? "ui-monospace, Consolas, monospace" : family}`;
     ctx.fillStyle = color;
     ctx.textAlign = "center";
@@ -185,7 +223,11 @@ export async function downloadBadgePng(container: HTMLElement | null, data: Badg
       } else cur = t;
     }
     if (cur) lines.push(cur);
-    lines.slice(0, 2).forEach((l, i) => ctx.fillText(i === 1 && lines.length > 2 ? `${l}…` : l, OX + 594, y + 38 * 1.25 * (i + 0.5), 888));
+    lines
+      .slice(0, 2)
+      .forEach((l, i) =>
+        ctx.fillText(i === 1 && lines.length > 2 ? `${l}…` : l, OX + 594, y + 38 * 1.25 * (i + 0.5), 888),
+      );
   }
   const svg = container?.querySelector("svg");
   if (svg && v(data.qrCode)) {
@@ -198,7 +240,8 @@ export async function downloadBadgePng(container: HTMLElement | null, data: Badg
       URL.revokeObjectURL(url);
     }
   }
-  if (v(data.idNumber)) fit(v(data.idNumber).split("").join(" "), 52, 800, INK, OX + 600, OY + 1191, TEMPLATE_W, true);
+  if (v(data.idNumber))
+    fit(v(data.idNumber).split("").join(" "), ID_SIZE, 800, INK, OX + TEMPLATE_W / 2, OY + 1190, ID_W, true);
 
   const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
   if (!blob) return false;

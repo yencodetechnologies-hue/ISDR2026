@@ -55,7 +55,11 @@ export default function Awards() {
     const winner: string | undefined = winners[String(a.number)]?.name;
     const expanded = open.has(a.number);
     return (
-      <div key={a.number} className="card overflow-hidden" style={{ borderColor: winner ? "rgba(245,158,11,0.4)" : undefined }}>
+      <div
+        key={a.number}
+        className="card card-hover overflow-hidden"
+        style={{ borderColor: winner ? "rgba(245,158,11,0.4)" : undefined }}
+      >
         <button
           onClick={() =>
             adminMode
@@ -67,16 +71,16 @@ export default function Awards() {
                   return n;
                 })
           }
-          className="flex w-full items-center gap-3.5 px-4 py-3 text-left"
+          className="flex w-full items-center gap-4 px-5 py-4 text-left"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent/30 bg-accent/15 font-extrabold text-[#93C5FD]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-accent/30 bg-accent/15 font-extrabold text-[#93C5FD]">
             {a.number}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-[14.5px] font-bold">{a.title}</span>
             {adminMode && (
               <span className="block text-xs font-semibold" style={{ color: winner ? "#FBBF24" : "#9CA3AF" }}>
-                {winner ? `Winner: ${winner}` : "Tap to choose the winner"}
+                {winner ? `Winner: ${winner}` : "Click to choose the winner"}
               </span>
             )}
           </span>
@@ -99,11 +103,29 @@ export default function Awards() {
   };
 
   return (
-    <Page title={adminMode ? "Award Winners" : "Conference Awards"}>
-      <div className="mb-2.5 text-[11.5px] font-bold tracking-wide text-muted">DELEGATES &amp; POST GRADUATE AWARDS (CAT 1 - 8)</div>
-      <div className="space-y-2.5">{PG_AWARDS.map(card)}</div>
-      <div className="mb-2.5 mt-6 text-[11.5px] font-bold tracking-wide text-muted">UNDER GRADUATE STUDENTS AWARDS (CAT 9 - 12)</div>
-      <div className="space-y-2.5">{UG_AWARDS.map(card)}</div>
+    <Page
+      title={adminMode ? "Award Winners" : "Conference Awards"}
+      subtitle={adminMode ? "Click an award to choose its winner" : "Click an award to see its winner"}
+      back={false}
+    >
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section>
+          <div className="mb-3 flex items-center gap-2">
+            <Icon name="emoji_events" size={20} color="#F59E0B" />
+            <h2 className="font-semibold">Delegates &amp; Post Graduate Awards</h2>
+            <span className="text-xs text-muted">(Cat 1 - 8)</span>
+          </div>
+          <div className="space-y-2.5">{PG_AWARDS.map(card)}</div>
+        </section>
+        <section>
+          <div className="mb-3 flex items-center gap-2">
+            <Icon name="school" size={20} color="#60A5FA" />
+            <h2 className="font-semibold">Under Graduate Students Awards</h2>
+            <span className="text-xs text-muted">(Cat 9 - 12)</span>
+          </div>
+          <div className="space-y-2.5">{UG_AWARDS.map(card)}</div>
+        </section>
+      </div>
       {picking && (
         <WinnerPicker
           award={picking}
@@ -116,7 +138,17 @@ export default function Awards() {
   );
 }
 
-function WinnerPicker({ award, currentId, onPick, onClose }: { award: Award; currentId: string | null; onPick: (id: string) => void; onClose: () => void }) {
+function WinnerPicker({
+  award,
+  currentId,
+  onPick,
+  onClose,
+}: {
+  award: Award;
+  currentId: string | null;
+  onPick: (id: string) => void;
+  onClose: () => void;
+}) {
   const [all, setAll] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -127,7 +159,9 @@ function WinnerPicker({ award, currentId, onPick, onClose }: { award: Award; cur
     });
   }, []);
   const query = q.trim().toLowerCase();
-  const shown = (all ?? []).filter((p) => !query || `${p.name} ${p.idNumber} ${p.mobileNumber}`.toLowerCase().includes(query));
+  const shown = (all ?? []).filter(
+    (p) => !query || `${p.name} ${p.idNumber} ${p.mobileNumber}`.toLowerCase().includes(query),
+  );
   return (
     <Modal
       open
@@ -163,7 +197,9 @@ function WinnerPicker({ award, currentId, onPick, onClose }: { award: Award; cur
                 <Avatar name={p.name} size={36} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold">{p.name}</span>
-                  <span className="block text-xs text-muted">{[p.idNumber, p.mobileNumber].filter(Boolean).join(" · ")}</span>
+                  <span className="block text-xs text-muted">
+                    {[p.idNumber, p.mobileNumber].filter(Boolean).join(" · ")}
+                  </span>
                 </span>
                 {selected && <Icon name="check_circle" color="#22C55E" />}
               </button>

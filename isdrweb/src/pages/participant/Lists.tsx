@@ -3,11 +3,32 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ScheduleRow, useScheduleActions } from "@/components/ScheduleRow";
 import { Avatar, Empty, ErrorState, Icon, IconButton, Loading, Page, useToast } from "@/components/ui";
-import { BottomNav, ModuleGrid } from "@/components/widgets";
+import { ModuleGrid } from "@/components/widgets";
 import { get } from "@/lib/api";
-import { fmtDMon, fmtTime, idOf, monthShort, sameDay, scheduleTimes, startOfDay, weekday, weekdayLong } from "@/lib/format";
+import {
+  fmtDMon,
+  fmtTime,
+  idOf,
+  monthShort,
+  sameDay,
+  scheduleTimes,
+  startOfDay,
+  weekday,
+  weekdayLong,
+} from "@/lib/format";
 import { loadAllSchedules, scheduleHref, toggleFavorite, type ScheduleItem } from "@/lib/schedules";
-import { HOME_SLOTS, PARTICIPANT_MODULES, participantNav } from "./modules";
+import { PARTICIPANT_MODULES } from "./modules";
+
+/** Day heading with a count, used by the grouped lists. */
+function DayHeading({ label, count }: { label: React.ReactNode; count: number }) {
+  return (
+    <div className="mb-3 flex items-center gap-3">
+      <h2 className="text-base font-semibold">{label}</h2>
+      <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs font-semibold text-muted">{count}</span>
+      <div className="h-px flex-1 bg-line" />
+    </div>
+  );
+}
 
 const dayHeader = (d: Date) => `${weekdayLong(d)}, ${d.getDate()} ${monthShort(d)}`;
 
@@ -39,7 +60,7 @@ export function UpcomingSchedules() {
     load();
   }, [load]);
   return (
-    <Page title="Schedule">
+    <Page title="Schedule" subtitle="Every session that hasn't ended yet" width={1000}>
       {error ? (
         <ErrorState message={error} onRetry={load} />
       ) : !items ? (
@@ -48,9 +69,12 @@ export function UpcomingSchedules() {
         <Empty icon="event_busy" title="No upcoming sessions" />
       ) : (
         byDay(items, (i) => startOfDay(i.start)).map((g) => (
-          <div key={g.day?.getTime()} className="mb-5">
-            <div className="mb-2 text-sm font-bold text-white/80">{g.day && sameDay(g.day, new Date()) ? "Today" : g.day && dayHeader(g.day)}</div>
-            <div className="space-y-2">
+          <div key={g.day?.getTime()} className="mb-8">
+            <DayHeading
+              label={g.day && sameDay(g.day, new Date()) ? "Today" : g.day && dayHeader(g.day)}
+              count={g.list.length}
+            />
+            <div className="space-y-2.5">
               {g.list.map((it) => (
                 <ScheduleRow key={idOf(it.schedule)} item={it} actions={actions} />
               ))}
@@ -94,18 +118,26 @@ export function AllSessions() {
       <button
         key={label}
         onClick={() => setParams(d ? { day: String(d.getTime()) } : {}, { replace: true })}
-        className={`shrink-0 rounded-xl px-4 py-2 text-center text-sm font-semibold ${active ? "bg-accent text-white" : "bg-field text-muted"}`}
+        className={`shrink-0 rounded-lg border px-4 py-2 text-left text-sm font-semibold transition ${
+          active
+            ? "border-accent bg-accent/15 text-white"
+            : "border-line text-muted hover:border-white/20 hover:text-white"
+        }`}
       >
         {label}
-        {sub && <div className="text-[10.5px] font-normal opacity-80">{sub}</div>}
+        {sub && <div className="text-[11px] font-normal opacity-80">{sub}</div>}
       </button>
     );
   };
 
   return (
-    <Page title={day ? `Day ${days.findIndex((d) => sameDay(d, day)) + 1}` : "All Sessions"}>
-      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-        {tab("All Sessions", null, null)}
+    <Page
+      title={day ? `Day ${days.findIndex((d) => sameDay(d, day)) + 1}` : "All Sessions"}
+      subtitle={items ? `${list.length} ${list.length === 1 ? "session" : "sessions"}` : undefined}
+      width={1000}
+    >
+      <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+        {tab("All Sessions", "Every day", null)}
         {days.map((d, i) => tab(`Day ${i + 1}`, fmtDMon(d), d))}
       </div>
       {error ? (
@@ -115,7 +147,7 @@ export function AllSessions() {
       ) : list.length === 0 ? (
         <Empty icon="event_busy" title="No sessions on this day" />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {list.map((it) => (
             <ScheduleRow key={idOf(it.schedule)} item={it} actions={actions} showDate={!day} />
           ))}
@@ -159,37 +191,43 @@ export function Favorites() {
     .sort((a, b) => (a.w?.start.getTime() ?? 0) - (b.w?.start.getTime() ?? 0));
 
   return (
-    <Page title="Favorites" bottom={<BottomNav items={participantNav} active={1} />}>
+    <Page title="Favorites" subtitle="Sessions you've saved" back={false}>
       {error ? (
         <ErrorState message={error} onRetry={load} />
       ) : !schedules ? (
         <Loading />
       ) : sorted.length === 0 ? (
-        <Empty icon="favorite" title="No favorites yet" subtitle="Tap the heart on a session to save it here." />
+        <Empty icon="favorite" title="No favorites yet" subtitle="Click the heart on a session to save it here." />
       ) : (
         byDay(sorted, (x) => (x.w ? startOfDay(x.w.start) : null)).map((g, gi) => (
-          <div key={gi} className="mb-5">
-            {g.day && <div className="mb-2 text-sm font-bold text-white/80">{dayHeader(g.day)}</div>}
-            <div className="space-y-2">
+          <div key={gi} className="mb-8">
+            {g.day && <DayHeading label={dayHeader(g.day)} count={g.list.length} />}
+            <div className="grid gap-3 md:grid-cols-2">
               {g.list.map(({ s, w }) => {
                 const event = events[String(s.eventId)] ?? { id: s.eventId };
                 return (
                   <div
                     key={idOf(s)}
                     onClick={() => navigate(scheduleHref({ event, schedule: s }))}
-                    className="card flex cursor-pointer items-center gap-3 p-3 hover:bg-[#191926]"
+                    className="card card-hover group flex cursor-pointer items-center gap-3 p-4"
                   >
-                    <Avatar src={s.speakerPhoto} name={s.speakerName} size={42} />
+                    <Avatar src={s.speakerPhoto} name={s.speakerName} size={44} />
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-semibold text-accent">
                         {w ? `${fmtTime(w.start)} - ${fmtTime(w.end)}` : ""}
-                        {s.speakerName && <span className="text-white/60"> · {s.speakerName}</span>}
                       </div>
-                      <div className="truncate text-sm font-bold">{s.scheduleName}</div>
-                      {s.hall && <div className="text-[11px] text-white/45">{s.hall}</div>}
+                      <div className="truncate font-semibold group-hover:text-[#93C5FD]">{s.scheduleName}</div>
+                      <div className="truncate text-xs text-muted">
+                        {[s.speakerName, s.hall].filter(Boolean).join(" · ")}
+                      </div>
                     </div>
                     <span onClick={(e) => e.stopPropagation()}>
-                      <IconButton icon="favorite" title="Remove from favorites" color="#EF4444" onClick={() => unfavorite(s)} />
+                      <IconButton
+                        icon="favorite"
+                        title="Remove from favorites"
+                        color="#EF4444"
+                        onClick={() => unfavorite(s)}
+                      />
                     </span>
                   </div>
                 );
@@ -222,7 +260,11 @@ export function Speakers() {
     });
   }, []);
   return (
-    <Page title="Speakers" bottom={<BottomNav items={participantNav} active={2} />}>
+    <Page
+      title="Speakers"
+      subtitle={speakers ? `${speakers.length} speakers at the conference` : undefined}
+      back={false}
+    >
       {error ? (
         <ErrorState message={error} />
       ) : !speakers ? (
@@ -230,18 +272,24 @@ export function Speakers() {
       ) : speakers.length === 0 ? (
         <Empty icon="groups" title="No speakers yet" />
       ) : (
-        <div className="space-y-2.5">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {speakers.map((sp, i) => (
-            <div key={sp.name} className="card p-3">
-              <div className="flex items-center gap-3">
-                <span className="w-6 text-center text-sm font-bold text-muted">{i + 1}</span>
-                <Avatar src={sp.photo} name={sp.name.replace(/^Dr\.?\s*/i, "")} size={46} />
+            <div key={sp.name} className="card flex flex-col p-5">
+              <div className="flex items-center gap-3.5">
+                <div className="relative">
+                  <Avatar src={sp.photo} name={sp.name.replace(/^Dr\.?\s*/i, "")} size={56} />
+                  <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-field px-1 text-[10px] font-bold text-muted ring-2 ring-card">
+                    {i + 1}
+                  </span>
+                </div>
                 <div className="min-w-0 flex-1">
-                  <div className="font-bold">{sp.name}</div>
-                  <div className="text-xs text-muted">{sp.sessions.length === 1 ? "1 session" : `${sp.sessions.length} sessions`}</div>
+                  <div className="font-semibold">{sp.name}</div>
+                  <div className="text-xs text-muted">
+                    {sp.sessions.length === 1 ? "1 session" : `${sp.sessions.length} sessions`}
+                  </div>
                 </div>
               </div>
-              <div className="mt-2 space-y-1.5 pl-9">
+              <div className="mt-4 space-y-1.5">
                 {sp.sessions.map((s) => (
                   <button
                     key={idOf(s.schedule)}
@@ -267,14 +315,11 @@ export function Speakers() {
   );
 }
 
-/** More: the modules that don't fit in the home grid. */
+/** More: every participant section. */
 export function ParticipantMore() {
-  const overflow = PARTICIPANT_MODULES.length > HOME_SLOTS + 1 ? PARTICIPANT_MODULES.slice(HOME_SLOTS) : [];
   return (
-    <Page title="More" bottom={<BottomNav items={participantNav} active={4} />}>
-      <div className="card p-2">
-        <ModuleGrid items={overflow} cols="grid-cols-3 sm:grid-cols-4" />
-      </div>
+    <Page title="All Sections" back={false}>
+      <ModuleGrid items={PARTICIPANT_MODULES} />
     </Page>
   );
 }

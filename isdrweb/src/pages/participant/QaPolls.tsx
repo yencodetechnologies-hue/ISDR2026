@@ -1,7 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Avatar, Button, Empty, ErrorState, Icon, Loading, Modal, Page, Pill, TextArea, useToast } from "@/components/ui";
+import {
+  Avatar,
+  Button,
+  Chips,
+  Empty,
+  ErrorState,
+  Icon,
+  Loading,
+  Modal,
+  Page,
+  Pill,
+  TextArea,
+  useToast,
+} from "@/components/ui";
 import { get, post } from "@/lib/api";
 import { fmtDate, idOf, parseDate, timeAgo } from "@/lib/format";
 
@@ -27,7 +40,7 @@ function SessionQuestionCard({ q, onAnswered }: { q: any; onAnswered: (text: str
   };
 
   return (
-    <div className="card p-4">
+    <div className="card p-5">
       <div className="flex items-center gap-2.5">
         <Avatar src={q.speakerPhoto} name={q.speakerName} size={38} />
         <div className="min-w-0 flex-1">
@@ -37,7 +50,11 @@ function SessionQuestionCard({ q, onAnswered }: { q: any; onAnswered: (text: str
             {date ? ` · ${fmtDate(date)}` : ""}
           </div>
         </div>
-        {myAnswer ? <Pill color="#22C55E">Answered</Pill> : <span className="text-[11px] text-muted">{q.createdAt ? `Asked ${timeAgo(q.createdAt)}` : ""}</span>}
+        {myAnswer ? (
+          <Pill color="#22C55E">Answered</Pill>
+        ) : (
+          <span className="text-[11px] text-muted">{q.createdAt ? `Asked ${timeAgo(q.createdAt)}` : ""}</span>
+        )}
       </div>
       <div className="mt-3 font-semibold">{q.question}</div>
       {myAnswer ? (
@@ -47,7 +64,13 @@ function SessionQuestionCard({ q, onAnswered }: { q: any; onAnswered: (text: str
         </div>
       ) : (
         <>
-          <TextArea className="mt-2.5" maxLength={1000} value={text} onChange={(e) => setText(e.target.value)} placeholder="Type your answer" />
+          <TextArea
+            className="mt-2.5"
+            maxLength={1000}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Type your answer"
+          />
           <div className="mt-2 flex justify-end">
             <Button small icon="send" loading={sending} disabled={!text.trim()} onClick={send}>
               Submit Answer
@@ -80,59 +103,83 @@ export function ParticipantQa() {
   const shown = pendingOnly ? (questions ?? []).filter((q) => q.myAnswer == null) : (questions ?? []);
 
   return (
-    <Page title="Q/A">
-      <div className="rounded-2xl bg-gradient-to-br from-[#1E3A8A] to-[#14141F] p-4">
-        <div className="font-bold">Your questions make the session more valuable!</div>
-        <div className="text-sm text-white/70">Be a part of the discussion.</div>
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <button onClick={() => navigate("/participant/qa/ask")} className="card flex items-center gap-3 p-4 text-left hover:bg-[#191926]">
-          <Icon name="record_voice_over" size={28} color="#60A5FA" />
-          <span>
-            <span className="block font-bold">Ask a Speaker</span>
-            <span className="block text-xs text-muted">Send your question</span>
-          </span>
-        </button>
-        <button onClick={() => navigate("/participant/qa/mine")} className="card flex items-center gap-3 p-4 text-left hover:bg-[#191926]">
-          <Icon name="forum" size={28} color="#A78BFA" />
-          <span>
-            <span className="block font-bold">My Questions</span>
-            <span className="block text-xs text-muted">View your answers</span>
-          </span>
-        </button>
-      </div>
-      <div className="mb-3 mt-6 flex items-center gap-2">
-        <div className="text-base font-extrabold">Questions for You</div>
-        {pending > 0 && <Pill color="#F59E0B">{pending} TO ANSWER</Pill>}
-        <span className="flex-1" />
-        <button
-          title={pendingOnly ? "Show all" : "Only unanswered"}
-          onClick={() => setPendingOnly((p) => !p)}
-          className={`flex h-9 w-10 items-center justify-center rounded-xl border border-accent/50 ${pendingOnly ? "bg-accent/30" : "bg-field"}`}
-        >
-          <Icon name="tune" size={20} color="#93C5FD" />
-        </button>
-      </div>
-      {error ? (
-        <ErrorState message={error} onRetry={load} />
-      ) : !questions ? (
-        <Loading />
-      ) : shown.length === 0 ? (
-        <Empty icon="help" title={pendingOnly ? "No questions left to answer" : "No questions from speakers yet"} />
-      ) : (
-        <div className="space-y-3">
-          {shown.map((q) => (
-            <SessionQuestionCard
-              key={idOf(q)}
-              q={q}
-              onAnswered={(text) => setQuestions((l) => (l ?? []).map((x) => (idOf(x) === idOf(q) ? { ...x, myAnswer: text } : x)))}
+    <Page
+      title="Q/A"
+      subtitle="Your questions make the session more valuable! Be a part of the discussion."
+      back={false}
+    >
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-semibold">Questions for You</h2>
+            {pending > 0 && <Pill color="#F59E0B">{pending} TO ANSWER</Pill>}
+            <span className="flex-1" />
+            <Chips
+              value={pendingOnly ? "open" : "all"}
+              onChange={(v) => setPendingOnly(v === "open")}
+              items={[
+                { value: "all", label: "All" },
+                { value: "open", label: "Unanswered", icon: "tune" },
+              ]}
             />
-          ))}
+          </div>
+          {error ? (
+            <ErrorState message={error} onRetry={load} />
+          ) : !questions ? (
+            <Loading />
+          ) : shown.length === 0 ? (
+            <Empty icon="help" title={pendingOnly ? "No questions left to answer" : "No questions from speakers yet"} />
+          ) : (
+            <div className="space-y-4">
+              {shown.map((q) => (
+                <SessionQuestionCard
+                  key={idOf(q)}
+                  q={q}
+                  onAnswered={(text) =>
+                    setQuestions((l) => (l ?? []).map((x) => (idOf(x) === idOf(q) ? { ...x, myAnswer: text } : x)))
+                  }
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
-      <Button full variant="outline" icon="poll" className="mt-5" onClick={() => navigate("/participant/polls")}>
-        View All Polls &amp; Q/A
-      </Button>
+        <aside className="space-y-3 lg:sticky lg:top-24 lg:self-start">
+          <div className="rounded-xl border border-line bg-gradient-to-br from-[#1E3A8A] to-card p-5">
+            <Icon name="record_voice_over" size={30} color="#93C5FD" />
+            <div className="mt-3 font-semibold">Have a question for a speaker?</div>
+            <div className="mt-1 text-sm text-white/70">Only you and the speaker will see it.</div>
+            <Button full icon="send" className="mt-4" onClick={() => navigate("/participant/qa/ask")}>
+              Ask a Speaker
+            </Button>
+          </div>
+          <button
+            onClick={() => navigate("/participant/qa/mine")}
+            className="card card-hover flex w-full items-center gap-3 p-4 text-left"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#A78BFA]/15">
+              <Icon name="forum" color="#A78BFA" />
+            </span>
+            <span className="flex-1">
+              <span className="block font-semibold">My Questions</span>
+              <span className="block text-xs text-muted">View your answers</span>
+            </span>
+            <Icon name="chevron_right" color="#6B7280" />
+          </button>
+          <button
+            onClick={() => navigate("/participant/polls")}
+            className="card card-hover flex w-full items-center gap-3 p-4 text-left"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#8B5CF6]/15">
+              <Icon name="poll" color="#8B5CF6" />
+            </span>
+            <span className="flex-1">
+              <span className="block font-semibold">View All Polls &amp; Q/A</span>
+              <span className="block text-xs text-muted">Vote on session polls</span>
+            </span>
+            <Icon name="chevron_right" color="#6B7280" />
+          </button>
+        </aside>
+      </div>
     </Page>
   );
 }
@@ -168,7 +215,7 @@ export function AskSpeaker() {
   };
 
   return (
-    <Page title="Ask a Speaker">
+    <Page title="Ask a Speaker" subtitle="Choose a speaker to send a private question">
       {error ? (
         <ErrorState message={error} />
       ) : !speakers ? (
@@ -176,27 +223,51 @@ export function AskSpeaker() {
       ) : speakers.length === 0 ? (
         <Empty icon="groups" title="No speakers yet" />
       ) : (
-        <div className="space-y-2">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {speakers.map((s) => (
-            <button key={idOf(s)} onClick={() => setAsking(s)} className="card flex w-full items-center gap-3 p-3 text-left hover:bg-[#191926]">
-              <Avatar src={s.photo} name={s.name} size={46} />
+            <button
+              key={idOf(s)}
+              onClick={() => setAsking(s)}
+              className="card card-hover group flex w-full items-center gap-3.5 p-4 text-left"
+            >
+              <Avatar src={s.photo} name={s.name} size={50} />
               <div className="min-w-0 flex-1">
-                <div className="font-bold">{s.name}</div>
+                <div className="truncate font-semibold group-hover:text-[#93C5FD]">{s.name}</div>
                 {(s.designation || s.institution) && (
-                  <div className="truncate text-xs text-muted">{[s.designation, s.institution].filter(Boolean).join(" · ")}</div>
+                  <div className="truncate text-xs text-muted">
+                    {[s.designation, s.institution].filter(Boolean).join(" · ")}
+                  </div>
                 )}
               </div>
-              <Icon name="chevron_right" color="#9CA3AF" />
+              <Icon name="send" size={18} color="#6B7280" />
             </button>
           ))}
         </div>
       )}
-      <Modal open={!!asking} onClose={() => setAsking(null)} title={asking ? `Ask ${asking.name}` : ""}>
-        <TextArea rows={5} maxLength={1000} value={text} onChange={(e) => setText(e.target.value)} placeholder="Type your question" autoFocus />
+      <Modal
+        open={!!asking}
+        onClose={() => setAsking(null)}
+        title={asking ? `Ask ${asking.name}` : ""}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setAsking(null)}>
+              Cancel
+            </Button>
+            <Button icon="send" loading={sending} disabled={!text.trim()} onClick={send}>
+              Send question
+            </Button>
+          </>
+        }
+      >
+        <TextArea
+          rows={5}
+          maxLength={1000}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Type your question"
+          autoFocus
+        />
         <div className="mt-2 text-xs text-muted">Only you and the speaker will see this question and the answer.</div>
-        <Button full className="mt-4" icon="send" loading={sending} disabled={!text.trim()} onClick={send}>
-          Send question
-        </Button>
       </Modal>
     </Page>
   );
@@ -213,7 +284,7 @@ export function MyQuestions() {
     });
   }, []);
   return (
-    <Page title="My Questions">
+    <Page title="My Questions" subtitle="Your questions to speakers and their answers">
       {error ? (
         <ErrorState message={error} />
       ) : !questions ? (
@@ -221,11 +292,11 @@ export function MyQuestions() {
       ) : questions.length === 0 ? (
         <Empty icon="forum" title="No questions yet" subtitle="Ask a speaker and their answer will show here." />
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-4 md:grid-cols-2">
           {questions.map((q) => {
             const answered = q.answered === true;
             return (
-              <div key={idOf(q)} className="card p-4">
+              <div key={idOf(q)} className="card p-5">
                 <div className="flex items-center gap-2.5">
                   <Avatar src={q.speakerPhoto} name={q.speakerName || "Speaker"} size={34} />
                   <div className="min-w-0 flex-1">
@@ -274,7 +345,7 @@ function PollCard({ p, number, onVoted }: { p: any; number: number; onVoted: (po
   };
 
   return (
-    <div className="card p-4">
+    <div className="card p-5">
       <div className="flex flex-wrap items-center gap-1.5">
         <Pill color="#8B5CF6">#{number}</Pill>
         {session.toLowerCase().includes("keynote") && <Pill color="#F59E0B">Keynote</Pill>}
@@ -299,9 +370,16 @@ function PollCard({ p, number, onVoted }: { p: any; number: number; onVoted: (po
               disabled={voted}
               onClick={() => setSelected(i)}
               className="flex w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm disabled:cursor-default"
-              style={{ borderColor: chosen ? "#8B5CF6" : "rgba(255,255,255,0.1)", background: chosen ? "rgba(139,92,246,0.15)" : undefined }}
+              style={{
+                borderColor: chosen ? "#8B5CF6" : "rgba(255,255,255,0.1)",
+                background: chosen ? "rgba(139,92,246,0.15)" : undefined,
+              }}
             >
-              <Icon name={chosen ? "radio_button_checked" : "radio_button_unchecked"} size={18} color={chosen ? "#A78BFA" : "#6B7280"} />
+              <Icon
+                name={chosen ? "radio_button_checked" : "radio_button_unchecked"}
+                size={18}
+                color={chosen ? "#A78BFA" : "#6B7280"}
+              />
               {o}
             </button>
           );
@@ -340,21 +418,30 @@ export function ParticipantPolls() {
   const shown = pendingOnly ? (polls ?? []).filter((p) => p.myVote == null) : (polls ?? []);
 
   return (
-    <Page title="Polls">
-      <div className="rounded-2xl bg-gradient-to-br from-[#4C1D95] to-[#14141F] p-4">
-        <div className="text-lg font-bold">Your Voice Matters</div>
-        {pending > 0 ? (
-          <button onClick={() => setPendingOnly((p) => !p)} className="mt-2 block text-left">
-            <span className="block font-semibold text-[#FBBF24]">
+    <Page title="Polls" back={false}>
+      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-line bg-gradient-to-br from-[#4C1D95] to-card px-6 py-5">
+        <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/10">
+          <Icon name="how_to_vote" size={26} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-lg font-semibold">Your Voice Matters</div>
+          <div className="text-sm text-white/70">Make your voice count!</div>
+        </div>
+        {pending > 0 && (
+          <button
+            onClick={() => setPendingOnly((p) => !p)}
+            className="rounded-lg border border-[#FBBF24]/40 bg-[#FBBF24]/10 px-4 py-2.5 text-left transition hover:bg-[#FBBF24]/15"
+          >
+            <span className="block text-sm font-semibold text-[#FBBF24]">
               {pending === 1 ? "1 Poll Waiting for Your Vote" : `${pending} Polls Waiting for Your Vote`}
             </span>
-            <span className="block text-xs text-white/70">{pendingOnly ? "Showing only these — tap to show all" : "Make your voice count!"}</span>
+            <span className="block text-xs text-white/70">
+              {pendingOnly ? "Showing only these — click to show all" : "Click to show only these"}
+            </span>
           </button>
-        ) : (
-          <div className="text-sm text-white/70">Make your voice count!</div>
         )}
       </div>
-      <div className="mt-4">
+      <div className="mt-6">
         {error ? (
           <ErrorState message={error} onRetry={load} />
         ) : !polls ? (
@@ -364,22 +451,28 @@ export function ParticipantPolls() {
         ) : shown.length === 0 ? (
           <Empty icon="check_circle" title="You have voted on every poll" />
         ) : (
-          <div className="space-y-3">
+          <div className="grid gap-4 md:grid-cols-2">
             {shown.map((p, i) => (
               <PollCard
                 key={idOf(p)}
                 p={p}
                 number={i + 1}
-                onVoted={(np) => setPolls((l) => (l ?? []).map((x) => (idOf(x) === idOf(p) ? { ...x, ...np, myVote: np.myVote ?? x.myVote } : x)))}
+                onVoted={(np) =>
+                  setPolls((l) =>
+                    (l ?? []).map((x) => (idOf(x) === idOf(p) ? { ...x, ...np, myVote: np.myVote ?? x.myVote } : x)),
+                  )
+                }
               />
             ))}
           </div>
         )}
       </div>
       {pendingOnly && (
-        <Button full variant="outline" className="mt-4" onClick={() => setPendingOnly(false)}>
-          View All Polls
-        </Button>
+        <div className="mt-5 flex justify-center">
+          <Button variant="outline" onClick={() => setPendingOnly(false)}>
+            View All Polls
+          </Button>
+        </div>
       )}
     </Page>
   );
