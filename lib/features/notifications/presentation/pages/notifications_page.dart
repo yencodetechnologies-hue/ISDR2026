@@ -19,14 +19,17 @@ class NotificationsPage extends StatefulWidget {
 
 class _NotificationsPageState extends State<NotificationsPage> {
   String? _selectedType;
-  bool? _readFilter;
+  // Opens on Unread.
+  bool? _readFilter = false;
   final ScrollController _scrollController = ScrollController();
   int _currentPage = 1;
 
   @override
   void initState() {
     super.initState();
-    context.read<NotificationBloc>().add(const LoadNotifications());
+    context.read<NotificationBloc>().add(
+      LoadNotifications(type: _selectedType, read: _readFilter),
+    );
     context.read<NotificationBloc>().add(const LoadUnreadCount());
     _scrollController.addListener(_onScroll);
   }
@@ -128,9 +131,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'all', child: Text('All')),
                   const PopupMenuItem(value: 'unread', child: Text('Unread')),
                   const PopupMenuItem(value: 'read', child: Text('Read')),
+                  const PopupMenuItem(value: 'all', child: Text('All')),
                   const PopupMenuDivider(),
                   const PopupMenuItem(value: 'message', child: Text('Message')),
                   const PopupMenuItem(
@@ -255,9 +258,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Widget _buildFilterChips() {
     final chips = <Map<String, String>>[
-      {'key': 'all', 'label': 'All'},
       {'key': 'unread', 'label': 'Unread'},
       {'key': 'read', 'label': 'Read'},
+      {'key': 'all', 'label': 'All'},
     ];
 
     return SizedBox(
@@ -343,7 +346,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
       return RefreshIndicator(
         color: _accent,
         onRefresh: () async {
-          context.read<NotificationBloc>().add(const RefreshNotifications());
+          // Reload with the selected filter (RefreshNotifications drops it).
+          setState(() => _currentPage = 1);
+          context.read<NotificationBloc>().add(
+            LoadNotifications(page: 1, type: _selectedType, read: _readFilter),
+          );
+          context.read<NotificationBloc>().add(const LoadUnreadCount());
         },
         child: ListView.builder(
           controller: _scrollController,
@@ -518,7 +526,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () {
-                context.read<NotificationBloc>().add(const LoadNotifications());
+                context.read<NotificationBloc>().add(
+                  LoadNotifications(type: _selectedType, read: _readFilter),
+                );
               },
               style: AppTheme.primaryElevatedStyle,
               icon: const Icon(Icons.refresh_rounded, size: 18),

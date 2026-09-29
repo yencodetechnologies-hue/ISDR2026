@@ -695,81 +695,96 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
               ),
             )
           else ...[
-            const SizedBox(height: 6),
-            ...entries.map((inc) {
-              final name = inc['name'] as String;
-              final dates = inc['dates'] as List<String>;
-              final availableToday = dates.isEmpty || dates.contains(today);
-              return Container(
-                margin: const EdgeInsets.only(bottom: 6),
-                decoration: BoxDecoration(
-                  color: availableToday
-                      ? const Color(0xFF1E1E2A)
-                      : const Color(0xFF0A0A12),
-                  borderRadius: BorderRadius.circular(10),
+            const SizedBox(height: 8),
+            // Three equal tiles per row; each row is as tall as its tallest tile.
+            for (var r = 0; r < entries.length; r += 3) ...[
+              if (r > 0) const SizedBox(height: 8),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var c = r; c < r + 3; c++) ...[
+                      if (c > r) const SizedBox(width: 8),
+                      Expanded(
+                        child: c < entries.length
+                            ? _buildInclusionTile(entries[c], pkg, today)
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ],
                 ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () {
-                    if (availableToday) {
-                      _openClaimSheet(name, pkg['id']?.toString() ?? '');
-                      return;
-                    }
-                    ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar()
-                      ..showSnackBar(
-                        SnackBar(
-                          backgroundColor: AppTheme.errorColor,
-                          behavior: SnackBarBehavior.floating,
-                          content: Text(
-                            '"$name" is not available today. Scheduled for: ${_formatScheduleDates(dates)}.',
-                          ),
-                        ),
-                      );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 11,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.restaurant_rounded,
-                          size: 16,
-                          color: availableToday
-                              ? const Color(0xFF2563EB)
-                              : const Color(0xFFCBD5E1),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            name,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: availableToday
-                                  ? Colors.white
-                                  : const Color(0xFF9CA3AF),
-                            ),
-                          ),
-                        ),
-                        Icon(
-                          availableToday
-                              ? Icons.chevron_right_rounded
-                              : Icons.lock_outline_rounded,
-                          size: 18,
-                          color: availableToday
-                              ? const Color(0xFF2563EB)
-                              : const Color(0xFFCBD5E1),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
+              ),
+            ],
           ],
         ],
+      ),
+    );
+  }
+
+  /// One inclusion tile: tap to scan-claim it, or (not scheduled today) a
+  /// message saying which days it is on.
+  Widget _buildInclusionTile(
+    Map<String, dynamic> inc,
+    Map<String, dynamic> pkg,
+    String today,
+  ) {
+    final name = inc['name'] as String;
+    final dates = inc['dates'] as List<String>;
+    final availableToday = dates.isEmpty || dates.contains(today);
+    final color = availableToday
+        ? const Color(0xFF2563EB)
+        : const Color(0xFFCBD5E1);
+    return Material(
+      color: availableToday ? const Color(0xFF1E1E2A) : const Color(0xFF0A0A12),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () {
+          if (availableToday) {
+            _openClaimSheet(name, pkg['id']?.toString() ?? '');
+            return;
+          }
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                backgroundColor: AppTheme.errorColor,
+                behavior: SnackBarBehavior.floating,
+                content: Text(
+                  '"$name" is not available today. Scheduled for: ${_formatScheduleDates(dates)}.',
+                ),
+              ),
+            );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                availableToday
+                    ? Icons.restaurant_rounded
+                    : Icons.lock_outline_rounded,
+                size: 20,
+                color: color,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                name,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: availableToday
+                      ? Colors.white
+                      : const Color(0xFF9CA3AF),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

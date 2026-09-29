@@ -7,6 +7,9 @@ const {
   getTicket,
   sendMessage,
   closeTicket,
+  updateTicket,
+  deleteTicket,
+  editMessage,
 } = require('../controllers/supportTicketController');
 
 // Help & Support: participants raise tickets; event staff and admin reply.
@@ -16,5 +19,8 @@ router.post('/', protect, createTicket);
 router.get('/:id', protect, getTicket);
 router.post('/:id/messages', protect, sendMessage);
 router.post('/:id/close', protect, closeTicket);
+router.put('/:id', protect, updateTicket);
+router.delete('/:id', protect, deleteTicket);
+router.put('/:id/messages/:messageId', protect, editMessage);
 
 module.exports = router;

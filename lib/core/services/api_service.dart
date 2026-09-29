@@ -1866,6 +1866,32 @@ class ApiService {
             data: {'text': text},
           ));
 
+  /// The sender edits one of their own chat messages.
+  Future<Map<String, dynamic>> editHelpMessage(
+    String ticketId,
+    String messageId,
+    String text,
+  ) =>
+      _sessionContentCall(() => _dio.put(
+            '${ApiConfig.helpTickets}/$ticketId/messages/$messageId',
+            data: {'text': text},
+          ));
+
+  /// The participant edits their own open ticket's category and description.
+  Future<Map<String, dynamic>> updateHelpTicket({
+    required String ticketId,
+    required String category,
+    required String description,
+  }) =>
+      _sessionContentCall(() => _dio.put(
+            '${ApiConfig.helpTickets}/$ticketId',
+            data: {'category': category, 'description': description},
+          ));
+
+  /// Deletes a ticket: the participant's own, or any ticket for staff/admin.
+  Future<Map<String, dynamic>> deleteHelpTicket(String ticketId) =>
+      _sessionContentCall(() => _dio.delete('${ApiConfig.helpTickets}/$ticketId'));
+
   /// Event staff / admin scan a participant's entry or exit for today.
   Future<Map<String, dynamic>> scanAttendance({
     required String type,

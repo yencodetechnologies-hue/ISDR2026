@@ -123,15 +123,22 @@ const detailDto = (t, sender) => {
     // A closed ticket is read-only for the participant; staff/admin close it.
     canReply: !(forParticipant && t.status === 'closed'),
     canClose: !forParticipant && t.status !== 'closed',
+    // The participant edits their own open ticket; they (or any staff/admin) may delete it.
+    canEdit: forParticipant && t.status !== 'closed',
+    canDelete: true,
     messages: t.messages.map((m) => {
       const fromTeam = m.senderType !== 'participant';
+      const mine = String(m.senderId) === String(sender.id);
       return {
         id: m._id.toString(),
         senderType: forParticipant && fromTeam ? 'support' : m.senderType,
         senderName: forParticipant && fromTeam ? SUPPORT_TEAM_NAME : m.senderName || '',
         text: m.text,
         createdAt: m.createdAt,
-        mine: String(m.senderId) === String(sender.id),
+        edited: !!m.editedAt,
+        mine,
+        // Only the sender edits a message; a participant can't once the ticket is closed.
+        canEdit: mine && !(forParticipant && t.status === 'closed'),
       };
     }),
   };
@@ -297,4 +304,109 @@ const closeTicket = async (req, res) => {
   }
 };
 
-module.exports = { listTickets, createTicket, getTicket, sendMessage, closeTicket };
+/** A ticket's opening message: the participant's first message, which mirrors the description. */
+const openingMessage = (ticket) => {
+  const first = ticket.messages[0];
+  return first && first.senderType === 'participant' && String(first.senderId) === String(ticket.participantId)
+    ? first
+    : null;
+};
+
+// PUT /api/support-tickets/:id  { category, description } — the participant who raised it, while open.
+const updateTicket = async (req, res) => {
+  try {
+    const sender = await currentSender(req);
+    if (!sender || sender.type !== 'participant') {
+      return res.status(403).json({ success: false, error: 'Only the participant can edit this ticket' });
+    }
+    const ticket = await loadTicket(req, res, sender);
+    if (!ticket) return;
+    if (ticket.status === 'closed') {
+      return res.status(400).json({ success: false, error: 'A closed ticket can no longer be edited' });
+    }
+    const category = String(req.body.category || '').trim();
+    const description = String(req.body.description || '').trim();
+    if (!SupportTicket.CATEGORIES.includes(category)) {
+      return res.status(400).json({ success: false, error: 'Choose a category' });
+    }
+    if (!description) return res.status(400).json({ success: false, error: 'Describe the problem' });
+    if (description.length > MAX_LENGTH) {
+      return res
+        .status(400)
+        .json({ success: false, error: `Description must be under ${MAX_LENGTH} characters` });
+    }
+    ticket.category = category;
+    if (description !== ticket.description) {
+      ticket.description = description;
+      // The description is also the chat's opening message.
+      const first = openingMessage(ticket);
+      if (first) {
+        first.text = description;
+        first.editedAt = new Date();
+      }
+    }
+    await ticket.save();
+    res.json({ success: true, ticket: await detailFor(ticket, sender) });
+  } catch (error) {
+    handleError(res, 'updateTicket', error);
+  }
+};
+
+// DELETE /api/support-tickets/:id — the participant who raised it, or any event staff / admin.
+const deleteTicket = async (req, res) => {
+  try {
+    const sender = await currentSender(req);
+    if (!sender) return forbidden(res);
+    // loadTicket only returns a participant's own tickets.
+    const ticket = await loadTicket(req, res, sender);
+    if (!ticket) return;
+    await ticket.deleteOne();
+    res.json({ success: true });
+  } catch (error) {
+    handleError(res, 'deleteTicket', error);
+  }
+};
+
+// PUT /api/support-tickets/:id/messages/:messageId  { text } — only the message's sender.
+const editMessage = async (req, res) => {
+  try {
+    const sender = await currentSender(req);
+    if (!sender) return forbidden(res);
+    const text = String(req.body.text || '').trim();
+    if (!text) return res.status(400).json({ success: false, error: 'Type a message' });
+    if (text.length > MAX_LENGTH) {
+      return res
+        .status(400)
+        .json({ success: false, error: `Message must be under ${MAX_LENGTH} characters` });
+    }
+    const ticket = await loadTicket(req, res, sender);
+    if (!ticket) return;
+    const message = ticket.messages.id(req.params.messageId);
+    if (!message) return res.status(404).json({ success: false, error: 'Message not found' });
+    if (String(message.senderId) !== String(sender.id)) {
+      return res.status(403).json({ success: false, error: 'You can only edit your own messages' });
+    }
+    if (sender.type === 'participant' && ticket.status === 'closed') {
+      return res.status(400).json({ success: false, error: 'This ticket is closed' });
+    }
+    message.text = text;
+    message.editedAt = new Date();
+    // Editing the opening message edits the ticket's description too.
+    if (openingMessage(ticket) === message) ticket.description = text;
+    await ticket.save();
+    res.json({ success: true, ticket: await detailFor(ticket, sender) });
+  } catch (error) {
+    handleError(res, 'editMessage', error);
+  }
+};
+
+module.exports = {
+  listTickets,
+  createTicket,
+  getTicket,
+  sendMessage,
+  closeTicket,
+  updateTicket,
+  deleteTicket,
+  editMessage,
+};

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -32,6 +33,7 @@ class ParticipantFeedPage extends StatefulWidget {
 class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
   final ApiService _api = ApiService();
   bool _loading = true;
+  String? _error;
   List<Map<String, dynamic>> _posts = [];
 
   @override
@@ -46,6 +48,9 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
     if (!mounted) return;
     setState(() {
       _loading = false;
+      _error = res['success'] == true
+          ? null
+          : (res['error']?.toString() ?? 'Could not load the feed');
       if (res['success'] == true) {
         _posts = List<Map<String, dynamic>>.from(
           (res['posts'] as List?)?.map((p) => Map<String, dynamic>.from(p as Map)) ?? [],
@@ -158,6 +163,31 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
     return DateFormat('d MMM, h:mm a').format(d.toLocal());
   }
 
+  /// Shown when the feed could not be loaded (instead of "No posts yet").
+  Widget _errorView() {
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        const SizedBox(height: 100),
+        const Icon(Icons.cloud_off_rounded, size: 40, color: _Colors.muted),
+        const SizedBox(height: 10),
+        Text(
+          _error!,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(fontSize: 13, color: _Colors.muted),
+        ),
+        const SizedBox(height: 14),
+        Center(
+          child: OutlinedButton.icon(
+            onPressed: _load,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Retry'),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -179,7 +209,9 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
         onRefresh: _load,
         child: _loading
             ? const Center(child: CircularProgressIndicator(color: Colors.white))
-            : _posts.isEmpty
+            : _error != null && _posts.isEmpty
+                ? _errorView()
+                : _posts.isEmpty
                 ? ListView(
                     padding: const EdgeInsets.all(24),
                     children: [
@@ -219,7 +251,7 @@ class _ParticipantFeedPageState extends State<ParticipantFeedPage> {
                             AspectRatio(
                               aspectRatio: 1,
                               child: imageUrl.isNotEmpty
-                                  ? Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity)
+                                  ? _FeedImage(url: imageUrl)
                                   : Container(color: const Color(0xFF1E1E2A)),
                             ),
                             Padding(
@@ -379,6 +411,60 @@ class _SelfieFab extends StatelessWidget {
               child: Icon(Icons.auto_awesome_rounded, color: Colors.white.withValues(alpha: 0.9), size: 12),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A feed photo: cached across visits, spinner while it loads, and a
+/// "tap to retry" box if the download fails.
+class _FeedImage extends StatefulWidget {
+  final String url;
+  const _FeedImage({required this.url});
+
+  @override
+  State<_FeedImage> createState() => _FeedImageState();
+}
+
+class _FeedImageState extends State<_FeedImage> {
+  int _attempt = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return CachedNetworkImage(
+      key: ValueKey('${widget.url}#$_attempt'),
+      imageUrl: widget.url,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      placeholder: (_, _) => Container(
+        color: const Color(0xFF1E1E2A),
+        alignment: Alignment.center,
+        child: const SizedBox(
+          width: 26,
+          height: 26,
+          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white54),
+        ),
+      ),
+      errorWidget: (_, _, _) => InkWell(
+        onTap: () async {
+          await CachedNetworkImage.evictFromCache(widget.url);
+          if (mounted) setState(() => _attempt++);
+        },
+        child: Container(
+          color: const Color(0xFF1E1E2A),
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.refresh_rounded, color: _Colors.muted, size: 28),
+              const SizedBox(height: 6),
+              Text(
+                'Couldn\'t load photo · tap to retry',
+                style: GoogleFonts.inter(fontSize: 12, color: _Colors.muted),
+              ),
+            ],
+          ),
         ),
       ),
     );

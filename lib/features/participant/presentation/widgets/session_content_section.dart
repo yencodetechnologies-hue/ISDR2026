@@ -698,6 +698,11 @@ class _RateCardState extends State<_RateCard> {
               onPressed: _stars == 0 || _sending ? null : _submit,
               style: FilledButton.styleFrom(
                 backgroundColor: _Colors.primaryBlue,
+                foregroundColor: Colors.white,
+                disabledForegroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5),
+                ),
               ),
               child: _sending
                   ? const SizedBox(

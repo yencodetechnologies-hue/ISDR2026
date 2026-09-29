@@ -6,12 +6,14 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
-import 'help_tickets_page.dart' show helpCategoryOf;
+import 'help_tickets_page.dart' show helpCategoryOf, showTicketFormSheet;
 
 /// One Help & Support ticket's chat. Participant, event staff and admin all
 /// use it; new replies are fetched every few seconds while it's open. Staff
 /// and admin can close the ticket, after which the participant can only read
-/// it (and may start a new ticket). Pops `'new'` when they choose to.
+/// it (and may start a new ticket). Pops `'new'` when they choose to, and
+/// `'deleted'` after the ticket is deleted. Senders can long-press their
+/// own messages to edit them; the participant can edit their open ticket.
 class TicketChatPage extends StatefulWidget {
   final String ticketId;
 
@@ -34,6 +36,8 @@ class _TicketChatPageState extends State<TicketChatPage> {
   bool get _closed => _ticket?['status'] == 'closed';
   bool get _canReply => _ticket?['canReply'] != false;
   bool get _canClose => _ticket?['canClose'] == true;
+  bool get _canEdit => _ticket?['canEdit'] == true;
+  bool get _canDelete => _ticket?['canDelete'] == true;
 
   List<Map<String, dynamic>> get _messages =>
       ((_ticket?['messages'] as List?) ?? const [])
@@ -66,7 +70,9 @@ class _TicketChatPageState extends State<TicketChatPage> {
       });
       if (scrollToEnd || _messages.length != before) _scrollToEnd();
     } else if (_ticket == null) {
-      setState(() => _error = res['error']?.toString() ?? 'Could not load chat');
+      setState(
+        () => _error = res['error']?.toString() ?? 'Could not load chat',
+      );
     }
   }
 
@@ -147,6 +153,116 @@ class _TicketChatPageState extends State<TicketChatPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res['error']?.toString() ?? 'Could not close')),
       );
+    }
+  }
+
+  void _toast(String msg) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+
+  /// Participant: edit the ticket's category and description.
+  Future<void> _editTicket() async {
+    final t = _ticket;
+    if (t == null) return;
+    final saved = await showTicketFormSheet(context, ticket: t);
+    if (saved != null && mounted) {
+      await _load();
+      if (mounted) _toast('Ticket updated');
+    }
+  }
+
+  Future<void> _deleteTicket() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: DarkColors.card,
+        title: const Text(
+          'Delete this ticket?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'The ticket and all its messages will be removed permanently.',
+          style: TextStyle(color: DarkColors.muted),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Color(0xFFF87171)),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final res = await _api.deleteHelpTicket(widget.ticketId);
+    if (!mounted) return;
+    if (res['success'] == true) {
+      _poll?.cancel();
+      _toast('Ticket deleted');
+      Navigator.pop(context, 'deleted');
+    } else {
+      _toast(res['error']?.toString() ?? 'Could not delete the ticket');
+    }
+  }
+
+  /// Edit one of the caller's own messages.
+  Future<void> _editMessage(Map<String, dynamic> m) async {
+    final controller = TextEditingController(text: m['text']?.toString() ?? '');
+    final text = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: DarkColors.card,
+        title: const Text(
+          'Edit message',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          minLines: 1,
+          maxLines: 6,
+          maxLength: 2000,
+          textCapitalization: TextCapitalization.sentences,
+          style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: DarkColors.field,
+            counterText: '',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (text == null || text.isEmpty || text == m['text'] || !mounted) return;
+    final res = await _api.editHelpMessage(
+      widget.ticketId,
+      m['id'].toString(),
+      text,
+    );
+    if (!mounted) return;
+    if (res['success'] == true && res['ticket'] is Map) {
+      setState(() => _ticket = Map<String, dynamic>.from(res['ticket'] as Map));
+    } else {
+      _toast(res['error']?.toString() ?? 'Could not edit the message');
     }
   }
 
@@ -251,6 +367,40 @@ class _TicketChatPageState extends State<TicketChatPage> {
                 label: const Text('Close ticket'),
               ),
             ),
+          if (_canEdit || _canDelete)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded),
+              color: DarkColors.field,
+              onSelected: (v) => v == 'edit' ? _editTicket() : _deleteTicket(),
+              itemBuilder: (_) => [
+                if (_canEdit)
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.edit_outlined, color: Colors.white),
+                      title: Text('Edit ticket'),
+                    ),
+                  ),
+                if (_canDelete)
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.delete_outline_rounded,
+                        color: Color(0xFFF87171),
+                      ),
+                      title: Text(
+                        'Delete ticket',
+                        style: TextStyle(color: Color(0xFFF87171)),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
         ],
         title: Row(
           children: [
@@ -333,63 +483,70 @@ class _TicketChatPageState extends State<TicketChatPage> {
         ? name
         : (name.isEmpty ? role : '$name · $role');
 
+    final canEdit = m['canEdit'] == true;
+    final edited = m['edited'] == true;
+
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.78,
-        ),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-          decoration: BoxDecoration(
-            color: mine ? DarkColors.accent : DarkColors.card,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(14),
-              topRight: const Radius.circular(14),
-              bottomLeft: Radius.circular(mine ? 14 : 4),
-              bottomRight: Radius.circular(mine ? 4 : 14),
-            ),
-            border: mine ? null : Border.all(color: DarkColors.line),
+      child: GestureDetector(
+        // Long-press your own message to edit it.
+        onLongPress: canEdit ? () => _editMessage(m) : null,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.78,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!mine)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 3),
-                  child: Text(
-                    label,
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: roleColor,
-                    ),
-                  ),
-                ),
-              Text(
-                m['text']?.toString() ?? '',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Colors.white,
-                  height: 1.35,
-                ),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+            decoration: BoxDecoration(
+              color: mine ? DarkColors.accent : DarkColors.card,
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(14),
+                topRight: const Radius.circular(14),
+                bottomLeft: Radius.circular(mine ? 14 : 4),
+                bottomRight: Radius.circular(mine ? 4 : 14),
               ),
-              if (when != null)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 3),
+              border: mine ? null : Border.all(color: DarkColors.line),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (!mine)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
                     child: Text(
-                      DateFormat('d MMM, h:mm a').format(when),
+                      label,
                       style: GoogleFonts.inter(
-                        fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: roleColor,
                       ),
                     ),
                   ),
+                Text(
+                  m['text']?.toString() ?? '',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.white,
+                    height: 1.35,
+                  ),
                 ),
-            ],
+                if (when != null)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Text(
+                        '${edited ? 'edited · ' : ''}${DateFormat('d MMM, h:mm a').format(when)}',
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          color: Colors.white.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -446,7 +603,10 @@ class _TicketChatPageState extends State<TicketChatPage> {
             Expanded(
               child: Text(
                 'This ticket is closed. Need more help? Create a new ticket.',
-                style: GoogleFonts.inter(fontSize: 12.5, color: DarkColors.muted),
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  color: DarkColors.muted,
+                ),
               ),
             ),
             const SizedBox(width: 8),

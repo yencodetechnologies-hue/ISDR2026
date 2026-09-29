@@ -76,7 +76,8 @@ class _HelpTicketsPageState extends State<HelpTicketsPage> {
         : 'active';
   }
 
-  List<Map<String, dynamic>> get _shown => widget.isParticipant || _filter == 'all'
+  List<Map<String, dynamic>> get _shown =>
+      widget.isParticipant || _filter == 'all'
       ? _tickets
       : _tickets.where((t) => _statusOf(t) == _filter).toList();
 
@@ -84,7 +85,12 @@ class _HelpTicketsPageState extends State<HelpTicketsPage> {
     const options = [
       ('all', 'All', Icons.all_inbox_rounded, Color(0xFF3B82F6)),
       ('active', 'Active', Icons.bolt_rounded, Color(0xFF22C55E)),
-      ('inactive', 'Inactive', Icons.hourglass_bottom_rounded, Color(0xFFF59E0B)),
+      (
+        'inactive',
+        'Inactive',
+        Icons.hourglass_bottom_rounded,
+        Color(0xFFF59E0B),
+      ),
       ('closed', 'Closed', Icons.lock_outline_rounded, Color(0xFF94A3B8)),
     ];
     int count(String key) => key == 'all'
@@ -194,15 +200,7 @@ class _HelpTicketsPageState extends State<HelpTicketsPage> {
   }
 
   Future<void> _add() async {
-    final ticketId = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: DarkColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => const _AddTicketSheet(),
-    );
+    final ticketId = await showTicketFormSheet(context);
     if (ticketId == null || !mounted) return;
     await _load();
     if (mounted) _open(ticketId);
@@ -451,9 +449,29 @@ class _HelpTicketsPageState extends State<HelpTicketsPage> {
   }
 }
 
-/// Category dropdown + description, then "Add Ticket". Pops the new ticket id.
+/// New ticket, or (with [ticket]) edit the participant's own ticket.
+/// Resolves to the ticket id when saved, null when dismissed.
+Future<String?> showTicketFormSheet(
+  BuildContext context, {
+  Map<String, dynamic>? ticket,
+}) {
+  return showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: DarkColors.card,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => _AddTicketSheet(ticket: ticket),
+  );
+}
+
+/// Category dropdown + description, then "Add Ticket" (or "Save Changes" when
+/// editing). Pops the ticket id.
 class _AddTicketSheet extends StatefulWidget {
-  const _AddTicketSheet();
+  final Map<String, dynamic>? ticket;
+
+  const _AddTicketSheet({this.ticket});
 
   @override
   State<_AddTicketSheet> createState() => _AddTicketSheetState();
@@ -464,6 +482,19 @@ class _AddTicketSheetState extends State<_AddTicketSheet> {
   String? _category;
   bool _saving = false;
 
+  bool get _editing => widget.ticket != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final t = widget.ticket;
+    if (t != null) {
+      final c = t['category']?.toString();
+      _category = helpTicketCategories.any((x) => x.value == c) ? c : null;
+      _description.text = t['description']?.toString() ?? '';
+    }
+  }
+
   @override
   void dispose() {
     _description.dispose();
@@ -473,7 +504,9 @@ class _AddTicketSheetState extends State<_AddTicketSheet> {
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
     if (_category == null) {
-      messenger.showSnackBar(const SnackBar(content: Text('Choose a category')));
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Choose a category')),
+      );
       return;
     }
     final description = _description.text.trim();
@@ -485,10 +518,16 @@ class _AddTicketSheetState extends State<_AddTicketSheet> {
     }
     FocusScope.of(context).unfocus();
     setState(() => _saving = true);
-    final res = await ApiService().createHelpTicket(
-      category: _category!,
-      description: description,
-    );
+    final res = _editing
+        ? await ApiService().updateHelpTicket(
+            ticketId: widget.ticket!['id'].toString(),
+            category: _category!,
+            description: description,
+          )
+        : await ApiService().createHelpTicket(
+            category: _category!,
+            description: description,
+          );
     if (!mounted) return;
     setState(() => _saving = false);
     if (res['success'] == true && res['ticket'] is Map) {
@@ -496,7 +535,12 @@ class _AddTicketSheetState extends State<_AddTicketSheet> {
     } else {
       messenger.showSnackBar(
         SnackBar(
-          content: Text(res['error']?.toString() ?? 'Could not add the ticket'),
+          content: Text(
+            res['error']?.toString() ??
+                (_editing
+                    ? 'Could not save the ticket'
+                    : 'Could not add the ticket'),
+          ),
         ),
       );
     }
@@ -516,7 +560,7 @@ class _AddTicketSheetState extends State<_AddTicketSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'New Ticket',
+            _editing ? 'Edit Ticket' : 'New Ticket',
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -529,7 +573,10 @@ class _AddTicketSheetState extends State<_AddTicketSheet> {
             dropdownColor: DarkColors.field,
             iconEnabledColor: DarkColors.muted,
             style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
-            decoration: darkInputDecoration('Category', Icons.category_outlined),
+            decoration: darkInputDecoration(
+              'Category',
+              Icons.category_outlined,
+            ),
             hint: Text(
               'Select a category',
               style: GoogleFonts.inter(fontSize: 14, color: DarkColors.muted),
@@ -557,15 +604,16 @@ class _AddTicketSheetState extends State<_AddTicketSheet> {
             maxLength: 2000,
             textCapitalization: TextCapitalization.sentences,
             style: GoogleFonts.inter(fontSize: 14, color: Colors.white),
-            decoration: darkInputDecoration(
-              'Description',
-              Icons.edit_note_rounded,
-            ).copyWith(
-              hintText: 'Describe the problem',
-              hintStyle: const TextStyle(color: DarkColors.muted),
-              alignLabelWithHint: true,
-              counterText: '',
-            ),
+            decoration:
+                darkInputDecoration(
+                  'Description',
+                  Icons.edit_note_rounded,
+                ).copyWith(
+                  hintText: 'Describe the problem',
+                  hintStyle: const TextStyle(color: DarkColors.muted),
+                  alignLabelWithHint: true,
+                  counterText: '',
+                ),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -588,7 +636,7 @@ class _AddTicketSheetState extends State<_AddTicketSheet> {
                       ),
                     )
                   : Text(
-                      'Add Ticket',
+                      _editing ? 'Save Changes' : 'Add Ticket',
                       style: GoogleFonts.inter(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,

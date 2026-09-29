@@ -437,8 +437,21 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     super.dispose();
   }
 
+  /// The event this participant is registered for (loaded once).
+  String? _myEventId;
+
   Future<void> _fetchLiveSchedule() async {
     try {
+      // Only the participant's own event counts — the events list holds every
+      // event on the property, and mixing them adds other events' days/sessions.
+      if (_myEventId == null) {
+        final regRes = await _api.getMyRegistration();
+        if (regRes['success'] != true || regRes['registration'] is! Map) return;
+        final id =
+            (regRes['registration'] as Map)['eventId']?.toString() ?? '';
+        if (id.isEmpty) return;
+        _myEventId = id;
+      }
       final eventsRes = await _api.listManagedEvents();
       if (eventsRes['success'] != true) return;
       final events = List<Map<String, dynamic>>.from(
@@ -446,7 +459,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
               (e) => Map<String, dynamic>.from(e as Map),
             ) ??
             [],
-      );
+      ).where((e) => (e['id'] ?? e['_id'])?.toString() == _myEventId).toList();
       if (events.isEmpty) return;
 
       final now = DateTime.now();
@@ -1078,9 +1091,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                     ),
                     child: _buildModuleGrid(_allModuleItems),
                   ),
-                  const SizedBox(height: 14),
-                  const GetLivePhotoButton(),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 20),
 
                   // YouTube live capsule, admin banner + Today's Schedule (day tabs + list)
                   const YoutubeLiveCapsule(),
@@ -1095,7 +1106,9 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                   _buildAccommodationHeader(),
                   const SizedBox(height: 10),
                   _buildAccommodationBanner(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
+                  const GetLivePhotoButton(),
+                  const SizedBox(height: 12),
 
                   // =================================================================
                   // 4. SOCIAL MEDIA LINKS (Follow us chips)

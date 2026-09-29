@@ -141,7 +141,7 @@ class _GetLivePhotoButtonState extends State<GetLivePhotoButton>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Get your live photo',
+                              'Get your live photos',
                               style: GoogleFonts.outfit(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,

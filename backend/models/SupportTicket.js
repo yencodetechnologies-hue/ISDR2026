@@ -9,6 +9,8 @@ const messageSchema = new mongoose.Schema(
     senderId: { type: mongoose.Schema.Types.ObjectId, required: true },
     senderName: { type: String, default: '' },
     text: { type: String, required: true, trim: true },
+    // Set when the sender edits the message.
+    editedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
