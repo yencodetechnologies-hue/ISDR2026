@@ -15,11 +15,23 @@ const INK = "#0F172A";
 const ID_SIZE = 40;
 const ID_W = 760;
 const ID_LEFT = (TEMPLATE_W - ID_W) / 2;
+// Banner behind the participant type (the band removed from the template), coloured per participant.
+export const DEFAULT_TYPE_COLOR = "#167E5D";
+const BANNER = { left: 120, top: 422, width: 948, height: 100 };
+
+/** '#RRGGBB' / 'RRGGBB' → '#RRGGBB'; null when it isn't a valid 6-digit hex. */
+export function normalizeHex(hex: string | undefined | null): string | null {
+  const h = String(hex ?? "")
+    .trim()
+    .replace(/^#/, "");
+  return /^[0-9a-fA-F]{6}$/.test(h) ? `#${h.toUpperCase()}` : null;
+}
 
 export type BadgeData = {
   name?: string;
   title?: string;
   participantType?: string;
+  participantTypeColor?: string;
   idNumber?: string;
   designation?: string;
   institution?: string;
@@ -77,6 +89,7 @@ export default function DelegateBadge({ data, innerRef }: { data: BadgeData; inn
 
   const displayName = [v(data.title), v(data.name)].filter(Boolean).join(" ");
   const typeLabel = (v(data.participantType) || "Delegate").toUpperCase();
+  const typeColor = normalizeHex(data.participantTypeColor) ?? DEFAULT_TYPE_COLOR;
   const idNumber = v(data.idNumber);
   const qr = v(data.qrCode);
 
@@ -97,7 +110,8 @@ export default function DelegateBadge({ data, innerRef }: { data: BadgeData; inn
         }}
       >
         <div className="absolute" style={{ left: -CROP_LEFT, top: -CROP_TOP, width: TEMPLATE_W, height: TEMPLATE_H }}>
-          <img src={asset("delegate_badge_template.png")} alt="" className="absolute inset-0 h-full w-full" />
+          <img src={asset("delegate_badge_template-clean.png")} alt="" className="absolute inset-0 h-full w-full" />
+          <div className="absolute" style={{ ...BANNER, background: typeColor }} />
           <div className="absolute flex items-center" style={{ left: 150, top: 422, width: 888, height: 100 }}>
             <Fit text={typeLabel} size={64} weight={800} color="#fff" width={888} />
           </div>
@@ -172,7 +186,7 @@ export async function downloadBadgePng(container: HTMLElement | null, data: Badg
   const ctx = canvas.getContext("2d");
   if (!ctx) return false;
   const family = getComputedStyle(document.body).fontFamily || "sans-serif";
-  ctx.drawImage(await loadImage(asset("delegate_badge_template.png")), OX, OY, TEMPLATE_W, TEMPLATE_H);
+  ctx.drawImage(await loadImage(asset("delegate_badge_template-clean.png")), OX, OY, TEMPLATE_W, TEMPLATE_H);
 
   const fit = (
     text: string,
@@ -198,6 +212,8 @@ export async function downloadBadgePng(container: HTMLElement | null, data: Badg
   };
 
   const name = [v(data.title), v(data.name)].filter(Boolean).join(" ");
+  ctx.fillStyle = normalizeHex(data.participantTypeColor) ?? DEFAULT_TYPE_COLOR;
+  ctx.fillRect(OX + BANNER.left, OY + BANNER.top, BANNER.width, BANNER.height);
   fit((v(data.participantType) || "Delegate").toUpperCase(), 64, 800, "#fff", OX + 594, OY + 472, 888);
   let y = OY + 550;
   if (name) {

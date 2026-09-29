@@ -267,6 +267,7 @@ function registrationDto(reg, event) {
     lastName: reg.lastName || '',
     gender: reg.gender || '',
     participantType: reg.participantType || 'Delegate',
+    participantTypeColor: reg.participantTypeColor || DEFAULT_PARTICIPANT_TYPE_COLOR,
     designation: reg.designation || '',
     idNumber: reg.idNumber || '',
     address: reg.address || '',
@@ -545,6 +546,7 @@ const PARTICIPANT_TITLES = ['Dr', 'Mr', 'Ms', 'Prof'];
 const PARTICIPANT_GENDERS = ['male', 'female', 'other'];
 const FOOD_PREFERENCES = ['veg', 'non-veg'];
 const PARTICIPANT_PAYMENT_MODES = ['cash', 'card', 'upi'];
+const DEFAULT_PARTICIPANT_TYPE_COLOR = '#167E5D';
 
 /** Reads the participant profile fields from a request body. `strict` (create) enforces the required ones;
  *  otherwise (edit) only fields that were actually sent are returned. */
@@ -586,6 +588,11 @@ function parseParticipantProfile(body, { strict }) {
     if (!t) throw new Error('Participant type is required');
     if (t.length > 60) throw new Error('Participant type is too long');
     out.participantType = t;
+  }
+  if (has('participantTypeColor')) {
+    const c = str('participantTypeColor').replace(/^#/, '').toUpperCase();
+    if (c && !/^[0-9A-F]{6}$/.test(c)) throw new Error('Enter a valid hex colour, e.g. #167E5D');
+    out.participantTypeColor = c ? `#${c}` : '';
   }
   if (has('designation') || strict) {
     required('designation', 'Designation');
@@ -682,6 +689,7 @@ async function createParticipantRegistration(event, { name, institution, package
     lastName: profile.lastName || '',
     gender: profile.gender || '',
     participantType: profile.participantType || '',
+    participantTypeColor: profile.participantTypeColor || '',
     designation: profile.designation || '',
     idNumber: finalIdNumber,
     address: profile.address || '',

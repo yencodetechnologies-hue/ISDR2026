@@ -27,6 +27,23 @@ class _MyProfilePageState extends State<MyProfilePage> {
   final _newPw = TextEditingController();
   final _confirmPw = TextEditingController();
 
+  /// Participant's own registration: badge type + banner colour chosen by the admin.
+  Map<String, dynamic>? _myRegistration;
+  bool _registrationRequested = false;
+
+  Future<void> _loadMyRegistration() async {
+    _registrationRequested = true;
+    final res = await ApiService().getMyRegistration();
+    if (!mounted || res['success'] != true || res['registration'] is! Map) {
+      return;
+    }
+    setState(
+      () => _myRegistration = Map<String, dynamic>.from(
+        res['registration'] as Map,
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -190,11 +207,14 @@ class _MyProfilePageState extends State<MyProfilePage> {
         ? user.employeeId!
         : (user.apartmentId ?? user.id);
     final qrData = idNumber;
+    if (!_registrationRequested) _loadMyRegistration();
+    final reg = _myRegistration;
 
     final registrationMap = {
       'name': user.name,
       'title': '',
-      'participantType': 'DELEGATE',
+      'participantType': reg?['participantType']?.toString() ?? 'DELEGATE',
+      'participantTypeColor': reg?['participantTypeColor']?.toString() ?? '',
       'idNumber': idNumber,
       'designation': user.department ?? '',
       'institution': user.apartmentName ?? '',

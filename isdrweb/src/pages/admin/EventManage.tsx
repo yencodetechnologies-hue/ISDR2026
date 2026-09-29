@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-refresh/only-export-components */
 import { useEffect, useRef, useState } from "react";
-import DelegateBadge, { downloadBadgePng, type BadgeData } from "@/components/DelegateBadge";
+import DelegateBadge, {
+  DEFAULT_TYPE_COLOR,
+  downloadBadgePng,
+  normalizeHex,
+  type BadgeData,
+} from "@/components/DelegateBadge";
 import {
   Avatar,
   Button,
@@ -518,6 +523,7 @@ export function ParticipantModal({
   };
 
   const [type, setType] = useState(s("participantType"));
+  const [typeColor, setTypeColor] = useState(s("participantTypeColor") || DEFAULT_TYPE_COLOR);
   const [title, setTitle] = useState(s("title"));
   const [first, setFirst] = useState(() => (!s("firstName") && !s("lastName") ? s("name") : s("firstName")));
   const [middle, setMiddle] = useState(s("middleName"));
@@ -568,6 +574,7 @@ export function ParticipantModal({
       ["Food preference", food],
     ];
     for (const [label, value] of checks) if (!value.trim()) return `${label} is required`;
+    if (typeColor.trim() && !normalizeHex(typeColor)) return "Enter a valid hex colour, e.g. #167E5D";
     if (paid && !paymentMode) return "Payment mode is required";
     if (!/^\+?\d{10,13}$/.test(mobile.replace(/[\s-]/g, ""))) return "Enter a valid mobile number";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return "Enter a valid email address";
@@ -583,6 +590,7 @@ export function ParticipantModal({
     const fd = formData(
       {
         participantType: type.trim(),
+        participantTypeColor: normalizeHex(typeColor) ?? DEFAULT_TYPE_COLOR,
         title,
         firstName: first.trim(),
         middleName: middle.trim(),
@@ -646,6 +654,24 @@ export function ParticipantModal({
             onChange={(e) => setType(e.target.value)}
             placeholder="e.g. Delegate, Speaker, Organizer"
           />
+        </Field>
+        <Field label="Banner colour (hex)">
+          <div className="flex items-center gap-2">
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-line"
+              style={{ background: typeColor.trim() ? (normalizeHex(typeColor) ?? "transparent") : DEFAULT_TYPE_COLOR }}
+              title={typeColor.trim() && !normalizeHex(typeColor) ? "Invalid hex colour" : ""}
+            >
+              {typeColor.trim() && !normalizeHex(typeColor) && <Icon name="close" size={18} color="#F87171" />}
+            </span>
+            <Input
+              value={typeColor}
+              maxLength={7}
+              onChange={(e) => setTypeColor(e.target.value.toUpperCase())}
+              placeholder={DEFAULT_TYPE_COLOR}
+              className="font-mono"
+            />
+          </div>
         </Field>
         <Field label="Package *">
           <Select
@@ -790,6 +816,7 @@ export function BadgeModal({ registration, onClose }: { registration: any; onClo
     name: registration.name,
     title: registration.title,
     participantType: registration.participantType,
+    participantTypeColor: registration.participantTypeColor,
     idNumber: registration.idNumber,
     designation: registration.designation,
     institution: registration.institution,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-/// Participant badge built on `assets/delegate_badge_template.png` (1200 x 1465):
-/// name in the green band, ID / designation / institution below it, the QR
+/// Participant badge built on `assets/delegate_badge_template-clean.png` (1200 x 1465):
+/// participant type on a coloured banner (participantTypeColor, default #167E5D), name, ID / designation / institution below it, the QR
 /// inside the template's box and the ID number under the QR.
 class DelegateBadge extends StatelessWidget {
   static const double templateWidth = 1200;
@@ -14,6 +14,17 @@ class DelegateBadge extends StatelessWidget {
   static const double badgeWidth = 1080;
   static const double badgeHeight = 1404;
 
+  /// Banner behind the participant type when none was chosen.
+  static const String defaultTypeColorHex = '#167E5D';
+  static const Color defaultTypeColor = Color(0xFF167E5D);
+
+  /// '#RRGGBB' or 'RRGGBB' → colour; null when it isn't a valid 6-digit hex.
+  static Color? parseHex(String? hex) {
+    final h = (hex ?? '').trim().replaceFirst('#', '');
+    if (!RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(h)) return null;
+    return Color(int.parse('FF$h', radix: 16));
+  }
+
   final Map<String, dynamic> registration;
 
   const DelegateBadge({super.key, required this.registration});
@@ -24,6 +35,7 @@ class DelegateBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayName = [_v('title'), _v('name')].where((e) => e.isNotEmpty).join(' ');
     final typeLabel = (_v('participantType').isEmpty ? 'Delegate' : _v('participantType')).toUpperCase();
+    final typeColor = parseHex(_v('participantTypeColor')) ?? defaultTypeColor;
     final idNumber = _v('idNumber');
     final designation = _v('designation');
     final institution = _v('institution');
@@ -53,7 +65,15 @@ class DelegateBadge extends StatelessWidget {
                 child: Stack(
             children: [
               Positioned.fill(
-                child: Image.asset('assets/delegate_badge_template.png', fit: BoxFit.fill),
+                child: Image.asset('assets/delegate_badge_template-clean.png', fit: BoxFit.fill),
+              ),
+              // Banner behind the participant type, in the participant's colour.
+              Positioned(
+                left: 120,
+                top: 422,
+                width: 948,
+                height: 100,
+                child: ColoredBox(color: typeColor),
               ),
               Positioned(
                 left: 150,

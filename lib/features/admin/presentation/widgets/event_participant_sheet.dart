@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/app_theme.dart';
 import '../../../../core/services/api_service.dart';
+import 'delegate_badge.dart';
 
 /// Create / edit participant sheet with the full profile (same fields as the
 /// website "Create participants" form). Pops with the saved registration map.
@@ -36,6 +37,9 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
   static const _titles = ['Dr', 'Mr', 'Ms', 'Prof'];
 
   final _type = TextEditingController();
+  final _typeColor = TextEditingController(
+    text: DelegateBadge.defaultTypeColorHex,
+  );
   final _first = TextEditingController();
   final _middle = TextEditingController();
   final _last = TextEditingController();
@@ -81,6 +85,9 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
       String v(String k) => r[k]?.toString() ?? '';
       _title = v('title');
       _type.text = v('participantType');
+      if (v('participantTypeColor').isNotEmpty) {
+        _typeColor.text = v('participantTypeColor');
+      }
       _first.text = v('firstName');
       _middle.text = v('middleName');
       _last.text = v('lastName');
@@ -116,6 +123,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
   void dispose() {
     for (final c in [
       _type,
+      _typeColor,
       _first,
       _middle,
       _last,
@@ -158,6 +166,10 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
     for (final e in checks.entries) {
       if (e.value.trim().isEmpty) return '${e.key} is required';
     }
+    if (_typeColor.text.trim().isNotEmpty &&
+        DelegateBadge.parseHex(_typeColor.text) == null) {
+      return 'Enter a valid hex colour, e.g. #167E5D';
+    }
     if (_paid && _paymentMode.isEmpty) return 'Payment mode is required';
     if (!RegExp(
       r'^\+?\d{10,13}$',
@@ -188,6 +200,9 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
     });
     final fields = <String, String>{
       'participantType': _type.text.trim(),
+      'participantTypeColor': _typeColor.text.trim().isEmpty
+          ? DelegateBadge.defaultTypeColorHex
+          : _typeColor.text.trim(),
       'title': _title,
       'firstName': _first.text.trim(),
       'middleName': _middle.text.trim(),
@@ -263,6 +278,49 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
           hintText: hint,
           counterText: '',
           border: const OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
+
+  /// Hex colour of the banner behind the participant type on the badge, with a live swatch.
+  Widget _colorField() {
+    final color =
+        DelegateBadge.parseHex(_typeColor.text) ??
+        (_typeColor.text.trim().isEmpty
+            ? DelegateBadge.defaultTypeColor
+            : null);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: _typeColor,
+        maxLength: 7,
+        textCapitalization: TextCapitalization.characters,
+        onChanged: (_) => setState(() {}),
+        decoration: InputDecoration(
+          labelText: 'Banner colour',
+          hintText: DelegateBadge.defaultTypeColorHex,
+          counterText: '',
+          border: const OutlineInputBorder(),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: color ?? Colors.transparent,
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: color == null
+                  ? const Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: AppTheme.errorColor,
+                    )
+                  : null,
+            ),
+          ),
         ),
       ),
     );
@@ -350,11 +408,20 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                       ),
                       const SizedBox(height: 10),
                     ],
-                    _text(
-                      _type,
-                      'Participant type',
-                      maxLength: 60,
-                      hint: 'e.g. Delegate, Speaker, Organizer',
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _text(
+                            _type,
+                            'Participant type',
+                            maxLength: 60,
+                            hint: 'e.g. Delegate, Speaker, Organizer',
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        SizedBox(width: 150, child: _colorField()),
+                      ],
                     ),
                     _drop(
                       label: 'Package',
@@ -387,16 +454,17 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                             value: _title,
                             items: _titles
                                 .map(
-                                  (t) => DropdownMenuItem(value: t, child: Text(t)),
+                                  (t) => DropdownMenuItem(
+                                    value: t,
+                                    child: Text(t),
+                                  ),
                                 )
                                 .toList(),
                             onChanged: (v) => setState(() => _title = v ?? ''),
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Expanded(
-                          child: _text(_first, 'First name'),
-                        ),
+                        Expanded(child: _text(_first, 'First name')),
                       ],
                     ),
                     Row(
@@ -406,9 +474,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                           child: _text(_middle, 'Middle name', required: false),
                         ),
                         const SizedBox(width: 10),
-                        Expanded(
-                          child: _text(_last, 'Last name'),
-                        ),
+                        Expanded(child: _text(_last, 'Last name')),
                       ],
                     ),
                     Row(
@@ -419,28 +485,30 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                             label: 'Gender',
                             value: _gender,
                             items: const [
-                              DropdownMenuItem(value: 'male', child: Text('Male')),
+                              DropdownMenuItem(
+                                value: 'male',
+                                child: Text('Male'),
+                              ),
                               DropdownMenuItem(
                                 value: 'female',
                                 child: Text('Female'),
                               ),
-                              DropdownMenuItem(value: 'other', child: Text('Other')),
+                              DropdownMenuItem(
+                                value: 'other',
+                                child: Text('Other'),
+                              ),
                             ],
                             onChanged: (v) => setState(() => _gender = v ?? ''),
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Expanded(
-                          child: _text(_designation, 'Designation'),
-                        ),
+                        Expanded(child: _text(_designation, 'Designation')),
                       ],
                     ),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: _text(_institution, 'Organization'),
-                        ),
+                        Expanded(child: _text(_institution, 'Organization')),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -487,11 +555,19 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: _text(_mobile, 'Mobile no.', type: TextInputType.phone),
+                          child: _text(
+                            _mobile,
+                            'Mobile no.',
+                            type: TextInputType.phone,
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: _text(_email, 'Email', type: TextInputType.emailAddress),
+                          child: _text(
+                            _email,
+                            'Email',
+                            type: TextInputType.emailAddress,
+                          ),
                         ),
                       ],
                     ),
@@ -517,11 +593,21 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                             required: _paid,
                             enabled: !_free,
                             items: const [
-                              DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                              DropdownMenuItem(value: 'card', child: Text('Card')),
-                              DropdownMenuItem(value: 'upi', child: Text('UPI')),
+                              DropdownMenuItem(
+                                value: 'cash',
+                                child: Text('Cash'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'card',
+                                child: Text('Card'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'upi',
+                                child: Text('UPI'),
+                              ),
                             ],
-                            onChanged: (v) => setState(() => _paymentMode = v ?? ''),
+                            onChanged: (v) =>
+                                setState(() => _paymentMode = v ?? ''),
                           ),
                         ),
                         const SizedBox(width: 10),

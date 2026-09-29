@@ -44,6 +44,9 @@ class InclusionsSectionState extends State<InclusionsSection> {
   String _packageName = '';
   List<({String? iso, String? label, List<_DayInclusion> items})> _days = [];
 
+  /// Entry/exit gate scans per event day (yyyy-MM-dd), from the certificate progress.
+  Map<String, ({DateTime? entryAt, DateTime? exitAt})> _scans = {};
+
   @override
   void initState() {
     super.initState();
@@ -110,6 +113,22 @@ class InclusionsSectionState extends State<InclusionsSection> {
         return _DayInclusion(name, null);
       }
 
+      // Entry/exit scans for each day of the participant's package.
+      final scans = <String, ({DateTime? entryAt, DateTime? exitAt})>{};
+      final certRes = await _api.getMyCertificate();
+      if (!mounted) return;
+      if (certRes['success'] == true) {
+        for (final d in (certRes['days'] as List?) ?? const []) {
+          final m = Map<String, dynamic>.from(d as Map);
+          DateTime? at(String k) =>
+              DateTime.tryParse(m[k]?.toString() ?? '')?.toLocal();
+          scans[m['date']?.toString() ?? ''] = (
+            entryAt: at('entryAt'),
+            exitAt: at('exitAt'),
+          );
+        }
+      }
+
       final days = eventDays(event);
       final result =
           <({String? iso, String? label, List<_DayInclusion> items})>[];
@@ -146,6 +165,7 @@ class InclusionsSectionState extends State<InclusionsSection> {
         _error = null;
         _packageName = reg['packageName']?.toString() ?? '';
         _days = result;
+        _scans = scans;
       });
     } catch (e) {
       if (!mounted) return;
@@ -321,6 +341,21 @@ class InclusionsSectionState extends State<InclusionsSection> {
                 ),
               ),
             ),
+          if (_days[i].iso != null && _scans[_days[i].iso] != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _scanChip('Entry', _scans[_days[i].iso]!.entryAt),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _scanChip('Exit', _scans[_days[i].iso]!.exitAt),
+                  ),
+                ],
+              ),
+            ),
           // Two tiles per row, equal width; a row is as tall as its taller tile.
           for (var r = 0; r < _days[i].items.length; r += 2)
             Padding(
@@ -342,6 +377,59 @@ class InclusionsSectionState extends State<InclusionsSection> {
             ),
         ],
       ],
+    );
+  }
+
+  /// Gate scan status for one day: scanned (with time) or not scanned.
+  Widget _scanChip(String label, DateTime? at) {
+    final scanned = at != null;
+    final color = scanned ? _Colors.claimed : _Colors.muted;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: scanned ? _Colors.claimed.withValues(alpha: 0.08) : _Colors.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: scanned
+              ? _Colors.claimed.withValues(alpha: 0.45)
+              : _Colors.line,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            scanned
+                ? Icons.check_circle_rounded
+                : (label == 'Entry'
+                      ? Icons.login_rounded
+                      : Icons.logout_rounded),
+            size: 18,
+            color: color,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: GoogleFonts.outfit(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  scanned
+                      ? 'Scanned at ${DateFormat('h:mm a').format(at)}'
+                      : 'Not scanned',
+                  style: GoogleFonts.inter(fontSize: 11, color: color),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

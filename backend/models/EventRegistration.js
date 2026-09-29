@@ -39,6 +39,8 @@ const eventRegistrationSchema = new mongoose.Schema(
     lastName: { type: String, default: '', trim: true },
     gender: { type: String, enum: ['', 'male', 'female', 'other'], default: '' },
     participantType: { type: String, default: '', trim: true, maxlength: 60 },
+    // Hex colour of the banner behind the participant type on the badge ('' = default #167E5D).
+    participantTypeColor: { type: String, default: '', trim: true },
     designation: { type: String, default: '', trim: true },
     idNumber: { type: String, default: '', trim: true, index: true },
     address: { type: String, default: '', trim: true },

@@ -1,10 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DelegateBadge from "@/components/DelegateBadge";
 import InclusionsSection from "@/components/InclusionsSection";
 import { Avatar, Button, Icon, PasswordInput, Page, Panel, Spinner, useConfirm, useToast } from "@/components/ui";
-import { put } from "@/lib/api";
+import { get, put } from "@/lib/api";
 import { useAuth, type User } from "@/lib/auth";
 
 /** Ask "Log out?", then sign out and go to login. */
@@ -164,13 +164,23 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value: s
  */
 export function QrPass() {
   const { user } = useAuth();
+  // Participant's own registration: badge type + banner colour chosen by the admin.
+  const [reg, setReg] = useState<Record<string, any> | null>(null);
+  const isParticipant = user?.userType === "participant";
+  useEffect(() => {
+    if (!isParticipant) return;
+    get("/managed-events/my-registration").then((res) => {
+      if (res.success && res.registration) setReg(res.registration);
+    });
+  }, [isParticipant]);
 
   if (!user) return null;
   if (user.userType === "participant") {
     const id = badgeIdOf(user);
     const data = {
       name: user.name,
-      participantType: "DELEGATE",
+      participantType: reg?.participantType || "DELEGATE",
+      participantTypeColor: reg?.participantTypeColor,
       idNumber: id,
       designation: user.department ?? "",
       institution: user.apartmentName ?? "",
