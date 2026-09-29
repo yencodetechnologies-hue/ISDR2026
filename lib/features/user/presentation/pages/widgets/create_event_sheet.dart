@@ -73,7 +73,11 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
                   primary: AppTheme.primaryColor,
                 ),
           ),
-          child: child!,
+          // 12-hour dial with AM/PM even when the phone uses 24-hour time.
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+            child: child!,
+          ),
         );
       },
     );

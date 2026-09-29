@@ -147,6 +147,12 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
     _loadSpeakers();
   }
 
+  /// Shown to the user: 12-hour with AM/PM.
+  String _fmt12(TimeOfDay t) => MaterialLocalizations.of(
+    context,
+  ).formatTimeOfDay(t, alwaysUse24HourFormat: false);
+
+  /// Sent to the backend: "HH:mm".
   String _hhmm(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
@@ -158,6 +164,11 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
     final picked = await showTimePicker(
       context: context,
       initialTime: current ?? TimeOfDay.now(),
+      // 12-hour dial with AM/PM even when the phone uses 24-hour time.
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+        child: child!,
+      ),
     );
     if (picked == null) return;
     setState(() {
@@ -263,7 +274,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
           child: _picker(
             'From time',
             Icons.schedule_rounded,
-            from?.format(context),
+            from == null ? null : _fmt12(from),
             () => _pickTime(true, dateIso),
           ),
         ),
@@ -272,7 +283,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
           child: _picker(
             'To time',
             Icons.schedule_rounded,
-            to?.format(context),
+            to == null ? null : _fmt12(to),
             () => _pickTime(false, dateIso),
           ),
         ),

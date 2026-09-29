@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/app_theme.dart';
@@ -216,7 +218,7 @@ class _UserEventsListPageState extends State<UserEventsListPage> {
     final dt = DateTime.tryParse(iso);
     if (dt == null) return '—';
     final local = dt.toLocal();
-    return '📅 ${local.day}/${local.month}/${local.year} · ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+    return '📅 ${local.day}/${local.month}/${local.year} · ${DateFormat('h:mm a').format(local)}';
   }
 }
 
@@ -1203,7 +1205,7 @@ class _UserClaimHistoryPageState extends State<UserClaimHistoryPage> {
                                       const SizedBox(width: 4),
                                       Text(
                                         claimedAt != null
-                                            ? '${claimedAt.toLocal().day}/${claimedAt.toLocal().month}/${claimedAt.toLocal().year} · ${claimedAt.toLocal().hour.toString().padLeft(2, '0')}:${claimedAt.toLocal().minute.toString().padLeft(2, '0')}'
+                                            ? '${claimedAt.toLocal().day}/${claimedAt.toLocal().month}/${claimedAt.toLocal().year} · ${DateFormat('h:mm a').format(claimedAt.toLocal())}'
                                             : '—',
                                         style: const TextStyle(
                                           fontSize: 11.5,
@@ -1273,6 +1275,11 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage>
   Map<String, dynamic>? _result;
   late AnimationController _animController;
 
+  /// After a scan result, the scanner reopens by itself after this many seconds.
+  static const _autoNextSeconds = 3;
+  Timer? _autoNextTimer;
+  int _autoNextLeft = 0;
+
   @override
   void initState() {
     super.initState();
@@ -1301,6 +1308,7 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage>
 
   @override
   void dispose() {
+    _autoNextTimer?.cancel();
     _animController.dispose();
     _scannerController?.dispose();
     _codeController.dispose();
@@ -1339,9 +1347,27 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage>
     if (res['success'] == true) {
       widget.onClaimed();
     }
+    _startAutoNext();
+  }
+
+  /// Counts down, then opens the scanner for the next participant.
+  void _startAutoNext() {
+    _autoNextTimer?.cancel();
+    setState(() => _autoNextLeft = _autoNextSeconds);
+    _autoNextTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) return t.cancel();
+      if (_autoNextLeft <= 1) {
+        t.cancel();
+        _resetToScan();
+      } else {
+        setState(() => _autoNextLeft--);
+      }
+    });
   }
 
   void _resetToScan() {
+    _autoNextTimer?.cancel();
+    _autoNextTimer = null;
     setState(() {
       _result = null;
       _qrMode = true;
@@ -1775,9 +1801,14 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage>
             child: ElevatedButton.icon(
               onPressed: _resetToScan,
               icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
-              label: const Text(
-                'Scan Next Participant',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              label: Text(
+                _autoNextTimer != null
+                    ? 'Scan Next Participant ($_autoNextLeft)'
+                    : 'Scan Next Participant',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2563EB),

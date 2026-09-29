@@ -39,28 +39,25 @@ async function idNumberTaken(rawId, excludeRegId) {
 }
 
 /**
- * A new ID number: the first two letters of the package name plus four random
- * digits, e.g. "UG students" -> UG4006, "PG students" -> PG3454, "Staff" -> ST5678
- * ("ID" when there is no package). The digits are not used by any other
- * participant, so the whole ID is unique across all events.
+ * A new ID number: the first two letters of the package name plus the lowest
+ * free number in that prefix's own sequence, four digits from 0001 — e.g. the
+ * first "UG students" participant gets UG0001, the next UG0002, while
+ * "PG students" counts PG0001, PG0002, … ("ID" when there is no package).
+ * Numbers already used with that prefix (in any event) are skipped.
  */
 async function generateNextIdNumber(packageName = '') {
   const letters = String(packageName || '').replace(/[^A-Za-z]/g, '').toUpperCase();
   const prefix = letters.length >= 2 ? letters.slice(0, 2) : 'ID';
-  const registrations = await EventRegistration.find({}).select('idNumber').lean();
-  const usedDigits = new Set(
-    registrations
-      .map((r) => (String(r.idNumber || '').match(/(\d+)$/) || [])[1])
-      .filter(Boolean)
+  const pattern = new RegExp(`^${prefix}(\\d+)$`, 'i');
+  const registrations = await EventRegistration.find({ idNumber: pattern }).select('idNumber').lean();
+  const used = new Set(
+    registrations.map((r) => Number((String(r.idNumber || '').match(pattern) || [])[1]))
   );
-  for (let attempt = 0; attempt < 200; attempt += 1) {
-    const digits = String(crypto.randomInt(1000, 10000));
-    if (!usedDigits.has(digits)) return `${prefix}${digits}`;
-  }
-  // Four-digit numbers nearly used up: fall back to five digits.
-  for (;;) {
-    const digits = String(crypto.randomInt(10000, 100000));
-    if (!usedDigits.has(digits)) return `${prefix}${digits}`;
+  // 4 digits, zero-padded (grows to 5+ digits only after 9999).
+  for (let n = 1; ; n += 1) {
+    if (used.has(n)) continue;
+    const candidate = `${prefix}${String(n).padStart(4, '0')}`;
+    if (!(await idNumberTaken(candidate))) return candidate;
   }
 }
 

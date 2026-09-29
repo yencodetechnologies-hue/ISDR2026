@@ -170,11 +170,15 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
   String _fmtTime(String hhmm) {
     final parts = hhmm.split(':');
     if (parts.length != 2) return hhmm;
-    final t = TimeOfDay(
-      hour: int.tryParse(parts[0]) ?? 0,
-      minute: int.tryParse(parts[1]) ?? 0,
+    // Always 12-hour with AM/PM, whatever the phone's 24-hour setting.
+    final t = DateTime(
+      2026,
+      1,
+      1,
+      int.tryParse(parts[0]) ?? 0,
+      int.tryParse(parts[1]) ?? 0,
     );
-    return t.format(context);
+    return DateFormat('h:mm a').format(t);
   }
 
   @override

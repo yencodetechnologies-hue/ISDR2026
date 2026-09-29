@@ -451,7 +451,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                                 'ID no.',
                                 hint: widget.registration == null
                                     ? 'Leave blank to create'
-                                    : 'e.g. UG4006',
+                                    : 'e.g. UG0001',
                                 caps: TextCapitalization.characters,
                                 onChanged: (v) {
                                   final upper = v.toUpperCase();
