@@ -20,11 +20,14 @@ export default function InclusionsSection({ showHeader = true }: { showHeader?: 
   const [pkg, setPkg] = useState("");
   const [days, setDays] = useState<{ iso: string | null; items: DayInclusion[] }[]>([]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     const res = await get("/managed-events/my-registration");
     if (!res.success) {
+      if (silent) return;
       setLoading(false);
       return setError(res.error || "Failed to load inclusions");
     }
@@ -61,11 +64,15 @@ export default function InclusionsSection({ showHeader = true }: { showHeader?: 
       }
     setPkg(String(reg.packageName ?? ""));
     setDays(out);
+    setError(null);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     load();
+    // Re-check every few seconds so a claim scanned at the counter shows up right away.
+    const t = setInterval(() => load(true), 4000);
+    return () => clearInterval(t);
   }, [load]);
 
   const today = isoDay(new Date());
@@ -100,7 +107,7 @@ export default function InclusionsSection({ showHeader = true }: { showHeader?: 
           <Icon name="card_giftcard" size={32} color="#6B7280" />
           <div className="mt-2 text-sm font-semibold text-white/70">{error ?? "No inclusions in your package"}</div>
           {error && (
-            <button onClick={load} className="mt-2 flex items-center gap-1 text-xs font-semibold text-accent">
+            <button onClick={() => load()} className="mt-2 flex items-center gap-1 text-xs font-semibold text-accent">
               <Icon name="refresh" size={15} />
               Tap to retry
             </button>

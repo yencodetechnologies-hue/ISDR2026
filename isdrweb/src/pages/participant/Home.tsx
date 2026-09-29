@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import LiveShowCard from "@/components/LiveShowCard";
 import { ScheduleRow, useScheduleActions } from "@/components/ScheduleRow";
-import { Button, Icon, Panel, useToast } from "@/components/ui";
+import { Button, Icon, Panel } from "@/components/ui";
 import {
   BannerCarousel,
   ModuleGrid,
@@ -48,7 +48,6 @@ const SOCIAL = [
 export default function ParticipantHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const toast = useToast();
   const actions = useScheduleActions();
   const banner = useHomeBanner();
   const [items, setItems] = useState<ScheduleItem[]>([]);
@@ -132,7 +131,7 @@ export default function ParticipantHome() {
         <div className="flex flex-col gap-3">
           <YoutubeLiveCapsule />
           <button
-            onClick={() => toast("CE/CME credit tracking is coming soon")}
+            onClick={() => navigate("/participant/certificate")}
             className="flex flex-1 items-center gap-3 rounded-xl border border-[#2DD4BF]/30 bg-gradient-to-br from-[#0F3D3A] to-[#115E59] p-5 text-left transition hover:brightness-110"
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/10">

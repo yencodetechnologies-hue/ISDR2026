@@ -14,6 +14,7 @@ import {
   Modal,
   Page,
   Panel,
+  PasswordInput,
   Pill,
   SearchBox,
   Spinner,
@@ -296,6 +297,8 @@ export function SendNotification() {
 ========================================================================= */
 
 export function EngagementOverview() {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [tab, setTab] = useState<"questions" | "polls" | "speaker">("questions");
   const [data, setData] = useState<{ questions: any[]; polls: any[]; speakerQs: any[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -327,6 +330,42 @@ export function EngagementOverview() {
   useEffect(() => {
     load();
   }, [load]);
+
+  /** Admin delete of a session poll / question (same as the app's Engagement Overview). */
+  const remove = async (item: any, isPoll: boolean) => {
+    if (
+      !(await confirm({
+        title: isPoll ? "Delete poll?" : "Delete question?",
+        message: isPoll
+          ? "The poll and all its votes will be removed."
+          : "The question and all its answers will be removed.",
+        confirm: "Delete",
+        danger: true,
+      }))
+    )
+      return;
+    const r = await del(`/session-content/${item.scheduleId}/${isPoll ? "polls" : "questions"}/${idOf(item)}`);
+    if (r.success) {
+      toast(isPoll ? "Poll deleted" : "Question deleted", "success");
+      setData((d) =>
+        d
+          ? isPoll
+            ? { ...d, polls: d.polls.filter((x) => idOf(x) !== idOf(item)) }
+            : { ...d, questions: d.questions.filter((x) => idOf(x) !== idOf(item)) }
+          : d,
+      );
+    } else toast(r.error || "Could not delete", "error");
+  };
+  const deleteButton = (item: any, isPoll: boolean) =>
+    item.scheduleId ? (
+      <IconButton
+        icon="delete"
+        outline
+        color="#EF4444"
+        title={isPoll ? "Delete poll" : "Delete question"}
+        onClick={() => remove(item, isPoll)}
+      />
+    ) : null;
 
   return (
     <Page title="Engagement Overview" subtitle="Session Q&A, polls and speaker questions across the conference">
@@ -362,7 +401,8 @@ export function EngagementOverview() {
                     <div key={idOf(q)} className="card p-5">
                       <div className="flex items-center gap-2 text-xs text-muted">
                         <Icon name="event_note" size={15} outline />
-                        <span className="truncate">{q.scheduleName ?? "Session"}</span>
+                        <span className="flex-1 truncate">{q.scheduleName ?? "Session"}</span>
+                        {deleteButton(q, false)}
                       </div>
                       <div className="mt-2 font-semibold">{q.question}</div>
                       <div className="mt-3">
@@ -379,7 +419,10 @@ export function EngagementOverview() {
                 <div className="grid gap-3 md:grid-cols-2">
                   {match(data.polls).map((p) => (
                     <div key={idOf(p)} className="card p-5">
-                      <div className="font-semibold">{p.question}</div>
+                      <div className="flex items-start gap-2">
+                        <div className="flex-1 font-semibold">{p.question}</div>
+                        {deleteButton(p, true)}
+                      </div>
                       <div className="mt-1 text-xs text-muted">
                         {p.scheduleName ?? "Session"} · {p.totalVotes ?? 0} votes
                       </div>
@@ -560,9 +603,13 @@ export function ManagementTeam() {
   const [users, setUsers] = useState<any[] | null>(null);
   const [staff, setStaff] = useState<any[] | null>(null);
   const [tab, setTab] = useState<"mgmt" | "staff">("mgmt");
+  // Add / edit Admin ID form (same fields as the app); editing = the member being edited.
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -574,19 +621,44 @@ export function ManagementTeam() {
     load();
   }, [load]);
 
-  const addMgmt = async () => {
-    if (!name.trim()) return toast("Enter name", "error");
-    if (!mobile.trim()) return toast("Enter mobile", "error");
+  const openForm = (u: any | null) => {
+    setEditing(u);
+    setName(u?.name ?? "");
+    setMobile(u?.mobileNumber ?? "");
+    setEmail(u?.email ?? "");
+    setPassword("");
+    setAdding(true);
+  };
+  const closeForm = () => {
+    setAdding(false);
+    setEditing(null);
+  };
+
+  const saveMgmt = async () => {
+    if (!name.trim()) return toast("Name is required", "error");
+    if (!mobile.trim()) return toast("Mobile number is required", "error");
+    if (mobile.trim().length !== 10) return toast("Enter a valid 10-digit mobile number", "error");
+    if (!email.trim()) return toast("Email address is required", "error");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return toast("Enter a valid email address", "error");
+    if (!editing && !password) return toast("Password is required", "error");
+    if (password && password.length < 6) return toast("Password must be at least 6 characters", "error");
+    const body: Record<string, string> = {
+      name: name.trim(),
+      mobileNumber: mobile.trim(),
+      email: email.trim().toLowerCase(),
+      roleTitle: editing?.roleTitle || "Admin Member",
+    };
+    if (password) body.password = password;
     setSaving(true);
-    const r = await post("/auth/management-users", { name: name.trim(), mobile: mobile.trim() });
+    const r = editing
+      ? await put(`/auth/management-users/${idOf(editing)}`, body)
+      : await post("/auth/management-users", body);
     setSaving(false);
     if (r.success) {
-      toast("Added", "success");
-      setAdding(false);
-      setName("");
-      setMobile("");
+      toast(editing ? "Admin ID updated successfully" : "Admin ID created successfully", "success");
+      closeForm();
       load();
-    } else toast(r.error || "Failed", "error");
+    } else toast(r.error || (editing ? "Failed to update ID" : "Failed to create ID"), "error");
   };
 
   const removeMgmt = async (u: any) => {
@@ -621,7 +693,7 @@ export function ManagementTeam() {
       subtitle="Admin IDs and event staff accounts"
       actions={
         tab === "mgmt" ? (
-          <Button icon="person_add" onClick={() => setAdding(true)}>
+          <Button icon="person_add" onClick={() => openForm(null)}>
             Add Admin ID
           </Button>
         ) : undefined
@@ -648,7 +720,8 @@ export function ManagementTeam() {
                   <tr>
                     <th>Name</th>
                     <th>Mobile</th>
-                    <th className="text-right">Remove</th>
+                    <th>Email</th>
+                    <th className="text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -657,18 +730,31 @@ export function ManagementTeam() {
                       <td>
                         <div className="flex items-center gap-3">
                           <Avatar name={u.name} size={34} />
-                          <span className="font-medium">{u.name}</span>
+                          <div>
+                            <div className="font-medium">{u.name}</div>
+                            {/* Older IDs were saved as 'Management Member'. */}
+                            <div className="text-xs text-muted">
+                              {String(u.roleTitle || "Admin Member").replace("Management", "Admin")}
+                            </div>
+                          </div>
                         </div>
                       </td>
-                      <td className="text-white/75">{u.mobile}</td>
+                      <td className="text-white/75">{u.mobileNumber || "—"}</td>
+                      <td className="text-white/75">{u.email || "—"}</td>
                       <td className="text-right">
-                        <IconButton
-                          icon="delete"
-                          outline
-                          color="#EF4444"
-                          title="Remove"
-                          onClick={() => removeMgmt(u)}
-                        />
+                        {/* The primary (property) admin can't be edited or removed here, same as the app. */}
+                        {!String(idOf(u)).startsWith("primary_") && (
+                          <span className="inline-flex gap-1">
+                            <IconButton icon="edit" outline title="Edit" onClick={() => openForm(u)} />
+                            <IconButton
+                              icon="delete"
+                              outline
+                              color="#EF4444"
+                              title="Remove"
+                              onClick={() => removeMgmt(u)}
+                            />
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -733,16 +819,16 @@ export function ManagementTeam() {
       </div>
       <Modal
         open={adding}
-        onClose={() => setAdding(false)}
-        title="Add Management ID"
+        onClose={closeForm}
+        title={editing ? "Edit Admin ID" : "Add Admin ID"}
         width={460}
         footer={
           <>
-            <Button variant="outline" onClick={() => setAdding(false)}>
+            <Button variant="outline" onClick={closeForm}>
               Cancel
             </Button>
-            <Button loading={saving} onClick={addMgmt}>
-              Add
+            <Button loading={saving} onClick={saveMgmt}>
+              {editing ? "Save changes" : "Create Admin ID"}
             </Button>
           </>
         }
@@ -751,8 +837,29 @@ export function ManagementTeam() {
           <Field label="Name">
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" />
           </Field>
-          <Field label="Mobile">
-            <Input value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="Mobile number" />
+          <Field label="Mobile number">
+            <Input
+              value={mobile}
+              inputMode="numeric"
+              maxLength={10}
+              onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
+              placeholder="10-digit mobile number"
+            />
+          </Field>
+          <Field label="Email address">
+            <Input
+              value={email}
+              type="email"
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@example.com"
+            />
+          </Field>
+          <Field label={editing ? "New password (optional)" : "Set password"}>
+            <PasswordInput
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={editing ? "Leave blank to keep the current password" : "At least 6 characters"}
+            />
           </Field>
         </div>
       </Modal>

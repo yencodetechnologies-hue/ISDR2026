@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/api_service.dart';
@@ -28,20 +30,36 @@ class _AvailableInclusionPageState extends State<AvailableInclusionPage> {
   List<Map<String, dynamic>> _unclaimed = [];
   String _packageName = '';
 
+  /// Re-checks every few seconds so a claim scanned at the counter shows up right away.
+  Timer? _refresh;
+
   @override
   void initState() {
     super.initState();
     _load();
+    _refresh = Timer.periodic(
+      const Duration(seconds: 4),
+      (_) => _load(silent: true),
+    );
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  @override
+  void dispose() {
+    _refresh?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
     final res = await _api.getMyRegistration();
     if (!mounted) return;
     if (res['success'] != true) {
+      if (silent) return;
       setState(() {
         _loading = false;
         _error = res['error']?.toString() ?? 'Failed to load inclusions';
@@ -64,6 +82,7 @@ class _AvailableInclusionPageState extends State<AvailableInclusionPage> {
         .toList();
     setState(() {
       _loading = false;
+      _error = null;
       _unclaimed = unclaimed;
       _packageName = reg['packageName']?.toString() ?? '';
     });

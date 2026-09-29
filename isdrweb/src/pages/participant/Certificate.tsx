@@ -8,8 +8,31 @@ export const CERT_IMG = asset("certificate_page-0001.jpg");
 // Where the name goes on the certificate image, as fractions of its size.
 export const NAME_BOX = { left: 0.39, top: 0.395, width: 0.48, height: 0.07 };
 
+type Box = typeof NAME_BOX;
+type Cert = { label: string; img: string; box: Box; fileName: string };
+
+/** Both certificates share the same eligibility (all days scanned, or admin unlock). */
+const CERTIFICATES: Cert[] = [
+  { label: "Certificate of Attendance", img: CERT_IMG, box: NAME_BOX, fileName: "ISDR2026_Certificate.pdf" },
+  // Name on the blank line under "This is to Certify that".
+  {
+    label: "CE / CME Certificate",
+    img: asset("ce,cme.png"),
+    box: { left: 0.43, top: 0.41, width: 0.435, height: 0.06 },
+    fileName: "ISDR2026_CE_CME_Certificate.pdf",
+  },
+];
+
 /** The certificate image with the name written in. */
-export function CertificateImage({ name }: { name: string }) {
+export function CertificateImage({
+  name,
+  img = CERT_IMG,
+  box: nameBox = NAME_BOX,
+}: {
+  name: string;
+  img?: string;
+  box?: Box;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
   useEffect(() => {
@@ -23,14 +46,14 @@ export function CertificateImage({ name }: { name: string }) {
   const size = (22 * w) / 360;
   return (
     <div ref={box} className="relative">
-      <img src={CERT_IMG} alt="Certificate" className="block w-full" />
+      <img src={img} alt="Certificate" className="block w-full" />
       <div
         className="absolute flex items-center justify-center overflow-hidden"
         style={{
-          left: `${NAME_BOX.left * 100}%`,
-          top: `${NAME_BOX.top * 100}%`,
-          width: `${NAME_BOX.width * 100}%`,
-          height: `${NAME_BOX.height * 100}%`,
+          left: `${nameBox.left * 100}%`,
+          top: `${nameBox.top * 100}%`,
+          width: `${nameBox.width * 100}%`,
+          height: `${nameBox.height * 100}%`,
         }}
       >
         <span className="whitespace-nowrap font-extrabold text-[#1E3A8A]" style={{ fontSize: size }}>
@@ -42,29 +65,32 @@ export function CertificateImage({ name }: { name: string }) {
 }
 
 /** Builds the certificate PDF (842pt wide page, image + name) and saves it. */
-export async function downloadCertificatePdf(name: string) {
+export async function downloadCertificatePdf(
+  name: string,
+  { img: src = CERT_IMG, box = NAME_BOX, fileName = "ISDR2026_Certificate.pdf" }: Partial<Cert> = {},
+) {
   const { jsPDF } = await import("jspdf");
   const img = await new Promise<HTMLImageElement>((res, rej) => {
     const i = new Image();
     i.onload = () => res(i);
     i.onerror = rej;
-    i.src = CERT_IMG;
+    i.src = src;
   });
   const w = 842;
   const h = (w * img.naturalHeight) / img.naturalWidth;
   const doc = new jsPDF({ orientation: w > h ? "landscape" : "portrait", unit: "pt", format: [w, h] });
-  doc.addImage(img, "JPEG", 0, 0, w, h);
+  doc.addImage(img, /\.png$/i.test(src) ? "PNG" : "JPEG", 0, 0, w, h);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0x1e, 0x3a, 0x8a);
   let size = 22;
   doc.setFontSize(size);
-  const maxW = w * NAME_BOX.width;
+  const maxW = w * box.width;
   while (doc.getTextWidth(name) > maxW && size > 8) doc.setFontSize(--size);
-  doc.text(name, w * (NAME_BOX.left + NAME_BOX.width / 2), h * (NAME_BOX.top + NAME_BOX.height / 2), {
+  doc.text(name, w * (box.left + box.width / 2), h * (box.top + box.height / 2), {
     align: "center",
     baseline: "middle",
   });
-  doc.save("ISDR2026_Certificate.pdf");
+  doc.save(fileName);
 }
 
 /** Participant: day-by-day entry/exit progress and the certificate (locked until done). */
@@ -72,7 +98,8 @@ export default function ParticipantCertificate() {
   const toast = useToast();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [downloading, setDownloading] = useState(false);
+  // fileName of the certificate whose PDF is being built, if any.
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   useEffect(() => {
     get("/certificates/me").then((r) => {
@@ -86,14 +113,14 @@ export default function ParticipantCertificate() {
   const name = String(data?.name ?? "");
   const done = (d: any) => d?.entryAt != null && d?.exitAt != null;
 
-  const download = async () => {
-    setDownloading(true);
+  const download = async (cert: Cert) => {
+    setDownloading(cert.fileName);
     try {
-      await downloadCertificatePdf(name);
+      await downloadCertificatePdf(name, cert);
     } catch (e) {
       toast(`Could not create the PDF: ${e}`, "error");
     }
-    setDownloading(false);
+    setDownloading(null);
   };
 
   const mark = (ok: boolean, label: string) => (
@@ -108,19 +135,11 @@ export default function ParticipantCertificate() {
       title="Certificate"
       subtitle={
         unlocked
-          ? "Your certificate is ready to download"
-          : "Get your entry and exit scanned on all event days to unlock your certificate."
+          ? "Your certificates are ready to download"
+          : "Get your entry and exit scanned on all event days to unlock your certificates."
       }
       back={false}
       width={960}
-      actions={
-        data &&
-        unlocked && (
-          <Button icon="download" loading={downloading} onClick={download}>
-            Download PDF
-          </Button>
-        )
-      }
     >
       {error ? (
         <div className="py-16 text-center text-muted">{error}</div>
@@ -186,32 +205,55 @@ export default function ParticipantCertificate() {
               </div>
             )}
           </div>
-          <div className="relative mt-5 overflow-hidden rounded-xl border border-line shadow-2xl shadow-black/40">
-            {unlocked ? (
-              <>
-                <CertificateImage name={name} />
-                <button
-                  title="Download PDF"
-                  onClick={download}
-                  disabled={downloading}
-                  className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60"
-                >
-                  {downloading ? <Spinner size={16} color="#fff" /> : <Icon name="download" size={16} />}
-                </button>
-              </>
-            ) : (
-              <>
-                <div style={{ filter: "blur(8px)" }}>
-                  <CertificateImage name={name} />
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center bg-black/35">
-                  <span className="flex rounded-full bg-black/55 p-3.5">
-                    <Icon name="lock" size={34} />
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
+          {CERTIFICATES.map((cert) => (
+            <div key={cert.fileName} className="mt-6">
+              <div className="mb-2 flex items-center gap-3">
+                <div className="eyebrow flex-1 pl-1">{cert.label}</div>
+                {unlocked && (
+                  <Button
+                    small
+                    variant="outline"
+                    icon="download"
+                    loading={downloading === cert.fileName}
+                    disabled={!!downloading}
+                    onClick={() => download(cert)}
+                  >
+                    Download PDF
+                  </Button>
+                )}
+              </div>
+              <div className="relative overflow-hidden rounded-xl border border-line shadow-2xl shadow-black/40">
+                {unlocked ? (
+                  <>
+                    <CertificateImage name={name} img={cert.img} box={cert.box} />
+                    <button
+                      title="Download PDF"
+                      onClick={() => download(cert)}
+                      disabled={!!downloading}
+                      className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60"
+                    >
+                      {downloading === cert.fileName ? (
+                        <Spinner size={16} color="#fff" />
+                      ) : (
+                        <Icon name="download" size={16} />
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ filter: "blur(8px)" }}>
+                      <CertificateImage name={name} img={cert.img} box={cert.box} />
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+                      <span className="flex rounded-full bg-black/55 p-3.5">
+                        <Icon name="lock" size={34} />
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
         </>
       )}
     </Page>

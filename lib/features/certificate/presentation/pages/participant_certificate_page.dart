@@ -14,12 +14,52 @@ import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
 
 const String kCertificateAsset = 'assets/certificate_page-0001.jpg';
+const String kCmeCertificateAsset = 'assets/ce,cme.png';
 
-// Where the name goes on the certificate image, as fractions of its size.
-const double _nameLeft = 0.39;
-const double _nameTop = 0.395;
-const double _nameWidth = 0.48;
-const double _nameHeight = 0.07;
+/// One certificate image and where the participant's name goes on it
+/// (fractions of the image size).
+class _Cert {
+  final String label;
+  final String asset;
+  final String fileName;
+  final double nameLeft;
+  final double nameTop;
+  final double nameWidth;
+  final double nameHeight;
+
+  const _Cert({
+    required this.label,
+    required this.asset,
+    required this.fileName,
+    required this.nameLeft,
+    required this.nameTop,
+    required this.nameWidth,
+    required this.nameHeight,
+  });
+}
+
+/// Both certificates share the same eligibility (all days scanned, or admin unlock).
+const _certificates = [
+  _Cert(
+    label: 'CERTIFICATE OF ATTENDANCE',
+    asset: kCertificateAsset,
+    fileName: 'ISDR2026_Certificate.pdf',
+    nameLeft: 0.39,
+    nameTop: 0.395,
+    nameWidth: 0.48,
+    nameHeight: 0.07,
+  ),
+  // Name on the blank line under "This is to Certify that".
+  _Cert(
+    label: 'CE / CME CERTIFICATE',
+    asset: kCmeCertificateAsset,
+    fileName: 'ISDR2026_CE_CME_Certificate.pdf',
+    nameLeft: 0.43,
+    nameTop: 0.41,
+    nameWidth: 0.435,
+    nameHeight: 0.06,
+  ),
+];
 
 /// Participant: day-by-day entry/exit progress and the attendance certificate,
 /// blurred and locked until the scans are done (or the admin unlocks it).
@@ -37,7 +77,9 @@ class _ParticipantCertificatePageState
   bool _loading = true;
   String? _error;
   Map<String, dynamic> _data = const {};
-  bool _downloading = false;
+
+  /// Asset of the certificate whose PDF is being built, if any.
+  String? _downloading;
 
   @override
   void initState() {
@@ -67,12 +109,10 @@ class _ParticipantCertificatePageState
   bool get _unlocked => _data['unlocked'] == true;
   String get _name => _data['name']?.toString() ?? '';
 
-  Future<void> _download() async {
-    setState(() => _downloading = true);
+  Future<void> _download(_Cert cert) async {
+    setState(() => _downloading = cert.asset);
     try {
-      final bytes = (await rootBundle.load(kCertificateAsset))
-          .buffer
-          .asUint8List();
+      final bytes = (await rootBundle.load(cert.asset)).buffer.asUint8List();
       final image = await decodeImageFromList(bytes);
       final w = 842.0;
       final h = w * image.height / image.width;
@@ -87,11 +127,11 @@ class _ParticipantCertificatePageState
                 child: pw.Image(pw.MemoryImage(bytes), fit: pw.BoxFit.fill),
               ),
               pw.Positioned(
-                left: w * _nameLeft,
-                top: h * _nameTop,
+                left: w * cert.nameLeft,
+                top: h * cert.nameTop,
                 child: pw.SizedBox(
-                  width: w * _nameWidth,
-                  height: h * _nameHeight,
+                  width: w * cert.nameWidth,
+                  height: h * cert.nameHeight,
                   child: pw.Center(
                     child: pw.Text(
                       _name,
@@ -109,17 +149,17 @@ class _ParticipantCertificatePageState
         ),
       );
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/ISDR2026_Certificate.pdf');
+      final file = File('${dir.path}/${cert.fileName}');
       await file.writeAsBytes(await doc.save());
       await OpenFile.open(file.path);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not create the PDF: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not create the PDF: $e')));
       }
     }
-    if (mounted) setState(() => _downloading = false);
+    if (mounted) setState(() => _downloading = null);
   }
 
   Widget _progressBar() {
@@ -172,7 +212,9 @@ class _ParticipantCertificatePageState
                       height: 3,
                       color: i == 0
                           ? Colors.transparent
-                          : (complete ? const Color(0xFF22C55E) : DarkColors.line),
+                          : (complete
+                                ? const Color(0xFF22C55E)
+                                : DarkColors.line),
                     ),
                   ),
                   Container(
@@ -209,7 +251,9 @@ class _ParticipantCertificatePageState
               ),
               const SizedBox(height: 6),
               Text(
-                date == null ? 'Day ${i + 1}' : DateFormat('d MMM').format(date),
+                date == null
+                    ? 'Day ${i + 1}'
+                    : DateFormat('d MMM').format(date),
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -228,19 +272,20 @@ class _ParticipantCertificatePageState
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: steps);
   }
 
-  Widget _certificate() {
+  Widget _certificate(_Cert cert) {
+    final downloading = _downloading == cert.asset;
     final image = Stack(
       children: [
-        Image.asset(kCertificateAsset, width: double.infinity),
+        Image.asset(cert.asset, width: double.infinity),
         Positioned.fill(
           child: LayoutBuilder(
             builder: (_, c) => Stack(
               children: [
                 Positioned(
-                  left: c.maxWidth * _nameLeft,
-                  top: c.maxHeight * _nameTop,
-                  width: c.maxWidth * _nameWidth,
-                  height: c.maxHeight * _nameHeight,
+                  left: c.maxWidth * cert.nameLeft,
+                  top: c.maxHeight * cert.nameTop,
+                  width: c.maxWidth * cert.nameWidth,
+                  height: c.maxHeight * cert.nameHeight,
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
@@ -273,10 +318,12 @@ class _ParticipantCertificatePageState
                     shape: const CircleBorder(),
                     child: InkWell(
                       customBorder: const CircleBorder(),
-                      onTap: _downloading ? null : _download,
+                      onTap: _downloading != null
+                          ? null
+                          : () => _download(cert),
                       child: Padding(
                         padding: const EdgeInsets.all(7),
-                        child: _downloading
+                        child: downloading
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
@@ -377,12 +424,26 @@ class _ParticipantCertificatePageState
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _certificate(),
+                  for (final cert in _certificates) ...[
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text(
+                        cert.label,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: .6,
+                          color: DarkColors.muted,
+                        ),
+                      ),
+                    ),
+                    _certificate(cert),
+                  ],
                   const SizedBox(height: 14),
                   if (!_unlocked)
                     Text(
-                      'Get your entry and exit scanned on all event days to unlock your certificate.',
+                      'Get your entry and exit scanned on all event days to unlock your certificates.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
                         fontSize: 12.5,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -47,10 +49,23 @@ class InclusionsSectionState extends State<InclusionsSection> {
   /// Entry/exit gate scans per event day (yyyy-MM-dd), from the certificate progress.
   Map<String, ({DateTime? entryAt, DateTime? exitAt})> _scans = {};
 
+  /// Re-checks every few seconds so a claim / entry / exit scan shows up right away.
+  Timer? _refresh;
+
   @override
   void initState() {
     super.initState();
     load();
+    _refresh = Timer.periodic(
+      const Duration(seconds: 4),
+      (_) => load(silent: true),
+    );
+  }
+
+  @override
+  void dispose() {
+    _refresh?.cancel();
+    super.dispose();
   }
 
   /// Claims are counted per India date on the backend, so compare in IST.
@@ -60,17 +75,20 @@ class InclusionsSectionState extends State<InclusionsSection> {
         '${ist.day.toString().padLeft(2, '0')}';
   }
 
-  Future<void> load() async {
+  Future<void> load({bool silent = false}) async {
     if (!mounted) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
 
     try {
       final res = await _api.getMyRegistration();
       if (!mounted) return;
       if (res['success'] != true) {
+        if (silent) return;
         setState(() {
           _loading = false;
           _error = res['error']?.toString() ?? 'Failed to load inclusions';
@@ -168,7 +186,7 @@ class InclusionsSectionState extends State<InclusionsSection> {
         _scans = scans;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || silent) return;
       setState(() {
         _loading = false;
         _error = 'Unable to load inclusions';

@@ -153,3 +153,10 @@ select option {
 .animate-drawer {
   animation: slide-in 0.2s ease-out;
 }
+
+/* The QR pass never prints (see ScreenshotGuard). */
+@media print {
+  .screenshot-guard {
+    visibility: hidden !important;
+  }
+}

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -85,10 +86,18 @@ class _EventManagementDetailsPageState
     super.initState();
     _event = Map<String, dynamic>.from(widget.event);
     _loadAll();
+    _refresh = Timer.periodic(
+      const Duration(seconds: 4),
+      (_) => _loadRegistrations(silent: true),
+    );
   }
+
+  /// Re-checks every few seconds so claims scanned at the counters show up right away.
+  Timer? _refresh;
 
   @override
   void dispose() {
+    _refresh?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -138,17 +147,19 @@ class _EventManagementDetailsPageState
     ),
   );
 
-  Future<void> _loadRegistrations() async {
+  Future<void> _loadRegistrations({bool silent = false}) async {
     if (_eventId.isEmpty) {
-      setState(() => _loadingRegs = false);
+      if (!silent) setState(() => _loadingRegs = false);
       return;
     }
-    setState(() => _loadingRegs = true);
+    if (!silent) setState(() => _loadingRegs = true);
     final res = await _api.listManagedEventRegistrations(
       _eventId,
       apartmentId: widget.apartmentId,
     );
     if (!mounted) return;
+    // Keep the list on screen if a background refresh fails.
+    if (silent && res['success'] != true) return;
     setState(() {
       _loadingRegs = false;
       _registrations = List<Map<String, dynamic>>.from(

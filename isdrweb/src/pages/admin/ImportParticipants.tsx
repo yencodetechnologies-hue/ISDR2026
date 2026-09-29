@@ -1,20 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef, useState } from "react";
 import { Button, Icon, Modal, Select, Spinner } from "@/components/ui";
+import { DEFAULT_TYPE_COLOR, normalizeHex } from "@/components/DelegateBadge";
 import { post } from "@/lib/api";
 
 /**
  * Import participants from an Excel sheet whose header row has the same fields
  * as the "Create participants" form:
- *   Participant type, Package, Title, First name, Middle name, Last name, Gender,
+ *   Participant type, Banner colour, Package, Title, First name, Middle name, Last name, Gender,
  *   Designation, Organization, ID no., Mobile no., Email, Food preference,
  *   Payment mode, UTR no., Address
- * Each row names its own package; a blank ID no. is generated automatically.
+ * Each row names its own package; a blank ID no. is generated automatically and a
+ * blank Banner colour (hex, behind the participant type on the badge) means #167E5D.
  */
 
 /** Template columns, in order, with the header spellings accepted for each. */
 const COLUMNS: { label: string; required: boolean; keys: string[] }[] = [
   { label: "Participant type", required: true, keys: ["participanttype", "type"] },
+  { label: "Banner colour", required: false, keys: ["bannercolour", "bannercolor", "colour", "color"] },
   { label: "Package", required: true, keys: ["package", "packagename"] },
   { label: "Title", required: true, keys: ["title"] },
   { label: "First name", required: true, keys: ["firstname"] },
@@ -35,6 +38,7 @@ const COLUMNS: { label: string; required: boolean; keys: string[] }[] = [
 type Row = {
   rowNumber: number;
   participantType: string;
+  participantTypeColor: string;
   packageName: string;
   title: string;
   firstName: string;
@@ -75,6 +79,7 @@ function mapRow(get: (label: string) => any, rowNumber: number): Row {
   return {
     rowNumber,
     participantType: text(get("Participant type")),
+    participantTypeColor: text(get("Banner colour")).toUpperCase(),
     packageName: text(get("Package")),
     title: TITLE_MAP[rawTitle.toLowerCase()] ?? rawTitle,
     firstName: text(get("First name")),
@@ -98,6 +103,8 @@ function issuesOf(r: Row, pkg: any | null) {
   const bad: string[] = [];
   if (!r.participantType) bad.push("participant type");
   if (r.participantType.length > 60) bad.push("participant type too long");
+  if (r.participantTypeColor && !normalizeHex(r.participantTypeColor))
+    bad.push(`banner colour "${r.participantTypeColor}" (use hex like #167E5D)`);
   if (!r.packageName) bad.push("package");
   else if (!pkg) bad.push(`package "${r.packageName}" not on this event`);
   if (!["Dr", "Mr", "Ms", "Prof"].includes(r.title)) bad.push(r.title ? `title "${r.title}"` : "title");
@@ -516,7 +523,15 @@ export function ImportParticipantsModal({
                           <tr key={r.rowNumber}>
                             <td className="text-muted">{r.rowNumber}</td>
                             <td className="font-medium">{nameOf(r)}</td>
-                            <td>{r.participantType}</td>
+                            <td>
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className="h-3.5 w-3.5 shrink-0 rounded border border-line"
+                                  style={{ background: normalizeHex(r.participantTypeColor) ?? DEFAULT_TYPE_COLOR }}
+                                />
+                                {r.participantType}
+                              </span>
+                            </td>
                             <td>{packageFor(r.packageName)?.name ?? r.packageName}</td>
                             <td className="font-mono">{r.idNumber || <span className="text-muted">Auto</span>}</td>
                             <td>{r.mobileNumber}</td>

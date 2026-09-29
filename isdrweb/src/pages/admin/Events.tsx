@@ -285,7 +285,8 @@ export function EventDetail() {
 
   const loadRegs = useCallback(async () => {
     const regs = await get(`/managed-events/${id}/registrations`);
-    setRegistrations(regs.registrations ?? []);
+    // Keep the list on screen if a background refresh fails.
+    if (regs.success) setRegistrations(regs.registrations ?? []);
   }, [id]);
 
   const load = useCallback(async () => {
@@ -303,6 +304,14 @@ export function EventDetail() {
   useEffect(() => {
     load();
   }, [load]);
+  // Re-check every few seconds so claims scanned at the counters show up right away.
+  useEffect(() => {
+    const t = setInterval(() => {
+      loadRegs();
+      loadStats();
+    }, 4000);
+    return () => clearInterval(t);
+  }, [loadRegs, loadStats]);
 
   const packages: any[] = event?.packages ?? [];
   const isCancelled = event?.status === "cancelled";

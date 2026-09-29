@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import DelegateBadge from "@/components/DelegateBadge";
+import ScreenshotGuard from "@/components/ScreenshotGuard";
 import InclusionsSection from "@/components/InclusionsSection";
 import { Avatar, Button, Icon, PasswordInput, Page, Panel, Spinner, useConfirm, useToast } from "@/components/ui";
 import { get, put } from "@/lib/api";
@@ -190,7 +191,9 @@ export function QrPass() {
       <Page title="QR Pass" subtitle="Show this pass at entry, exit and inclusion counters" back={false} width={1100}>
         <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
           <div className="lg:sticky lg:top-24 lg:self-start">
-            <DelegateBadge data={data} />
+            <ScreenshotGuard>
+              <DelegateBadge data={data} />
+            </ScreenshotGuard>
             <div className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-line bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white/70">
               <Icon name="info" outline size={16} />
               ID: {id} &nbsp; • &nbsp; {user.mobileNumber}
@@ -240,7 +243,7 @@ export function RoleQrPass() {
   return (
     <Page title="QR Pass" back={false} width={1000}>
       <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
-        <div>
+        <ScreenshotGuard>
           <DelegateBadge
             data={{
               name: user.name,
@@ -251,7 +254,7 @@ export function RoleQrPass() {
               qrCode: code,
             }}
           />
-        </div>
+        </ScreenshotGuard>
         <Panel title="Pass details" icon="qr_code_2" iconColor="#10B981" className="self-start">
           <dl className="space-y-4 text-sm">
             <div>
