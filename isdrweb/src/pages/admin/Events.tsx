@@ -23,6 +23,7 @@ import {
   PhotoInput,
 } from "@/components/ui";
 import { del, formData, get, post, put, qs } from "@/lib/api";
+import { FilterSelect, distinct, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { fullNameOf, type ExportColumn, type QrConfig } from "@/lib/exporter";
 import { fmtDate, idOf, parseDate, cap } from "@/lib/format";
@@ -75,6 +76,8 @@ const PARTICIPANT_QR: QrConfig<any> = {
 export function EventList() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<any[] | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -86,6 +89,10 @@ export function EventList() {
     load();
   }, [load]);
 
+  const shownEvents = (events ?? []).filter(
+    (e) => matches(e, search) && (!statusFilter || (e.status ?? "draft") === statusFilter),
+  );
+
   return (
     <Page
       title="Events"
@@ -94,7 +101,7 @@ export function EventList() {
         <div className="flex flex-wrap gap-2">
           <ExportMenu
             title="Events"
-            rows={events}
+            rows={shownEvents}
             columns={[
               { header: "Title", value: (e: any) => e.title, width: 30 },
               { header: "Status", value: (e: any) => cap(e.status ?? "draft"), width: 12 },
@@ -131,50 +138,68 @@ export function EventList() {
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {events.map((e) => {
-            const d = parseDate(e.eventDate);
-            const end = parseDate(e.eventEndDate);
-            return (
-              <button
-                key={idOf(e)}
-                onClick={() => navigate(`/admin/events/${idOf(e)}`)}
-                className="card card-hover group overflow-hidden text-left"
-              >
-                <div className="relative">
-                  {e.photoUrl ? (
-                    <img src={e.photoUrl} alt="" className="h-36 w-full object-cover" />
-                  ) : (
-                    <div className="flex h-36 items-center justify-center bg-gradient-to-br from-[#1E3A8A]/60 to-card">
-                      <Icon name="event" size={44} color="#60A5FA" />
-                    </div>
-                  )}
-                  <span className="absolute right-3 top-3">
-                    <Pill
-                      color={e.status === "published" ? "#22C55E" : e.status === "cancelled" ? "#EF4444" : "#F59E0B"}
-                    >
-                      {cap(e.status ?? "draft")}
-                    </Pill>
-                  </span>
-                </div>
-                <div className="p-4">
-                  <div className="truncate font-semibold group-hover:text-[#93C5FD]">{e.title}</div>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-                    <span className="flex items-center gap-1">
-                      <Icon name="calendar_today" size={14} outline />
-                      {fmtDate(d)}
-                      {end ? ` – ${fmtDate(end)}` : ""}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Icon name="group" size={14} outline />
-                      {e.bookedCount ?? 0} participants
+        <>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="w-full sm:w-80">
+              <SearchBox value={search} onChange={setSearch} placeholder="Search events, venue…" />
+            </div>
+            <FilterSelect
+              label="statuses"
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={distinct(events.map((e) => e.status ?? "draft")).map((s) => ({ value: s, label: cap(s) }))}
+            />
+          </div>
+          {shownEvents.length === 0 && (
+            <div className="mb-4 rounded-xl border border-line px-5 py-8 text-center text-sm text-muted">
+              No results match your search / filters.
+            </div>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {shownEvents.map((e) => {
+              const d = parseDate(e.eventDate);
+              const end = parseDate(e.eventEndDate);
+              return (
+                <button
+                  key={idOf(e)}
+                  onClick={() => navigate(`/admin/events/${idOf(e)}`)}
+                  className="card card-hover group overflow-hidden text-left"
+                >
+                  <div className="relative">
+                    {e.photoUrl ? (
+                      <img src={e.photoUrl} alt="" className="h-36 w-full object-cover" />
+                    ) : (
+                      <div className="flex h-36 items-center justify-center bg-gradient-to-br from-[#1E3A8A]/60 to-card">
+                        <Icon name="event" size={44} color="#60A5FA" />
+                      </div>
+                    )}
+                    <span className="absolute right-3 top-3">
+                      <Pill
+                        color={e.status === "published" ? "#22C55E" : e.status === "cancelled" ? "#EF4444" : "#F59E0B"}
+                      >
+                        {cap(e.status ?? "draft")}
+                      </Pill>
                     </span>
                   </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                  <div className="p-4">
+                    <div className="truncate font-semibold group-hover:text-[#93C5FD]">{e.title}</div>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+                      <span className="flex items-center gap-1">
+                        <Icon name="calendar_today" size={14} outline />
+                        {fmtDate(d)}
+                        {end ? ` – ${fmtDate(end)}` : ""}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Icon name="group" size={14} outline />
+                        {e.bookedCount ?? 0} participants
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
     </Page>
   );
@@ -326,6 +351,10 @@ export function EventDetail() {
   const [incStats, setIncStats] = useState<Record<string, any>>({});
   const [tab, setTab] = useState<"info" | "packages" | "regs" | "schedules">("info");
   const [search, setSearch] = useState("");
+  const [pkgFilter, setPkgFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [claimFilter, setClaimFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -454,11 +483,16 @@ export function EventDetail() {
   const q = search.trim().toLowerCase();
   const filteredRegs = (registrations ?? []).filter(
     (r) =>
-      !q ||
-      Object.values(r).some(
-        (v) => (typeof v === "string" || typeof v === "number") && String(v).toLowerCase().includes(q),
-      ),
+      (!q ||
+        Object.values(r).some(
+          (v) => (typeof v === "string" || typeof v === "number") && String(v).toLowerCase().includes(q),
+        )) &&
+      (!pkgFilter || (r.packageName ?? "") === pkgFilter) &&
+      (!typeFilter || (r.participantType || "Delegate") === typeFilter) &&
+      (!statusFilter || (r.status ?? "registered") === statusFilter) &&
+      (!claimFilter || (claimFilter === "claimed") === (r.claimedInclusions ?? []).length > 0),
   );
+  const regsFiltered = !!(q || pkgFilter || typeFilter || statusFilter || claimFilter);
 
   const existingIds = (self: any | null) =>
     new Set(
@@ -652,13 +686,45 @@ export function EventDetail() {
             <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
               <div className="flex-1 text-sm text-muted">
                 {registrations
-                  ? q
+                  ? regsFiltered
                     ? `Participants (${filteredRegs.length} of ${registrations.length})`
                     : `Participants (${registrations.length})`
                   : ""}
               </div>
               <div className="w-full sm:w-72">
                 <SearchBox value={search} onChange={setSearch} placeholder="Search participants…" />
+              </div>
+              <div className="flex w-full flex-wrap gap-2">
+                <FilterSelect
+                  label="packages"
+                  value={pkgFilter}
+                  onChange={setPkgFilter}
+                  options={distinct((registrations ?? []).map((r) => r.packageName))}
+                />
+                <FilterSelect
+                  label="participant types"
+                  value={typeFilter}
+                  onChange={setTypeFilter}
+                  options={distinct((registrations ?? []).map((r) => r.participantType || "Delegate"))}
+                />
+                <FilterSelect
+                  label="statuses"
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={distinct((registrations ?? []).map((r) => r.status ?? "registered")).map((s) => ({
+                    value: s,
+                    label: cap(s.replace("_", " ")),
+                  }))}
+                />
+                <FilterSelect
+                  label="claims"
+                  value={claimFilter}
+                  onChange={setClaimFilter}
+                  options={[
+                    { value: "claimed", label: "Claimed something" },
+                    { value: "none", label: "Claimed nothing" },
+                  ]}
+                />
               </div>
               <ExportMenu
                 title={`${event?.title || "Event"} - Participants`}

@@ -11,12 +11,14 @@ import {
   Modal,
   Page,
   Panel,
+  SearchBox,
   Spinner,
   TextArea,
   useConfirm,
   useToast,
 } from "@/components/ui";
 import { del, get, post, put } from "@/lib/api";
+import { FilterSelect, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { useAuth } from "@/lib/auth";
 import { cap, fmtShortDateTime, idOf, parseDate, timeAgo } from "@/lib/format";
@@ -130,6 +132,8 @@ export function HelpTickets() {
   const [tickets, setTickets] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
@@ -146,8 +150,9 @@ export function HelpTickets() {
     }
   }, [load]);
 
-  const shown =
-    isParticipant || filter === "all" ? (tickets ?? []) : (tickets ?? []).filter((t) => statusOf(t) === filter);
+  const shown = (
+    isParticipant || filter === "all" ? (tickets ?? []) : (tickets ?? []).filter((t) => statusOf(t) === filter)
+  ).filter((t) => matches(t, search) && (!categoryFilter || (t.category ?? "") === categoryFilter));
 
   return (
     <Page
@@ -188,6 +193,19 @@ export function HelpTickets() {
         )
       }
     >
+      {!isParticipant && !error && (
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="w-full sm:w-80">
+            <SearchBox value={search} onChange={setSearch} placeholder="Search participant, description…" />
+          </div>
+          <FilterSelect
+            label="categories"
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+            options={HELP_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+          />
+        </div>
+      )}
       {!isParticipant && !error && (
         <div className="mb-5">
           <Chips

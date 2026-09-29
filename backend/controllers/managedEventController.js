@@ -152,6 +152,20 @@ function validateAndBuildAnswers(formQuestions, rawAnswers) {
   return answers;
 }
 
+/** The event's days as 'YYYY-MM-DD' (India time), from eventDate to eventEndDate. */
+function eventDaysOf(event) {
+  const istDay = (d) => new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  if (!event || !event.eventDate) return [];
+  const out = [];
+  let d = new Date(`${istDay(event.eventDate)}T00:00:00Z`);
+  const end = new Date(`${istDay(event.eventEndDate || event.eventDate)}T00:00:00Z`);
+  while (d <= end && out.length < 60) {
+    out.push(d.toISOString().slice(0, 10));
+    d = new Date(d.getTime() + 86400000);
+  }
+  return out;
+}
+
 /** Accepts legacy plain-string inclusions (from before the per-day matrix existed) as well as
  *  the current { name, dates } shape — and tolerates Mongoose returning a bare string when an
  *  old document's inclusions array couldn't be cast to the current subdocument schema. */
@@ -999,9 +1013,36 @@ const claimInclusion = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Event not found' });
     }
 
-    // Check if already claimed today
     const istDay = (d) => new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
     const today = istDay(new Date());
+    const deny = (error) => res.json({ success: false, error, registration: registrationDto(reg, event) });
+
+    if (event.status === 'cancelled') {
+      return deny('This event has been cancelled');
+    }
+
+    // The inclusion must be in the participant's package and offered today.
+    // Admin / speaker / event staff all-access passes can claim everything.
+    const allAccess =
+      ['Admin', 'Speaker', 'Event Staff'].includes(reg.participantType) || reg.packageId === 'vip-all-access';
+    if (!allAccess) {
+      const key = (s) => String(s || '').trim().toLowerCase();
+      const pkg = (event.packages || []).find(
+        (p) => (reg.packageId && p.id === reg.packageId) || (reg.packageName && p.name === reg.packageName)
+      );
+      const pkgLabel = reg.packageName ? `the ${reg.packageName} package` : 'this participant\'s package';
+      const inclusion = pkg && normalizeInclusions(pkg.inclusions).find((i) => key(i.name) === key(inclusionName));
+      if (!inclusion) {
+        return deny(`"${String(inclusionName).trim()}" is not included in ${pkgLabel}`);
+      }
+      // No dates = offered on every day of the event.
+      const days = inclusion.dates.length ? inclusion.dates : eventDaysOf(event);
+      if (!days.includes(today)) {
+        return deny(`"${inclusion.name}" is not available today. Available on: ${[...days].sort().join(', ') || 'no days'}`);
+      }
+    }
+
+    // Check if already claimed today
 
     const claimedList = reg.claimedInclusions || [];
     const alreadyClaimed = claimedList.some(

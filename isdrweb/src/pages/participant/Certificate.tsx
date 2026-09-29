@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-refresh/only-export-components */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button, Icon, Loading, Page, Spinner, useToast } from "@/components/ui";
 import { asset, get } from "@/lib/api";
 import { fmtDMon, parseDate } from "@/lib/format";
@@ -7,6 +7,9 @@ import { fmtDMon, parseDate } from "@/lib/format";
 export const CERT_IMG = asset("certificate_page-0001.jpg");
 // Where the name goes on the certificate image, as fractions of its size.
 export const NAME_BOX = { left: 0.39, top: 0.395, width: 0.48, height: 0.07 };
+
+/** Name height as a share of the name box's height (the rest is breathing room). */
+const NAME_FILL = 0.72;
 
 type Box = typeof NAME_BOX;
 type Cert = { label: string; img: string; box: Box; fileName: string };
@@ -34,16 +37,26 @@ export function CertificateImage({
   box?: Box;
 }) {
   const box = useRef<HTMLDivElement>(null);
-  const [w, setW] = useState(0);
+  const text = useRef<HTMLSpanElement>(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const [shrink, setShrink] = useState(1);
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setW(el.clientWidth));
+    const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  // The app draws 22pt text on a phone-width image (~360px); scale with the width.
-  const size = (22 * w) / 360;
+  // The name fills most of the name box's height (so it never overflows it) ...
+  const fontSize = size.h * nameBox.height * NAME_FILL;
+  // ... and long names are shrunk to fit the box's width.
+  useLayoutEffect(() => {
+    const t = text.current;
+    const boxW = size.w * nameBox.width;
+    if (!t || !boxW) return;
+    const natural = t.scrollWidth;
+    setShrink(natural > boxW ? boxW / natural : 1);
+  }, [name, fontSize, size.w, nameBox.width]);
   return (
     <div ref={box} className="relative">
       <img src={img} alt="Certificate" className="block w-full" />
@@ -56,7 +69,11 @@ export function CertificateImage({
           height: `${nameBox.height * 100}%`,
         }}
       >
-        <span className="whitespace-nowrap font-extrabold text-[#1E3A8A]" style={{ fontSize: size }}>
+        <span
+          ref={text}
+          className="whitespace-nowrap font-extrabold leading-none text-[#1E3A8A]"
+          style={{ fontSize, transform: `scale(${shrink})` }}
+        >
           {name}
         </span>
       </div>
@@ -82,7 +99,8 @@ export async function downloadCertificatePdf(
   doc.addImage(img, /\.png$/i.test(src) ? "PNG" : "JPEG", 0, 0, w, h);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0x1e, 0x3a, 0x8a);
-  let size = 22;
+  // Same sizing as on screen: most of the name box's height, shrunk to its width.
+  let size = Math.round(h * box.height * NAME_FILL);
   doc.setFontSize(size);
   const maxW = w * box.width;
   while (doc.getTextWidth(name) > maxW && size > 8) doc.setFontSize(--size);

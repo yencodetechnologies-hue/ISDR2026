@@ -301,7 +301,6 @@ class _EventManagementDetailsPageState
     );
   }
 
-
   Future<void> _openParticipantSheet([Map<String, dynamic>? reg]) async {
     final selfId = reg == null ? null : (reg['id'] ?? reg['_id']);
     final existingIds = _registrations
@@ -415,7 +414,10 @@ class _EventManagementDetailsPageState
                     .toList();
                 final count = eeDates.isNotEmpty ? eeDates.length : days.length;
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0x1F22C55E),
                     borderRadius: BorderRadius.circular(8),
@@ -424,7 +426,11 @@ class _EventManagementDetailsPageState
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.login_rounded, size: 14, color: Color(0xFF22C55E)),
+                      const Icon(
+                        Icons.login_rounded,
+                        size: 14,
+                        color: Color(0xFF22C55E),
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Entry & Exit: $count of ${days.length} ${days.length == 1 ? 'day' : 'days'} authorized',
@@ -1291,19 +1297,23 @@ class _ParticipantQrSheetState extends State<_ParticipantQrSheet> {
                 child: DelegateBadge(registration: reg),
               ),
             ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: qrData.isEmpty ? null : _download,
-                icon: const Icon(Icons.download_rounded, size: 18),
-                label: const Text('Download badge'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B82F6),
-                  foregroundColor: Colors.white,
+            // Speakers' badges can't be downloaded.
+            if (reg['participantType']?.toString().trim().toLowerCase() !=
+                'speaker') ...[
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: qrData.isEmpty ? null : _download,
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: const Text('Download badge'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3B82F6),
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

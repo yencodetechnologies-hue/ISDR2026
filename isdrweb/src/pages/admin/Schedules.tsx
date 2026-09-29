@@ -15,12 +15,14 @@ import {
   Page,
   Panel,
   PhotoInput,
+  SearchBox,
   Select,
   TextArea,
   useConfirm,
   useToast,
 } from "@/components/ui";
 import { del, formData, get, post, put } from "@/lib/api";
+import { FilterSelect, distinct, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { fmtDate, fmtTimeStr, idOf, parseDate } from "@/lib/format";
 
@@ -39,7 +41,19 @@ export function ScheduleTable({
   onDelete: (id: string) => void;
   onEdit?: (id: string) => void;
 }) {
+  const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [hallFilter, setHallFilter] = useState("");
+  const [speakerFilter, setSpeakerFilter] = useState("");
   if (!schedules) return <Loading />;
+  const dayOf = (s: any) => fmtDate(parseDate(s.date));
+  const shown = schedules.filter(
+    (s) =>
+      matches(s, search) &&
+      (!dateFilter || dayOf(s) === dateFilter) &&
+      (!hallFilter || (s.hall ?? "") === hallFilter) &&
+      (!speakerFilter || (s.speakerName ?? "") === speakerFilter),
+  );
   if (schedules.length === 0)
     return (
       <Empty
@@ -61,7 +75,7 @@ export function ScheduleTable({
         <ExportMenu
           small
           title="Schedules"
-          rows={schedules}
+          rows={shown}
           columns={[
             { header: "Session", value: (s: any) => s.scheduleName, width: 30 },
             { header: "Speaker", value: (s: any) => s.speakerName, width: 20 },
@@ -75,6 +89,32 @@ export function ScheduleTable({
           Add Schedule
         </Button>
       </div>
+      <div className="flex flex-wrap items-center gap-2 border-b border-line px-5 py-3">
+        <div className="w-full sm:w-72">
+          <SearchBox value={search} onChange={setSearch} placeholder="Search session, speaker, hall…" />
+        </div>
+        <FilterSelect
+          label="dates"
+          value={dateFilter}
+          onChange={setDateFilter}
+          options={[...new Set(schedules.map(dayOf).filter(Boolean))]}
+        />
+        <FilterSelect
+          label="halls"
+          value={hallFilter}
+          onChange={setHallFilter}
+          options={distinct(schedules.map((s) => s.hall))}
+        />
+        <FilterSelect
+          label="speakers"
+          value={speakerFilter}
+          onChange={setSpeakerFilter}
+          options={distinct(schedules.map((s) => s.speakerName))}
+        />
+      </div>
+      {shown.length === 0 && (
+        <div className="px-5 py-8 text-center text-sm text-muted">No sessions match your search / filters.</div>
+      )}
       <div className="overflow-x-auto">
         <table className="data-table">
           <thead>
@@ -88,7 +128,7 @@ export function ScheduleTable({
             </tr>
           </thead>
           <tbody>
-            {schedules.map((s) => (
+            {shown.map((s) => (
               <tr key={idOf(s)}>
                 <td className="font-medium">{s.scheduleName}</td>
                 <td>
@@ -127,6 +167,7 @@ export function ScheduleList() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     get("/managed-events").then((r) => {
@@ -150,23 +191,33 @@ export function ScheduleList() {
 
   return (
     <Page title="Schedules" subtitle="Choose an event to manage its sessions" back={false}>
+      <div className="mb-4 w-full sm:w-80">
+        <SearchBox value={search} onChange={setSearch} placeholder="Search events…" />
+      </div>
+      {events.filter((e) => matches(e, search)).length === 0 && (
+        <div className="mb-4 rounded-xl border border-line px-5 py-8 text-center text-sm text-muted">
+          No events match your search.
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {events.map((e) => (
-          <button
-            key={idOf(e)}
-            onClick={() => navigate(`/admin/schedules/event/${idOf(e)}`)}
-            className="card card-hover group flex w-full items-center gap-4 p-5 text-left"
-          >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#F97316]/15">
-              <Icon name="calendar_month" size={24} color="#F97316" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold group-hover:text-[#93C5FD]">{e.title}</span>
-              <span className="block text-xs text-muted">{fmtDate(parseDate(e.eventDate))}</span>
-            </span>
-            <Icon name="arrow_forward" size={18} color="#6B7280" />
-          </button>
-        ))}
+        {events
+          .filter((e) => matches(e, search))
+          .map((e) => (
+            <button
+              key={idOf(e)}
+              onClick={() => navigate(`/admin/schedules/event/${idOf(e)}`)}
+              className="card card-hover group flex w-full items-center gap-4 p-5 text-left"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#F97316]/15">
+                <Icon name="calendar_month" size={24} color="#F97316" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold group-hover:text-[#93C5FD]">{e.title}</span>
+                <span className="block text-xs text-muted">{fmtDate(parseDate(e.eventDate))}</span>
+              </span>
+              <Icon name="arrow_forward" size={18} color="#6B7280" />
+            </button>
+          ))}
       </div>
     </Page>
   );

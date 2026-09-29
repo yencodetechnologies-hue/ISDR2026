@@ -837,16 +837,21 @@ export function BadgeModal({ registration, onClose }: { registration: any; onClo
       <div ref={box}>
         <DelegateBadge data={data} />
       </div>
-      <Button
-        full
-        icon="download"
-        className="mt-4"
-        loading={busy}
-        disabled={!String(registration.qrCode ?? "")}
-        onClick={download}
-      >
-        Download badge
-      </Button>
+      {/* Speakers' badges can't be downloaded. */}
+      {String(registration.participantType ?? "")
+        .trim()
+        .toLowerCase() !== "speaker" && (
+        <Button
+          full
+          icon="download"
+          className="mt-4"
+          loading={busy}
+          disabled={!String(registration.qrCode ?? "")}
+          onClick={download}
+        >
+          Download badge
+        </Button>
+      )}
     </Modal>
   );
 }

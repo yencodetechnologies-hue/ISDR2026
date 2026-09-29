@@ -25,6 +25,7 @@ import {
   useToast,
 } from "@/components/ui";
 import { del, get, post, put } from "@/lib/api";
+import { FilterSelect, distinct, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import type { QrConfig } from "@/lib/exporter";
 import { cap, fullName, idOf } from "@/lib/format";
@@ -329,6 +330,9 @@ export function EngagementOverview() {
   const [data, setData] = useState<{ questions: any[]; polls: any[]; speakerQs: any[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [sessionFilter, setSessionFilter] = useState("");
+  const [speakerFilter, setSpeakerFilter] = useState("");
+  const [answerFilter, setAnswerFilter] = useState("");
 
   const term = query.trim().toLowerCase();
   // Every text in the item (question, session, speaker, participant, answer, options, answers).
@@ -342,7 +346,15 @@ export function EngagementOverview() {
               .map((x) => textOf(x, depth + 1))
               .join(" ")
         : String(v);
-  const match = (list: any[]) => (term ? list.filter((it) => textOf(it).toLowerCase().includes(term)) : list);
+  const match = (list: any[]) =>
+    list.filter(
+      (it) =>
+        (!term || textOf(it).toLowerCase().includes(term)) &&
+        // Session filter on Session Q&A / Polls; speaker + answered filters on Speaker Q&A.
+        (tab === "speaker" || !sessionFilter || (it.scheduleName ?? "") === sessionFilter) &&
+        (tab !== "speaker" || !speakerFilter || (it.speakerName ?? "") === speakerFilter) &&
+        (tab !== "speaker" || !answerFilter || (answerFilter === "answered") === !!it.answered),
+    );
 
   const load = useCallback(async () => {
     const [q, p, sq] = await Promise.all([
@@ -464,12 +476,41 @@ export function EngagementOverview() {
           { value: "speaker", label: "Speaker Q&A", count: data?.speakerQs.length },
         ]}
       />
-      <div className="mt-4 max-w-md">
-        <SearchBox
-          value={query}
-          onChange={setQuery}
-          placeholder="Search question, session, speaker, participant, answer…"
-        />
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="w-full max-w-md">
+          <SearchBox
+            value={query}
+            onChange={setQuery}
+            placeholder="Search question, session, speaker, participant, answer…"
+          />
+        </div>
+        {data && tab !== "speaker" && (
+          <FilterSelect
+            label="sessions"
+            value={sessionFilter}
+            onChange={setSessionFilter}
+            options={distinct((tab === "polls" ? data.polls : data.questions).map((x) => x.scheduleName))}
+          />
+        )}
+        {data && tab === "speaker" && (
+          <>
+            <FilterSelect
+              label="speakers"
+              value={speakerFilter}
+              onChange={setSpeakerFilter}
+              options={distinct(data.speakerQs.map((x) => x.speakerName))}
+            />
+            <FilterSelect
+              label="statuses"
+              value={answerFilter}
+              onChange={setAnswerFilter}
+              options={[
+                { value: "answered", label: "Answered" },
+                { value: "unanswered", label: "Unanswered" },
+              ]}
+            />
+          </>
+        )}
       </div>
       <div className="mt-5">
         {error ? (
@@ -570,6 +611,7 @@ export function ManageCertificates() {
   const confirm = useConfirm();
   const [certs, setCerts] = useState<any[] | null>(null);
   const [search, setSearch] = useState("");
+  const [certFilter, setCertFilter] = useState("");
 
   const load = useCallback(async () => {
     const r = await get("/certificates");
@@ -596,7 +638,10 @@ export function ManageCertificates() {
     } else toast(r.error || "Failed", "error");
   };
 
+  const certStatus = (c: any) =>
+    (c.revoked ?? c.certificateRevoked) ? "revoked" : (c.unlocked ?? c.certificateUnlocked) ? "unlocked" : "locked";
   const filtered = (certs ?? []).filter((c) => {
+    if (certFilter && certStatus(c) !== certFilter) return false;
     if (!search) return true;
     const s = search.toLowerCase();
     return (
@@ -619,6 +664,16 @@ export function ManageCertificates() {
             <div className="w-full sm:w-80">
               <SearchBox value={search} onChange={setSearch} placeholder="Search participants..." />
             </div>
+            <FilterSelect
+              label="statuses"
+              value={certFilter}
+              onChange={setCertFilter}
+              options={[
+                { value: "locked", label: "Locked" },
+                { value: "unlocked", label: "Unlocked" },
+                { value: "revoked", label: "Revoked" },
+              ]}
+            />
             <ExportMenu
               title="Certificates"
               rows={filtered}
@@ -713,6 +768,16 @@ export function ManagementTeam() {
   const [users, setUsers] = useState<any[] | null>(null);
   const [staff, setStaff] = useState<any[] | null>(null);
   const [tab, setTab] = useState<"mgmt" | "staff">("mgmt");
+  const [teamSearch, setTeamSearch] = useState("");
+  const [approvalFilter, setApprovalFilter] = useState("");
+  const [activeFilter, setActiveFilter] = useState("");
+  const shownUsers = (users ?? []).filter((u) => matches(u, teamSearch));
+  const shownStaff = (staff ?? []).filter(
+    (u) =>
+      matches(u, teamSearch) &&
+      (!approvalFilter || (u.status ?? "pending") === approvalFilter) &&
+      (!activeFilter || (activeFilter === "active") === !!u.isActive),
+  );
   // Add / edit Admin ID form (same fields as the app); editing = the member being edited.
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
@@ -806,7 +871,7 @@ export function ManagementTeam() {
           <div className="flex flex-wrap gap-2">
             <ExportMenu
               title="Admin IDs"
-              rows={users}
+              rows={shownUsers}
               columns={[
                 { header: "Pass no.", value: (u: any) => teamPass(u, "ADMIN"), width: 12 },
                 { header: "Name", value: (u: any) => u.name, width: 24 },
@@ -827,7 +892,7 @@ export function ManagementTeam() {
         ) : (
           <ExportMenu
             title="Event Staff"
-            rows={staff}
+            rows={shownStaff}
             columns={[
               { header: "Pass no.", value: (u: any) => teamPass(u, "EVENT STAFF"), width: 12 },
               { header: "Name", value: (u: any) => u.name, width: 24 },
@@ -849,6 +914,39 @@ export function ManagementTeam() {
           { value: "staff", label: "Event Staff", count: staff?.length },
         ]}
       />
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="w-full sm:w-80">
+          <SearchBox value={teamSearch} onChange={setTeamSearch} placeholder="Search name, mobile, email…" />
+        </div>
+        {tab === "staff" && (
+          <>
+            <FilterSelect
+              label="approvals"
+              value={approvalFilter}
+              onChange={setApprovalFilter}
+              options={distinct((staff ?? []).map((u) => u.status ?? "pending")).map((s) => ({
+                value: s,
+                label: cap(s),
+              }))}
+            />
+            <FilterSelect
+              label="accounts"
+              value={activeFilter}
+              onChange={setActiveFilter}
+              options={[
+                { value: "active", label: "Active" },
+                { value: "inactive", label: "Inactive" },
+              ]}
+            />
+          </>
+        )}
+      </div>
+      {((tab === "mgmt" && users && users.length > 0 && shownUsers.length === 0) ||
+        (tab === "staff" && staff && staff.length > 0 && shownStaff.length === 0)) && (
+        <div className="mt-5 rounded-xl border border-line px-5 py-8 text-center text-sm text-muted">
+          No results match your search / filters.
+        </div>
+      )}
       <div className="mt-5">
         {tab === "mgmt" &&
           (!users ? (
@@ -867,7 +965,7 @@ export function ManagementTeam() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => (
+                  {shownUsers.map((u) => (
                     <tr key={idOf(u)}>
                       <td>
                         <div className="flex items-center gap-3">
@@ -922,7 +1020,7 @@ export function ManagementTeam() {
                   </tr>
                 </thead>
                 <tbody>
-                  {staff.map((u) => (
+                  {shownStaff.map((u) => (
                     <tr key={idOf(u)}>
                       <td>
                         <div className="flex items-center gap-3">

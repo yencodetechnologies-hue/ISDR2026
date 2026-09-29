@@ -12,10 +12,12 @@ import {
   Modal,
   Page,
   PhotoInput,
+  SearchBox,
   useConfirm,
   useToast,
 } from "@/components/ui";
 import { del, formData, get, post } from "@/lib/api";
+import { FilterSelect, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { idOf } from "@/lib/format";
 
@@ -23,6 +25,8 @@ export default function ManageExhibitors() {
   const toast = useToast();
   const confirm = useConfirm();
   const [items, setItems] = useState<any[] | null>(null);
+  const [search, setSearch] = useState("");
+  const [stallFilter, setStallFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -63,6 +67,11 @@ export default function ManageExhibitors() {
     } else toast(res.error || "Could not remove", "error");
   };
 
+  const shownItems = (items ?? []).filter(
+    (e) =>
+      matches(e, search) && (!stallFilter || (stallFilter === "with") === Boolean(String(e.stallNumber ?? "").trim())),
+  );
+
   return (
     <Page
       title="Exhibitors"
@@ -71,7 +80,7 @@ export default function ManageExhibitors() {
         <div className="flex flex-wrap gap-2">
           <ExportMenu
             title="Exhibitors"
-            rows={items}
+            rows={shownItems}
             columns={[
               { header: "Name", value: (e: any) => e.name, width: 30 },
               { header: "Stall number", value: (e: any) => e.stallNumber, width: 14 },
@@ -83,6 +92,27 @@ export default function ManageExhibitors() {
         </div>
       }
     >
+      {items && items.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="w-full sm:w-80">
+            <SearchBox value={search} onChange={setSearch} placeholder="Search name or stall…" />
+          </div>
+          <FilterSelect
+            label="stalls"
+            value={stallFilter}
+            onChange={setStallFilter}
+            options={[
+              { value: "with", label: "Has stall number" },
+              { value: "without", label: "No stall number" },
+            ]}
+          />
+        </div>
+      )}
+      {items && items.length > 0 && shownItems.length === 0 && (
+        <div className="mb-4 rounded-xl border border-line px-5 py-8 text-center text-sm text-muted">
+          No results match your search / filters.
+        </div>
+      )}
       {error ? (
         <ErrorState message={error} onRetry={load} />
       ) : !items ? (
@@ -99,7 +129,7 @@ export default function ManageExhibitors() {
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {items.map((e) => (
+          {shownItems.map((e) => (
             <div key={idOf(e)} className="card group relative overflow-hidden">
               <div className="flex h-32 items-center justify-center bg-field">
                 {e.photoUrl ? (

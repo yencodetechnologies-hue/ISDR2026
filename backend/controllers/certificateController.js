@@ -89,6 +89,9 @@ const scanAttendance = async (req, res) => {
       institution: reg.institution,
       packageName: reg.packageName || '',
     };
+    if (event.status === 'cancelled') {
+      return res.json({ success: false, error: 'This event has been cancelled', registration });
+    }
     const today = istDay(new Date());
     const isVipOrStaff =
       ['Admin', 'Speaker', 'Event Staff'].includes(reg.participantType) ||

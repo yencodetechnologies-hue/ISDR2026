@@ -13,11 +13,13 @@ import {
   Modal,
   Page,
   PhotoInput,
+  SearchBox,
   TextArea,
   useConfirm,
   useToast,
 } from "@/components/ui";
 import { del, formData, get, post, put } from "@/lib/api";
+import { FilterSelect, distinct, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { passCode } from "../common/Profile";
 import { idOf } from "@/lib/format";
@@ -29,6 +31,8 @@ export default function ManageSpeakers() {
   const toast = useToast();
   const confirm = useConfirm();
   const [speakers, setSpeakers] = useState<any[] | null>(null);
+  const [search, setSearch] = useState("");
+  const [instFilter, setInstFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<any | null>(null); // {} = new
   const [name, setName] = useState("");
@@ -91,6 +95,10 @@ export default function ManageSpeakers() {
     } else toast(res.error || "Could not remove", "error");
   };
 
+  const shownSpeakers = (speakers ?? []).filter(
+    (s) => matches(s, search) && (!instFilter || (s.institution ?? "") === instFilter),
+  );
+
   return (
     <Page
       title="Speakers"
@@ -99,7 +107,7 @@ export default function ManageSpeakers() {
         <div className="flex flex-wrap gap-2">
           <ExportMenu
             title="Speakers"
-            rows={speakers}
+            rows={shownSpeakers}
             columns={[
               { header: "Pass no.", value: (s: any) => speakerPass(s), width: 12 },
               { header: "Name", value: (s: any) => s.name, width: 24 },
@@ -126,6 +134,26 @@ export default function ManageSpeakers() {
         </div>
       }
     >
+      {speakers && speakers.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="w-full sm:w-80">
+            <SearchBox value={search} onChange={setSearch} placeholder="Search name, mobile, institution…" />
+          </div>
+          {distinct(speakers.map((s) => s.institution)).length > 0 && (
+            <FilterSelect
+              label="institutions"
+              value={instFilter}
+              onChange={setInstFilter}
+              options={distinct(speakers.map((s) => s.institution))}
+            />
+          )}
+        </div>
+      )}
+      {speakers && speakers.length > 0 && shownSpeakers.length === 0 && (
+        <div className="mb-4 rounded-xl border border-line px-5 py-8 text-center text-sm text-muted">
+          No results match your search / filters.
+        </div>
+      )}
       {error ? (
         <ErrorState message={error} onRetry={load} />
       ) : !speakers ? (
@@ -142,7 +170,7 @@ export default function ManageSpeakers() {
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {speakers.map((s) => (
+          {shownSpeakers.map((s) => (
             <div key={idOf(s)} className="card flex flex-col p-5">
               <div className="flex items-start gap-3.5">
                 <Avatar src={s.photoUrl} name={s.name} size={56} />
