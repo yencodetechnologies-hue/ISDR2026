@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 import { get } from "@/lib/api";
 import { fmtShortDateTime, isoDay, monthShort, parseDate, weekdayLong } from "@/lib/format";
 import { daysOfEvent } from "@/lib/schedules";
+import { Link } from "react-router-dom";
+import { useAppLayout } from "@/lib/appLayout";
 import { Icon, Spinner } from "./ui";
 
 type DayInclusion = { name: string; claimedAt: Date | null; byAdmin: boolean };
@@ -15,6 +17,7 @@ export function istDay(d: Date) {
 
 /** The participant's package inclusions per event day, with what they've claimed. */
 export default function InclusionsSection({ showHeader = true }: { showHeader?: boolean }) {
+  const appLayout = useAppLayout();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pkg, setPkg] = useState("");
@@ -96,6 +99,24 @@ export default function InclusionsSection({ showHeader = true }: { showHeader?: 
               {pkg}
             </span>
           )}
+        </div>
+      )}
+      {appLayout && (
+        <div className="mb-4 flex gap-2">
+          <Link
+            to="/participant/inclusions/available"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] py-2 font-inter text-xs font-bold text-[#60A5FA] active:bg-white/10"
+          >
+            <Icon name="inventory_2" size={16} />
+            Available
+          </Link>
+          <Link
+            to="/participant/inclusions/claimed"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] py-2 font-inter text-xs font-bold text-[#22C55E] active:bg-white/10"
+          >
+            <Icon name="check_circle" size={16} />
+            Claimed
+          </Link>
         </div>
       )}
       {loading ? (

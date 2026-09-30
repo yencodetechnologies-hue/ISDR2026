@@ -16,9 +16,16 @@ import {
 import { asset, del, get, post } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtShortDateTime, idOf, parseDate } from "@/lib/format";
+import { useAppLayout } from "@/lib/appLayout";
+import FeedApp from "./FeedApp";
 
 /** Feed of event selfies: like, share, delete own (admin: delete any, no camera button). */
 export function Feed() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <FeedApp /> : <FeedWeb />;
+}
+
+function FeedWeb() {
   const { user } = useAuth();
   const adminMode = user?.userType === "apartment";
   const navigate = useNavigate();

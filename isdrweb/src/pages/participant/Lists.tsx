@@ -18,6 +18,9 @@ import {
 } from "@/lib/format";
 import { loadAllSchedules, scheduleHref, toggleFavorite, type ScheduleItem } from "@/lib/schedules";
 import { PARTICIPANT_MODULES } from "./modules";
+import { useAppLayout } from "@/lib/appLayout";
+import { ParticipantMoreApp } from "./ParticipantHomeApp";
+import { AllSessionsApp, FavoritesApp, SpeakersApp, UpcomingSchedulesApp } from "./ParticipantListsApp";
 
 /** Day heading with a count, used by the grouped lists. */
 function DayHeading({ label, count }: { label: React.ReactNode; count: number }) {
@@ -46,6 +49,10 @@ function byDay<T>(list: T[], dayOf: (t: T) => Date | null) {
 
 /** Schedule: every session that hasn't ended yet, grouped by day. */
 export function UpcomingSchedules() {
+  return useAppLayout() ? <UpcomingSchedulesApp /> : <UpcomingSchedulesWeb />;
+}
+
+function UpcomingSchedulesWeb() {
   const actions = useScheduleActions();
   const [items, setItems] = useState<ScheduleItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +96,10 @@ export function UpcomingSchedules() {
 
 /** All Sessions with day tabs (All Sessions / Day 1 / Day 2 …). */
 export function AllSessions() {
+  return useAppLayout() ? <AllSessionsApp /> : <AllSessionsWeb />;
+}
+
+function AllSessionsWeb() {
   const [params, setParams] = useSearchParams();
   const actions = useScheduleActions();
   const [items, setItems] = useState<ScheduleItem[] | null>(null);
@@ -160,6 +171,10 @@ export function AllSessions() {
 
 /** Favorites: hearted sessions by day; un-heart removes them. */
 export function Favorites() {
+  return useAppLayout() ? <FavoritesApp /> : <FavoritesWeb />;
+}
+
+function FavoritesWeb() {
   const navigate = useNavigate();
   const toast = useToast();
   const [schedules, setSchedules] = useState<any[] | null>(null);
@@ -242,6 +257,10 @@ export function Favorites() {
 
 /** Speakers: everyone with a session, numbered, with their sessions listed. */
 export function Speakers() {
+  return useAppLayout() ? <SpeakersApp /> : <SpeakersWeb />;
+}
+
+function SpeakersWeb() {
   const navigate = useNavigate();
   const [speakers, setSpeakers] = useState<{ name: string; photo: string; sessions: ScheduleItem[] }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -317,6 +336,10 @@ export function Speakers() {
 
 /** More: every participant section. */
 export function ParticipantMore() {
+  return useAppLayout() ? <ParticipantMoreApp /> : <ParticipantMoreWeb />;
+}
+
+function ParticipantMoreWeb() {
   return (
     <Page title="All Sections" back={false}>
       <ModuleGrid items={PARTICIPANT_MODULES} />

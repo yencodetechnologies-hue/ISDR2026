@@ -18,6 +18,7 @@ import ParticipantHome from "./pages/participant/Home";
 import { AboutIsdr, Accommodation, Committee, StudentConference } from "./pages/participant/Info";
 import { AllSessions, Favorites, ParticipantMore, Speakers, UpcomingSchedules } from "./pages/participant/Lists";
 import { AskSpeaker, MyQuestions, ParticipantPolls, ParticipantQa } from "./pages/participant/QaPolls";
+import { AvailableInclusionsApp, ClaimedInclusionsApp } from "./pages/participant/InclusionsApp";
 /* Speaker */
 import {
   SpeakerHome,
@@ -30,6 +31,10 @@ import {
 } from "./pages/speaker/Speaker";
 /* Admin */
 import AdminHome from "./pages/admin/Home";
+import { AdminMoreModules } from "./pages/admin/AdminHomeApp";
+import { StaffAddApp, StaffEditApp } from "./pages/admin/StaffApp";
+import { SpeakerFormApp } from "./pages/admin/SpeakersApp";
+import { ExhibitorFormApp } from "./pages/admin/ExhibitorsApp";
 import { EventList, EventEditor, EventDetail } from "./pages/admin/Events";
 import { ScheduleList, EventSchedules, ScheduleEditor } from "./pages/admin/Schedules";
 import ManageSpeakers from "./pages/admin/Speakers";
@@ -111,6 +116,8 @@ export default function App() {
             <Route path="/participant/qa/mine" element={<MyQuestions />} />
             <Route path="/participant/polls" element={<ParticipantPolls />} />
             <Route path="/participant/profile" element={<ParticipantProfile />} />
+            <Route path="/participant/inclusions/available" element={<AvailableInclusionsApp />} />
+            <Route path="/participant/inclusions/claimed" element={<ClaimedInclusionsApp />} />
           </Route>
 
           {/* Speaker */}
@@ -134,7 +141,10 @@ export default function App() {
             <Route path="/admin/schedules/event/:eventId" element={<EventSchedules />} />
             <Route path="/admin/schedules/new" element={<ScheduleEditor />} />
             <Route path="/admin/speakers" element={<ManageSpeakers />} />
+            <Route path="/admin/speakers/new" element={<SpeakerFormApp />} />
+            <Route path="/admin/speakers/:id/edit" element={<SpeakerFormApp />} />
             <Route path="/admin/exhibitors" element={<ManageExhibitors />} />
+            <Route path="/admin/exhibitors/new" element={<ExhibitorFormApp />} />
             <Route path="/admin/banner" element={<ManageBanner />} />
             <Route path="/admin/ticker" element={<ManageTicker />} />
             <Route path="/admin/youtube" element={<ManageYoutubeLive />} />
@@ -143,16 +153,22 @@ export default function App() {
             <Route path="/admin/engagement" element={<EngagementOverview />} />
             <Route path="/admin/certificates" element={<ManageCertificates />} />
             <Route path="/admin/team" element={<ManagementTeam />} />
+            <Route path="/admin/team/staff/new" element={<StaffAddApp />} />
+            <Route path="/admin/team/staff/:id/edit" element={<StaffEditApp />} />
             <Route path="/admin/profile" element={<AdminProfile />} />
             <Route path="/admin/more" element={<AdminMore />} />
+            <Route path="/admin/modules" element={<AdminMoreModules />} />
           </Route>
 
           {/* Staff (Event Staff / User / Tenant) */}
           <Route element={<Guard roles={["user"]} />}>
             <Route path="/staff" element={<StaffHome />} />
+            <Route path="/staff/more" element={<StaffMore />} />
+          </Route>
+          {/* Event list + scanning: event staff, and admins (the app's "Scan Inclusion") */}
+          <Route element={<Guard roles={["user", "apartment"]} />}>
             <Route path="/staff/events" element={<StaffEventList />} />
             <Route path="/staff/events/:id" element={<StaffEventDetail />} />
-            <Route path="/staff/more" element={<StaffMore />} />
           </Route>
         </Route>
 

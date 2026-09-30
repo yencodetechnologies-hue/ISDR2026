@@ -4,8 +4,15 @@ import { Empty, ErrorState, Icon, Loading, Page } from "@/components/ui";
 import { get } from "@/lib/api";
 import { idOf } from "@/lib/format";
 
+import { useAppLayout } from "@/lib/appLayout";
+import ParticipantExhibitorsApp from "./ParticipantExhibitorsApp";
+
 /** Read-only exhibitor list: photo, shop name, category, location. */
 export default function ParticipantExhibitors() {
+  return useAppLayout() ? <ParticipantExhibitorsApp /> : <ParticipantExhibitorsWeb />;
+}
+
+function ParticipantExhibitorsWeb() {
   const [list, setList] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => {

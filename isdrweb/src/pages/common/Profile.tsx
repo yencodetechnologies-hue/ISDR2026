@@ -4,9 +4,22 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import DelegateBadge from "@/components/DelegateBadge";
 import ScreenshotGuard from "@/components/ScreenshotGuard";
 import InclusionsSection from "@/components/InclusionsSection";
-import { Avatar, Button, Icon, PasswordInput, Page, Panel, Spinner, useConfirm, useToast } from "@/components/ui";
+import {
+  AppBar,
+  Avatar,
+  Button,
+  Icon,
+  PasswordInput,
+  Page,
+  Panel,
+  Spinner,
+  useConfirm,
+  useToast,
+} from "@/components/ui";
+import { useAppLayout } from "@/lib/appLayout";
 import { get, put } from "@/lib/api";
 import { useAuth, type User } from "@/lib/auth";
+import { ChangePasswordApp, MyProfileApp, ParticipantProfileApp, ParticipantQrPassApp } from "./ProfileApp";
 
 /** Ask "Log out?", then sign out and go to login. */
 export function useLogout() {
@@ -117,6 +130,11 @@ function PasswordForm({ onDone }: { onDone?: () => void }) {
 }
 
 export function ChangePassword() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <ChangePasswordApp /> : <ChangePasswordWeb />;
+}
+
+function ChangePasswordWeb() {
   const navigate = useNavigate();
   return (
     <Page title="Change Password" subtitle="Use at least 6 characters" width={640}>
@@ -168,6 +186,7 @@ export function QrPass() {
   // Participant's own registration: badge type + banner colour chosen by the admin.
   const [reg, setReg] = useState<Record<string, any> | null>(null);
   const isParticipant = user?.userType === "participant";
+  const appLayout = useAppLayout();
   useEffect(() => {
     if (!isParticipant) return;
     get("/managed-events/my-registration").then((res) => {
@@ -177,6 +196,7 @@ export function QrPass() {
 
   if (!user) return null;
   if (user.userType === "participant") {
+    if (appLayout) return <ParticipantQrPassApp />;
     const id = badgeIdOf(user);
     const data = {
       name: user.name,
@@ -206,6 +226,8 @@ export function QrPass() {
       </Page>
     );
   }
+  // Phone width: the app's MyProfilePage.
+  if (appLayout) return <MyProfileApp />;
   return (
     <Page title="My Profile" width={1000}>
       <div className="grid gap-5 lg:grid-cols-3">
@@ -238,6 +260,7 @@ export function RoleQrPass() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const role = params.get("role") || "EVENT STAFF";
+  const appLayout = useAppLayout();
   // Saved pass number (ADM0001 / SPK0001 / STF0001…); older logins don't have it yet, so ask the server.
   const [passNumber, setPassNumber] = useState<string>(String(user?.passNumber ?? ""));
   useEffect(() => {
@@ -248,6 +271,42 @@ export function RoleQrPass() {
   }, []);
   if (!user) return null;
   const code = passNumber || passCode(role, String(user.id ?? user._id ?? ""));
+  // Phone width: the app's QrPassPage — badge, "code • mobile" line, profile link.
+  if (appLayout)
+    return (
+      <div className="min-h-screen bg-[#0F172A]">
+        <AppBar title="QR Pass" titleClassName="text-xl font-extrabold" bg="#0F172A" />
+        <div className="px-4 pb-5 pt-2.5">
+          <ScreenshotGuard>
+            <div className="overflow-hidden rounded-2xl">
+              <DelegateBadge
+                data={{
+                  name: user.name,
+                  participantType: role,
+                  idNumber: code,
+                  designation: user.department ?? "",
+                  institution: user.apartmentName ?? "",
+                  qrCode: code,
+                }}
+              />
+            </div>
+          </ScreenshotGuard>
+          <div className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-white/[0.08] px-3.5 py-2.5 text-[13px] font-semibold whitespace-pre text-white/70">
+            <Icon name="info" size={16} color="rgba(255,255,255,0.7)" />
+            {[code, user.mobileNumber].filter(Boolean).join("   •   ")}
+          </div>
+          {params.get("profile") === "1" && (
+            <button
+              onClick={() => navigate("/my-profile")}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-[14px] border border-white/25 py-3.5 font-bold"
+            >
+              <Icon name="person" size={20} />
+              My Profile &amp; Password
+            </button>
+          )}
+        </div>
+      </div>
+    );
   return (
     <Page title="QR Pass" back={false} width={1000}>
       <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
@@ -293,6 +352,10 @@ export function RoleQrPass() {
 
 /** Participant "My Profile": header card, personal info, change password, logout. */
 export function ParticipantProfile() {
+  return useAppLayout() ? <ParticipantProfileApp /> : <ParticipantProfileWeb />;
+}
+
+function ParticipantProfileWeb() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const doLogout = useLogout();

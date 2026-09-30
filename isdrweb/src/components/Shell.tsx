@@ -6,6 +6,8 @@ import { activeLink, navFor, PROFILE_PATH, ROLE_TITLE, roleOf, type NavLink, typ
 import { roleLabel, useLogout } from "@/pages/common/Profile";
 import { Avatar, Icon, useToast } from "./ui";
 import { NotificationBell } from "./widgets";
+import { APP_LAYOUT_ROLES, AppLayoutContext, setAppLayoutActive } from "@/lib/appLayout";
+import { useMobile } from "@/lib/useMobile";
 
 function Brand({ role }: { role: Role }) {
   return (
@@ -164,10 +166,24 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const role = roleOf(user);
   const location = useLocation();
   const [drawer, setDrawer] = useState(false);
+  const mobile = useMobile();
 
   useEffect(() => setDrawer(false), [location.pathname, location.search]);
+  const isMobile = mobile || (typeof window !== "undefined" && window.innerWidth < 1024);
+  const appLayout = !!role && isMobile && APP_LAYOUT_ROLES.includes(role);
+  useEffect(() => {
+    setAppLayoutActive(appLayout);
+    return () => setAppLayoutActive(false);
+  }, [appLayout]);
 
   if (!role) return <>{children}</>;
+  // Phone width for a converted role: no website chrome — each page draws the app's own header / app bar.
+  if (appLayout)
+    return (
+      <AppLayoutContext.Provider value={true}>
+        <div className="min-h-screen bg-bg">{children}</div>
+      </AppLayoutContext.Provider>
+    );
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     day: "numeric",

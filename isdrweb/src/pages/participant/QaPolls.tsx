@@ -17,6 +17,13 @@ import {
 } from "@/components/ui";
 import { get, post } from "@/lib/api";
 import { fmtDate, idOf, parseDate, timeAgo } from "@/lib/format";
+import { useAppLayout } from "@/lib/appLayout";
+import {
+  AskSpeakerApp,
+  MyQuestionsApp,
+  ParticipantPollsApp,
+  ParticipantQaApp,
+} from "./ParticipantQaPollsApp";
 
 /* ------------------------------------------------------------------ */
 /* Q/A                                                                 */
@@ -84,6 +91,10 @@ function SessionQuestionCard({ q, onAnswered }: { q: any; onAnswered: (text: str
 
 /** Q/A hub: speakers' session questions for you, Ask a Speaker, My Questions. */
 export function ParticipantQa() {
+  return useAppLayout() ? <ParticipantQaApp /> : <ParticipantQaWeb />;
+}
+
+function ParticipantQaWeb() {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -186,6 +197,10 @@ export function ParticipantQa() {
 
 /** Ask a Speaker: pick a speaker, send a private question. */
 export function AskSpeaker() {
+  return useAppLayout() ? <AskSpeakerApp /> : <AskSpeakerWeb />;
+}
+
+function AskSpeakerWeb() {
   const navigate = useNavigate();
   const toast = useToast();
   const [speakers, setSpeakers] = useState<any[] | null>(null);
@@ -275,6 +290,10 @@ export function AskSpeaker() {
 
 /** My Questions: the participant's questions to speakers and their answers. */
 export function MyQuestions() {
+  return useAppLayout() ? <MyQuestionsApp /> : <MyQuestionsWeb />;
+}
+
+function MyQuestionsWeb() {
   const [questions, setQuestions] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -401,6 +420,10 @@ function PollCard({ p, number, onVoted }: { p: any; number: number; onVoted: (po
 
 /** Polls: every speaker poll on the participant's sessions. */
 export function ParticipantPolls() {
+  return useAppLayout() ? <ParticipantPollsApp /> : <ParticipantPollsWeb />;
+}
+
+function ParticipantPollsWeb() {
   const [polls, setPolls] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingOnly, setPendingOnly] = useState(false);

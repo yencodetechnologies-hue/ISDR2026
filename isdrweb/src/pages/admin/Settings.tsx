@@ -32,12 +32,25 @@ import { cap, fullName, idOf } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { passCode, useLogout, useProfilePhoto } from "../common/Profile";
 import { ModuleGrid, tickerTextFromLines } from "@/components/widgets";
+import { useAppLayout } from "@/lib/appLayout";
+import AdminIdsApp from "./AdminIdsApp";
+import { StaffListApp } from "./StaffApp";
+import { LinkSettingApp, TickerApp } from "./BroadcastApp";
+import SendNotificationApp from "./SendNotificationApp";
+import EngagementApp from "./EngagementApp";
+import CertificatesApp from "./CertificatesApp";
+import { MyProfileApp } from "../common/ProfileApp";
 
 /* =========================================================================
    NEWS TICKER
 ========================================================================= */
 
 export function ManageTicker() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <TickerApp /> : <ManageTickerWeb />;
+}
+
+function ManageTickerWeb() {
   const toast = useToast();
   const [ticker, setTicker] = useState<any>(null);
   const [text, setText] = useState("");
@@ -138,6 +151,11 @@ export function ManageTicker() {
 ========================================================================= */
 
 export function ManageYoutubeLive() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <LinkSettingApp kind="youtube" /> : <ManageYoutubeLiveWeb />;
+}
+
+function ManageYoutubeLiveWeb() {
   const toast = useToast();
   const [url, setUrl] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -207,29 +225,34 @@ export function ManageYoutubeLive() {
 ========================================================================= */
 
 export function SendNotification() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <SendNotificationApp /> : <SendNotificationWeb />;
+}
+
+function SendNotificationWeb() {
   const toast = useToast();
   const [params] = useSearchParams();
   const eventId = params.get("event") ?? "";
   const [events, setEvents] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState(eventId);
-  const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
     get("/managed-events").then((r) => r.success && setEvents(r.events ?? []));
   }, []);
+  // The push is titled with the event's name (set by the server).
+  const eventTitle = events.find((ev) => idOf(ev) === selectedEvent)?.title;
 
   const send = async () => {
-    if (!title.trim()) return toast("Enter the notification title", "error");
-    if (!body.trim()) return toast("Enter the notification body", "error");
     if (!selectedEvent) return toast("Select an event", "error");
+    if (!body.trim()) return toast("Enter the notification message", "error");
     setSending(true);
-    const r = await post(`/managed-events/${selectedEvent}/notifications`, { title: title.trim(), body: body.trim() });
+    const r = await post(`/managed-events/${selectedEvent}/notifications`, { message: body.trim() });
     setSending(false);
     if (r.success) {
-      toast("Notification sent!", "success");
-      setTitle("");
+      const n = Number(r.recipientCount ?? 0);
+      toast(`Notification sent to ${n} participant${n === 1 ? "" : "s"}`, "success");
       setBody("");
     } else toast(r.error || "Could not send", "error");
   };
@@ -248,9 +271,6 @@ export function SendNotification() {
                   </option>
                 ))}
               </select>
-            </Field>
-            <Field label="Title">
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Notification title" />
             </Field>
             <Field label="Message">
               <TextArea
@@ -277,7 +297,7 @@ export function SendNotification() {
                 <div className="flex items-center gap-2 text-[11px] text-muted">
                   ISDR 2026 <span>·</span> now
                 </div>
-                <div className="mt-0.5 truncate text-sm font-semibold">{title.trim() || "Notification title"}</div>
+                <div className="mt-0.5 truncate text-sm font-semibold">{eventTitle || "ISDR 2026"}</div>
                 <div className="mt-0.5 whitespace-pre-wrap text-[13px] text-white/70">
                   {body.trim() || "Notification body"}
                 </div>
@@ -286,7 +306,7 @@ export function SendNotification() {
           </div>
           <div className="mt-3 text-xs text-muted">
             {selectedEvent
-              ? `Goes to participants of ${events.find((ev) => idOf(ev) === selectedEvent)?.title ?? "the selected event"}.`
+              ? `Goes to participants of ${eventTitle ?? "the selected event"}.`
               : "Select an event to choose who receives it."}
           </div>
         </Panel>
@@ -324,6 +344,11 @@ const teamQr = (role: string): QrConfig<any> => ({
 });
 
 export function EngagementOverview() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <EngagementApp /> : <EngagementOverviewWeb />;
+}
+
+function EngagementOverviewWeb() {
   const toast = useToast();
   const confirm = useConfirm();
   const [tab, setTab] = useState<"questions" | "polls" | "speaker">("questions");
@@ -351,7 +376,7 @@ export function EngagementOverview() {
       (it) =>
         (!term || textOf(it).toLowerCase().includes(term)) &&
         // Session filter on Session Q&A / Polls; speaker + answered filters on Speaker Q&A.
-        (tab === "speaker" || !sessionFilter || (it.scheduleName ?? "") === sessionFilter) &&
+        (tab === "speaker" || !sessionFilter || (it.sessionName ?? "") === sessionFilter) &&
         (tab !== "speaker" || !speakerFilter || (it.speakerName ?? "") === speakerFilter) &&
         (tab !== "speaker" || !answerFilter || (answerFilter === "answered") === !!it.answered),
     );
@@ -416,7 +441,7 @@ export function EngagementOverview() {
             title="Session Q&A"
             rows={match(data.questions)}
             columns={[
-              { header: "Session", value: (q: any) => q.scheduleName, width: 22 },
+              { header: "Session", value: (q: any) => q.sessionName, width: 22 },
               { header: "Question", value: (q: any) => q.question, width: 34 },
               { header: "Answers", value: (q: any) => (q.answers ?? []).length, width: 9 },
               {
@@ -433,7 +458,7 @@ export function EngagementOverview() {
             title="Polls"
             rows={match(data.polls)}
             columns={[
-              { header: "Session", value: (p: any) => p.scheduleName, width: 22 },
+              { header: "Session", value: (p: any) => p.sessionName, width: 22 },
               { header: "Question", value: (p: any) => p.question, width: 32 },
               {
                 header: "Results",
@@ -489,7 +514,7 @@ export function EngagementOverview() {
             label="sessions"
             value={sessionFilter}
             onChange={setSessionFilter}
-            options={distinct((tab === "polls" ? data.polls : data.questions).map((x) => x.scheduleName))}
+            options={distinct((tab === "polls" ? data.polls : data.questions).map((x) => x.sessionName))}
           />
         )}
         {data && tab === "speaker" && (
@@ -528,7 +553,7 @@ export function EngagementOverview() {
                     <div key={idOf(q)} className="card p-5">
                       <div className="flex items-center gap-2 text-xs text-muted">
                         <Icon name="event_note" size={15} outline />
-                        <span className="flex-1 truncate">{q.scheduleName ?? "Session"}</span>
+                        <span className="flex-1 truncate">{q.sessionName ?? "Session"}</span>
                         {deleteButton(q, false)}
                       </div>
                       <div className="mt-2 font-semibold">{q.question}</div>
@@ -551,7 +576,7 @@ export function EngagementOverview() {
                         {deleteButton(p, true)}
                       </div>
                       <div className="mt-1 text-xs text-muted">
-                        {p.scheduleName ?? "Session"} · {p.totalVotes ?? 0} votes
+                        {p.sessionName ?? "Session"} · {p.totalVotes ?? 0} votes
                       </div>
                       <div className="mt-2 space-y-1.5">
                         {(p.options ?? []).map((o: string, i: number) => {
@@ -607,6 +632,11 @@ export function EngagementOverview() {
 ========================================================================= */
 
 export function ManageCertificates() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <CertificatesApp /> : <ManageCertificatesWeb />;
+}
+
+function ManageCertificatesWeb() {
   const toast = useToast();
   const confirm = useConfirm();
   const [certs, setCerts] = useState<any[] | null>(null);
@@ -763,11 +793,21 @@ export function ManageCertificates() {
 ========================================================================= */
 
 export function ManagementTeam() {
+  const app = useAppLayout();
+  const [params] = useSearchParams();
+  // Phone width: the app's "Event Staff" (?tab=staff) or "Admin IDs" module.
+  if (app) return params.get("tab") === "staff" ? <StaffListApp /> : <AdminIdsApp />;
+  return <ManagementTeamWeb />;
+}
+
+function ManagementTeamWeb() {
   const toast = useToast();
   const confirm = useConfirm();
   const [users, setUsers] = useState<any[] | null>(null);
   const [staff, setStaff] = useState<any[] | null>(null);
-  const [tab, setTab] = useState<"mgmt" | "staff">("mgmt");
+  const [params] = useSearchParams();
+  // ?tab=staff opens the Event Staff tab (the app's "Event Staff" module).
+  const [tab, setTab] = useState<"mgmt" | "staff">(params.get("tab") === "staff" ? "staff" : "mgmt");
   const [teamSearch, setTeamSearch] = useState("");
   const [approvalFilter, setApprovalFilter] = useState("");
   const [activeFilter, setActiveFilter] = useState("");
@@ -1112,6 +1152,11 @@ export function ManagementTeam() {
 ========================================================================= */
 
 export function AdminProfile() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <MyProfileApp /> : <AdminProfileWeb />;
+}
+
+function AdminProfileWeb() {
   const { user } = useAuth();
   const doLogout = useLogout();
   const { uploading, pick, input } = useProfilePhoto();
@@ -1211,6 +1256,11 @@ export function AdminMore() {
 ========================================================================= */
 
 export function ManageLivePhoto() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <LinkSettingApp kind="photo" /> : <ManageLivePhotoWeb />;
+}
+
+function ManageLivePhotoWeb() {
   const toast = useToast();
   const [url, setUrl] = useState("");
   const [saved, setSaved] = useState("");

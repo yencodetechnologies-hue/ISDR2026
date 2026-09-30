@@ -22,6 +22,8 @@ import { FilterSelect, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { useAuth } from "@/lib/auth";
 import { cap, fmtShortDateTime, idOf, parseDate, timeAgo } from "@/lib/format";
+import { useAppLayout } from "@/lib/appLayout";
+import { HelpTicketsApp, TicketChatApp } from "./SupportApp";
 
 export const HELP_CATEGORIES = [
   { value: "emergency", label: "Emergency", icon: "emergency", color: "#EF4444" },
@@ -126,6 +128,11 @@ function TicketFormModal({
 
 /** Participants: their tickets + Add (Help & Support). Staff / admin: every ticket with filters (Support Tickets). */
 export function HelpTickets() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <HelpTicketsApp /> : <HelpTicketsWeb />;
+}
+
+function HelpTicketsWeb() {
   const { user } = useAuth();
   const isParticipant = user?.userType === "participant";
   const navigate = useNavigate();
@@ -311,6 +318,11 @@ const roleColor = (t: any) => (t === "staff" ? "#2DD4BF" : t === "admin" || t ==
 
 /** A ticket's chat: polls every 5 s; staff/admin can call the participant and close the ticket. */
 export function TicketChat() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <TicketChatApp /> : <TicketChatWeb />;
+}
+
+function TicketChatWeb() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const toast = useToast();

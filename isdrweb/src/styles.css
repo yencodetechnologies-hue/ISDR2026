@@ -11,6 +11,10 @@
   --color-success: #16a34a;
   --color-sidebar: #0e0e18;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* The app's heading font (phone layout only). */
+  --font-outfit: "Outfit", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sora: "Sora", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-dancing: "Dancing Script", cursive;
 }
 
 html,
@@ -158,5 +162,33 @@ select option {
 @media print {
   .screenshot-guard {
     visibility: hidden !important;
+  }
+}
+
+/* App-style shimmer (brochure loading, phone layout). */
+.brochure-shimmer {
+  background: linear-gradient(110deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 300% 100%;
+  animation: brochure-shimmer 1.4s linear infinite;
+}
+@keyframes brochure-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+
+/* Moving scan line in the app-style QR scanner (phone layout). */
+.scan-line {
+  animation: scan-line 2s ease-in-out infinite alternate;
+}
+@keyframes scan-line {
+  from {
+    top: 20px;
+  }
+  to {
+    top: 277px;
   }
 }

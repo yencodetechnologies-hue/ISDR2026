@@ -4,6 +4,8 @@ import { Avatar, Empty, Icon, Loading, Modal, Page, SearchBox, useToast } from "
 import { get, put } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { idOf } from "@/lib/format";
+import { useAppLayout } from "@/lib/appLayout";
+import AwardsApp from "./AwardsApp";
 
 type Award = { number: number; title: string };
 
@@ -27,6 +29,11 @@ const UG_AWARDS: Award[] = [
 
 /** Conference awards. Participants see each award's winner; the admin (apartment) picks winners. */
 export default function Awards() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <AwardsApp /> : <AwardsWeb />;
+}
+
+function AwardsWeb() {
   const { user } = useAuth();
   const adminMode = user?.userType === "apartment";
   const toast = useToast();

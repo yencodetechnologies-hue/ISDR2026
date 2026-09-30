@@ -23,57 +23,28 @@ import {
   PhotoInput,
 } from "@/components/ui";
 import { del, formData, get, post, put, qs } from "@/lib/api";
+import { PARTICIPANT_EXPORT_COLUMNS, PARTICIPANT_QR } from "./participantExport";
+import EventDetailApp from "./EventDetailApp";
+import { useAppLayout } from "@/lib/appLayout";
+import EventsApp from "./EventsApp";
 import { FilterSelect, distinct, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
-import { fullNameOf, type ExportColumn, type QrConfig } from "@/lib/exporter";
 import { fmtDate, idOf, parseDate, cap } from "@/lib/format";
 import { BadgeModal, ClaimsModal, displayName, PackageCard, PackageModal, ParticipantModal } from "./EventManage";
 import { ImportParticipantsModal } from "./ImportParticipants";
 import { ScheduleTable } from "./Schedules";
+import EventFormApp from "./EventFormApp";
 
 /* =========================================================================
    EVENT LIST
 ========================================================================= */
 
-/** Participants download: every form field, claims, and the QR pass. */
-const PARTICIPANT_EXPORT_COLUMNS: ExportColumn<any>[] = [
-  { header: "ID no.", value: (r) => r.idNumber, width: 10 },
-  { header: "Name", value: (r) => fullNameOf(r), width: 22 },
-  { header: "Participant type", value: (r) => r.participantType, width: 12 },
-  { header: "Package", value: (r) => r.packageName, width: 14 },
-  { header: "Gender", value: (r) => cap(r.gender ?? ""), width: 8 },
-  { header: "Designation", value: (r) => r.designation, width: 14 },
-  { header: "Organization", value: (r) => r.institution, width: 20 },
-  { header: "Mobile no.", value: (r) => r.mobileNumber, width: 13 },
-  { header: "Email", value: (r) => r.email, width: 22 },
-  { header: "Food preference", value: (r) => r.foodPreference, width: 10 },
-  { header: "Payment mode", value: (r) => String(r.paymentMode ?? "").toUpperCase(), width: 10 },
-  { header: "UTR no.", value: (r) => r.utrNumber, width: 12 },
-  { header: "Address", value: (r) => r.address, width: 20 },
-  { header: "Status", value: (r) => cap(String(r.status ?? "registered").replace("_", " ")), width: 11 },
-  {
-    header: "Claimed inclusions",
-    value: (r) => (r.claimedInclusions ?? []).map((c: any) => c.inclusionName).join(", "),
-    width: 20,
-  },
-];
-
-const PARTICIPANT_QR: QrConfig<any> = {
-  code: (r) => String(r.qrCode || r.idNumber || ""),
-  badge: (r) => ({
-    name: r.name,
-    title: r.title,
-    participantType: r.participantType,
-    participantTypeColor: r.participantTypeColor,
-    idNumber: r.idNumber,
-    designation: r.designation,
-    institution: r.institution,
-    qrCode: r.qrCode || r.idNumber,
-  }),
-  fileName: (r) => `${r.idNumber || "SPOT"} - ${fullNameOf(r) || "Participant"}`,
-};
-
 export function EventList() {
+  // Phone width: the mobile app's Events screen.
+  return useAppLayout() ? <EventsApp /> : <EventListWeb />;
+}
+
+function EventListWeb() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<any[] | null>(null);
   const [search, setSearch] = useState("");
@@ -210,6 +181,11 @@ export function EventList() {
 ========================================================================= */
 
 export function EventEditor() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <EventFormApp /> : <EventEditorWeb />;
+}
+
+function EventEditorWeb() {
   const navigate = useNavigate();
   const toast = useToast();
   const [params] = useSearchParams();
@@ -341,6 +317,11 @@ export function EventEditor() {
 ========================================================================= */
 
 export function EventDetail() {
+  // Phone width: the mobile app's event screen.
+  return useAppLayout() ? <EventDetailApp /> : <EventDetailWeb />;
+}
+
+function EventDetailWeb() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
@@ -664,7 +645,7 @@ export function EventDetail() {
                 }
               />
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {packages.map((p) => (
                   <PackageCard
                     key={p.id}

@@ -18,6 +18,9 @@ import { fmtDMon, sameDay, startOfDay } from "@/lib/format";
 import { loadAllSchedules, type ScheduleItem } from "@/lib/schedules";
 import { PARTICIPANT_MODULES } from "./modules";
 
+import { useAppLayout } from "@/lib/appLayout";
+import ParticipantHomeApp from "./ParticipantHomeApp";
+
 const DAY_SHOWN = 3;
 
 const SOCIAL = [
@@ -44,8 +47,12 @@ const SOCIAL = [
   },
 ];
 
-/** Participant dashboard: live/next session, ticker, banner, day schedule, accommodation, modules, social links. */
 export default function ParticipantHome() {
+  return useAppLayout() ? <ParticipantHomeApp /> : <ParticipantHomeWeb />;
+}
+
+/** Participant dashboard desktop layout. */
+function ParticipantHomeWeb() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const actions = useScheduleActions();

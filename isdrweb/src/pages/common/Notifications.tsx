@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, Empty, ErrorState, Icon, IconButton, Loading, Page, useToast } from "@/components/ui";
 import { del, get, put, qs } from "@/lib/api";
 import { fmtTime, idOf, monthLong, parseDate, startOfDay } from "@/lib/format";
+import { useAppLayout } from "@/lib/appLayout";
+import NotificationsApp from "./NotificationsApp";
 
 type Filter = { key: string; type?: string; read?: boolean };
 const FILTERS: (Filter & { label: string })[] = [
@@ -27,6 +29,11 @@ function groupLabel(d: Date) {
 
 /** Notifications: filter, mark read (tap), mark all read, delete. */
 export default function Notifications() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <NotificationsApp /> : <NotificationsWeb />;
+}
+
+function NotificationsWeb() {
   const toast = useToast();
   const [filter, setFilter] = useState<Filter>(FILTERS[0]);
   const [items, setItems] = useState<any[]>([]);

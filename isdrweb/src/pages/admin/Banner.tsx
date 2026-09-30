@@ -3,8 +3,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Empty, Icon, Loading, Page, Switch, useConfirm, useToast } from "@/components/ui";
 import { del, get, post, put } from "@/lib/api";
 import { idOf } from "@/lib/format";
+import { useAppLayout } from "@/lib/appLayout";
+import { BannerApp } from "./BroadcastApp";
 
 export default function ManageBanner() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <BannerApp /> : <ManageBannerWeb />;
+}
+
+function ManageBannerWeb() {
   const toast = useToast();
   const confirm = useConfirm();
   const fileRef = useRef<HTMLInputElement>(null);

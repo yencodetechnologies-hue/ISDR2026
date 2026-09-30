@@ -24,6 +24,8 @@ import { ScannerModal } from "./Scanner";
 import { useAuth } from "@/lib/auth";
 import { cap, fmtDate, fmtDMon, fullName, idOf, isoDay, parseDate } from "@/lib/format";
 import { useLogout } from "../common/Profile";
+import { useAppLayout } from "@/lib/appLayout";
+import { StaffEventDetailApp, StaffEventsApp } from "./StaffScanApp";
 
 /** Event cards in a responsive grid. */
 function EventCards({ events }: { events: any[] }) {
@@ -139,6 +141,11 @@ export function StaffHome() {
 ========================================================================= */
 
 export function StaffEventList() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <StaffEventsApp /> : <StaffEventListWeb />;
+}
+
+function StaffEventListWeb() {
   const [events, setEvents] = useState<any[] | null>(null);
 
   useEffect(() => {
@@ -163,6 +170,11 @@ export function StaffEventList() {
 ========================================================================= */
 
 export function StaffEventDetail() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <StaffEventDetailApp /> : <StaffEventDetailWeb />;
+}
+
+function StaffEventDetailWeb() {
   const id = window.location.pathname.split("/").pop() ?? "";
   const [event, setEvent] = useState<any>(null);
   const [regs, setRegs] = useState<any[]>([]);

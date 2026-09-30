@@ -20,17 +20,25 @@ import { del, formData, get, post } from "@/lib/api";
 import { FilterSelect, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { idOf } from "@/lib/format";
+import { useAppLayout } from "@/lib/appLayout";
+import { ExhibitorsListApp } from "./ExhibitorsApp";
 
 export default function ManageExhibitors() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <ExhibitorsListApp /> : <ManageExhibitorsWeb />;
+}
+
+function ManageExhibitorsWeb() {
   const toast = useToast();
   const confirm = useConfirm();
   const [items, setItems] = useState<any[] | null>(null);
   const [search, setSearch] = useState("");
-  const [stallFilter, setStallFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [name, setName] = useState("");
-  const [stallNumber, setStallNumber] = useState("");
+  const [shopName, setShopName] = useState("");
+  const [category, setCategory] = useState("");
+  const [location, setLocation] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -44,22 +52,25 @@ export default function ManageExhibitors() {
   }, [load]);
 
   const save = async () => {
-    if (!name.trim()) return toast("Enter the exhibitor name", "error");
+    if (!shopName.trim()) return toast("Enter the shop name", "error");
+    if (!category.trim()) return toast("Enter the category", "error");
+    if (!location.trim()) return toast("Enter the location", "error");
     setSaving(true);
-    const fd = formData({ name: name.trim(), stallNumber: stallNumber.trim() }, { photo });
+    const fd = formData({ shopName: shopName.trim(), category: category.trim(), location: location.trim() }, { photo });
     const res = await post("/exhibitors", fd);
     setSaving(false);
     if (!res.success) return toast(res.error || "Could not add exhibitor", "error");
     toast("Exhibitor added", "success");
     setAdding(false);
-    setName("");
-    setStallNumber("");
+    setShopName("");
+    setCategory("");
+    setLocation("");
     setPhoto(null);
     load();
   };
 
   const remove = async (e: any) => {
-    if (!(await confirm({ title: `Remove ${e.name}?`, confirm: "Remove", danger: true }))) return;
+    if (!(await confirm({ title: `Remove ${e.shopName}?`, confirm: "Remove", danger: true }))) return;
     const res = await del(`/exhibitors/${idOf(e)}`);
     if (res.success) {
       setItems((l) => (l ?? []).filter((x) => idOf(x) !== idOf(e)));
@@ -69,8 +80,9 @@ export default function ManageExhibitors() {
 
   const shownItems = (items ?? []).filter(
     (e) =>
-      matches(e, search) && (!stallFilter || (stallFilter === "with") === Boolean(String(e.stallNumber ?? "").trim())),
+      matches(e, search) && (!categoryFilter || String(e.category ?? "") === categoryFilter),
   );
+  const categories = [...new Set((items ?? []).map((e) => String(e.category ?? "").trim()).filter(Boolean))].sort();
 
   return (
     <Page
@@ -82,8 +94,9 @@ export default function ManageExhibitors() {
             title="Exhibitors"
             rows={shownItems}
             columns={[
-              { header: "Name", value: (e: any) => e.name, width: 30 },
-              { header: "Stall number", value: (e: any) => e.stallNumber, width: 14 },
+              { header: "Shop name", value: (e: any) => e.shopName, width: 30 },
+              { header: "Category", value: (e: any) => e.category, width: 20 },
+              { header: "Location", value: (e: any) => e.location, width: 20 },
             ]}
           />
           <Button icon="add" onClick={() => setAdding(true)}>
@@ -95,16 +108,13 @@ export default function ManageExhibitors() {
       {items && items.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="w-full sm:w-80">
-            <SearchBox value={search} onChange={setSearch} placeholder="Search name or stall…" />
+            <SearchBox value={search} onChange={setSearch} placeholder="Search shop, category or location…" />
           </div>
           <FilterSelect
-            label="stalls"
-            value={stallFilter}
-            onChange={setStallFilter}
-            options={[
-              { value: "with", label: "Has stall number" },
-              { value: "without", label: "No stall number" },
-            ]}
+            label="categories"
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+            options={categories.map((c) => ({ value: c, label: c }))}
           />
         </div>
       )}
@@ -132,17 +142,17 @@ export default function ManageExhibitors() {
           {shownItems.map((e) => (
             <div key={idOf(e)} className="card group relative overflow-hidden">
               <div className="flex h-32 items-center justify-center bg-field">
-                {e.photoUrl ? (
-                  <img src={e.photoUrl} alt="" className="h-full w-full object-cover" />
+                {e.photo ? (
+                  <img src={e.photo} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <Avatar name={e.name} size={56} />
+                  <Avatar name={e.shopName} size={56} />
                 )}
               </div>
               <div className="flex items-center gap-2 p-4">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">{e.name}</div>
-                  <div className="text-xs text-muted">
-                    {e.stallNumber ? `Stall ${e.stallNumber}` : "No stall number"}
+                  <div className="truncate font-semibold">{e.shopName}</div>
+                  <div className="truncate text-xs text-muted">
+                    {[e.category, e.location].filter(Boolean).join(" · ")}
                   </div>
                 </div>
                 <IconButton icon="delete" outline color="#EF4444" title="Remove" onClick={() => remove(e)} />
@@ -168,12 +178,15 @@ export default function ManageExhibitors() {
         }
       >
         <div className="space-y-4">
-          <PhotoInput file={photo} url={null} onFile={setPhoto} label="Logo" />
-          <Field label="Name">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Exhibitor / company name" />
+          <PhotoInput file={photo} url={null} onFile={setPhoto} label="Photo" />
+          <Field label="Shop Name">
+            <Input value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Shop / company name" />
           </Field>
-          <Field label="Stall Number">
-            <Input value={stallNumber} onChange={(e) => setStallNumber(e.target.value)} placeholder="e.g. A-12" />
+          <Field label="Category">
+            <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Dental equipment" />
+          </Field>
+          <Field label="Location">
+            <Input icon="location_on" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Hall B, Stall 12" />
           </Field>
         </div>
       </Modal>

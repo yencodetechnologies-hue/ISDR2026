@@ -5,9 +5,16 @@ import { Avatar, Button, ErrorState, Icon, Loading, Page, Pill, useToast } from 
 import { useAuth } from "@/lib/auth";
 import { fmtTime, monthShort, scheduleTimes, weekdayLong } from "@/lib/format";
 import { loadFavorites, loadSchedule, toggleFavorite } from "@/lib/schedules";
+import { useAppLayout } from "@/lib/appLayout";
+import ScheduleDetailApp from "./ScheduleDetailApp";
 
 /** Program details: speaker, date/time/hall/location, about, session content, save. */
 export default function ScheduleDetail() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <ScheduleDetailApp /> : <ScheduleDetailWeb />;
+}
+
+function ScheduleDetailWeb() {
   const [params] = useSearchParams();
   const eventId = params.get("e") ?? "";
   const scheduleId = params.get("s") ?? "";

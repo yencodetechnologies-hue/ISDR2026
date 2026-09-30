@@ -25,6 +25,8 @@ import { del, formData, get, post, put } from "@/lib/api";
 import { FilterSelect, distinct, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { fmtDate, fmtTimeStr, idOf, parseDate } from "@/lib/format";
+import { useAppLayout } from "@/lib/appLayout";
+import { EventScheduleListApp, EventSchedulesApp, ScheduleFormApp } from "./SchedulesApp";
 
 /* =========================================================================
    SCHEDULE TABLE (shared with Event detail)
@@ -164,6 +166,11 @@ export function ScheduleTable({
 ========================================================================= */
 
 export function ScheduleList() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <EventSchedulesApp /> : <ScheduleListWeb />;
+}
+
+function ScheduleListWeb() {
   const navigate = useNavigate();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -228,6 +235,11 @@ export function ScheduleList() {
 ========================================================================= */
 
 export function EventSchedules() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <EventScheduleListApp /> : <EventSchedulesWeb />;
+}
+
+function EventSchedulesWeb() {
   const navigate = useNavigate();
   const toast = useToast();
   const confirm = useConfirm();
@@ -274,6 +286,11 @@ export function EventSchedules() {
 ========================================================================= */
 
 export function ScheduleEditor() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <ScheduleFormApp /> : <ScheduleEditorWeb />;
+}
+
+function ScheduleEditorWeb() {
   const navigate = useNavigate();
   const toast = useToast();
   const [params] = useSearchParams();

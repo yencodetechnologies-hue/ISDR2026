@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Icon, Page } from "@/components/ui";
 import { asset } from "@/lib/api";
+import { useAppLayout } from "@/lib/appLayout";
+import AccommodationApp from "./AccommodationApp";
+import { CommitteeApp, AboutIsdrApp, StudentConferenceApp } from "./ParticipantInfoApp";
 
 type Person = { name: string; role: string; img?: string; lines?: string[] };
 
@@ -219,6 +222,10 @@ const CHAIR_MESSAGE =
   "It gives me immense pleasure to extend a warm and cordial welcome to all the distinguished delegates, eminent researchers, clinicians, academicians, students participating in the 36th ISDR International Conference. This conference represents a significant milestone in our collective pursuit of excellence in dental, oral, and craniofacial research. It provides a unique platform for the exchange of scientific knowledge, innovative ideas, and transformative research that will shape the future of oral healthcare. Bringing together experts from diverse disciplines fosters collaboration, inspires innovation, and strengthens our commitment to evidence-based practice and translational research. At Bharath Institute of Higher Education and Research (BIHER), we are committed to nurturing a culture of academic excellence, scientific inquiry, and innovation. Hosting the 36th ISDR International Conference reflects our dedication to advancing research that addresses contemporary healthcare challenges and improves the quality of life of people across the globe. The theme of this conference, “Translational Dental Research: Bridging Science and Care,” aptly emphasizes the importance of transforming scientific discoveries into meaningful clinical applications. I am confident that the scientific deliberations, keynote lectures, workshops, and interactive sessions will stimulate new ideas, encourage interdisciplinary collaborations, and inspire future research endeavors. Once again it gives me immense pleasure to welcome you all to this spectacular scientific extravaganza.";
 
 export function Committee() {
+  return useAppLayout() ? <CommitteeApp /> : <CommitteeWeb />;
+}
+
+function CommitteeWeb() {
   const [msgOpen, setMsgOpen] = useState(false);
   return (
     <Page title="Organising Committee" subtitle="36th ISDR International Conference 2026">
@@ -367,6 +374,10 @@ const CONF_TEXT = [
 ];
 
 export function AboutIsdr() {
+  return useAppLayout() ? <AboutIsdrApp /> : <AboutIsdrWeb />;
+}
+
+function AboutIsdrWeb() {
   return (
     <Page title="About ISDR" subtitle="Indian Division of the IADR since 1986">
       <div className="grid gap-5 lg:grid-cols-5">
@@ -475,6 +486,10 @@ const STUDENT_COMMITTEE: Person[] = [
 ];
 
 export function StudentConference() {
+  return useAppLayout() ? <StudentConferenceApp /> : <StudentConferenceWeb />;
+}
+
+function StudentConferenceWeb() {
   return (
     <Page title="Student Conference">
       <div className="card bg-gradient-to-br from-[#1E3A8A] to-[#14141F] px-6 py-10 text-center">
@@ -570,6 +585,11 @@ const RESORTS: [string, string][] = [
 const tel = (p: string) => `tel:${p.replace(/[^0-9+]/g, "")}`;
 
 export function Accommodation() {
+  // Phone width: the mobile app's screen.
+  return useAppLayout() ? <AccommodationApp /> : <AccommodationWeb />;
+}
+
+function AccommodationWeb() {
   return (
     <Page title="Accommodation" subtitle="Stay options near the conference venue">
       <div className="grid gap-5 lg:grid-cols-2">

@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AppLayoutContext, isAppLayoutActive } from "@/lib/appLayout";
 
 /* ------------------------------------------------------------------ */
 /* Basics                                                              */
@@ -628,6 +629,60 @@ export function StatCard({
 /* Page chrome                                                         */
 /* ------------------------------------------------------------------ */
 
+/**
+ * The mobile app's dark app bar (buildDarkAppBar): #0A0A12, back arrow on the
+ * left, centred white title (Inter 20 / 600), action icons on the right.
+ */
+export function AppBar({
+  title,
+  actions,
+  back = true,
+  onBack,
+  outfit,
+  titleClassName,
+  bg = "#0A0A12",
+}: {
+  title?: React.ReactNode;
+  actions?: React.ReactNode;
+  back?: boolean;
+  onBack?: () => void;
+  /** Title in Outfit 18 / 700 (pages that set GoogleFonts.outfit on their title). */
+  outfit?: boolean;
+  /** Overrides the title font classes (e.g. "text-[18px] font-bold"). */
+  titleClassName?: string;
+  bg?: string;
+}) {
+  const navigate = useNavigate();
+  return (
+    <header className="sticky top-0 z-30" style={{ background: bg }}>
+      {/* Like Flutter's centred title: centred when it fits, otherwise squeezed between back and actions. */}
+      <div className="flex h-14 items-center px-1">
+        {back ? (
+          <button
+            onClick={onBack ?? (() => (window.history.length > 1 ? navigate(-1) : navigate("/")))}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full active:bg-white/10"
+            aria-label="Back"
+          >
+            <Icon name="arrow_back" size={24} />
+          </button>
+        ) : (
+          <span className="w-3 shrink-0" />
+        )}
+        <span
+          className={`min-w-0 flex-1 truncate px-1 text-center text-white ${titleClassName ?? (outfit ? "font-outfit text-[18px] font-bold" : "text-[20px] font-semibold")}`}
+        >
+          {title}
+        </span>
+        {actions ? (
+          <div className="flex shrink-0 items-center pr-1">{actions}</div>
+        ) : (
+          <span className={back ? "w-12 shrink-0" : "w-3 shrink-0"} />
+        )}
+      </div>
+    </header>
+  );
+}
+
 /** A page inside the website shell: back link, title, subtitle, actions, then the content. */
 export function Page({
   title,
@@ -650,6 +705,17 @@ export function Page({
   eyebrow?: React.ReactNode;
 }) {
   const navigate = useNavigate();
+  const app = useContext(AppLayoutContext);
+  if (app)
+    return (
+      <div className="min-h-screen bg-bg pb-8">
+        <AppBar title={title} back={back} onBack={onBack} />
+        <div className="px-4 pt-2">
+          {actions && <div className="mb-4 flex flex-wrap items-center gap-2">{actions}</div>}
+          {children}
+        </div>
+      </div>
+    );
   return (
     <main className="mx-auto w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8" style={{ maxWidth: Math.max(width, 480) + 64 }}>
       {back && (
@@ -695,6 +761,7 @@ export function Modal({
   footer?: React.ReactNode;
   width?: number;
 }) {
+  const app = useContext(AppLayoutContext);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -702,6 +769,31 @@ export function Modal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
   if (!open) return null;
+  if (app)
+    return (
+      <div className="animate-fade fixed inset-0 z-[90] flex items-end" onClick={onClose}>
+        <div className="absolute inset-0 bg-black/55" />
+        <div
+          className="animate-sheet relative flex max-h-[92vh] w-full flex-col rounded-t-[20px] bg-card"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {title !== undefined && (
+            <div className="flex items-center pb-1 pl-5 pr-2 pt-4">
+              <div className="min-w-0 flex-1 truncate text-lg font-extrabold">{title}</div>
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="flex h-12 w-12 items-center justify-center rounded-full active:bg-white/10"
+              >
+                <Icon name="close" size={24} />
+              </button>
+            </div>
+          )}
+          <div className="flex-1 overflow-y-auto px-5 pb-6 pt-2">{children}</div>
+          {footer && <div className="flex justify-end gap-2 px-5 pb-5 pt-1">{footer}</div>}
+        </div>
+      </div>
+    );
   return (
     <div className="animate-fade fixed inset-0 z-[90] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
@@ -754,7 +846,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 export const useToast = () => useContext(ToastCtx);
 
-type ConfirmOpts = { title: string; message?: string; confirm?: string; cancel?: string; danger?: boolean };
+type ConfirmOpts = {
+  title: string;
+  message?: string;
+  confirm?: string;
+  cancel?: string;
+  danger?: boolean;
+  /** App phone layout: confirm as a filled blue button (Flutter FilledButton) instead of a text button. */
+  filled?: boolean;
+};
 const ConfirmCtx = createContext<(o: ConfirmOpts) => Promise<boolean>>(async () => false);
 
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
@@ -764,6 +864,48 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     state?.resolve(v);
     setState(null);
   };
+  // App phone layout: the app's Material AlertDialog instead of the website modal.
+  if (state && isAppLayoutActive())
+    return (
+      <ConfirmCtx.Provider value={ask}>
+        {children}
+        <div
+          className="animate-fade fixed inset-0 z-[95] flex items-center justify-center bg-black/55 px-10"
+          onClick={() => close(false)}
+        >
+          <div
+            className="w-full max-w-[340px] rounded-[20px] bg-card px-6 pb-4 pt-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-xl font-semibold">{state.title}</div>
+            {state.message && <div className="mt-3 whitespace-pre-wrap text-sm text-white/75">{state.message}</div>}
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                onClick={() => close(false)}
+                className="h-10 rounded-full px-3 text-sm font-medium text-accent active:bg-white/5"
+              >
+                {state.cancel ?? "Cancel"}
+              </button>
+              {state.danger || state.filled ? (
+                <button
+                  onClick={() => close(true)}
+                  className={`h-10 rounded-full px-5 text-sm font-medium ${state.danger ? "bg-[#EF4444]" : "bg-accent"}`}
+                >
+                  {state.confirm ?? "OK"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => close(true)}
+                  className="h-10 rounded-full px-3 text-sm font-medium text-accent active:bg-white/5"
+                >
+                  {state.confirm ?? "OK"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </ConfirmCtx.Provider>
+    );
   return (
     <ConfirmCtx.Provider value={ask}>
       {children}

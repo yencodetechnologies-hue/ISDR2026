@@ -16,8 +16,15 @@ import { get } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { cap, fmtDate, idOf, parseDate } from "@/lib/format";
 import { ADMIN_MODULES } from "./modules";
+import { useAppLayout } from "@/lib/appLayout";
+import AdminHomeApp from "./AdminHomeApp";
 
 export default function AdminHome() {
+  // Phone width: the mobile app's admin home instead of the website dashboard.
+  return useAppLayout() ? <AdminHomeApp /> : <AdminHomeWeb />;
+}
+
+function AdminHomeWeb() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const banner = useHomeBanner();
