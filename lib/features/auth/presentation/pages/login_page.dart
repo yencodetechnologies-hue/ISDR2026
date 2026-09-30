@@ -168,43 +168,145 @@ class _LoginPageState extends State<LoginPage> {
             });
           }
         },
-        // No SafeArea here on purpose — the hero photo and footer are meant
-        // to run edge-to-edge, behind the status bar and home indicator.
-        child: SizedBox.expand(
-          // Scales the whole page (never scrolls) to fill the screen edge
-          // to edge, preserving proportions (no stretch) — any excess is
-          // cropped off rather than left as a gap.
-          child: FittedBox(
-            fit: BoxFit.cover,
-            alignment: const Alignment(0, -0.4),
-            clipBehavior: Clip.hardEdge,
-            child: SizedBox(
-              // Fixed canvas size — this, not the card's own content, sets
-              // the page's scale. Shrinking the card just leaves more room
-              // above the footer; it no longer changes how wide the whole
-              // page renders.
-              width: 400,
-              height: 900,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const _HeroSection(),
-                  const SizedBox(height: 20),
-                  Transform.translate(
-                    offset: const Offset(0, -30),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 28),
-                      child: _buildLoginCard(),
-                    ),
-                  ),
-                  const Spacer(),
-                  const _FooterWave(),
-                ],
-              ),
+        // Phone and iPad share one rule: the poster starts below the status
+        // bar so the top logo row is not covered, and Login stays on screen.
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (_usePhoneCanvas(constraints)) {
+              return _buildPhoneBody(constraints);
+            }
+            return _buildTabletBody(constraints);
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Poster is 1024×933. Height = width / this ratio.
+  static const double _heroAspect = 1024 / 933;
+
+  /// Laid-out height of the login card (padding, fields, button).
+  /// The hero gives up space from its bottom so this still fits.
+  static const double _phoneCardSlot = 404;
+
+  /// How far the card pulls up over the poster's white curve.
+  static const double _cardOverlap = 28;
+
+  bool _usePhoneCanvas(BoxConstraints constraints) {
+    if (!constraints.hasBoundedWidth || !constraints.hasBoundedHeight) {
+      return false;
+    }
+    return constraints.maxWidth < 600;
+  }
+
+  /// Phone: poster is full width and starts under the status bar, so the
+  /// top logo row is visible. The bottom of the poster yields if the card
+  /// and footer need the room. Login stays on screen without scrolling.
+  Widget _buildPhoneBody(BoxConstraints constraints) {
+    final top = _statusBarInset;
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final width = constraints.maxWidth;
+    final height = constraints.maxHeight;
+    const footerHeight = 100.0;
+    final showFooter = !keyboardOpen;
+    final footerH = showFooter ? footerHeight : 0.0;
+    final naturalHero = width / _heroAspect;
+    final body = height - top - footerH;
+    // Keep a full card-height slot. Overlap is paint-only, so it must not
+    // shrink this slot or the Login button gets clipped.
+    final heroHeight = (body - _phoneCardSlot).clamp(0.0, naturalHero);
+
+    return Column(
+      children: [
+        _HeroSkyBand(height: top),
+        if (heroHeight > 0)
+          SizedBox(
+            height: heroHeight,
+            width: double.infinity,
+            child: const _HeroSection(),
+          ),
+        Expanded(
+          child: Transform.translate(
+            offset: Offset(0, heroHeight > 0 ? -_cardOverlap : 0),
+            child: SingleChildScrollView(
+              clipBehavior: Clip.none,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              physics: const ClampingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: _buildLoginCard(),
             ),
           ),
         ),
-      ),
+        if (showFooter) const _FooterWave(),
+      ],
+    );
+  }
+
+  /// Always use the real system top inset. `padding.top` can be 0 when the
+  /// scaffold draws edge-to-edge; `viewPadding` still reports the status bar.
+  double get _statusBarInset {
+    final view = MediaQuery.viewPaddingOf(context).top;
+    final pad = MediaQuery.paddingOf(context).top;
+    return view > pad ? view : pad;
+  }
+
+  /// iPad / wide layout: same hero + card + footer, Login always on screen.
+  Widget _buildTabletBody(BoxConstraints constraints) {
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final top = _statusBarInset;
+    final width = constraints.maxWidth;
+    final height = constraints.maxHeight;
+    final landscape = width > height;
+
+    // Reserve space so Welcome Back → Login fits without being clipped.
+    const footerHeight = 100.0;
+    final cardReserve = landscape ? 440.0 : 480.0;
+    final showFooter = !keyboardOpen && (height - top) > cardReserve + 140;
+    // Portrait iPad needs a taller poster so the top logo row (all three
+    // badges) and the title stay above the login card.
+    final maxHero = landscape ? 240.0 : 460.0;
+    final heroBudget =
+        height - top - cardReserve - (showFooter ? footerHeight : 0);
+    final heroHeight = heroBudget.clamp(0.0, maxHero);
+
+    final cardMaxWidth = (width - 56).clamp(280.0, 480.0);
+
+    return Column(
+      children: [
+        _HeroSkyBand(height: top),
+        if (heroHeight > 0)
+          SizedBox(
+            height: heroHeight,
+            width: double.infinity,
+            child: const _HeroSection(),
+          ),
+        Expanded(
+          child: Transform.translate(
+            offset: Offset(0, heroHeight > 0 ? -20 : 0),
+            child: LayoutBuilder(
+              builder: (context, viewport) {
+                return SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.fromLTRB(
+                    28,
+                    heroHeight > 0 ? 0 : 16,
+                    28,
+                    16,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: cardMaxWidth),
+                      child: _buildLoginCard(),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        if (showFooter) const _FooterWave(),
+      ],
     );
   }
 
@@ -330,15 +432,18 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(width: 7),
-                Text(
-                  'Remember me',
-                  style: GoogleFonts.inter(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF334155),
+                Expanded(
+                  child: Text(
+                    'Remember me',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF334155),
+                    ),
                   ),
                 ),
-                const Spacer(),
                 TextButton(
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
@@ -348,6 +453,8 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: _isLoading ? null : _navigateToForgotPassword,
                   child: Text(
                     'Forgot Password?',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
@@ -526,27 +633,58 @@ class _GradientLoginButton extends StatelessWidget {
 /// Image widgets once available.
 /// The full conference hero graphic (logos, "36th ISDR…" title, dates,
 /// tagline) is one supplied image — nothing is drawn on top of it.
+///
+/// Fills the box it is given and keeps the top of the poster (all three
+/// top logos). If the box is shorter than the poster, only the bottom
+/// white curve is cropped.
 class _HeroSection extends StatelessWidget {
   const _HeroSection();
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1024 / 933,
-      child: ShaderMask(
-        shaderCallback: (Rect bounds) {
-          return const LinearGradient(
+    return ShaderMask(
+      shaderCallback: (Rect bounds) {
+        return const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: [0.0, 0.94, 0.99],
+          colors: [Colors.black, Colors.black, Colors.transparent],
+        ).createShader(bounds);
+      },
+      blendMode: BlendMode.dstIn,
+      child: Image.asset(
+        'assets/WhatsApp Image 2026-09-22 at 11.46.04 AM.jpeg',
+        fit: BoxFit.cover,
+        alignment: Alignment.topCenter,
+        width: double.infinity,
+        height: double.infinity,
+        filterQuality: FilterQuality.medium,
+      ),
+    );
+  }
+}
+
+/// Fills the status-bar / Dynamic Island band with the poster's sky color
+/// so the clock sits on the banner, while the poster itself (and its top
+/// logos) begins just below that band.
+class _HeroSkyBand extends StatelessWidget {
+  final double height;
+
+  const _HeroSkyBand({required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    if (height <= 0) return const SizedBox.shrink();
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            stops: [0.0, 0.94, 0.99],
-            colors: [Colors.black, Colors.black, Colors.transparent],
-          ).createShader(bounds);
-        },
-        blendMode: BlendMode.dstIn,
-        child: Image.asset(
-          'assets/WhatsApp Image 2026-09-22 at 11.46.04 AM.jpeg',
-          fit: BoxFit.cover,
-          alignment: Alignment.topCenter,
+            colors: [Color(0xFFC4893A), Color(0xFFB07E3C)],
+          ),
         ),
       ),
     );
