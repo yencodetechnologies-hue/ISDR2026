@@ -312,6 +312,10 @@ function registrationDto(reg, event) {
           reclaimedByAdmin: !!c.reclaimedByAdmin,
         }))
       : [],
+    // Entry/exit scans, one row per event day (India time) — used by the admin Analytics tab.
+    attendance: Array.isArray(reg.attendance)
+      ? reg.attendance.map((a) => ({ day: a.day, entryAt: a.entryAt || null, exitAt: a.exitAt || null }))
+      : [],
     createdAt: reg.createdAt,
     event: event
       ? {

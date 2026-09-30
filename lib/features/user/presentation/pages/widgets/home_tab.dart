@@ -22,7 +22,7 @@ import '../terms_and_conditions_page.dart';
 import '../user_events_page.dart';
 import '../../../../support/presentation/pages/help_tickets_page.dart';
 import '../../../../admin/presentation/pages/qr_pass_page.dart';
-import '../../../../admin/presentation/widgets/auto_scroll_banner.dart';
+import '../../../../admin/presentation/widgets/admin_image_banner.dart';
 import '../../../../participant/presentation/pages/accommodation_page.dart';
 import '../../../../../../core/widgets/get_live_photo_button.dart';
 
@@ -163,7 +163,8 @@ class _HomeTabState extends State<HomeTab> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (_isEventsProperty) ...[
-            const AutoScrollBanner(items: defaultManagementBanners),
+            // The admin's image banner (Admin → Banner), as on the participant home.
+            const AdminImageBanner(padding: EdgeInsets.fromLTRB(12, 4, 12, 0)),
             const SizedBox(height: 12),
             // Same news ticker as the participant home.
             const Padding(

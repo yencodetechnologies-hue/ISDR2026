@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "@/components/AuthLayout";
 import { Button, Checkbox, Input, PasswordInput, useToast } from "@/components/ui";
 import { homeFor, useAuth } from "@/lib/auth";
+import { useMobile } from "@/lib/useMobile";
+import LoginApp from "./LoginApp";
 
 const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -16,6 +18,7 @@ export default function Login() {
   const [remember, setRemember] = useState(true);
   const [errors, setErrors] = useState<{ id?: string; pw?: string }>({});
   const [loading, setLoading] = useState(false);
+  const mobile = useMobile();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +45,22 @@ export default function Login() {
     }
     navigate(homeFor(res.user), { replace: true });
   };
+
+  // Phone width: the mobile app's login screen.
+  if (mobile)
+    return (
+      <LoginApp
+        identifier={identifier}
+        setIdentifier={setIdentifier}
+        password={password}
+        setPassword={setPassword}
+        remember={remember}
+        setRemember={setRemember}
+        errors={errors}
+        loading={loading}
+        onSubmit={submit}
+      />
+    );
 
   return (
     <AuthLayout>

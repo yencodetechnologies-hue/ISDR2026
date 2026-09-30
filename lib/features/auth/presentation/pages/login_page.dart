@@ -652,40 +652,106 @@ class _HeroSection extends StatelessWidget {
         ).createShader(bounds);
       },
       blendMode: BlendMode.dstIn,
-      child: Image.asset(
-        'assets/WhatsApp Image 2026-09-22 at 11.46.04 AM.jpeg',
-        fit: BoxFit.cover,
-        alignment: Alignment.topCenter,
-        width: double.infinity,
-        height: double.infinity,
-        filterQuality: FilterQuality.medium,
-      ),
+      child: const _PosterImage(),
     );
   }
 }
 
-/// Fills the status-bar / Dynamic Island band with the poster's sky color
-/// so the clock sits on the banner, while the poster itself (and its top
-/// logos) begins just below that band.
+/// The login poster, filling its box from the top — minus the thin dark
+/// border along the image's top edge (its first 8 of 933 pixel rows), so
+/// the poster meets the status-bar band with no dark line.
+class _PosterImage extends StatelessWidget {
+  const _PosterImage();
+
+  static const _asset = 'assets/WhatsApp Image 2026-09-22 at 11.46.04 AM.jpeg';
+
+  /// Border rows at the top of the 1024-px-wide image.
+  static const _borderRows = 8;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        final crop = box.maxWidth * _borderRows / 1024;
+        final height = box.maxHeight + crop;
+        return ClipRect(
+          child: OverflowBox(
+            alignment: Alignment.bottomCenter,
+            minHeight: height,
+            maxHeight: height,
+            child: Image.asset(
+              _asset,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              width: double.infinity,
+              height: height,
+              filterQuality: FilterQuality.medium,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Fills the status-bar / Dynamic Island band with the poster's own sky, so
+/// the clock sits on the image, while the poster itself (and its top logos)
+/// begins just below that band.
 class _HeroSkyBand extends StatelessWidget {
   final double height;
 
   const _HeroSkyBand({required this.height});
 
+  /// Last plain-sky row of the poster, just above its top logos.
+  static const _skyRowsEnd = 44;
+
   @override
   Widget build(BuildContext context) {
     if (height <= 0) return const SizedBox.shrink();
+    // The poster's sky strip just above its logos (image rows 8–44), flipped
+    // and stretched to the band: the band's bottom edge is the very row the
+    // poster starts with, so the sky runs on with no seam, while the poster
+    // (and its logo row) still starts below the status bar.
     return SizedBox(
       height: height,
       width: double.infinity,
-      child: const DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFC4893A), Color(0xFFB07E3C)],
-          ),
-        ),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final w = box.maxWidth;
+          final scale = w / 1024;
+          final imageH = 933 * scale;
+          return ClipRect(
+            child: Transform.flip(
+              flipY: true,
+              child: FittedBox(
+                fit: BoxFit.fill,
+                child: SizedBox(
+                  width: w,
+                  height: (_skyRowsEnd - _PosterImage._borderRows) * scale,
+                  child: ClipRect(
+                    child: OverflowBox(
+                      alignment: Alignment.topLeft,
+                      minWidth: w,
+                      maxWidth: w,
+                      minHeight: imageH,
+                      maxHeight: imageH,
+                      child: Transform.translate(
+                        offset: Offset(0, -_PosterImage._borderRows * scale),
+                        child: Image.asset(
+                          _PosterImage._asset,
+                          width: w,
+                          height: imageH,
+                          fit: BoxFit.fill,
+                          filterQuality: FilterQuality.medium,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -32,7 +32,7 @@ import '../../../support/presentation/pages/help_tickets_page.dart';
 import 'engagement_overview_page.dart';
 import '../../../user/presentation/pages/user_events_page.dart';
 import '../../../participant/presentation/widgets/live_show_card.dart';
-import '../widgets/auto_scroll_banner.dart';
+import '../widgets/admin_image_banner.dart';
 import 'property_profile_page.dart';
 import 'management_team_page.dart';
 import 'brochure_page.dart';
@@ -725,7 +725,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
             // Same header as the participant home: logo + ISDR 2026, then actions.
             SafeArea(bottom: false, child: _buildHomeHeader()),
             // Body: banner, live card and module grid
-            const AutoScrollBanner(items: defaultManagementBanners),
+            // The admin's image banner (Admin → Banner), as on the participant home.
+            const AdminImageBanner(),
             // Same live-show card as the participant, speaker and staff homes.
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 14, 16, 0),

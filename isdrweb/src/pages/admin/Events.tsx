@@ -34,6 +34,7 @@ import { BadgeModal, ClaimsModal, displayName, PackageCard, PackageModal, Partic
 import { ImportParticipantsModal } from "./ImportParticipants";
 import { ScheduleTable } from "./Schedules";
 import EventFormApp from "./EventFormApp";
+import EventAnalytics from "./EventAnalytics";
 
 /* =========================================================================
    EVENT LIST
@@ -311,6 +312,31 @@ function EventEditorWeb() {
   );
 }
 
+/** Participants tab: every package with how many participants it has; anyone outside them under "Other passes". */
+function PackageCounts({ packages, registrations }: { packages: any[]; registrations: any[] }) {
+  const inPackage = (r: any, p: any) => (r.packageId && r.packageId === p.id) || (!r.packageId && r.packageName === p.name);
+  const rows = packages.map((p) => ({ name: String(p.name ?? "Package"), n: registrations.filter((r) => inPackage(r, p)).length }));
+  const other = registrations.filter((r) => !packages.some((p) => inPackage(r, p))).length;
+  return (
+    <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+      {rows.map((p) => (
+        <div key={p.name} className="rounded-lg border border-line bg-white/[0.02] px-3.5 py-2.5">
+          <div className="truncate text-xs text-muted" title={p.name}>
+            {p.name}
+          </div>
+          <div className={`mt-0.5 text-lg font-bold ${p.n ? "" : "text-white/40"}`}>{p.n}</div>
+        </div>
+      ))}
+      {other > 0 && (
+        <div className="rounded-lg border border-dashed border-line px-3.5 py-2.5">
+          <div className="truncate text-xs text-muted">Other passes</div>
+          <div className="mt-0.5 text-lg font-bold">{other}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* =========================================================================
    EVENT DETAIL — overview, packages, participants, schedules
    (mirrors the app's event_management_details_page.dart)
@@ -330,7 +356,7 @@ function EventDetailWeb() {
   const [registrations, setRegistrations] = useState<any[] | null>(null);
   const [schedules, setSchedules] = useState<any[] | null>(null);
   const [incStats, setIncStats] = useState<Record<string, any>>({});
-  const [tab, setTab] = useState<"info" | "packages" | "regs" | "schedules">("info");
+  const [tab, setTab] = useState<"info" | "packages" | "regs" | "schedules" | "analytics">("info");
   const [search, setSearch] = useState("");
   const [pkgFilter, setPkgFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -534,6 +560,7 @@ function EventDetailWeb() {
           { value: "packages", label: "Packages", count: packages.length },
           { value: "regs", label: "Participants", count: registrations?.length },
           { value: "schedules", label: "Schedules", count: schedules?.length },
+          { value: "analytics", label: "Analytics" },
         ]}
       />
 
@@ -659,6 +686,9 @@ function EventDetailWeb() {
               <div className="w-full sm:w-72">
                 <SearchBox value={search} onChange={setSearch} placeholder="Search participants…" />
               </div>
+              {registrations && packages.length > 0 && (
+                <PackageCounts packages={packages} registrations={registrations} />
+              )}
               <div className="flex w-full flex-wrap gap-2">
                 <FilterSelect
                   label="packages"
@@ -832,6 +862,8 @@ function EventDetailWeb() {
             )}
           </div>
         )}
+
+        {tab === "analytics" && <EventAnalytics event={event} registrations={registrations} onRefresh={loadRegs} />}
 
         {tab === "schedules" && (
           <ScheduleTable
