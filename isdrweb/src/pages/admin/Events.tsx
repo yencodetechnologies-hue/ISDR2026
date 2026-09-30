@@ -385,17 +385,6 @@ function EventDetailWeb() {
   const packages: any[] = event?.packages ?? [];
   const isCancelled = event?.status === "cancelled";
 
-  const cancelEvent = async () => {
-    if (!(await confirm({ title: "Cancel event?", confirm: "Yes", cancel: "No", danger: true }))) return;
-    setBusy(true);
-    const res = await del(`/managed-events/${id}`);
-    setBusy(false);
-    if (res.success) {
-      if (res.event) setEvent(res.event);
-      toast("Event cancelled", "success");
-    } else toast(res.error || "Cancel failed", "error");
-  };
-
   const deleteEvent = async () => {
     if (
       !(await confirm({
@@ -531,11 +520,6 @@ function EventDetailWeb() {
           <Button variant="outline" icon="edit" disabled={busy} onClick={() => navigate(`/admin/events/new?id=${id}`)}>
             Edit
           </Button>
-          {!isCancelled && (
-            <Button variant="outline" icon="cancel" disabled={busy} className="!text-[#FBBF24]" onClick={cancelEvent}>
-              Cancel event
-            </Button>
-          )}
           <Button variant="danger" icon="delete" disabled={busy} onClick={deleteEvent}>
             Delete
           </Button>

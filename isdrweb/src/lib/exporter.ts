@@ -121,22 +121,19 @@ export async function exportExcel<T>(title: string, columns: ExportColumn<T>[], 
 /* ------------------------------------------------------------------ */
 
 export async function exportPdf<T>(title: string, columns: ExportColumn<T>[], rows: T[], qr?: QrConfig<T>) {
+  if (qr) return exportPassesPdf(title, rows, qr);
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const M = 28;
-  // Full pass per row: 100 pt wide (the QR on it is ~10 mm, still scannable when printed).
-  const PASS_W = 100;
-  const PASS_H = PASS_W * PASS_RATIO;
   const pad = 4;
   const fontSize = columns.length > 10 ? 6.5 : columns.length > 7 ? 7.5 : 9;
   const lineH = fontSize * 1.25;
 
-  const qrColW = qr ? PASS_W + pad * 2 : 0;
   const weights = columns.map((c) => c.width ?? Math.max(10, c.header.length + 2));
   const totalW = weights.reduce((a, b) => a + b, 0);
-  const avail = pageW - M * 2 - qrColW;
+  const avail = pageW - M * 2;
   const widths = weights.map((w) => (w / totalW) * avail);
 
   let y = M;
@@ -153,7 +150,6 @@ export async function exportPdf<T>(title: string, columns: ExportColumn<T>[], ro
       doc.text(l, x + pad, y + pad + fontSize);
       x += widths[i];
     });
-    if (qr) doc.text("QR pass", x + pad, y + pad + fontSize);
     y += h;
     doc.setFont("helvetica", "normal");
     doc.setTextColor(15, 23, 42);
@@ -179,8 +175,7 @@ export async function exportPdf<T>(title: string, columns: ExportColumn<T>[], ro
     const r = rows[i];
     doc.setFontSize(fontSize);
     const cells = columns.map((c, ci) => doc.splitTextToSize(text(c.value(r)), widths[ci] - pad * 2) as string[]);
-    const code = qr ? qr.code(r) : "";
-    const h = Math.max(Math.max(...cells.map((l) => l.length), 1) * lineH + pad * 2, code ? PASS_H + pad * 2 : 0);
+    const h = Math.max(...cells.map((l) => l.length), 1) * lineH + pad * 2;
     if (y + h > pageH - M) {
       doc.addPage();
       y = M;
@@ -195,15 +190,38 @@ export async function exportPdf<T>(title: string, columns: ExportColumn<T>[], ro
       doc.text(l, x + pad, y + pad + fontSize);
       x += widths[ci];
     });
-    if (code) {
-      const pass = await passDataUrl(qr!.badge(r));
-      if (pass) doc.addImage(pass, "JPEG", x + pad, y + pad, PASS_W, PASS_H);
-    }
     doc.setDrawColor(226, 232, 240);
     doc.line(M, y + h, pageW - M, y + h);
     y += h;
   }
   doc.save(`${safeName(title)}_${stamp()}.pdf`);
+}
+
+/** Lists with QR passes: the PDF holds only the full pass images — 4 per A4 page (2 × 2), no details. */
+async function exportPassesPdf<T>(title: string, rows: T[], qr: QrConfig<T>) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const M = 28;
+  const GAP = 16;
+  const passW = (pageW - M * 2 - GAP) / 2; // ≈ 9 cm wide
+  const passH = passW * PASS_RATIO;
+  const top = (pageH - (passH * 2 + GAP)) / 2; // centred vertically
+  let n = 0;
+  for (const r of rows) {
+    if (!qr.code(r)) continue;
+    const pass = await passDataUrl(qr.badge(r), 900);
+    if (!pass) continue;
+    const slot = n % 4;
+    if (n > 0 && slot === 0) doc.addPage();
+    const x = M + (slot % 2) * (passW + GAP);
+    const y = top + Math.floor(slot / 2) * (passH + GAP);
+    doc.addImage(pass, "JPEG", x, y, passW, passH);
+    n++;
+  }
+  if (!n) throw new Error("No QR passes to download");
+  doc.save(`${safeName(title)}_QR_passes_${stamp()}.pdf`);
 }
 
 /* ------------------------------------------------------------------ */

@@ -7,7 +7,7 @@ import { roleLabel, useLogout } from "@/pages/common/Profile";
 import { Avatar, Icon, useToast } from "./ui";
 import { NotificationBell } from "./widgets";
 import { APP_LAYOUT_ROLES, AppLayoutContext, setAppLayoutActive } from "@/lib/appLayout";
-import { useMobile } from "@/lib/useMobile";
+import { isMobileNow, useMobile } from "@/lib/useMobile";
 
 function Brand({ role }: { role: Role }) {
   return (
@@ -169,7 +169,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const mobile = useMobile();
 
   useEffect(() => setDrawer(false), [location.pathname, location.search]);
-  const isMobile = mobile || (typeof window !== "undefined" && window.innerWidth < 1024);
+  const isMobile = mobile || (typeof window !== "undefined" && isMobileNow());
   const appLayout = !!role && isMobile && APP_LAYOUT_ROLES.includes(role);
   useEffect(() => {
     setAppLayoutActive(appLayout);

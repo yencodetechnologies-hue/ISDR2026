@@ -176,17 +176,6 @@ export default function EventDetailApp() {
   const packages: any[] = event?.packages ?? [];
   const isCancelled = event?.status === "cancelled";
 
-  const cancelEvent = async () => {
-    if (!(await confirm({ title: "Cancel event?", confirm: "Yes", cancel: "No" }))) return;
-    setBusy(true);
-    const res = await del(`/managed-events/${id}`);
-    setBusy(false);
-    if (res.success) {
-      if (res.event) setEvent(res.event);
-      show("Event cancelled");
-    } else show(res.error || "Cancel failed", "error");
-  };
-
   const deleteEvent = async () => {
     if (
       !(await confirm({
@@ -283,7 +272,6 @@ export default function EventDetailApp() {
               title="Edit event"
               onClick={() => !busy && navigate(`/admin/events/new?id=${id}`)}
             />
-            {!isCancelled && <AppBarAction icon="cancel" title="Cancel event" onClick={() => !busy && cancelEvent()} />}
             <AppBarAction icon="delete" title="Delete event" onClick={() => !busy && deleteEvent()} />
           </>
         }
