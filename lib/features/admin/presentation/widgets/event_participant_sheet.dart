@@ -155,7 +155,6 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
       'First name': _first.text,
       'Last name': _last.text,
       'Gender': _gender,
-      'Designation': _designation.text,
       'Organization': _institution.text,
       'Package': _packageId ?? '',
       if (widget.registration != null) 'ID no.': _idNumber.text,
@@ -502,7 +501,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Expanded(child: _text(_designation, 'Designation')),
+                        Expanded(child: _text(_designation, 'Designation', required: false)),
                       ],
                     ),
                     Row(

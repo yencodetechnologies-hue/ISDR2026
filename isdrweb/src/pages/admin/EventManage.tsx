@@ -565,7 +565,6 @@ export function ParticipantModal({
       ["First name", first],
       ["Last name", last],
       ["Gender", gender],
-      ["Designation", designation],
       ["Organization", institution],
       ["Package", packageId],
       ...(editing ? ([["ID no.", idNumber]] as [string, string][]) : []),
@@ -718,7 +717,7 @@ export function ParticipantModal({
             ]}
           />
         </Field>
-        <Field label="Designation *">
+        <Field label="Designation">
           <Input value={designation} onChange={(e) => setDesignation(e.target.value)} />
         </Field>
         <Field label="Organization *">

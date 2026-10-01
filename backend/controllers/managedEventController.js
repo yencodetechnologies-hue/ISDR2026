@@ -613,7 +613,6 @@ function parseParticipantProfile(body, { strict }) {
     out.participantTypeColor = c ? `#${c}` : '';
   }
   if (has('designation') || strict) {
-    required('designation', 'Designation');
     out.designation = str('designation');
   }
   if (has('institution') || strict) {
