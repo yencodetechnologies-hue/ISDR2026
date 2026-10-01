@@ -59,3 +59,24 @@ export const matches = (item: any, term: string) => {
 /** Sorted distinct non-empty values, for filter options. */
 export const distinct = (values: any[]) =>
   [...new Set(values.map((v) => String(v ?? "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+/** The 2-letter ID code prefixes in use (SB, OT, OR, UG…), for the ID code range filter. */
+export const idPrefixes = (regs: any[]) =>
+  distinct(regs.map((r) => String(r.idNumber ?? "").trim().slice(0, 2).toUpperCase())).filter((p) => /^[A-Z]{2}$/.test(p));
+
+/**
+ * ID code range filter: the ID number starts with [prefix] and its number is between [from] and [to]
+ * (inclusive; either may be left empty). "10", "0010" and "SB0010" all mean 10.
+ */
+export function inIdRange(r: any, prefix: string, from: string, to: string) {
+  if (!prefix) return true;
+  const id = String(r.idNumber ?? "").trim().toUpperCase();
+  if (!id.startsWith(prefix)) return false;
+  const num = (s: string) => parseInt(s.replace(/\D/g, ""), 10);
+  const n = num(id.slice(2));
+  const f = num(from);
+  const t = num(to);
+  if (!Number.isNaN(f) && !(n >= f)) return false;
+  if (!Number.isNaN(t) && !(n <= t)) return false;
+  return true;
+}

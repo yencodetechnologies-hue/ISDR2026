@@ -27,7 +27,7 @@ import { PARTICIPANT_EXPORT_COLUMNS, PARTICIPANT_QR } from "./participantExport"
 import EventDetailApp from "./EventDetailApp";
 import { useAppLayout } from "@/lib/appLayout";
 import EventsApp from "./EventsApp";
-import { FilterSelect, distinct, matches } from "@/components/ListFilters";
+import { FilterSelect, distinct, idPrefixes, inIdRange, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { fmtDate, idOf, parseDate, cap } from "@/lib/format";
 import { BadgeModal, ClaimsModal, displayName, PackageCard, PackageModal, ParticipantModal } from "./EventManage";
@@ -362,6 +362,10 @@ function EventDetailWeb() {
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [claimFilter, setClaimFilter] = useState("");
+  // ID code range: 2-letter prefix plus optional from / to numbers.
+  const [idPrefix, setIdPrefix] = useState("");
+  const [idFrom, setIdFrom] = useState("");
+  const [idTo, setIdTo] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -486,9 +490,10 @@ function EventDetailWeb() {
       (!pkgFilter || (r.packageName ?? "") === pkgFilter) &&
       (!typeFilter || (r.participantType || "Delegate") === typeFilter) &&
       (!statusFilter || (r.status ?? "registered") === statusFilter) &&
-      (!claimFilter || (claimFilter === "claimed") === (r.claimedInclusions ?? []).length > 0),
+      (!claimFilter || (claimFilter === "claimed") === (r.claimedInclusions ?? []).length > 0) &&
+      inIdRange(r, idPrefix, idFrom, idTo),
   );
-  const regsFiltered = !!(q || pkgFilter || typeFilter || statusFilter || claimFilter);
+  const regsFiltered = !!(q || pkgFilter || typeFilter || statusFilter || claimFilter || idPrefix);
 
   const existingIds = (self: any | null) =>
     new Set(
@@ -720,6 +725,31 @@ function EventDetailWeb() {
                     { value: "none", label: "Claimed nothing" },
                   ]}
                 />
+                <FilterSelect
+                  label="ID codes"
+                  value={idPrefix}
+                  onChange={setIdPrefix}
+                  options={idPrefixes(registrations ?? [])}
+                />
+                {idPrefix && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={idFrom}
+                      onChange={(e) => setIdFrom(e.target.value)}
+                      inputMode="numeric"
+                      placeholder={`From ${idPrefix}0001`}
+                      className="input w-36"
+                    />
+                    <span className="text-sm text-muted">to</span>
+                    <input
+                      value={idTo}
+                      onChange={(e) => setIdTo(e.target.value)}
+                      inputMode="numeric"
+                      placeholder={`To ${idPrefix}9999`}
+                      className="input w-36"
+                    />
+                  </div>
+                )}
               </div>
               <ExportMenu
                 title={`${event?.title || "Event"} - Participants`}

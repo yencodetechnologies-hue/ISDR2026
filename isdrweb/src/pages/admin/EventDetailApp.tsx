@@ -9,6 +9,7 @@ import { Icon, useConfirm, useToast } from "@/components/ui";
 import { del, get, put, qs } from "@/lib/api";
 import { fullNameOf } from "@/lib/exporter";
 import { idOf, parseDate } from "@/lib/format";
+import { idPrefixes, inIdRange } from "@/components/ListFilters";
 import {
   BadgeModal,
   ClaimsModal,
@@ -127,6 +128,10 @@ export default function EventDetailApp() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  // ID code range: 2-letter prefix plus optional from / to numbers.
+  const [idPrefix, setIdPrefix] = useState("");
+  const [idFrom, setIdFrom] = useState("");
+  const [idTo, setIdTo] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [pkgEditing, setPkgEditing] = useState<any | null | undefined>(undefined);
   const [regEditing, setRegEditing] = useState<any | null | undefined>(undefined);
@@ -234,13 +239,14 @@ export default function EventDetailApp() {
     );
 
   const q = search.trim().toLowerCase();
-  const shown = !q
-    ? registrations
-    : registrations.filter((r) =>
+  const shown = registrations.filter(
+    (r) =>
+      inIdRange(r, idPrefix, idFrom, idTo) &&
+      (!q ||
         Object.values(r).some(
           (v) => (typeof v === "string" || typeof v === "number") && String(v).toLowerCase().includes(q),
-        ),
-      );
+        )),
+  );
 
   if (error)
     return (
@@ -422,6 +428,35 @@ export default function EventDetailApp() {
             >
               <Icon name="clear" size={18} color="#9CA3AF" />
             </button>
+          )}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <select value={idPrefix} onChange={(e) => setIdPrefix(e.target.value)} className="rounded-xl border border-[#8E8E98] bg-field text-sm outline-none focus:border-accent px-2 py-2">
+            <option value="">All ID codes</option>
+            {idPrefixes(registrations).map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+          {idPrefix && (
+            <>
+              <input
+                value={idFrom}
+                onChange={(e) => setIdFrom(e.target.value)}
+                inputMode="numeric"
+                placeholder="From"
+                className="w-0 flex-1 rounded-xl border border-[#8E8E98] bg-field text-sm outline-none focus:border-accent px-3 py-2 placeholder:text-muted"
+              />
+              <span className="text-xs text-muted">to</span>
+              <input
+                value={idTo}
+                onChange={(e) => setIdTo(e.target.value)}
+                inputMode="numeric"
+                placeholder="To"
+                className="w-0 flex-1 rounded-xl border border-[#8E8E98] bg-field text-sm outline-none focus:border-accent px-3 py-2 placeholder:text-muted"
+              />
+            </>
           )}
         </div>
         <div className="mt-2.5">
