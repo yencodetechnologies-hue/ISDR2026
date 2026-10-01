@@ -3,21 +3,24 @@ import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { asset } from "@/lib/api";
 
-// Template is 1200×1465; the framed badge inside it is 1080×1404 at (60, 25).
-const TEMPLATE_W = 1200;
-const TEMPLATE_H = 1465;
-const CROP_LEFT = 60;
-const CROP_TOP = 25;
+// Template "ID CARD 4_page-0001.jpg" (591×768) is the whole 100×130 mm card, drawn at 1080×1404.
+const TEMPLATE = "ID CARD 4_page-0001.jpg";
+const TEMPLATE_W = 1080;
+const TEMPLATE_H = 1404;
+const CROP_LEFT = 0;
+const CROP_TOP = 0;
 const BADGE_W = 1080;
 const BADGE_H = 1404;
 const INK = "#0F172A";
-// ID number under the QR: smaller than before and kept clear of the "Scan Verification" text.
-const ID_SIZE = 40;
-const ID_W = 760;
-const ID_LEFT = (TEMPLATE_W - ID_W) / 2;
-// Banner behind the participant type (the band removed from the template), coloured per participant.
+// Name and the institution line (ISDR26-####) on every pass.
+const NAME_INK = "#2E3192";
+// Content sits between the conference header and the "Hosted by" logo.
+const TEXT = { left: 110, top: 562, width: 860 };
+const CX = TEXT.left + TEXT.width / 2;
+const QR_BOX = { left: 400, top: 740, size: 280 };
+// Banner behind the participant type, coloured per participant; spans the white panel edge to edge.
 export const DEFAULT_TYPE_COLOR = "#167E5D";
-const BANNER = { left: 120, top: 422, width: 948, height: 100 };
+const BANNER = { left: 61, top: 440, width: 949, height: 96 };
 
 /** '#RRGGBB' / 'RRGGBB' → '#RRGGBB'; null when it isn't a valid 6-digit hex. */
 export function normalizeHex(hex: string | undefined | null): string | null {
@@ -39,6 +42,17 @@ export type BadgeData = {
 };
 
 const v = (s: any) => String(s ?? "").trim();
+
+// Speakers' passes read "INVITED SPEAKER" on #9E0A0F.
+const SPEAKER_COLOR = "#9E0A0F";
+function typeOf(data: BadgeData) {
+  const t = v(data.participantType) || "Delegate";
+  const speaker = /^(invited\s+)?speaker$/i.test(t);
+  return {
+    label: (speaker ? "Invited Speaker" : t).toUpperCase(),
+    color: normalizeHex(data.participantTypeColor) ?? (speaker ? SPEAKER_COLOR : DEFAULT_TYPE_COLOR),
+  };
+}
 
 /** One line of text shrunk to fit its width. */
 function Fit({
@@ -75,7 +89,7 @@ function Fit({
   );
 }
 
-/** Participant badge on the delegate badge template: type, name, designation, institution, QR, spaced ID. */
+/** Participant badge on the QR pass template: type, name, designation, institution, QR (no ID code). */
 export default function DelegateBadge({ data, innerRef }: { data: BadgeData; innerRef?: React.Ref<HTMLDivElement> }) {
   const box = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
@@ -88,9 +102,7 @@ export default function DelegateBadge({ data, innerRef }: { data: BadgeData; inn
   }, []);
 
   const displayName = [v(data.title), v(data.name)].filter(Boolean).join(" ");
-  const typeLabel = (v(data.participantType) || "Delegate").toUpperCase();
-  const typeColor = normalizeHex(data.participantTypeColor) ?? DEFAULT_TYPE_COLOR;
-  const idNumber = v(data.idNumber);
+  const { label: typeLabel, color: typeColor } = typeOf(data);
   const qr = v(data.qrCode);
 
   return (
@@ -110,51 +122,34 @@ export default function DelegateBadge({ data, innerRef }: { data: BadgeData; inn
         }}
       >
         <div className="absolute" style={{ left: -CROP_LEFT, top: -CROP_TOP, width: TEMPLATE_W, height: TEMPLATE_H }}>
-          <img src={asset("delegate_badge_template-clean.png")} alt="" className="absolute inset-0 h-full w-full" />
+          <img src={asset(TEMPLATE)} alt="" className="absolute inset-0 h-full w-full" />
           <div className="absolute" style={{ ...BANNER, background: typeColor }} />
-          <div className="absolute flex items-center" style={{ left: 150, top: 422, width: 888, height: 100 }}>
-            <Fit text={typeLabel} size={64} weight={800} color="#fff" width={888} />
+          <div className="absolute flex items-center" style={{ left: BANNER.left + 30, top: BANNER.top, width: BANNER.width - 60, height: BANNER.height }}>
+            <Fit text={typeLabel} size={60} weight={800} color="#fff" width={BANNER.width - 60} />
           </div>
-          <div className="absolute flex flex-col items-center" style={{ left: 150, top: 550, width: 888 }}>
+          <div className="absolute flex flex-col items-center" style={TEXT}>
             {displayName && (
               <div style={{ marginBottom: 16 }}>
-                <Fit text={displayName} size={56} weight={800} color={INK} width={888} />
+                <Fit text={displayName} size={56} weight={800} color={NAME_INK} width={TEXT.width} />
               </div>
             )}
             {v(data.designation) && (
               <div style={{ marginBottom: 12 }}>
-                <Fit text={v(data.designation)} size={42} weight={700} color={INK} width={888} />
+                <Fit text={v(data.designation)} size={42} weight={700} color={INK} width={TEXT.width} />
               </div>
             )}
             {v(data.institution) && (
               <div
                 className="line-clamp-2 text-center"
-                style={{ fontSize: 38, fontWeight: 700, color: INK, lineHeight: 1.25 }}
+                style={{ fontSize: 38, fontWeight: 700, color: NAME_INK, lineHeight: 1.25 }}
               >
                 {v(data.institution)}
               </div>
             )}
           </div>
           {qr && (
-            <div className="absolute bg-white p-1" style={{ left: 440, top: 830, width: 320, height: 320 }}>
-              <QRCodeSVG value={qr} size={312} bgColor="#FFFFFF" fgColor="#000000" level="L" />
-            </div>
-          )}
-          {idNumber && (
-            <div
-              className="absolute text-center"
-              style={{
-                left: ID_LEFT,
-                top: 1166,
-                width: ID_W,
-                fontSize: ID_SIZE,
-                whiteSpace: "nowrap",
-                fontWeight: 800,
-                color: INK,
-                fontFamily: "ui-monospace, Consolas, monospace",
-              }}
-            >
-              {idNumber.split("").join(" ")}
+            <div className="absolute bg-white p-1" style={{ left: QR_BOX.left, top: QR_BOX.top, width: QR_BOX.size, height: QR_BOX.size }}>
+              <QRCodeSVG value={qr} size={QR_BOX.size - 8} bgColor="#FFFFFF" fgColor="#000000" level="L" />
             </div>
           )}
         </div>
@@ -190,7 +185,7 @@ export async function renderBadgeBlob(data: BadgeData, container: HTMLElement | 
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
   const family = getComputedStyle(document.body).fontFamily || "sans-serif";
-  templateImage ??= loadImage(asset("delegate_badge_template-clean.png")).catch((e) => {
+  templateImage ??= loadImage(asset(TEMPLATE)).catch((e) => {
     templateImage = null; // try again next time
     throw e;
   });
@@ -204,9 +199,8 @@ export async function renderBadgeBlob(data: BadgeData, container: HTMLElement | 
     cx: number,
     cy: number,
     maxW: number,
-    mono = false,
   ) => {
-    ctx.font = `${weight} ${size}px ${mono ? "ui-monospace, Consolas, monospace" : family}`;
+    ctx.font = `${weight} ${size}px ${family}`;
     ctx.fillStyle = color;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -220,28 +214,29 @@ export async function renderBadgeBlob(data: BadgeData, container: HTMLElement | 
   };
 
   const name = [v(data.title), v(data.name)].filter(Boolean).join(" ");
-  ctx.fillStyle = normalizeHex(data.participantTypeColor) ?? DEFAULT_TYPE_COLOR;
+  const type = typeOf(data);
+  ctx.fillStyle = type.color;
   ctx.fillRect(OX + BANNER.left, OY + BANNER.top, BANNER.width, BANNER.height);
-  fit((v(data.participantType) || "Delegate").toUpperCase(), 64, 800, "#fff", OX + 594, OY + 472, 888);
-  let y = OY + 550;
+  fit(type.label, 60, 800, "#fff", OX + CX, OY + BANNER.top + BANNER.height / 2, BANNER.width - 60);
+  let y = OY + TEXT.top;
   if (name) {
-    fit(name, 56, 800, INK, OX + 594, y + 56 * 0.6, 888);
+    fit(name, 56, 800, NAME_INK, OX + CX, y + 56 * 0.6, TEXT.width);
     y += 56 * 1.2 + 16;
   }
   if (v(data.designation)) {
-    fit(v(data.designation), 42, 700, INK, OX + 594, y + 42 * 0.6, 888);
+    fit(v(data.designation), 42, 700, INK, OX + CX, y + 42 * 0.6, TEXT.width);
     y += 42 * 1.2 + 12;
   }
   if (v(data.institution)) {
     ctx.font = `700 38px ${family}`;
-    ctx.fillStyle = INK;
+    ctx.fillStyle = NAME_INK;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const lines: string[] = [];
     let cur = "";
     for (const w of v(data.institution).split(/\s+/)) {
       const t = cur ? `${cur} ${w}` : w;
-      if (ctx.measureText(t).width > 888 && cur) {
+      if (ctx.measureText(t).width > TEXT.width && cur) {
         lines.push(cur);
         cur = w;
       } else cur = t;
@@ -250,30 +245,28 @@ export async function renderBadgeBlob(data: BadgeData, container: HTMLElement | 
     lines
       .slice(0, 2)
       .forEach((l, i) =>
-        ctx.fillText(i === 1 && lines.length > 2 ? `${l}…` : l, OX + 594, y + 38 * 1.25 * (i + 0.5), 888),
+        ctx.fillText(i === 1 && lines.length > 2 ? `${l}…` : l, OX + CX, y + 38 * 1.25 * (i + 0.5), TEXT.width),
       );
   }
   const svg = container?.querySelector("svg");
   if (v(data.qrCode)) {
     ctx.fillStyle = "#fff";
-    ctx.fillRect(OX + 440, OY + 830, 320, 320);
+    ctx.fillRect(OX + QR_BOX.left, OY + QR_BOX.top, QR_BOX.size, QR_BOX.size);
     if (svg) {
       const url = URL.createObjectURL(
         new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" }),
       );
       try {
-        ctx.drawImage(await loadImage(url), OX + 444, OY + 834, 312, 312);
+        ctx.drawImage(await loadImage(url), OX + QR_BOX.left + 4, OY + QR_BOX.top + 4, QR_BOX.size - 8, QR_BOX.size - 8);
       } finally {
         URL.revokeObjectURL(url);
       }
     } else {
       const QR = await import("qrcode");
       const url = await QR.toDataURL(v(data.qrCode), { margin: 0, width: 624 });
-      ctx.drawImage(await loadImage(url), OX + 444, OY + 834, 312, 312);
+      ctx.drawImage(await loadImage(url), OX + QR_BOX.left + 4, OY + QR_BOX.top + 4, QR_BOX.size - 8, QR_BOX.size - 8);
     }
   }
-  if (v(data.idNumber))
-    fit(v(data.idNumber).split("").join(" "), ID_SIZE, 800, INK, OX + TEMPLATE_W / 2, OY + 1190, ID_W, true);
 
   return new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
 }

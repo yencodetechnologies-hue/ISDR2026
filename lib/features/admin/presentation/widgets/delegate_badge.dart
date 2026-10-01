@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-/// Participant badge built on `assets/delegate_badge_template-clean.png` (1200 x 1465):
-/// participant type on a coloured banner (participantTypeColor, default #167E5D), name, ID / designation / institution below it, the QR
-/// inside the template's box and the ID number under the QR.
+/// Participant badge built on `assets/qr_pass_template.jpg` (591 x 768, the whole 100 x 130 mm card,
+/// drawn at 1080 x 1404): participant type on a coloured banner (participantTypeColor, default #167E5D),
+/// name, designation / institution below it and the QR. No ID code is shown.
 class DelegateBadge extends StatelessWidget {
-  static const double templateWidth = 1200;
-  static const double templateHeight = 1465;
-
-  /// The framed design inside the template (the rest is a dark margin): exactly 100 x 130 mm.
-  static const double cropLeft = 60;
-  static const double cropTop = 25;
   static const double badgeWidth = 1080;
   static const double badgeHeight = 1404;
 
   /// Banner behind the participant type when none was chosen.
   static const String defaultTypeColorHex = '#167E5D';
   static const Color defaultTypeColor = Color(0xFF167E5D);
+  static const Color speakerTypeColor = Color(0xFF9E0A0F);
 
   /// '#RRGGBB' or 'RRGGBB' → colour; null when it isn't a valid 6-digit hex.
   static Color? parseHex(String? hex) {
@@ -34,13 +29,17 @@ class DelegateBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayName = [_v('title'), _v('name')].where((e) => e.isNotEmpty).join(' ');
-    final typeLabel = (_v('participantType').isEmpty ? 'Delegate' : _v('participantType')).toUpperCase();
-    final typeColor = parseHex(_v('participantTypeColor')) ?? defaultTypeColor;
-    final idNumber = _v('idNumber');
+    final rawType = _v('participantType').isEmpty ? 'Delegate' : _v('participantType');
+    // Speakers' passes read "INVITED SPEAKER" on #9E0A0F.
+    final isSpeaker = RegExp(r'^(invited\s+)?speaker$', caseSensitive: false).hasMatch(rawType);
+    final typeLabel = (isSpeaker ? 'Invited Speaker' : rawType).toUpperCase();
+    final typeColor = parseHex(_v('participantTypeColor')) ?? (isSpeaker ? speakerTypeColor : defaultTypeColor);
     final designation = _v('designation');
     final institution = _v('institution');
     final qrData = _v('qrCode');
     const ink = Color(0xFF0F172A);
+    // Name and the institution line (ISDR26-####) on every pass.
+    const nameInk = Color(0xFF2E3192);
 
     Widget fitted(String text, double size, FontWeight weight, Color color) => FittedBox(
           fit: BoxFit.scaleDown,
@@ -57,39 +56,32 @@ class DelegateBadge extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.hardEdge,
             children: [
-              Positioned(
-                left: -cropLeft,
-                top: -cropTop,
-                width: templateWidth,
-                height: templateHeight,
-                child: Stack(
-            children: [
               Positioned.fill(
-                child: Image.asset('assets/delegate_badge_template-clean.png', fit: BoxFit.fill),
+                child: Image.asset('assets/qr_pass_template.jpg', fit: BoxFit.fill),
               ),
-              // Banner behind the participant type, in the participant's colour.
+              // Banner behind the participant type, in the participant's colour, spanning the white panel edge to edge.
               Positioned(
-                left: 120,
-                top: 422,
-                width: 948,
-                height: 100,
+                left: 61,
+                top: 440,
+                width: 949,
+                height: 96,
                 child: ColoredBox(color: typeColor),
               ),
               Positioned(
-                left: 150,
-                top: 422,
-                width: 888,
-                height: 100,
-                child: Center(child: fitted(typeLabel, 64, FontWeight.w800, Colors.white)),
+                left: 120,
+                top: 440,
+                width: 840,
+                height: 96,
+                child: Center(child: fitted(typeLabel, 60, FontWeight.w800, Colors.white)),
               ),
               Positioned(
-                left: 150,
-                top: 550,
-                width: 888,
+                left: 110,
+                top: 562,
+                width: 860,
                 child: Column(
                   children: [
                     if (displayName.isNotEmpty) ...[
-                      fitted(displayName, 56, FontWeight.w800, ink),
+                      fitted(displayName, 56, FontWeight.w800, nameInk),
                       const SizedBox(height: 16),
                     ],
                     if (designation.isNotEmpty) ...[
@@ -102,43 +94,23 @@ class DelegateBadge extends StatelessWidget {
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w700, color: ink, height: 1.25),
+                        style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w700, color: nameInk, height: 1.25),
                       ),
                   ],
                 ),
               ),
               if (qrData.isNotEmpty)
                 Positioned(
-                  left: 440,
-                  top: 830,
-                  width: 320,
-                  height: 320,
+                  left: 400,
+                  top: 740,
+                  width: 280,
+                  height: 280,
                   child: Container(
                     color: Colors.white,
                     padding: const EdgeInsets.all(4),
                     child: QrImageView(data: qrData, padding: EdgeInsets.zero, backgroundColor: Colors.white),
                   ),
                 ),
-              if (idNumber.isNotEmpty)
-                Positioned(
-                  left: 0,
-                  top: 1160,
-                  width: templateWidth,
-                  child: Center(
-                    child: Text(
-                      idNumber.split('').join(' '),
-                      style: const TextStyle(
-                        fontSize: 52,
-                        fontWeight: FontWeight.w800,
-                        color: ink,
-                        fontFamily: 'monospace',
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-              ),
             ],
           ),
         ),
