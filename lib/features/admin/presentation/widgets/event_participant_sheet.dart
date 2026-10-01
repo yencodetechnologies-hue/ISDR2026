@@ -153,9 +153,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
       'Participant type': _type.text,
       'Title': _title,
       'First name': _first.text,
-      'Last name': _last.text,
       'Gender': _gender,
-      'Organization': _institution.text,
       'Package': _packageId ?? '',
       if (widget.registration != null) 'ID no.': _idNumber.text,
       'Mobile number': _mobile.text,
@@ -473,7 +471,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                           child: _text(_middle, 'Middle name', required: false),
                         ),
                         const SizedBox(width: 10),
-                        Expanded(child: _text(_last, 'Last name')),
+                        Expanded(child: _text(_last, 'Last name', required: false)),
                       ],
                     ),
                     Row(
@@ -507,7 +505,7 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: _text(_institution, 'Organization')),
+                        Expanded(child: _text(_institution, 'Organization', required: false)),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(

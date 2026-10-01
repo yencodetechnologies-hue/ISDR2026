@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { BadgeData } from "@/components/DelegateBadge";
+import { CARD_MM_H, CARD_MM_W, type BadgeData } from "@/components/DelegateBadge";
 
 /**
  * List downloads: Excel (.xlsx), PDF and — for lists of people with a QR pass
@@ -197,27 +197,22 @@ export async function exportPdf<T>(title: string, columns: ExportColumn<T>[], ro
   doc.save(`${safeName(title)}_${stamp()}.pdf`);
 }
 
-/** Lists with QR passes: the PDF holds only the full pass images — 4 per A4 page (2 × 2), no details. */
+/** Lists with QR passes: one 100 mm × 130 mm card per page, filling the page. */
 async function exportPassesPdf<T>(title: string, rows: T[], qr: QrConfig<T>) {
   const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const M = 28;
-  const GAP = 16;
-  const passW = (pageW - M * 2 - GAP) / 2; // ≈ 9 cm wide
-  const passH = passW * PASS_RATIO;
-  const top = (pageH - (passH * 2 + GAP)) / 2; // centred vertically
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: [CARD_MM_W, CARD_MM_H],
+  });
+  const printW = Math.round((CARD_MM_W / 25.4) * 300);
   let n = 0;
   for (const r of rows) {
     if (!qr.code(r)) continue;
-    const pass = await passDataUrl(qr.badge(r), 900);
+    const pass = await passDataUrl(qr.badge(r), printW);
     if (!pass) continue;
-    const slot = n % 4;
-    if (n > 0 && slot === 0) doc.addPage();
-    const x = M + (slot % 2) * (passW + GAP);
-    const y = top + Math.floor(slot / 2) * (passH + GAP);
-    doc.addImage(pass, "JPEG", x, y, passW, passH);
+    if (n > 0) doc.addPage([CARD_MM_W, CARD_MM_H], "portrait");
+    doc.addImage(pass, "JPEG", 0, 0, CARD_MM_W, CARD_MM_H);
     n++;
   }
   if (!n) throw new Error("No QR passes to download");

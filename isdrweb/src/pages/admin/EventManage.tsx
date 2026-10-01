@@ -563,9 +563,7 @@ export function ParticipantModal({
       ["Participant type", type],
       ["Title", title],
       ["First name", first],
-      ["Last name", last],
       ["Gender", gender],
-      ["Organization", institution],
       ["Package", packageId],
       ...(editing ? ([["ID no.", idNumber]] as [string, string][]) : []),
       ["Mobile number", mobile],
@@ -699,8 +697,8 @@ export function ParticipantModal({
         <Field label="Middle name">
           <Input value={middle} onChange={(e) => setMiddle(e.target.value)} placeholder="Optional" />
         </Field>
-        <Field label="Last name *">
-          <Input value={last} onChange={(e) => setLast(e.target.value)} />
+        <Field label="Last name">
+          <Input value={last} onChange={(e) => setLast(e.target.value)} placeholder="Optional" />
         </Field>
       </div>
 
@@ -720,8 +718,8 @@ export function ParticipantModal({
         <Field label="Designation">
           <Input value={designation} onChange={(e) => setDesignation(e.target.value)} />
         </Field>
-        <Field label="Organization *">
-          <Input value={institution} onChange={(e) => setInstitution(e.target.value)} />
+        <Field label="Organization">
+          <Input value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="Optional" />
         </Field>
       </div>
 

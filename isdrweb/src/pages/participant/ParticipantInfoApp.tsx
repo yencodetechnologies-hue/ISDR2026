@@ -375,7 +375,7 @@ const OFFICE_BEARERS: OfficeBearer[] = [
   },
   {
     name: "DR. MAHESH VERMA",
-    role: "President Elect",
+    role: "President-Elect",
     imagePath: "DR.-MAHESH-VERMA.webp",
     designation: "Vice Chancellor, Guru Gobind Singh, Indraprastha University, New Delhi",
   },
@@ -399,7 +399,7 @@ const OFFICE_BEARERS: OfficeBearer[] = [
   },
   {
     name: "DR. S. M. BALAJI",
-    role: "Secretary General",
+    role: "Secretary General, ISDR & Secretary, IADR Asia Pacific Region",
     imagePath: "DR.-S.-M.-BALAJI.webp",
     designation: "Director, Cranio-Maxillofacial Surgeon, Balaji Dental & Craniofacial Hospital, Chennai",
   },
@@ -411,13 +411,13 @@ const OFFICE_BEARERS: OfficeBearer[] = [
   },
   {
     name: "DR. ANIL KOHLI",
-    role: "Editor-In-Chief - IJDR",
+    role: "Editor-in-Chief – IJDR",
     imagePath: "DR.-ANIL-KOHLI.webp",
     designation: "Former President, DCI, New Delhi",
   },
   {
     name: "DR. S. KISHORE KUMAR",
-    role: "Treasurer",
+    role: "Treasurer, Joint Secretary",
     imagePath: "DR.-S.-KISHORE-KUMAR.webp",
     designation: "Vice Principal, Sree Balaji Dental College & Hospital, Chennai",
   },

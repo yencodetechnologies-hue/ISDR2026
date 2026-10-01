@@ -22,10 +22,10 @@ const COLUMNS: { label: string; required: boolean; keys: string[] }[] = [
   { label: "Title", required: true, keys: ["title"] },
   { label: "First name", required: true, keys: ["firstname"] },
   { label: "Middle name", required: false, keys: ["middlename"] },
-  { label: "Last name", required: true, keys: ["lastname"] },
+  { label: "Last name", required: false, keys: ["lastname"] },
   { label: "Gender", required: true, keys: ["gender"] },
   { label: "Designation", required: true, keys: ["designation"] },
-  { label: "Organization", required: true, keys: ["organization", "organisation", "institution"] },
+  { label: "Organization", required: false, keys: ["organization", "organisation", "institution"] },
   { label: "ID no.", required: false, keys: ["idno", "idnumber"] },
   { label: "Mobile no.", required: true, keys: ["mobileno", "mobile", "mobilenumber"] },
   { label: "Email", required: true, keys: ["email"] },
@@ -109,10 +109,8 @@ function issuesOf(r: Row, pkg: any | null) {
   else if (!pkg) bad.push(`package "${r.packageName}" not on this event`);
   if (!["Dr", "Mr", "Ms", "Prof"].includes(r.title)) bad.push(r.title ? `title "${r.title}"` : "title");
   if (!r.firstName) bad.push("first name");
-  if (!r.lastName) bad.push("last name");
   if (!["male", "female", "other"].includes(r.gender)) bad.push(r.gender ? `gender "${r.gender}"` : "gender");
   if (!r.designation) bad.push("designation");
-  if (!r.institution) bad.push("organization");
   if (!/^\+?\d{10,13}$/.test(r.mobileNumber)) bad.push("mobile no.");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email)) bad.push("email");
   if (!/^(non[\s-]?veg(etarian)?|veg(etarian)?)$/i.test(r.foodPreference))

@@ -597,7 +597,6 @@ function parseParticipantProfile(body, { strict }) {
   }
   if (has('middleName')) out.middleName = str('middleName');
   if (has('lastName') || strict) {
-    required('lastName', 'Last name');
     out.lastName = str('lastName');
   }
   oneOf('gender', 'Gender', PARTICIPANT_GENDERS, (v) => v.toLowerCase());
@@ -616,7 +615,6 @@ function parseParticipantProfile(body, { strict }) {
     out.designation = str('designation');
   }
   if (has('institution') || strict) {
-    required('institution', 'Organization');
     out.institution = str('institution');
   }
   if (has('idNumber')) out.idNumber = str('idNumber');
@@ -1139,6 +1137,7 @@ const getMyRegistration = async (req, res) => {
 
 module.exports = {
   normalizeInclusions,
+  createParticipantRegistration,
   listEvents,
   createEvent,
   getEvent,

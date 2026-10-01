@@ -1235,6 +1235,50 @@ class _ParticipantQrSheetState extends State<_ParticipantQrSheet> {
     }
   }
 
+  /// PNG pHYs so the saved image is 100 mm × 130 mm at 300 dpi.
+  Uint8List _stampPngDpi(Uint8List src, int dpi) {
+    final ppm = (dpi / 0.0254).round();
+    final data = ByteData(9);
+    data.setUint32(0, ppm);
+    data.setUint32(4, ppm);
+    data.setUint8(8, 1);
+    final typeAndData = Uint8List(13);
+    typeAndData.setAll(0, [0x70, 0x48, 0x59, 0x73]);
+    typeAndData.setRange(4, 13, data.buffer.asUint8List());
+    var crc = 0xFFFFFFFF;
+    for (final b in typeAndData) {
+      crc = (crc ^ b) & 0xFFFFFFFF;
+      for (var k = 0; k < 8; k++) {
+        final mixed = (crc & 1) != 0 ? (0xEDB88320 ^ (crc >> 1)) : (crc >> 1);
+        crc = mixed & 0xFFFFFFFF;
+      }
+    }
+    crc = (crc ^ 0xFFFFFFFF) & 0xFFFFFFFF;
+    final chunk = BytesBuilder();
+    final len = ByteData(4)..setUint32(0, 9);
+    chunk.add(len.buffer.asUint8List());
+    chunk.add(typeAndData);
+    final crcBytes = ByteData(4)..setUint32(0, crc);
+    chunk.add(crcBytes.buffer.asUint8List());
+    final phys = chunk.toBytes();
+
+    var offset = 8;
+    while (offset + 8 <= src.length) {
+      final view = ByteData.sublistView(src, offset, offset + 8);
+      final chunkLen = view.getUint32(0);
+      final type = String.fromCharCodes(src.sublist(offset + 4, offset + 8));
+      if (type == 'IDAT' || type == 'IEND' || type == 'pHYs') {
+        final out = BytesBuilder();
+        out.add(src.sublist(0, offset));
+        out.add(phys);
+        out.add(src.sublist(type == 'pHYs' ? offset + 12 + chunkLen : offset));
+        return out.toBytes();
+      }
+      offset += 12 + chunkLen;
+    }
+    return src;
+  }
+
   Future<void> _download() async {
     final bytes = await _captureQrCode();
     if (bytes == null) return;
@@ -1243,7 +1287,7 @@ class _ParticipantQrSheetState extends State<_ParticipantQrSheet> {
       final file = File(
         '${tempDir.path}/badge_${widget.registration['idNumber'] ?? 'qr'}.png',
       );
-      await file.writeAsBytes(bytes);
+      await file.writeAsBytes(_stampPngDpi(bytes, 300));
       await Gal.putImage(file.path);
       if (mounted) {
         ScaffoldMessenger.of(

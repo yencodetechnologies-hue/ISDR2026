@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { asset } from "@/lib/api";
 
-// Template "ID CARD 4_page-0001.jpg" (591×768) is the whole 100×130 mm card, drawn at 1080×1404.
+// Template "ID CARD 4_page-0001.jpg" (591×768) is the whole 100×130 mm card.
+// Layout coordinates are 1080×1404; downloads are rasterised at 300 dpi so the
+// file's physical size is exactly 100 mm wide × 130 mm high.
 const TEMPLATE = "ID CARD 4_page-0001.jpg";
 const TEMPLATE_W = 1080;
 const TEMPLATE_H = 1404;
@@ -11,6 +13,11 @@ const CROP_LEFT = 0;
 const CROP_TOP = 0;
 const BADGE_W = 1080;
 const BADGE_H = 1404;
+export const CARD_MM_W = 100;
+export const CARD_MM_H = 130;
+const PRINT_DPI = 300;
+const PRINT_W = Math.round((CARD_MM_W / 25.4) * PRINT_DPI);
+const PRINT_H = Math.round((CARD_MM_H / 25.4) * PRINT_DPI);
 const INK = "#0F172A";
 // Name and the institution line (ISDR26-####) on every pass.
 const NAME_INK = "#2E3192";
@@ -180,10 +187,11 @@ export async function renderBadgeBlob(data: BadgeData, container: HTMLElement | 
   const OX = -CROP_LEFT;
   const OY = -CROP_TOP;
   const canvas = document.createElement("canvas");
-  canvas.width = BADGE_W;
-  canvas.height = BADGE_H;
+  canvas.width = PRINT_W;
+  canvas.height = PRINT_H;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
+  ctx.scale(PRINT_W / BADGE_W, PRINT_H / BADGE_H);
   const family = getComputedStyle(document.body).fontFamily || "sans-serif";
   templateImage ??= loadImage(asset(TEMPLATE)).catch((e) => {
     templateImage = null; // try again next time
@@ -268,17 +276,87 @@ export async function renderBadgeBlob(data: BadgeData, container: HTMLElement | 
     }
   }
 
-  return new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
+  const png = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
+  if (!png) return null;
+  return stampPngDensity(png, PRINT_DPI);
 }
 
-/** Saves the badge as a PNG (QR taken from the rendered badge in [container]). */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(buf: Uint8Array) {
+  let c = 0xffffffff;
+  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+/** PNG pHYs chunk so the image prints at [dpi] (100 mm × 130 mm at 300 dpi). */
+async function stampPngDensity(blob: Blob, dpi: number) {
+  const src = new Uint8Array(await blob.arrayBuffer());
+  const ppm = Math.round(dpi / 0.0254);
+  const data = new Uint8Array(9);
+  const view = new DataView(data.buffer);
+  view.setUint32(0, ppm);
+  view.setUint32(4, ppm);
+  data[8] = 1;
+  const typeBytes = new Uint8Array([0x70, 0x48, 0x59, 0x73]);
+  const crcBuf = new Uint8Array(13);
+  crcBuf.set(typeBytes, 0);
+  crcBuf.set(data, 4);
+  const chunk = new Uint8Array(21);
+  const cv = new DataView(chunk.buffer);
+  cv.setUint32(0, 9);
+  chunk.set(typeBytes, 4);
+  chunk.set(data, 8);
+  cv.setUint32(17, crc32(crcBuf));
+
+  let offset = 8;
+  while (offset + 8 <= src.length) {
+    const len = new DataView(src.buffer, src.byteOffset + offset, 4).getUint32(0);
+    const type = String.fromCharCode(src[offset + 4], src[offset + 5], src[offset + 6], src[offset + 7]);
+    if (type === "pHYs") {
+      const next = offset + 12 + len;
+      const out = new Uint8Array(src.length - (12 + len) + chunk.length);
+      out.set(src.subarray(0, offset));
+      out.set(chunk, offset);
+      out.set(src.subarray(next), offset + chunk.length);
+      return new Blob([out], { type: "image/png" });
+    }
+    if (type === "IDAT" || type === "IEND") {
+      const out = new Uint8Array(src.length + chunk.length);
+      out.set(src.subarray(0, offset));
+      out.set(chunk, offset);
+      out.set(src.subarray(offset), offset + chunk.length);
+      return new Blob([out], { type: "image/png" });
+    }
+    offset += 12 + len;
+  }
+  return blob;
+}
+
+function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+/** Saves the badge as a 100 mm × 130 mm PDF (one card, full page). */
 export async function downloadBadgePng(container: HTMLElement | null, data: BadgeData) {
   const blob = await renderBadgeBlob(data, container);
   if (!blob) return false;
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `badge_${v(data.idNumber) || "qr"}.png`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [CARD_MM_W, CARD_MM_H] });
+  doc.addImage(await blobToDataUrl(blob), "PNG", 0, 0, CARD_MM_W, CARD_MM_H);
+  doc.save(`badge_${v(data.idNumber) || "qr"}.pdf`);
   return true;
 }

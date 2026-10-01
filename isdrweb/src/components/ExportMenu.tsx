@@ -106,8 +106,8 @@ export default function ExportMenu<T>({
           style={pos}
         >
           {item("excel", "table_view", "Excel (.xlsx)", qr ? "With QR pass images" : "Spreadsheet")}
-          {item("pdf", "picture_as_pdf", "PDF", qr ? "Full QR pass images, 4 per page" : "Printable table")}
-          {qr && item("zip", "folder_zip", "ZIP of QR passes", "Every pass as a PNG image")}
+          {item("pdf", "picture_as_pdf", "PDF", qr ? "100 × 130 mm ID card, one per page" : "Printable table")}
+          {qr && item("zip", "folder_zip", "ZIP of QR passes", "100 × 130 mm PNG, 300 dpi")}
         </div>
       )}
     </div>
