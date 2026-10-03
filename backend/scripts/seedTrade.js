@@ -3,8 +3,8 @@
  *
  * Uses the free "Trade" package (created with dummy entry/exit dates if it
  * is missing). Each person is participant type "TRADE" with the same blue
- * banner as Event Organizer. A temporary name is required to create the row,
- * then the name is cleared so the badge, list, and QR payload have no name.
+ * banner as Event Organizer. The database name is a dummy (DELEGATE plus the
+ * ID) so entry and exit scans can save the row. The QR payload name stays blank.
  * Email and mobile stay internal so this script can be re-run. An email that
  * is already registered is updated in place.
  *
@@ -37,8 +37,9 @@ function slot(n) {
   };
 }
 
-/** Drops the printed name. updateOne skips the required-name check. */
+/** Keeps a dummy database name so scans can save. The QR payload name stays blank. */
 async function clearPrintedName(reg, event) {
+  const name = `DELEGATE ${reg.idNumber}`;
   const qrCode = JSON.stringify({
     type: 'event_ticket',
     registrationId: reg._id.toString(),
@@ -53,10 +54,10 @@ async function clearPrintedName(reg, event) {
     {
       $set: {
         title: '',
-        firstName: '',
+        firstName: name,
         middleName: '',
         lastName: '',
-        name: '',
+        name,
         designation: '',
         institution: '',
         qrCode,

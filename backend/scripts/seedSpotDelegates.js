@@ -1,9 +1,9 @@
 /**
  * Adds 15 spot registrations to the Spot register package.
  *
- * These cards have no participant type and no name. The banner is orange
- * and the pass is the QR. A temporary name is required to create the row,
- * then it is cleared.
+ * These cards have no participant type. The banner is orange and the pass is
+ * the QR. The database name is a dummy (DELEGATE plus the ID) so entry and
+ * exit scans can save the row. The QR payload name stays blank.
  * Email and mobile stay internal so
  * this script can be re-run. An email that is already registered is updated
  * in place.
@@ -34,8 +34,9 @@ function slot(n) {
   };
 }
 
-/** Drops the printed name. updateOne skips the required-name check. */
+/** Keeps a dummy database name so scans can save. The QR payload name stays blank. */
 async function clearPrintedName(reg, event) {
+  const name = `DELEGATE ${reg.idNumber}`;
   const qrCode = JSON.stringify({
     type: 'event_ticket',
     registrationId: reg._id.toString(),
@@ -50,10 +51,10 @@ async function clearPrintedName(reg, event) {
     {
       $set: {
         title: '',
-        firstName: '',
+        firstName: name,
         middleName: '',
         lastName: '',
-        name: '',
+        name,
         designation: '',
         institution: '',
         participantType: '',
