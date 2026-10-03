@@ -12,6 +12,8 @@ class DelegateBadge extends StatelessWidget {
   static const String defaultTypeColorHex = '#167E5D';
   static const Color defaultTypeColor = Color(0xFF167E5D);
   static const Color speakerTypeColor = Color(0xFF9E0A0F);
+  static const Color committeeTypeColor = Color(0xFF9E0A0F);
+  static const Color organizerTypeColor = Color(0xFF1D4ED8);
 
   /// '#RRGGBB' or 'RRGGBB' → colour; null when it isn't a valid 6-digit hex.
   static Color? parseHex(String? hex) {
@@ -32,10 +34,24 @@ class DelegateBadge extends StatelessWidget {
     final rawType = _v('participantType').isEmpty ? 'Delegate' : _v('participantType');
     // Speakers' passes read "INVITED SPEAKER" on #9E0A0F.
     final isSpeaker = RegExp(r'^(invited\s+)?speaker$', caseSensitive: false).hasMatch(rawType);
+    final isCommittee = RegExp(
+      r'^(organis(?:ing|zing)\s+committee|executive council members|isdr office bearers|iadr office bearer|invited dignitary)$',
+      caseSensitive: false,
+    ).hasMatch(rawType);
+    // Event Organizer cards show the blue banner and QR only.
+    final isOrganizer = RegExp(r'^event\s+organizers?$', caseSensitive: false).hasMatch(rawType);
     final typeLabel = (isSpeaker ? 'Invited Speaker' : rawType).toUpperCase();
-    final typeColor = parseHex(_v('participantTypeColor')) ?? (isSpeaker ? speakerTypeColor : defaultTypeColor);
-    final designation = _v('designation');
-    final institution = _v('institution');
+    final typeColor = parseHex(_v('participantTypeColor')) ??
+        (isOrganizer
+            ? organizerTypeColor
+            : isSpeaker
+                ? speakerTypeColor
+                : isCommittee
+                    ? committeeTypeColor
+                    : defaultTypeColor);
+    final designation = isOrganizer ? '' : _v('designation');
+    final institution = isOrganizer ? '' : _v('institution');
+    final shownName = isOrganizer ? '' : displayName;
     final qrData = _v('qrCode');
     const ink = Color(0xFF0F172A);
     // Name and the institution line (ISDR26-####) on every pass.
@@ -80,8 +96,8 @@ class DelegateBadge extends StatelessWidget {
                 width: 860,
                 child: Column(
                   children: [
-                    if (displayName.isNotEmpty) ...[
-                      fitted(displayName, 56, FontWeight.w800, nameInk),
+                    if (shownName.isNotEmpty) ...[
+                      fitted(shownName, 56, FontWeight.w800, nameInk),
                       const SizedBox(height: 16),
                     ],
                     if (designation.isNotEmpty) ...[

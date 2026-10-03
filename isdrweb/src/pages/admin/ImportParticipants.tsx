@@ -82,9 +82,9 @@ function mapRow(get: (label: string) => any, rowNumber: number): Row {
     participantTypeColor: text(get("Banner colour")).toUpperCase(),
     packageName: text(get("Package")),
     title: TITLE_MAP[rawTitle.toLowerCase()] ?? rawTitle,
-    firstName: text(get("First name")),
-    middleName: text(get("Middle name")),
-    lastName: text(get("Last name")),
+    firstName: text(get("First name")).toUpperCase(),
+    middleName: text(get("Middle name")).toUpperCase(),
+    lastName: text(get("Last name")).toUpperCase(),
     gender: text(get("Gender")).toLowerCase(),
     designation: text(get("Designation")),
     institution: text(get("Organization")),
@@ -107,7 +107,7 @@ function issuesOf(r: Row, pkg: any | null) {
     bad.push(`banner colour "${r.participantTypeColor}" (use hex like #167E5D)`);
   if (!r.packageName) bad.push("package");
   else if (!pkg) bad.push(`package "${r.packageName}" not on this event`);
-  if (!["Dr", "Mr", "Ms", "Prof"].includes(r.title)) bad.push(r.title ? `title "${r.title}"` : "title");
+  if (!["Dr", "Mr", "Mrs", "Ms", "Prof"].includes(r.title)) bad.push(r.title ? `title "${r.title}"` : "title");
   if (!r.firstName) bad.push("first name");
   if (!["male", "female", "other"].includes(r.gender)) bad.push(r.gender ? `gender "${r.gender}"` : "gender");
   if (!r.designation) bad.push("designation");

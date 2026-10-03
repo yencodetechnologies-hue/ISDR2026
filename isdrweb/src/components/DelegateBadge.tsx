@@ -50,14 +50,32 @@ export type BadgeData = {
 
 const v = (s: any) => String(s ?? "").trim();
 
-// Speakers' passes read "INVITED SPEAKER" on #9E0A0F.
-const SPEAKER_COLOR = "#9E0A0F";
+// Banner colours used when a registration has no stored colour.
+const COMMITTEE_MAROON = "#9E0A0F";
+const DELEGATE_ORANGE = "#D46D1D";
+const SPEAKER_COLOR = "#0284C7";
+const ORGANIZER_BLUE = "#1D4ED8";
+
+function isEventOrganizer(type: string) {
+  return /^event\s+organizers?$/i.test(type);
+}
+
+function fallbackColor(type: string) {
+  if (/^student\s+delegate$/i.test(type)) return DEFAULT_TYPE_COLOR;
+  if (/^(invited\s+)?speakers?$/i.test(type)) return SPEAKER_COLOR;
+  if (/^delegate$/i.test(type)) return DELEGATE_ORANGE;
+  if (isEventOrganizer(type)) return ORGANIZER_BLUE;
+  if (/^(organis(?:ing|zing)\s+committee|executive council members|isdr office bearers|iadr office bearer|invited dignitary)$/i.test(type))
+    return COMMITTEE_MAROON;
+  return DEFAULT_TYPE_COLOR;
+}
+
 function typeOf(data: BadgeData) {
   const t = v(data.participantType) || "Delegate";
   const speaker = /^(invited\s+)?speaker$/i.test(t);
   return {
     label: (speaker ? "Invited Speaker" : t).toUpperCase(),
-    color: normalizeHex(data.participantTypeColor) ?? (speaker ? SPEAKER_COLOR : DEFAULT_TYPE_COLOR),
+    color: normalizeHex(data.participantTypeColor) ?? fallbackColor(t),
   };
 }
 
@@ -108,7 +126,10 @@ export default function DelegateBadge({ data, innerRef }: { data: BadgeData; inn
     return () => ro.disconnect();
   }, []);
 
-  const displayName = [v(data.title), v(data.name)].filter(Boolean).join(" ");
+  const organizer = isEventOrganizer(v(data.participantType));
+  const displayName = organizer ? "" : [v(data.title), v(data.name).toUpperCase()].filter(Boolean).join(" ");
+  const designation = organizer ? "" : v(data.designation);
+  const institution = organizer ? "" : v(data.institution);
   const { label: typeLabel, color: typeColor } = typeOf(data);
   const qr = v(data.qrCode);
 
@@ -140,17 +161,17 @@ export default function DelegateBadge({ data, innerRef }: { data: BadgeData; inn
                 <Fit text={displayName} size={56} weight={800} color={NAME_INK} width={TEXT.width} />
               </div>
             )}
-            {v(data.designation) && (
+            {designation && (
               <div style={{ marginBottom: 12 }}>
-                <Fit text={v(data.designation)} size={42} weight={700} color={INK} width={TEXT.width} />
+                <Fit text={designation} size={42} weight={700} color={INK} width={TEXT.width} />
               </div>
             )}
-            {v(data.institution) && (
+            {institution && (
               <div
                 className="line-clamp-2 text-center"
                 style={{ fontSize: 38, fontWeight: 700, color: NAME_INK, lineHeight: 1.25 }}
               >
-                {v(data.institution)}
+                {institution}
               </div>
             )}
           </div>
@@ -221,7 +242,10 @@ export async function renderBadgeBlob(data: BadgeData, container: HTMLElement | 
     ctx.restore();
   };
 
-  const name = [v(data.title), v(data.name)].filter(Boolean).join(" ");
+  const organizer = isEventOrganizer(v(data.participantType));
+  const name = organizer ? "" : [v(data.title), v(data.name).toUpperCase()].filter(Boolean).join(" ");
+  const designation = organizer ? "" : v(data.designation);
+  const institution = organizer ? "" : v(data.institution);
   const type = typeOf(data);
   ctx.fillStyle = type.color;
   ctx.fillRect(OX + BANNER.left, OY + BANNER.top, BANNER.width, BANNER.height);
@@ -231,18 +255,18 @@ export async function renderBadgeBlob(data: BadgeData, container: HTMLElement | 
     fit(name, 56, 800, NAME_INK, OX + CX, y + 56 * 0.6, TEXT.width);
     y += 56 * 1.2 + 16;
   }
-  if (v(data.designation)) {
-    fit(v(data.designation), 42, 700, INK, OX + CX, y + 42 * 0.6, TEXT.width);
+  if (designation) {
+    fit(designation, 42, 700, INK, OX + CX, y + 42 * 0.6, TEXT.width);
     y += 42 * 1.2 + 12;
   }
-  if (v(data.institution)) {
+  if (institution) {
     ctx.font = `700 38px ${family}`;
     ctx.fillStyle = NAME_INK;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const lines: string[] = [];
     let cur = "";
-    for (const w of v(data.institution).split(/\s+/)) {
+    for (const w of institution.split(/\s+/)) {
       const t = cur ? `${cur} ${w}` : w;
       if (ctx.measureText(t).width > TEXT.width && cur) {
         lines.push(cur);

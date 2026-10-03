@@ -596,7 +596,7 @@ function ResultView({
         <div className="my-3 h-px bg-black/10" />
         {r.name && (
           <div className="mb-2 text-xl font-black" style={{ color: tone }}>
-            {r.name}
+            {String(r.name).toUpperCase()}
           </div>
         )}
         {line("ID Number", String(r.idNumber ?? (reg ? "Spot" : "")))}

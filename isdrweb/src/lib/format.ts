@@ -128,11 +128,14 @@ export function scheduleDay(s: any): Date | null {
 export const toLocalInput = (d: Date) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
-export const fullName = (r: any) =>
-  [r?.title, r?.firstName, r?.middleName, r?.lastName]
-    .map((x) => String(x ?? "").trim())
-    .filter(Boolean)
-    .join(" ") || String(r?.name ?? "");
+const capsPart = (x: unknown) => String(x ?? "").trim().toUpperCase();
+
+export const fullName = (r: any) => {
+  const parts = [r?.firstName, r?.middleName, r?.lastName].map(capsPart).filter(Boolean);
+  const title = String(r?.title ?? "").trim();
+  if (parts.length) return [title, ...parts].filter(Boolean).join(" ");
+  return capsPart(r?.name);
+};
 
 export const cap = (s: any) => {
   const t = String(s ?? "");

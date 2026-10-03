@@ -251,5 +251,11 @@ export async function exportQrZip<T>(
 }
 
 /** Shared helper: "Title First Middle Last" of a participant registration. */
-export const fullNameOf = (r: any) =>
-  [r?.title, r?.firstName, r?.middleName, r?.lastName].filter(Boolean).join(" ") || String(r?.name ?? "");
+export const fullNameOf = (r: any) => {
+  const parts = [r?.firstName, r?.middleName, r?.lastName]
+    .map((x) => String(x ?? "").trim().toUpperCase())
+    .filter(Boolean);
+  const title = String(r?.title ?? "").trim();
+  if (parts.length) return [title, ...parts].filter(Boolean).join(" ");
+  return String(r?.name ?? "").trim().toUpperCase();
+};

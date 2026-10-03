@@ -37,5 +37,9 @@ export const PARTICIPANT_QR: QrConfig<any> = {
     institution: r.institution,
     qrCode: r.qrCode || r.idNumber,
   }),
-  fileName: (r) => `${r.idNumber || "SPOT"} - ${fullNameOf(r) || "Participant"}`,
+  fileName: (r) => {
+    const id = r.idNumber || "SPOT";
+    const name = fullNameOf(r);
+    return name ? `${id} - ${name}` : id;
+  },
 };

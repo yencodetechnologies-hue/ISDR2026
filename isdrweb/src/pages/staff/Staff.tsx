@@ -375,7 +375,11 @@ function StaffEventDetailWeb() {
                       institution: r.institution,
                       qrCode: r.qrCode || r.idNumber,
                     }),
-                    fileName: (r: any) => `${r.idNumber || "SPOT"} - ${fullNameOf(r) || "Participant"}`,
+                    fileName: (r: any) => {
+                      const id = r.idNumber || "SPOT";
+                      const name = fullNameOf(r);
+                      return name ? `${id} - ${name}` : id;
+                    },
                   }}
                 />
               </div>

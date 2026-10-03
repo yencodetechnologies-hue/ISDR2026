@@ -267,18 +267,26 @@ function publicEventDto(event) {
   };
 }
 
+function capsName(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
 function registrationDto(reg, event) {
+  const firstName = capsName(reg.firstName);
+  const middleName = capsName(reg.middleName);
+  const lastName = capsName(reg.lastName);
+  const composed = [firstName, middleName, lastName].filter(Boolean).join(' ');
   return {
     id: reg._id.toString(),
     eventId: reg.eventId?.toString?.() || String(reg.eventId),
-    name: reg.name,
+    name: composed || capsName(reg.name),
     mobileNumber: reg.mobileNumber,
     email: reg.email,
     institution: reg.institution || '',
     title: reg.title || '',
-    firstName: reg.firstName || '',
-    middleName: reg.middleName || '',
-    lastName: reg.lastName || '',
+    firstName,
+    middleName,
+    lastName,
     gender: reg.gender || '',
     participantType: reg.participantType || 'Delegate',
     participantTypeColor: reg.participantTypeColor || DEFAULT_PARTICIPANT_TYPE_COLOR,
@@ -560,7 +568,7 @@ const listRegistrations = async (req, res) => {
   }
 };
 
-const PARTICIPANT_TITLES = ['Dr', 'Mr', 'Ms', 'Prof'];
+const PARTICIPANT_TITLES = ['Dr', 'Mr', 'Mrs', 'Ms', 'Prof'];
 const PARTICIPANT_GENDERS = ['male', 'female', 'other'];
 const FOOD_PREFERENCES = ['veg', 'non-veg'];
 const PARTICIPANT_PAYMENT_MODES = ['cash', 'card', 'upi'];
@@ -593,11 +601,11 @@ function parseParticipantProfile(body, { strict }) {
   }
   if (has('firstName') || strict) {
     required('firstName', 'First name');
-    out.firstName = str('firstName');
+    out.firstName = str('firstName').toUpperCase();
   }
-  if (has('middleName')) out.middleName = str('middleName');
+  if (has('middleName')) out.middleName = str('middleName').toUpperCase();
   if (has('lastName') || strict) {
-    out.lastName = str('lastName');
+    out.lastName = str('lastName').toUpperCase();
   }
   oneOf('gender', 'Gender', PARTICIPANT_GENDERS, (v) => v.toLowerCase());
   if (has('participantType') || strict) {
@@ -647,7 +655,10 @@ function parseParticipantProfile(body, { strict }) {
 }
 
 function composeParticipantName(p) {
-  return [p.firstName, p.middleName, p.lastName].filter(Boolean).join(' ');
+  return [p.firstName, p.middleName, p.lastName]
+    .map((part) => capsName(part))
+    .filter(Boolean)
+    .join(' ');
 }
 
 async function uploadParticipantPhoto(file) {
@@ -664,7 +675,7 @@ function generateSpotMobilePlaceholder() {
 
 /** Shared by spot + bulk import: builds and saves one registration for a management-created participant. */
 async function createParticipantRegistration(event, { name, institution, packageId, idNumber, source, profile = {} }) {
-  const trimmedName = String(profile.firstName ? composeParticipantName(profile) : name || '').trim();
+  const trimmedName = capsName(profile.firstName ? composeParticipantName(profile) : name || '');
   if (!trimmedName) {
     throw new Error('Name is required');
   }
@@ -827,11 +838,14 @@ const updateRegistration = async (req, res) => {
       reg[k] = v;
     });
     if (profile.firstName !== undefined || profile.middleName !== undefined || profile.lastName !== undefined) {
+      reg.firstName = capsName(reg.firstName);
+      reg.middleName = capsName(reg.middleName);
+      reg.lastName = capsName(reg.lastName);
       const composed = composeParticipantName(reg);
       if (composed) reg.name = composed;
     }
     if (name != null && profile.firstName === undefined) {
-      const trimmedName = String(name).trim();
+      const trimmedName = String(name).trim().toUpperCase();
       if (!trimmedName) {
         return res.status(400).json({ success: false, error: 'Name is required' });
       }

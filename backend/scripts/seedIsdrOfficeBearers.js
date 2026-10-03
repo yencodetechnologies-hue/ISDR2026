@@ -20,7 +20,7 @@ const { createParticipantRegistration } = require('../controllers/managedEventCo
 
 const PACKAGE_NAME = 'Organising Committee';
 const PARTICIPANT_TYPE = 'ISDR Office Bearers';
-const TYPE_COLOR = '#D46D1D';
+const TYPE_COLOR = '#9E0A0F';
 const DUMMY_DATES = ['2000-01-01', '2000-01-02', '2000-01-03'];
 
 const BEARERS = [

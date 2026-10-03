@@ -472,7 +472,7 @@ export default function EventDetailApp() {
             shown.map((r) => {
               const regId = idOf(r);
               const open = expanded.has(regId);
-              const name = fullNameOf(r) || r.name;
+              const name = fullNameOf(r) || r.name || r.idNumber || "Participant";
               const line = [r.designation, r.institution].filter(Boolean).join(" · ");
               const claimed = (r.claimedInclusions ?? []).length;
               const info = (label: string, value: any) =>

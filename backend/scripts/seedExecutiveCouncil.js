@@ -1,13 +1,14 @@
 /**
  * Sets Executive Council members on the ISDR 2026 event.
  *
- * Uses the free "Organising Committee" package and the Organising Committee
- * banner colour. People who already have a real registration on that package
- * keep their name, email, mobile, and organisation; only participant type and
- * banner colour change. Dr. S. Bhuminathan's designation becomes
- * "Organising Secretary". Anyone not already registered is created with dummy
- * contact data. Dummy invited-speaker rows are not touched. Re-running does
- * not insert a second copy of the same email.
+ * Uses the free "Organising Committee" package, participant type
+ * "Organising Committee", and the Organising Committee banner colour. People
+ * who already have a real registration on that package keep their name, email,
+ * mobile, and organisation; only participant type and banner colour change.
+ * Dr. S. Bhuminathan's designation becomes "Organising Secretary". Anyone not
+ * already registered is created with dummy contact data. Dummy invited-speaker
+ * rows are not touched. Re-running does not insert a second copy of the same
+ * email.
  *
  * Usage: node scripts/seedExecutiveCouncil.js
  */
@@ -22,8 +23,8 @@ const EventRegistration = require('../models/EventRegistration');
 const { createParticipantRegistration } = require('../controllers/managedEventController');
 
 const PACKAGE_NAME = 'Organising Committee';
-const PARTICIPANT_TYPE = 'Executive Council Members';
-const TYPE_COLOR = '#D46D1D';
+const PARTICIPANT_TYPE = 'Organising Committee';
+const TYPE_COLOR = '#9E0A0F';
 const DUMMY_DATES = ['2000-01-01', '2000-01-02', '2000-01-03'];
 
 function hasWord(name, word) {
@@ -97,6 +98,7 @@ function isDummyEmail(email) {
 
   const existing = await EventRegistration.find({ eventId: event._id });
   const realOnPackage = existing.filter((reg) => onPackage(reg, pkg) && !isDummyEmail(reg.email));
+  const touched = [];
 
   for (const person of EXISTING) {
     const found = realOnPackage.filter((reg) => person.test(String(reg.name || '')));
@@ -109,6 +111,7 @@ function isDummyEmail(email) {
     reg.participantTypeColor = TYPE_COLOR;
     if (person.designation) reg.designation = person.designation;
     await reg.save();
+    touched.push(reg.idNumber);
     console.log(`Updated ${person.label} → ${reg.idNumber} ${reg.name}`);
   }
 
@@ -122,6 +125,7 @@ function isDummyEmail(email) {
       already.participantType = PARTICIPANT_TYPE;
       already.participantTypeColor = TYPE_COLOR;
       await already.save();
+      touched.push(already.idNumber);
       console.log(`Updated ${fullName} (${already.idNumber}, ${email} already registered)`);
       continue;
     }
@@ -144,25 +148,30 @@ function isDummyEmail(email) {
         foodPreference: 'veg',
       },
     });
+    touched.push(created.idNumber);
     console.log(`Created ${fullName} (${created.idNumber})`);
   }
 
   const saved = await EventRegistration.find({
     eventId: event._id,
-    participantType: PARTICIPANT_TYPE,
+    idNumber: { $in: touched },
   })
     .select('name designation institution participantType participantTypeColor packageName idNumber email')
     .sort({ idNumber: 1 })
     .lean();
-  console.log(`\n${saved.length} Executive Council Member registration(s):`);
+  console.log(`\n${saved.length} Organising Committee registration(s) from this seed:`);
   for (const row of saved) {
     console.log(
       `- ${row.idNumber}  ${row.name}  |  ${row.participantTypeColor}  |  ${row.packageName}  |  designation="${row.designation}"  |  ${row.email}`
     );
   }
-  const wrong = saved.filter((row) => row.participantTypeColor !== TYPE_COLOR);
+  const wrong = saved.filter(
+    (row) => row.participantType !== PARTICIPANT_TYPE || row.participantTypeColor !== TYPE_COLOR
+  );
   if (saved.length !== EXISTING.length + CREATE.length || wrong.length) {
-    throw new Error(`Expected ${EXISTING.length + CREATE.length} rows on ${TYPE_COLOR}, found ${saved.length} (${wrong.length} wrong colour)`);
+    throw new Error(
+      `Expected ${EXISTING.length + CREATE.length} ${PARTICIPANT_TYPE} rows on ${TYPE_COLOR}, found ${saved.length} (${wrong.length} wrong type or colour)`
+    );
   }
 
   process.exit(0);

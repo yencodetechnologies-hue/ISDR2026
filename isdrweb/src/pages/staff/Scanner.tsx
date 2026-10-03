@@ -153,7 +153,7 @@ export function ScannerModal({
             <div className="my-3 border-t border-white/10" />
             {reg.name && (
               <div className="mb-2 text-xl font-black" style={{ color: tone }}>
-                {reg.name}
+                {String(reg.name).toUpperCase()}
               </div>
             )}
             {line("ID Number", String(reg.idNumber ?? (Object.keys(reg).length ? "Spot" : "")))}

@@ -793,7 +793,7 @@ function EventDetailWeb() {
                   <tbody>
                     {filteredRegs.map((r) => {
                       const regId = idOf(r);
-                      const name = displayName(r) || "Participant";
+                      const name = displayName(r) || r.idNumber || "Participant";
                       const line = [r.designation, r.institution].filter(Boolean).join(" · ");
                       const claimed = (r.claimedInclusions ?? []).length;
                       const open = expanded.has(regId);

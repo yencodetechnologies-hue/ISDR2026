@@ -3,8 +3,9 @@
  *
  * Uses the free "Organising Committee" package (created with dummy entry/exit
  * dates if it is missing). Each person is a registration with participant type
- * "Organising Committee". The role after the name is stored in organization
- * (institution). Designation stays empty and every other field is dummy data.
+ * "Organising Committee". Names are stored in uppercase. The role after the name
+ * is stored in organization (institution). Designation stays empty and every
+ * other field is dummy data.
  * An email that is already registered is updated in place.
  *
  * Usage: node scripts/seedOrganisingCommittee.js
@@ -21,32 +22,49 @@ const { createParticipantRegistration } = require('../controllers/managedEventCo
 
 const PACKAGE_NAME = 'Organising Committee';
 const PARTICIPANT_TYPE = 'Organising Committee';
-const TYPE_COLOR = '#167E5D';
+const TYPE_COLOR = '#9E0A0F';
 const DUMMY_DATES = ['2000-01-01', '2000-01-02', '2000-01-03'];
+/** Executive council seed already uses these dummy mobiles. */
+const RESERVED_MOBILES = new Set(['9700000017', '9700000018', '9700000019']);
 
 const MEMBERS = [
-  { name: 'MS. Kannan', organisation: 'Organising Co-Chairman' },
-  { name: 'K. Gnana Shanmugham', organisation: 'Chairman, Scientific Committee' },
-  { name: 'Ragavendra Jayesh', organisation: 'Conference Advisor' },
-  { name: 'Ponnudurai Arangannal', organisation: 'Conference Advisor' },
-  { name: 'Badri Thiruvenkatachari', organisation: 'Co-Chairman, Scientific Committee' },
-  { name: 'N. Aravindha Babu', organisation: 'Treasurer' },
-  { name: 'A. Venkatesh', organisation: 'Convener, Registration Committee' },
-  { name: 'Nalini Aswath', organisation: 'Convener, Pre Conference Course Committee' },
-  { name: 'M. N Prabhu', organisation: 'Convener, International Relations' },
-  { name: 'Vijay Ebenezer', organisation: 'Convener, Banquet and Cultural Night' },
-  { name: 'Anitha Balaji', organisation: 'Convener, Reception Committee' },
-  { name: 'M. Anita', organisation: 'Convener, Souvenir Committee' },
-  { name: 'T. Manikandan', organisation: 'Convener, Trade' },
-  { name: 'Sree Devi V', organisation: 'Convener, Hospitality Committee' },
-  { name: 'Gold Pearlin Mary. N', organisation: 'Co-Convener, Student Conference' },
-  { name: 'N. Geetha Priya', organisation: 'Convener, Awards Committee' },
+  { name: 'MS. KANNAN', organisation: 'Organising Co-Chairman' },
+  { name: 'K. GNANA SHANMUGHAM', organisation: 'Chairman, Scientific Committee' },
+  { name: 'RAGAVENDRA JAYESH', organisation: 'Conference Advisor' },
+  { name: 'PONNUDURAI ARANGANNAL', organisation: 'Conference Advisor' },
+  { name: 'BADRI THIRUVENKATACHARI', organisation: 'Co-Chairman, Scientific Committee' },
+  { name: 'N. ARAVINDHA BABU', organisation: 'Treasurer' },
+  { name: 'A. VENKATESH', organisation: 'Convener, Registration Committee' },
+  { name: 'NALINI ASWATH', organisation: 'Convener, Pre Conference Course Committee' },
+  { name: 'M. N PRABHU', organisation: 'Convener, International Relations' },
+  { name: 'VIJAY EBENEZER', organisation: 'Convener, Banquet and Cultural Night' },
+  { name: 'ANITHA BALAJI', organisation: 'Convener, Reception Committee' },
+  { name: 'M. ANITA', organisation: 'Convener, Souvenir Committee' },
+  { name: 'T. MANIKANDAN', organisation: 'Convener, Trade' },
+  { name: 'SREE DEVI V', organisation: 'Convener, Hospitality Committee' },
+  { name: 'GOLD PEARLIN MARY. N', organisation: 'Co-Convener, Student Conference' },
+  { name: 'N. GEETHA PRIYA', organisation: 'Convener, Awards Committee' },
+  { name: 'S. M. BALAJI', organisation: 'Conference Executive Advisor' },
+  { name: 'MAHESH VERMA', organisation: 'Conference Secretary' },
 ];
+
+/** Dummy mobile for member n, skipping numbers already used by other seeds. */
+function dummyMobile(n, taken) {
+  let num = Number(n);
+  let mobile = `97000000${String(num).padStart(2, '0')}`;
+  while (taken.has(mobile)) {
+    num += 1;
+    mobile = `97000000${String(num).padStart(2, '0')}`;
+  }
+  taken.add(mobile);
+  return mobile;
+}
 
 /** Last word is the surname, including a one-letter initial. A single word stays as the first name. */
 function splitName(fullName) {
   const parts = String(fullName || '')
     .trim()
+    .toUpperCase()
     .split(/\s+/)
     .filter(Boolean);
   if (parts.length <= 1) {
@@ -96,10 +114,12 @@ function splitName(fullName) {
   });
   const byEmail = new Map(existing.map((reg) => [String(reg.email || '').toLowerCase(), reg]));
 
+  const takenMobiles = new Set(RESERVED_MOBILES);
   for (let i = 0; i < MEMBERS.length; i += 1) {
     const person = MEMBERS[i];
     const n = String(i + 1).padStart(2, '0');
     const email = `organisingcommittee${n}@example.com`;
+    const mobileNumber = dummyMobile(n, takenMobiles);
     const parts = splitName(person.name);
     const storedName = [parts.firstName, parts.middleName, parts.lastName].filter(Boolean).join(' ');
     const reg = byEmail.get(email);
@@ -134,7 +154,7 @@ function splitName(fullName) {
         designation: '',
         institution: person.organisation,
         address: 'Dummy address',
-        mobileNumber: `97000000${n}`,
+        mobileNumber,
         email,
         foodPreference: 'veg',
       },

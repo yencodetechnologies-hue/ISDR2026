@@ -63,11 +63,14 @@ export const paymentModeLabel = (m: string) => (m === "upi" ? "UPI" : m ? m[0].t
 export const rateOf = (p: any) => Number(p?.rate) || 0;
 
 /** "Dr Jane A Doe", falling back to the stored name. */
-export const displayName = (r: any) =>
-  [r?.title, r?.firstName, r?.middleName, r?.lastName]
-    .map((s) => String(s ?? "").trim())
-    .filter(Boolean)
-    .join(" ") || String(r?.name ?? "");
+export const displayName = (r: any) => {
+  const parts = [r?.firstName, r?.middleName, r?.lastName]
+    .map((s) => String(s ?? "").trim().toUpperCase())
+    .filter(Boolean);
+  const title = String(r?.title ?? "").trim();
+  if (parts.length) return [title, ...parts].filter(Boolean).join(" ");
+  return String(r?.name ?? "").trim().toUpperCase();
+};
 
 /** Green tick box used in the day pickers. */
 function DayTick({ on, label, onClick }: { on: boolean; label: string; onClick?: () => void }) {
@@ -495,7 +498,7 @@ export function PackageCard({
 /* Create / edit participant (same fields as event_participant_sheet)  */
 /* ------------------------------------------------------------------ */
 
-const TITLES = ["Dr", "Mr", "Ms", "Prof"];
+const TITLES = ["Dr", "Mr", "Mrs", "Ms", "Prof"];
 
 export function ParticipantModal({
   eventId,
@@ -525,9 +528,10 @@ export function ParticipantModal({
   const [type, setType] = useState(s("participantType"));
   const [typeColor, setTypeColor] = useState(s("participantTypeColor") || DEFAULT_TYPE_COLOR);
   const [title, setTitle] = useState(s("title"));
-  const [first, setFirst] = useState(() => (!s("firstName") && !s("lastName") ? s("name") : s("firstName")));
-  const [middle, setMiddle] = useState(s("middleName"));
-  const [last, setLast] = useState(s("lastName"));
+  const caps = (v: string) => v.trim().toUpperCase();
+  const [first, setFirst] = useState(() => caps(!s("firstName") && !s("lastName") ? s("name") : s("firstName")));
+  const [middle, setMiddle] = useState(() => caps(s("middleName")));
+  const [last, setLast] = useState(() => caps(s("lastName")));
   const [gender, setGender] = useState(s("gender"));
   const [designation, setDesignation] = useState(s("designation"));
   const [institution, setInstitution] = useState(s("institution"));
@@ -692,13 +696,13 @@ export function ParticipantModal({
           <Select value={title} placeholder="Title" onChange={setTitle} options={titleOptions} />
         </Field>
         <Field label="First name *">
-          <Input value={first} onChange={(e) => setFirst(e.target.value)} />
+          <Input value={first} onChange={(e) => setFirst(e.target.value.toUpperCase())} />
         </Field>
         <Field label="Middle name">
-          <Input value={middle} onChange={(e) => setMiddle(e.target.value)} placeholder="Optional" />
+          <Input value={middle} onChange={(e) => setMiddle(e.target.value.toUpperCase())} placeholder="Optional" />
         </Field>
         <Field label="Last name">
-          <Input value={last} onChange={(e) => setLast(e.target.value)} placeholder="Optional" />
+          <Input value={last} onChange={(e) => setLast(e.target.value.toUpperCase())} placeholder="Optional" />
         </Field>
       </div>
 
@@ -810,7 +814,7 @@ export function BadgeModal({ registration, onClose }: { registration: any; onClo
   const box = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const data: BadgeData = {
-    name: registration.name,
+    name: String(registration.name ?? "").toUpperCase(),
     title: registration.title,
     participantType: registration.participantType,
     participantTypeColor: registration.participantTypeColor,
@@ -830,7 +834,7 @@ export function BadgeModal({ registration, onClose }: { registration: any; onClo
     setBusy(false);
   };
   return (
-    <Modal open onClose={onClose} title={displayName(registration) || "Participant badge"} width={440}>
+    <Modal open onClose={onClose} title={displayName(registration) || registration.idNumber || "Participant badge"} width={440}>
       <div ref={box}>
         <DelegateBadge data={data} />
       </div>

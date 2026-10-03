@@ -21,7 +21,7 @@ const EventRegistration = require('../models/EventRegistration');
 const WORKBOOK = 'c:\\Users\\Jeyaram\\Desktop\\IADR ID CARD STUDENTS.xlsx';
 const PG_SHEETS = ['6000RS SBDCH PG', '9500RS OTHER PG', '7500RS OTHER PG', '4500RS OTHER PG'];
 const PARTICIPANT_TYPE = 'Delegate';
-const TYPE_COLOR = '#006344';
+const TYPE_COLOR = '#D46D1D';
 const UG_PACKAGES = new Set(['SBDCH UG 2000', 'SBDCH UG 3500', 'Other UG 2000', 'Other UG 6000']);
 
 function last10(value) {

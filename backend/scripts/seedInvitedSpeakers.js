@@ -3,13 +3,13 @@
  *
  * Uses the free "Organising Committee" package (created with dummy entry/exit
  * dates if it is missing). Each person is a new registration with participant
- * type "Invited Speakers" and the speaker maroon banner. The first list has
+ * type "Invited Speakers" and the speaker sky-blue banner. The first list has
  * an empty organisation. The course-speaker list sets organisation to
  * "Pre-Conference Course Speaker". Designation stays empty and every other
  * field is dummy data. Names are stored in capitals. An email that is already registered is not inserted again.
  * Re-running refreshes that person's name parts. Later names are appended after that list.
  * A name that is already an invited speaker is left in place. Every invited speaker
- * on the event is given the same maroon banner.
+ * on the event is given the same sky-blue banner.
  *
  * Usage: node scripts/seedInvitedSpeakers.js
  */
@@ -25,7 +25,7 @@ const { createParticipantRegistration } = require('../controllers/managedEventCo
 
 const PACKAGE_NAME = 'Organising Committee';
 const PARTICIPANT_TYPE = 'Invited Speakers';
-const TYPE_COLOR = '#9E0A0F';
+const TYPE_COLOR = '#0284C7';
 const DUMMY_DATES = ['2000-01-01', '2000-01-02', '2000-01-03'];
 
 const SPEAKER_NAMES = [
