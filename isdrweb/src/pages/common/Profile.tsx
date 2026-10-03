@@ -200,8 +200,9 @@ export function QrPass() {
     const id = badgeIdOf(user);
     const data = {
       name: user.name,
-      participantType: reg?.participantType || "DELEGATE",
+      participantType: /^spot register$/i.test(String(reg?.packageName || "")) ? "" : reg?.participantType || "DELEGATE",
       participantTypeColor: reg?.participantTypeColor,
+      packageName: reg?.packageName,
       idNumber: id,
       designation: user.department ?? "",
       institution: user.apartmentName ?? "",

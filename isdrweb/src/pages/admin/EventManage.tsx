@@ -528,7 +528,7 @@ export function ParticipantModal({
     return byName ? String(byName.id) : "";
   };
 
-  const [type, setType] = useState(s("participantType"));
+  const [type, setType] = useState(/^spot register$/i.test(s("packageName")) ? "" : s("participantType"));
   const [typeColor, setTypeColor] = useState(s("participantTypeColor") || DEFAULT_TYPE_COLOR);
   const [title, setTitle] = useState(s("title"));
   const caps = (v: string) => v.trim().toUpperCase();
@@ -824,7 +824,7 @@ export function BadgeModal({ registration, onClose }: { registration: any; onClo
   const data: BadgeData = {
     name: String(registration.name ?? "").toUpperCase(),
     title: registration.title,
-    participantType: registration.participantType,
+    participantType: /^spot register$/i.test(String(registration.packageName || "")) ? "" : registration.participantType,
     participantTypeColor: registration.participantTypeColor,
     idNumber: registration.idNumber,
     designation: registration.designation,

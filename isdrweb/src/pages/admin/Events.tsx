@@ -23,7 +23,7 @@ import {
   PhotoInput,
 } from "@/components/ui";
 import { del, formData, get, post, put, qs } from "@/lib/api";
-import { PARTICIPANT_EXPORT_COLUMNS, PARTICIPANT_QR } from "./participantExport";
+import { PARTICIPANT_EXPORT_COLUMNS, PARTICIPANT_QR, shownParticipantType } from "./participantExport";
 import EventDetailApp from "./EventDetailApp";
 import { useAppLayout } from "@/lib/appLayout";
 import EventsApp from "./EventsApp";
@@ -507,7 +507,7 @@ function EventDetailWeb() {
               (v) => (typeof v === "string" || typeof v === "number") && String(v).toLowerCase().includes(q),
             )) &&
           (!pkgFilter || (r.packageName ?? "") === pkgFilter) &&
-          (!typeFilter || (r.participantType || "") === typeFilter) &&
+          (!typeFilter || shownParticipantType(r) === typeFilter) &&
           (!statusFilter || (r.status ?? "registered") === statusFilter) &&
           (!claimFilter || (claimFilter === "claimed") === (r.claimedInclusions ?? []).length > 0) &&
           inIdRange(r, idPrefix, idFrom, idTo),
@@ -735,7 +735,7 @@ function EventDetailWeb() {
                   label="participant types"
                   value={typeFilter}
                   onChange={setTypeFilter}
-                  options={distinct((registrations ?? []).map((r) => r.participantType).filter(Boolean))}
+                  options={distinct((registrations ?? []).map((r) => shownParticipantType(r)).filter(Boolean))}
                 />
                 <FilterSelect
                   label="statuses"
@@ -900,7 +900,7 @@ function EventDetailWeb() {
                             <tr className="bg-white/[0.02] hover:bg-white/[0.02]">
                               <td colSpan={6}>
                                 <div className="grid gap-4 py-1 sm:grid-cols-3 lg:grid-cols-4">
-                                  {info("Type", r.participantType)}
+                                  {info("Type", shownParticipantType(r))}
                                   {info("Package", r.packageName ?? "")}
                                   {info("Gender", cap(r.gender ?? ""))}
                                   {info("Mobile", r.mobileNumber ?? "")}
@@ -970,6 +970,7 @@ function EventDetailWeb() {
           packages={packages}
           registration={regEditing}
           existingIdNumbers={existingIds(regEditing)}
+          optionalFields
           onClose={() => setRegEditing(undefined)}
           onSaved={(saved) => {
             const wasNew = !regEditing;

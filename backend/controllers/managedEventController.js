@@ -288,8 +288,9 @@ function registrationDto(reg, event) {
     middleName,
     lastName,
     gender: reg.gender || '',
-    participantType:
-      reg.participantType || (/^spot register$/i.test(reg.packageName || '') ? '' : 'Delegate'),
+    participantType: /^spot register$/i.test(reg.packageName || '')
+      ? ''
+      : reg.participantType || 'Delegate',
     participantTypeColor:
       reg.participantTypeColor ||
       (/^spot register$/i.test(reg.packageName || '') ? '' : DEFAULT_PARTICIPANT_TYPE_COLOR),
@@ -684,7 +685,7 @@ function generateSpotMobilePlaceholder() {
 /** Shared by spot + bulk import: builds and saves one registration for a management-created participant. */
 async function createParticipantRegistration(event, { name, institution, packageId, idNumber, source, profile = {} }) {
   const trimmedName = capsName(profile.firstName ? composeParticipantName(profile) : name || '');
-  if (!trimmedName) {
+  if (!trimmedName && source !== 'spot') {
     throw new Error('Name is required');
   }
 
@@ -783,12 +784,8 @@ const createSpotRegistration = async (req, res) => {
     const { packageId, idNumber } = req.body;
     let registration;
     try {
-      const profile = parseParticipantProfile(req.body, { strict: true });
-      if (!String(packageId || '').trim()) throw new Error('Package is required');
-      const chosenPackage = (event.packages || []).find((p) => p.id === String(packageId).trim());
-      if (chosenPackage && Number(chosenPackage.rate) > 0 && !profile.paymentMode) {
-        throw new Error('Payment mode is required');
-      }
+      const profile = parseParticipantProfile(req.body, { strict: false });
+      const chosenPackage = (event.packages || []).find((p) => p.id === String(packageId || '').trim());
       if (chosenPackage && Number(chosenPackage.rate) === 0) {
         profile.paymentMode = '';
       }

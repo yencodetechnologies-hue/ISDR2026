@@ -2,11 +2,17 @@
 import { fullNameOf, type ExportColumn, type QrConfig } from "@/lib/exporter";
 import { cap } from "@/lib/format";
 
+/** Spot register cards have no participant type. A blank type must not be shown as Delegate. */
+export function shownParticipantType(r: any) {
+  if (/^spot register$/i.test(String(r?.packageName || ""))) return "";
+  return String(r?.participantType ?? "");
+}
+
 /** Participants download: every form field, claims, and the QR pass. */
 export const PARTICIPANT_EXPORT_COLUMNS: ExportColumn<any>[] = [
   { header: "ID no.", value: (r) => r.idNumber, width: 10 },
   { header: "Name", value: (r) => fullNameOf(r), width: 22 },
-  { header: "Participant type", value: (r) => r.participantType, width: 12 },
+  { header: "Participant type", value: (r) => shownParticipantType(r), width: 12 },
   { header: "Package", value: (r) => r.packageName, width: 14 },
   { header: "Gender", value: (r) => cap(r.gender ?? ""), width: 8 },
   { header: "Designation", value: (r) => r.designation, width: 14 },
@@ -30,7 +36,7 @@ export const PARTICIPANT_QR: QrConfig<any> = {
   badge: (r) => ({
     name: r.name,
     title: r.title,
-    participantType: r.participantType,
+    participantType: shownParticipantType(r),
     participantTypeColor: r.participantTypeColor,
     idNumber: r.idNumber,
     designation: r.designation,

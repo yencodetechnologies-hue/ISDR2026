@@ -21,7 +21,7 @@ import {
   rateOf,
 } from "./EventManage";
 import { ImportParticipantsModal } from "./ImportParticipants";
-import { PARTICIPANT_EXPORT_COLUMNS, PARTICIPANT_QR } from "./participantExport";
+import { PARTICIPANT_EXPORT_COLUMNS, PARTICIPANT_QR, shownParticipantType } from "./participantExport";
 
 const WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -531,7 +531,7 @@ export default function EventDetailApp() {
                       <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
                         <div className="h-px bg-field" />
                         <div className="mt-2">
-                          {info("Type", r.participantType)}
+                          {info("Type", shownParticipantType(r))}
                           {info("Package", r.packageName)}
                           {info("Gender", r.gender)}
                           {info("Mobile", r.mobileNumber)}

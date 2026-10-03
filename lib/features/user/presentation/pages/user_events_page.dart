@@ -1970,9 +1970,11 @@ class _ClaimInclusionScannerPageState extends State<ClaimInclusionScannerPage>
           ),
           line(
             'Type',
-            reg.isEmpty
+            reg.isEmpty ||
+                    RegExp(r'^spot register$', caseSensitive: false)
+                        .hasMatch((reg['packageName'] ?? '').toString())
                 ? ''
-                : (reg['participantType'] ?? 'Delegate').toString(),
+                : (reg['participantType'] ?? '').toString(),
           ),
           line('Package', packageText),
           line('Date', today),

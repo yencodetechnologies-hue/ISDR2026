@@ -29,7 +29,7 @@ const eventRegistrationSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    name: { type: String, required: true, trim: true },
+    name: { type: String, default: '', trim: true },
     mobileNumber: { type: String, required: true, trim: true, index: true },
     email: { type: String, default: '', trim: true, lowercase: true },
     institution: { type: String, default: '', trim: true },

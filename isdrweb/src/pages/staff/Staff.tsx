@@ -368,7 +368,7 @@ function StaffEventDetailWeb() {
                     badge: (r: any) => ({
                       name: r.name,
                       title: r.title,
-                      participantType: r.participantType,
+                      participantType: /^spot register$/i.test(String(r.packageName || "")) ? "" : r.participantType,
                       participantTypeColor: r.participantTypeColor,
                       idNumber: r.idNumber,
                       designation: r.designation,

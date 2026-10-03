@@ -879,8 +879,8 @@ class _EventManagementDetailsPageState
                           const SizedBox(height: 8),
                           info(
                             'Type',
-                            v('participantType').isEmpty
-                                ? 'Delegate'
+                            RegExp(r'^spot register$', caseSensitive: false).hasMatch(v('packageName'))
+                                ? ''
                                 : v('participantType'),
                           ),
                           info('Package', v('packageName')),

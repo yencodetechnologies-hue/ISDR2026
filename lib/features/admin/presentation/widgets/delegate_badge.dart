@@ -31,7 +31,9 @@ class DelegateBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayName = [_v('title'), _v('name')].where((e) => e.isNotEmpty).join(' ');
-    final rawType = _v('participantType');
+    final rawType = RegExp(r'^spot register$', caseSensitive: false).hasMatch(_v('packageName'))
+        ? ''
+        : _v('participantType');
     final hasType = rawType.isNotEmpty;
     final storedColor = parseHex(_v('participantTypeColor'));
     // Speakers' passes read "INVITED SPEAKER" on #9E0A0F.

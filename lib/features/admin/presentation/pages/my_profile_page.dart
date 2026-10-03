@@ -213,8 +213,12 @@ class _MyProfilePageState extends State<MyProfilePage> {
     final registrationMap = {
       'name': user.name,
       'title': '',
-      'participantType': reg?['participantType']?.toString() ?? 'DELEGATE',
+      'participantType': RegExp(r'^spot register$', caseSensitive: false)
+              .hasMatch((reg?['packageName'] ?? '').toString())
+          ? ''
+          : (reg?['participantType']?.toString() ?? 'DELEGATE'),
       'participantTypeColor': reg?['participantTypeColor']?.toString() ?? '',
+      'packageName': reg?['packageName']?.toString() ?? '',
       'idNumber': idNumber,
       'designation': user.department ?? '',
       'institution': user.apartmentName ?? '',

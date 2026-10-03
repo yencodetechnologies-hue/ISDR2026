@@ -157,7 +157,7 @@ export function ScannerModal({
               </div>
             )}
             {line("ID Number", String(reg.idNumber ?? (Object.keys(reg).length ? "Spot" : "")))}
-            {line("Type", Object.keys(reg).length ? String(reg.participantType || "") : "")}
+            {line("Type", Object.keys(reg).length && !/^spot register$/i.test(String(reg.packageName || "")) ? String(reg.participantType || "") : "")}
             {line("Package", packageText)}
             {line("Date", fmtDate(new Date()))}
             {line("Venue", String(event?.venue ?? ""))}

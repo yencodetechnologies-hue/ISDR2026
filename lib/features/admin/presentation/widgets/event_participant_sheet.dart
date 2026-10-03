@@ -84,7 +84,9 @@ class _EventParticipantSheetState extends State<EventParticipantSheet> {
     if (r != null) {
       String v(String k) => r[k]?.toString() ?? '';
       _title = v('title');
-      _type.text = v('participantType');
+      _type.text = RegExp(r'^spot register$', caseSensitive: false).hasMatch(v('packageName'))
+          ? ''
+          : v('participantType');
       if (v('participantTypeColor').isNotEmpty) {
         _typeColor.text = v('participantTypeColor');
       }
