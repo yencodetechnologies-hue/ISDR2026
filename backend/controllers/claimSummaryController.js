@@ -9,7 +9,14 @@ function resolveApartmentId(req) {
   return req.apartmentId ? String(req.apartmentId) : null;
 }
 
-const istDay = (d) => new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+// India has no DST, so a fixed +5:30 offset matches Asia/Kolkata calendar dates
+// without toLocaleDateString, which is slow inside the per-participant loop.
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+const istDay = (d) => {
+  const t = d instanceof Date ? d.getTime() : new Date(d).getTime();
+  if (!Number.isFinite(t)) return '';
+  return new Date(t + IST_OFFSET_MS).toISOString().slice(0, 10);
+};
 
 function dayRange(startStr, endStr) {
   const out = [];

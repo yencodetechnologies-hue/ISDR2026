@@ -505,6 +505,7 @@ export function ParticipantModal({
   packages,
   registration,
   existingIdNumbers,
+  optionalFields = false,
   onClose,
   onSaved,
 }: {
@@ -512,6 +513,8 @@ export function ParticipantModal({
   packages: any[];
   registration: any | null;
   existingIdNumbers: Set<string>;
+  /** Phone layout: profile fields are optional. ID no. stays required while editing. */
+  optionalFields?: boolean;
   onClose: () => void;
   onSaved: (reg: any) => void;
 }) {
@@ -562,23 +565,28 @@ export function ParticipantModal({
   const idTaken =
     !!idNumber.trim() && [...existingIdNumbers].some((e) => e.toLowerCase() === idNumber.trim().toLowerCase());
 
+  const mark = (label: string) => (optionalFields ? label : `${label} *`);
+
   const validate = () => {
-    const checks: [string, string][] = [
-      ["Participant type", type],
-      ["Title", title],
-      ["First name", first],
-      ["Gender", gender],
-      ["Package", packageId],
-      ...(editing ? ([["ID no.", idNumber]] as [string, string][]) : []),
-      ["Mobile number", mobile],
-      ["Email", email],
-      ["Food preference", food],
-    ];
-    for (const [label, value] of checks) if (!value.trim()) return `${label} is required`;
+    if (!optionalFields) {
+      const checks: [string, string][] = [
+        ["Participant type", type],
+        ["Title", title],
+        ["First name", first],
+        ["Gender", gender],
+        ["Package", packageId],
+        ["Mobile number", mobile],
+        ["Email", email],
+        ["Food preference", food],
+      ];
+      for (const [label, value] of checks) if (!value.trim()) return `${label} is required`;
+      if (paid && !paymentMode) return "Payment mode is required";
+    }
+    if (editing && !idNumber.trim()) return "ID no. is required";
     if (typeColor.trim() && !normalizeHex(typeColor)) return "Enter a valid hex colour, e.g. #167E5D";
-    if (paid && !paymentMode) return "Payment mode is required";
-    if (!/^\+?\d{10,13}$/.test(mobile.replace(/[\s-]/g, ""))) return "Enter a valid mobile number";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return "Enter a valid email address";
+    const mobileDigits = mobile.replace(/[\s-]/g, "");
+    if (mobileDigits && !/^\+?\d{10,13}$/.test(mobileDigits)) return "Enter a valid mobile number";
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return "Enter a valid email address";
     if (idTaken) return "This ID number is already used for this event.";
     return null;
   };
@@ -648,7 +656,7 @@ export function ParticipantModal({
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Participant type *">
+        <Field label={mark("Participant type")}>
           <Input
             value={type}
             maxLength={60}
@@ -674,7 +682,7 @@ export function ParticipantModal({
             />
           </div>
         </Field>
-        <Field label="Package *">
+        <Field label={mark("Package")}>
           <Select
             value={packageId}
             placeholder="Select a package"
@@ -692,10 +700,10 @@ export function ParticipantModal({
       </div>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-[120px_1fr_1fr_1fr]">
-        <Field label="Title *">
+        <Field label={mark("Title")}>
           <Select value={title} placeholder="Title" onChange={setTitle} options={titleOptions} />
         </Field>
-        <Field label="First name *">
+        <Field label={mark("First name")}>
           <Input value={first} onChange={(e) => setFirst(e.target.value.toUpperCase())} />
         </Field>
         <Field label="Middle name">
@@ -707,7 +715,7 @@ export function ParticipantModal({
       </div>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
-        <Field label="Gender *">
+        <Field label={mark("Gender")}>
           <Select
             value={gender}
             placeholder="Select"
@@ -740,16 +748,16 @@ export function ParticipantModal({
             className="font-mono"
           />
         </Field>
-        <Field label="Mobile no. *">
+        <Field label={mark("Mobile no.")}>
           <Input type="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} />
         </Field>
-        <Field label="Email *">
+        <Field label={mark("Email")}>
           <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </Field>
       </div>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
-        <Field label="Food preference *">
+        <Field label={mark("Food preference")}>
           <Select
             value={food}
             placeholder="Select"
@@ -760,7 +768,7 @@ export function ParticipantModal({
             ]}
           />
         </Field>
-        <Field label={paid ? "Payment mode *" : "Payment mode"}>
+        <Field label={paid && !optionalFields ? "Payment mode *" : "Payment mode"}>
           <Select
             value={free ? "" : paymentMode}
             placeholder={free ? "Not needed (free)" : "Select"}

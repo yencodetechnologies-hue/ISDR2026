@@ -105,6 +105,7 @@ const eventRegistrationSchema = new mongoose.Schema(
 
 eventRegistrationSchema.index({ eventId: 1, mobileNumber: 1 }, { unique: true });
 eventRegistrationSchema.index({ eventId: 1, idNumber: 1 });
+eventRegistrationSchema.index({ eventId: 1, createdAt: -1 });
 
 eventRegistrationSchema.pre('save', async function hashPassword(next) {
   if (!this.isModified('password') || !this.password) return next();

@@ -56,22 +56,23 @@ const DELEGATE_ORANGE = "#D46D1D";
 const SPEAKER_COLOR = "#0284C7";
 const ORGANIZER_BLUE = "#1D4ED8";
 
-function isEventOrganizer(type: string) {
-  return /^event\s+organizers?$/i.test(type);
+function hidesCardIdentity(type: string) {
+  return /^event\s+organizers?$/i.test(type) || /^trade$/i.test(type);
 }
 
 function fallbackColor(type: string) {
   if (/^student\s+delegate$/i.test(type)) return DEFAULT_TYPE_COLOR;
   if (/^(invited\s+)?speakers?$/i.test(type)) return SPEAKER_COLOR;
   if (/^delegate$/i.test(type)) return DELEGATE_ORANGE;
-  if (isEventOrganizer(type)) return ORGANIZER_BLUE;
+  if (hidesCardIdentity(type)) return ORGANIZER_BLUE;
   if (/^(organis(?:ing|zing)\s+committee|executive council members|isdr office bearers|iadr office bearer|invited dignitary)$/i.test(type))
     return COMMITTEE_MAROON;
   return DEFAULT_TYPE_COLOR;
 }
 
 function typeOf(data: BadgeData) {
-  const t = v(data.participantType) || "Delegate";
+  const t = v(data.participantType);
+  if (!t) return { label: "", color: normalizeHex(data.participantTypeColor) ?? "" };
   const speaker = /^(invited\s+)?speaker$/i.test(t);
   return {
     label: (speaker ? "Invited Speaker" : t).toUpperCase(),
@@ -126,7 +127,7 @@ export default function DelegateBadge({ data, innerRef }: { data: BadgeData; inn
     return () => ro.disconnect();
   }, []);
 
-  const organizer = isEventOrganizer(v(data.participantType));
+  const organizer = hidesCardIdentity(v(data.participantType));
   const displayName = organizer ? "" : [v(data.title), v(data.name).toUpperCase()].filter(Boolean).join(" ");
   const designation = organizer ? "" : v(data.designation);
   const institution = organizer ? "" : v(data.institution);
@@ -151,10 +152,12 @@ export default function DelegateBadge({ data, innerRef }: { data: BadgeData; inn
       >
         <div className="absolute" style={{ left: -CROP_LEFT, top: -CROP_TOP, width: TEMPLATE_W, height: TEMPLATE_H }}>
           <img src={asset(TEMPLATE)} alt="" className="absolute inset-0 h-full w-full" />
-          <div className="absolute" style={{ ...BANNER, background: typeColor }} />
-          <div className="absolute flex items-center" style={{ left: BANNER.left + 30, top: BANNER.top, width: BANNER.width - 60, height: BANNER.height }}>
-            <Fit text={typeLabel} size={60} weight={800} color="#fff" width={BANNER.width - 60} />
-          </div>
+          {typeColor && <div className="absolute" style={{ ...BANNER, background: typeColor }} />}
+          {typeLabel && (
+            <div className="absolute flex items-center" style={{ left: BANNER.left + 30, top: BANNER.top, width: BANNER.width - 60, height: BANNER.height }}>
+              <Fit text={typeLabel} size={60} weight={800} color="#fff" width={BANNER.width - 60} />
+            </div>
+          )}
           <div className="absolute flex flex-col items-center" style={TEXT}>
             {displayName && (
               <div style={{ marginBottom: 16 }}>
@@ -242,14 +245,18 @@ export async function renderBadgeBlob(data: BadgeData, container: HTMLElement | 
     ctx.restore();
   };
 
-  const organizer = isEventOrganizer(v(data.participantType));
+  const organizer = hidesCardIdentity(v(data.participantType));
   const name = organizer ? "" : [v(data.title), v(data.name).toUpperCase()].filter(Boolean).join(" ");
   const designation = organizer ? "" : v(data.designation);
   const institution = organizer ? "" : v(data.institution);
   const type = typeOf(data);
-  ctx.fillStyle = type.color;
-  ctx.fillRect(OX + BANNER.left, OY + BANNER.top, BANNER.width, BANNER.height);
-  fit(type.label, 60, 800, "#fff", OX + CX, OY + BANNER.top + BANNER.height / 2, BANNER.width - 60);
+  if (type.color) {
+    ctx.fillStyle = type.color;
+    ctx.fillRect(OX + BANNER.left, OY + BANNER.top, BANNER.width, BANNER.height);
+  }
+  if (type.label) {
+    fit(type.label, 60, 800, "#fff", OX + CX, OY + BANNER.top + BANNER.height / 2, BANNER.width - 60);
+  }
   let y = OY + TEXT.top;
   if (name) {
     fit(name, 56, 800, NAME_INK, OX + CX, y + 56 * 0.6, TEXT.width);

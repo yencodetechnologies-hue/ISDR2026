@@ -4,7 +4,7 @@
  * Organising Committee package (except invited speakers) → maroon.
  * Student Delegate → green. Delegate → orange.
  * Invited Speaker, Invited Speakers, and speaker → sky blue.
- * Event Organizer → blue.
+ * Event Organizer and Trade → blue.
  * Other types are left as they are. Re-running is safe.
  *
  * Usage: node scripts/setBannerColors.js
@@ -64,13 +64,18 @@ async function counts() {
     { participantType: /^event\s+organizers?$/i },
     { $set: { participantTypeColor: ORGANIZER_BLUE } }
   );
+  const trade = await EventRegistration.updateMany(
+    { participantType: /^trade$/i },
+    { $set: { participantTypeColor: ORGANIZER_BLUE } }
+  );
 
   console.log(
     `\nUpdated committee ${committee.modifiedCount}/${committee.matchedCount} ${MAROON}, ` +
       `student delegates ${students.modifiedCount}/${students.matchedCount} ${GREEN}, ` +
       `delegates ${delegates.modifiedCount}/${delegates.matchedCount} ${ORANGE}, ` +
       `speakers ${speakers.modifiedCount}/${speakers.matchedCount} ${SKY}, ` +
-      `event organizers ${organizers.modifiedCount}/${organizers.matchedCount} ${ORGANIZER_BLUE}`
+      `event organizers ${organizers.modifiedCount}/${organizers.matchedCount} ${ORGANIZER_BLUE}, ` +
+      `trade ${trade.modifiedCount}/${trade.matchedCount} ${ORGANIZER_BLUE}`
   );
   console.log('\nAfter:');
   await counts();

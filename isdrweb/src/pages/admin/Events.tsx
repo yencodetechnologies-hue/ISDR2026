@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Avatar,
@@ -342,6 +342,8 @@ function PackageCounts({ packages, registrations }: { packages: any[]; registrat
    (mirrors the app's event_management_details_page.dart)
 ========================================================================= */
 
+const PARTICIPANT_PAGE_SIZE = 50;
+
 export function EventDetail() {
   // Phone width: the mobile app's event screen.
   return useAppLayout() ? <EventDetailApp /> : <EventDetailWeb />;
@@ -374,6 +376,8 @@ function EventDetailWeb() {
   const [badgeFor, setBadgeFor] = useState<any | null>(null);
   const [claimsFor, setClaimsFor] = useState<any | null>(null);
   const [importing, setImporting] = useState(false);
+  const [page, setPage] = useState(0);
+  const refreshLock = useRef(false);
 
   const loadStats = useCallback(async () => {
     const res = await get(`/managed-events/summary${qs({ eventId: id, date: "to-date" })}`);
@@ -383,34 +387,47 @@ function EventDetailWeb() {
   }, [id]);
 
   const loadRegs = useCallback(async () => {
-    const regs = await get(`/managed-events/${id}/registrations`);
-    // Keep the list on screen if a background refresh fails.
-    if (regs.success) setRegistrations(regs.registrations ?? []);
+    if (refreshLock.current) return;
+    refreshLock.current = true;
+    try {
+      const regs = await get(`/managed-events/${id}/registrations`);
+      // Keep the list on screen if a background refresh fails.
+      if (regs.success) setRegistrations(regs.registrations ?? []);
+    } finally {
+      refreshLock.current = false;
+    }
   }, [id]);
 
   const load = useCallback(async () => {
-    const [ev, regs, sch] = await Promise.all([
+    const [ev, sch] = await Promise.all([
       get(`/managed-events/${id}`),
-      get(`/managed-events/${id}/registrations`),
       get(`/managed-events/${id}/schedules`),
     ]);
     if (!ev.success) return setError(ev.error || "Could not load event");
     setEvent(ev.event);
-    setRegistrations(regs.registrations ?? []);
     setSchedules(sch.schedules ?? []);
-    loadStats();
-  }, [id, loadStats]);
+    // Participants are a separate request so the event screen is not held
+    // until every registration has been downloaded.
+    loadRegs();
+  }, [id, loadRegs]);
   useEffect(() => {
     load();
   }, [load]);
-  // Re-check every few seconds so claims scanned at the counters show up right away.
   useEffect(() => {
-    const t = setInterval(() => {
-      loadRegs();
-      loadStats();
-    }, 4000);
+    if (tab === "packages") loadStats();
+  }, [tab, loadStats]);
+  // Refresh the open tab only, and never start another download while one is in flight.
+  useEffect(() => {
+    const t = setInterval(async () => {
+      if (refreshLock.current) return;
+      const needsRegs = tab === "regs" || tab === "analytics";
+      const needsStats = tab === "packages";
+      if (!needsRegs && !needsStats) return;
+      if (needsRegs) await loadRegs();
+      else await loadStats();
+    }, 8000);
     return () => clearInterval(t);
-  }, [loadRegs, loadStats]);
+  }, [tab, loadRegs, loadStats]);
 
   const packages: any[] = event?.packages ?? [];
   const isCancelled = event?.status === "cancelled";
@@ -481,19 +498,32 @@ function EventDetailWeb() {
 
   // Search every text / number field, like the app.
   const q = search.trim().toLowerCase();
-  const filteredRegs = (registrations ?? []).filter(
-    (r) =>
-      (!q ||
-        Object.values(r).some(
-          (v) => (typeof v === "string" || typeof v === "number") && String(v).toLowerCase().includes(q),
-        )) &&
-      (!pkgFilter || (r.packageName ?? "") === pkgFilter) &&
-      (!typeFilter || (r.participantType || "Delegate") === typeFilter) &&
-      (!statusFilter || (r.status ?? "registered") === statusFilter) &&
-      (!claimFilter || (claimFilter === "claimed") === (r.claimedInclusions ?? []).length > 0) &&
-      inIdRange(r, idPrefix, idFrom, idTo),
+  const filteredRegs = useMemo(
+    () =>
+      (registrations ?? []).filter(
+        (r) =>
+          (!q ||
+            Object.values(r).some(
+              (v) => (typeof v === "string" || typeof v === "number") && String(v).toLowerCase().includes(q),
+            )) &&
+          (!pkgFilter || (r.packageName ?? "") === pkgFilter) &&
+          (!typeFilter || (r.participantType || "") === typeFilter) &&
+          (!statusFilter || (r.status ?? "registered") === statusFilter) &&
+          (!claimFilter || (claimFilter === "claimed") === (r.claimedInclusions ?? []).length > 0) &&
+          inIdRange(r, idPrefix, idFrom, idTo),
+      ),
+    [registrations, q, pkgFilter, typeFilter, statusFilter, claimFilter, idPrefix, idFrom, idTo],
   );
   const regsFiltered = !!(q || pkgFilter || typeFilter || statusFilter || claimFilter || idPrefix);
+  const pageCount = Math.max(1, Math.ceil(filteredRegs.length / PARTICIPANT_PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const visibleRegs = filteredRegs.slice(
+    safePage * PARTICIPANT_PAGE_SIZE,
+    (safePage + 1) * PARTICIPANT_PAGE_SIZE,
+  );
+  useEffect(() => {
+    setPage(0);
+  }, [q, pkgFilter, typeFilter, statusFilter, claimFilter, idPrefix, idFrom, idTo]);
 
   const existingIds = (self: any | null) =>
     new Set(
@@ -705,7 +735,7 @@ function EventDetailWeb() {
                   label="participant types"
                   value={typeFilter}
                   onChange={setTypeFilter}
-                  options={distinct((registrations ?? []).map((r) => r.participantType || "Delegate"))}
+                  options={distinct((registrations ?? []).map((r) => r.participantType).filter(Boolean))}
                 />
                 <FilterSelect
                   label="statuses"
@@ -791,7 +821,7 @@ function EventDetailWeb() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRegs.map((r) => {
+                    {visibleRegs.map((r) => {
                       const regId = idOf(r);
                       const name = displayName(r) || r.idNumber || "Participant";
                       const line = [r.designation, r.institution].filter(Boolean).join(" · ");
@@ -870,7 +900,7 @@ function EventDetailWeb() {
                             <tr className="bg-white/[0.02] hover:bg-white/[0.02]">
                               <td colSpan={6}>
                                 <div className="grid gap-4 py-1 sm:grid-cols-3 lg:grid-cols-4">
-                                  {info("Type", r.participantType || "Delegate")}
+                                  {info("Type", r.participantType)}
                                   {info("Package", r.packageName ?? "")}
                                   {info("Gender", cap(r.gender ?? ""))}
                                   {info("Mobile", r.mobileNumber ?? "")}
@@ -888,6 +918,22 @@ function EventDetailWeb() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {registrations && filteredRegs.length > PARTICIPANT_PAGE_SIZE && (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-3 text-sm text-muted">
+                <span>
+                  Showing {safePage * PARTICIPANT_PAGE_SIZE + 1}–
+                  {Math.min((safePage + 1) * PARTICIPANT_PAGE_SIZE, filteredRegs.length)} of {filteredRegs.length}
+                </span>
+                <span className="flex gap-2">
+                  <Button variant="outline" disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>
+                    Previous
+                  </Button>
+                  <Button variant="outline" disabled={safePage + 1 >= pageCount} onClick={() => setPage(safePage + 1)}>
+                    Next
+                  </Button>
+                </span>
               </div>
             )}
           </div>

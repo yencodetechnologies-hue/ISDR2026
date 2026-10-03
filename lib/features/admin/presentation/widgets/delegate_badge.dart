@@ -31,15 +31,17 @@ class DelegateBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayName = [_v('title'), _v('name')].where((e) => e.isNotEmpty).join(' ');
-    final rawType = _v('participantType').isEmpty ? 'Delegate' : _v('participantType');
+    final rawType = _v('participantType');
+    final hasType = rawType.isNotEmpty;
+    final storedColor = parseHex(_v('participantTypeColor'));
     // Speakers' passes read "INVITED SPEAKER" on #9E0A0F.
     final isSpeaker = RegExp(r'^(invited\s+)?speaker$', caseSensitive: false).hasMatch(rawType);
     final isCommittee = RegExp(
       r'^(organis(?:ing|zing)\s+committee|executive council members|isdr office bearers|iadr office bearer|invited dignitary)$',
       caseSensitive: false,
     ).hasMatch(rawType);
-    // Event Organizer cards show the blue banner and QR only.
-    final isOrganizer = RegExp(r'^event\s+organizers?$', caseSensitive: false).hasMatch(rawType);
+    // Event Organizer and Trade cards show the blue banner and QR only.
+    final isOrganizer = RegExp(r'^(event\s+organizers?|trade)$', caseSensitive: false).hasMatch(rawType);
     final typeLabel = (isSpeaker ? 'Invited Speaker' : rawType).toUpperCase();
     final typeColor = parseHex(_v('participantTypeColor')) ??
         (isOrganizer
@@ -75,21 +77,22 @@ class DelegateBadge extends StatelessWidget {
               Positioned.fill(
                 child: Image.asset('assets/qr_pass_template.jpg', fit: BoxFit.fill),
               ),
-              // Banner behind the participant type, in the participant's colour, spanning the white panel edge to edge.
-              Positioned(
-                left: 61,
-                top: 440,
-                width: 949,
-                height: 96,
-                child: ColoredBox(color: typeColor),
-              ),
-              Positioned(
-                left: 120,
-                top: 440,
-                width: 840,
-                height: 96,
-                child: Center(child: fitted(typeLabel, 60, FontWeight.w800, Colors.white)),
-              ),
+              if (hasType || storedColor != null)
+                Positioned(
+                  left: 61,
+                  top: 440,
+                  width: 949,
+                  height: 96,
+                  child: ColoredBox(color: hasType ? typeColor : storedColor!),
+                ),
+              if (hasType)
+                Positioned(
+                  left: 120,
+                  top: 440,
+                  width: 840,
+                  height: 96,
+                  child: Center(child: fitted(typeLabel, 60, FontWeight.w800, Colors.white)),
+                ),
               Positioned(
                 left: 110,
                 top: 562,

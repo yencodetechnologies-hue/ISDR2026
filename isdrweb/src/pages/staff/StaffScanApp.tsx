@@ -600,7 +600,7 @@ function ResultView({
           </div>
         )}
         {line("ID Number", String(r.idNumber ?? (reg ? "Spot" : "")))}
-        {line("Type", reg ? String(r.participantType || "Delegate") : "")}
+        {line("Type", reg ? String(r.participantType || "") : "")}
         {line("Package", packageText)}
         {line("Date", today)}
         {line("Venue", String(event?.venue ?? ""))}

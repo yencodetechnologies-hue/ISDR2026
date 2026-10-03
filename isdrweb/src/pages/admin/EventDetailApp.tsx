@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppBar } from "@/components/ui";
 import { AppBarAction } from "@/components/app/AppChrome";
@@ -138,6 +138,8 @@ export default function EventDetailApp() {
   const [badgeFor, setBadgeFor] = useState<any | null>(null);
   const [claimsFor, setClaimsFor] = useState<any | null>(null);
   const [importing, setImporting] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(40);
+  const refreshLock = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const show = (msg: string, kind: "success" | "error" = "success") => {
@@ -154,13 +156,18 @@ export default function EventDetailApp() {
 
   const loadRegs = useCallback(
     async (silent = false) => {
+      if (refreshLock.current) return;
+      refreshLock.current = true;
       if (!silent) setLoadingRegs(true);
-      const res = await get(`/managed-events/${id}/registrations`);
-      if (!silent) setLoadingRegs(false);
-      if (res.success) setRegistrations(res.registrations ?? []);
-      loadStats();
+      try {
+        const res = await get(`/managed-events/${id}/registrations`);
+        if (res.success) setRegistrations(res.registrations ?? []);
+      } finally {
+        if (!silent) setLoadingRegs(false);
+        refreshLock.current = false;
+      }
     },
-    [id, loadStats],
+    [id],
   );
 
   const loadAll = useCallback(async () => {
@@ -168,13 +175,17 @@ export default function EventDetailApp() {
     if (!ev.success) return setError(ev.error || "Could not load event");
     setEvent(ev.event);
     await loadRegs();
-  }, [id, loadRegs]);
+    loadStats();
+  }, [id, loadRegs, loadStats]);
   useEffect(() => {
     loadAll();
   }, [loadAll]);
-  // Re-check every few seconds so claims scanned at the counters show up right away.
+  // Refresh claims without stacking another full download on top of one still running.
   useEffect(() => {
-    const t = setInterval(() => loadRegs(true), 4000);
+    const t = setInterval(async () => {
+      if (refreshLock.current) return;
+      await loadRegs(true);
+    }, 8000);
     return () => clearInterval(t);
   }, [loadRegs]);
 
@@ -247,6 +258,10 @@ export default function EventDetailApp() {
           (v) => (typeof v === "string" || typeof v === "number") && String(v).toLowerCase().includes(q),
         )),
   );
+  const visibleShown = shown.slice(0, visibleCount);
+  useEffect(() => {
+    setVisibleCount(40);
+  }, [q, idPrefix, idFrom, idTo]);
 
   if (error)
     return (
@@ -389,13 +404,8 @@ export default function EventDetailApp() {
         </div>
 
         {/* Participants */}
-        <div className="mt-4 flex items-center">
-          <div className="flex-1 text-[17px] font-extrabold">
-            {q ? `Participants (${shown.length} of ${registrations.length})` : `Participants (${registrations.length})`}
-          </div>
-          <TextBtn icon="person_add" disabled={busy} onClick={() => setRegEditing(null)}>
-            Add
-          </TextBtn>
+        <div className="mt-4 text-[17px] font-extrabold">
+          {q ? `Participants (${shown.length} of ${registrations.length})` : `Participants (${registrations.length})`}
         </div>
         {/* Website extras kept on phones: Excel import and list download. */}
         <div className="mb-1.5 mt-1 flex flex-wrap items-center gap-2">
@@ -469,7 +479,7 @@ export default function EventDetailApp() {
                 : "No participants match your search."}
             </div>
           ) : (
-            shown.map((r) => {
+            visibleShown.map((r) => {
               const regId = idOf(r);
               const open = expanded.has(regId);
               const name = fullNameOf(r) || r.name || r.idNumber || "Participant";
@@ -521,7 +531,7 @@ export default function EventDetailApp() {
                       <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
                         <div className="h-px bg-field" />
                         <div className="mt-2">
-                          {info("Type", r.participantType || "Delegate")}
+                          {info("Type", r.participantType)}
                           {info("Package", r.packageName)}
                           {info("Gender", r.gender)}
                           {info("Mobile", r.mobileNumber)}
@@ -575,6 +585,15 @@ export default function EventDetailApp() {
               );
             })
           )}
+          {shown.length > visibleShown.length && (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((n) => n + 40)}
+              className="mt-1 w-full rounded-xl border border-line py-2.5 text-sm font-semibold"
+            >
+              Show more ({shown.length - visibleShown.length} left)
+            </button>
+          )}
         </div>
       </div>
 
@@ -597,6 +616,7 @@ export default function EventDetailApp() {
           packages={packages}
           registration={regEditing}
           existingIdNumbers={existingIds(regEditing)}
+          optionalFields
           onClose={() => setRegEditing(undefined)}
           onSaved={(saved) => {
             const wasNew = !regEditing;

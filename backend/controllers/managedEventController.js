@@ -288,8 +288,11 @@ function registrationDto(reg, event) {
     middleName,
     lastName,
     gender: reg.gender || '',
-    participantType: reg.participantType || 'Delegate',
-    participantTypeColor: reg.participantTypeColor || DEFAULT_PARTICIPANT_TYPE_COLOR,
+    participantType:
+      reg.participantType || (/^spot register$/i.test(reg.packageName || '') ? '' : 'Delegate'),
+    participantTypeColor:
+      reg.participantTypeColor ||
+      (/^spot register$/i.test(reg.packageName || '') ? '' : DEFAULT_PARTICIPANT_TYPE_COLOR),
     designation: reg.designation || '',
     idNumber: reg.idNumber || '',
     address: reg.address || '',
@@ -556,10 +559,15 @@ const listRegistrations = async (req, res) => {
     if (apartmentId && event.apartmentId.toString() !== apartmentId) {
       return res.status(403).json({ success: false, error: 'Not authorized for this event' });
     }
-    const regs = await EventRegistration.find({ eventId: event._id }).sort({ createdAt: -1 });
+    // lean() skips Mongoose document wrapping. The list does not repeat the parent
+    // event on every row — that object was identical for the whole response.
+    const regs = await EventRegistration.find({ eventId: event._id })
+      .select('-fcmTokens -favoriteSchedules')
+      .sort({ createdAt: -1 })
+      .lean();
     res.json({
       success: true,
-      registrations: regs.map((r) => registrationDto(r, event)),
+      registrations: regs.map((r) => registrationDto(r)),
       count: regs.length,
     });
   } catch (error) {
@@ -610,7 +618,7 @@ function parseParticipantProfile(body, { strict }) {
   oneOf('gender', 'Gender', PARTICIPANT_GENDERS, (v) => v.toLowerCase());
   if (has('participantType') || strict) {
     const t = str('participantType');
-    if (!t) throw new Error('Participant type is required');
+    if (strict && !t) throw new Error('Participant type is required');
     if (t.length > 60) throw new Error('Participant type is too long');
     out.participantType = t;
   }
