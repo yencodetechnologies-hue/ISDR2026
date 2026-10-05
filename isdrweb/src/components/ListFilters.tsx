@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-refresh/only-export-components */
 import { Icon } from "@/components/ui";
+import { isoDay, parseDate } from "@/lib/format";
 
 /** Filter dropdown for list toolbars: "All <label>" (value "") plus the given options. */
 export function FilterSelect({
@@ -78,5 +79,19 @@ export function inIdRange(r: any, prefix: string, from: string, to: string) {
   const t = num(to);
   if (!Number.isNaN(f) && !(n >= f)) return false;
   if (!Number.isNaN(t) && !(n <= t)) return false;
+  return true;
+}
+
+/**
+ * Created-date range: the registration's createdAt falls on a calendar day between [from] and [to]
+ * (YYYY-MM-DD, inclusive; either may be left empty).
+ */
+export function inCreatedRange(r: any, from: string, to: string) {
+  if (!from && !to) return true;
+  const d = parseDate(r.createdAt);
+  if (!d) return false;
+  const day = isoDay(d);
+  if (from && day < from) return false;
+  if (to && day > to) return false;
   return true;
 }

@@ -27,7 +27,7 @@ import { PARTICIPANT_EXPORT_COLUMNS, PARTICIPANT_QR, shownParticipantType } from
 import EventDetailApp from "./EventDetailApp";
 import { useAppLayout } from "@/lib/appLayout";
 import EventsApp from "./EventsApp";
-import { FilterSelect, distinct, idPrefixes, inIdRange, matches } from "@/components/ListFilters";
+import { FilterSelect, distinct, idPrefixes, inCreatedRange, inIdRange, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { fmtDate, idOf, parseDate, cap } from "@/lib/format";
 import { BadgeModal, ClaimsModal, displayName, PackageCard, PackageModal, ParticipantModal } from "./EventManage";
@@ -368,6 +368,8 @@ function EventDetailWeb() {
   const [idPrefix, setIdPrefix] = useState("");
   const [idFrom, setIdFrom] = useState("");
   const [idTo, setIdTo] = useState("");
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -510,11 +512,12 @@ function EventDetailWeb() {
           (!typeFilter || shownParticipantType(r) === typeFilter) &&
           (!statusFilter || (r.status ?? "registered") === statusFilter) &&
           (!claimFilter || (claimFilter === "claimed") === (r.claimedInclusions ?? []).length > 0) &&
-          inIdRange(r, idPrefix, idFrom, idTo),
+          inIdRange(r, idPrefix, idFrom, idTo) &&
+          inCreatedRange(r, createdFrom, createdTo),
       ),
-    [registrations, q, pkgFilter, typeFilter, statusFilter, claimFilter, idPrefix, idFrom, idTo],
+    [registrations, q, pkgFilter, typeFilter, statusFilter, claimFilter, idPrefix, idFrom, idTo, createdFrom, createdTo],
   );
-  const regsFiltered = !!(q || pkgFilter || typeFilter || statusFilter || claimFilter || idPrefix);
+  const regsFiltered = !!(q || pkgFilter || typeFilter || statusFilter || claimFilter || idPrefix || createdFrom || createdTo);
   const pageCount = Math.max(1, Math.ceil(filteredRegs.length / PARTICIPANT_PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
   const visibleRegs = filteredRegs.slice(
@@ -523,7 +526,7 @@ function EventDetailWeb() {
   );
   useEffect(() => {
     setPage(0);
-  }, [q, pkgFilter, typeFilter, statusFilter, claimFilter, idPrefix, idFrom, idTo]);
+  }, [q, pkgFilter, typeFilter, statusFilter, claimFilter, idPrefix, idFrom, idTo, createdFrom, createdTo]);
 
   const existingIds = (self: any | null) =>
     new Set(
@@ -780,6 +783,24 @@ function EventDetailWeb() {
                     />
                   </div>
                 )}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted">Created</span>
+                  <input
+                    type="date"
+                    value={createdFrom}
+                    onChange={(e) => setCreatedFrom(e.target.value)}
+                    aria-label="Created from"
+                    className="input w-40"
+                  />
+                  <span className="text-sm text-muted">to</span>
+                  <input
+                    type="date"
+                    value={createdTo}
+                    onChange={(e) => setCreatedTo(e.target.value)}
+                    aria-label="Created to"
+                    className="input w-40"
+                  />
+                </div>
               </div>
               <ExportMenu
                 title={`${event?.title || "Event"} - Participants`}

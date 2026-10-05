@@ -9,7 +9,7 @@ import { Icon, useConfirm, useToast } from "@/components/ui";
 import { del, get, put, qs } from "@/lib/api";
 import { fullNameOf } from "@/lib/exporter";
 import { idOf, parseDate } from "@/lib/format";
-import { idPrefixes, inIdRange } from "@/components/ListFilters";
+import { idPrefixes, inCreatedRange, inIdRange } from "@/components/ListFilters";
 import {
   BadgeModal,
   ClaimsModal,
@@ -132,6 +132,8 @@ export default function EventDetailApp() {
   const [idPrefix, setIdPrefix] = useState("");
   const [idFrom, setIdFrom] = useState("");
   const [idTo, setIdTo] = useState("");
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [pkgEditing, setPkgEditing] = useState<any | null | undefined>(undefined);
   const [regEditing, setRegEditing] = useState<any | null | undefined>(undefined);
@@ -253,6 +255,7 @@ export default function EventDetailApp() {
   const shown = registrations.filter(
     (r) =>
       inIdRange(r, idPrefix, idFrom, idTo) &&
+      inCreatedRange(r, createdFrom, createdTo) &&
       (!q ||
         Object.values(r).some(
           (v) => (typeof v === "string" || typeof v === "number") && String(v).toLowerCase().includes(q),
@@ -261,7 +264,7 @@ export default function EventDetailApp() {
   const visibleShown = shown.slice(0, visibleCount);
   useEffect(() => {
     setVisibleCount(40);
-  }, [q, idPrefix, idFrom, idTo]);
+  }, [q, idPrefix, idFrom, idTo, createdFrom, createdTo]);
 
   if (error)
     return (
@@ -405,7 +408,9 @@ export default function EventDetailApp() {
 
         {/* Participants */}
         <div className="mt-4 text-[17px] font-extrabold">
-          {q ? `Participants (${shown.length} of ${registrations.length})` : `Participants (${registrations.length})`}
+          {q || createdFrom || createdTo || idPrefix
+            ? `Participants (${shown.length} of ${registrations.length})`
+            : `Participants (${registrations.length})`}
         </div>
         {/* Website extras kept on phones: Excel import and list download. */}
         <div className="mb-1.5 mt-1 flex flex-wrap items-center gap-2">
@@ -468,6 +473,24 @@ export default function EventDetailApp() {
               />
             </>
           )}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-xs text-muted">Created</span>
+          <input
+            type="date"
+            value={createdFrom}
+            onChange={(e) => setCreatedFrom(e.target.value)}
+            aria-label="Created from"
+            className="w-0 flex-1 rounded-xl border border-[#8E8E98] bg-field px-2 py-2 text-sm outline-none focus:border-accent"
+          />
+          <span className="text-xs text-muted">to</span>
+          <input
+            type="date"
+            value={createdTo}
+            onChange={(e) => setCreatedTo(e.target.value)}
+            aria-label="Created to"
+            className="w-0 flex-1 rounded-xl border border-[#8E8E98] bg-field px-2 py-2 text-sm outline-none focus:border-accent"
+          />
         </div>
         <div className="mt-2.5">
           {loadingRegs ? (
