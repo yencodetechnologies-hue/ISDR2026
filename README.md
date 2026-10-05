@@ -2,7 +2,7 @@
 
 ISDR 2026 conference app (Flutter) with its Node.js backend in `backend/`.
 
-## Getting Started
+## Getting Startedsxfasf
 
 This project is a starting point for a Flutter application.
 
