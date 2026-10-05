@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const ManagedEvent = require('../models/ManagedEvent');
 const EventRegistration = require('../models/EventRegistration');
 const EventClaimAttempt = require('../models/EventClaimAttempt');
-const { normalizeInclusions, isWelcomeKit, welcomeKitOpen, welcomeKitDays } = require('./managedEventController');
+const { normalizeInclusions } = require('./managedEventController');
 
 /** Every request is scoped to the logged-in management property (from the token). */
 function resolveApartmentId(req) {
@@ -93,25 +93,11 @@ const claimSummary = async (req, res) => {
       const pkg = event && packageOf(event, reg);
       if (!pkg) return;
       normalizeInclusions(pkg.inclusions).forEach((inc) => {
-        const scheduled = isWelcomeKit(inc.name)
-          ? welcomeKitDays()
-          : Array.isArray(inc.dates) && inc.dates.length > 0
-            ? inc.dates
-            : eventDays.get(String(event._id)) || [];
+        const scheduled = Array.isArray(inc.dates) ? inc.dates : [];
         const claims = reg.claimedInclusions || [];
         const sameName = (c) => String(c.inclusionName).toLowerCase() === inc.name.toLowerCase();
         scheduled.filter(inRange).forEach((day) => {
           const r = row(pkg.name, inc.name);
-          if (isWelcomeKit(inc.name)) {
-            if (!welcomeKitOpen(day)) return;
-            const collectedThisDay = claims.some((c) => sameName(c) && istDay(c.claimedAt) === day);
-            const collectedEver = claims.some((c) => isWelcomeKit(c.inclusionName));
-            // Already collected on another day: not due again.
-            if (collectedEver && !collectedThisDay) return;
-            r.eligible += 1;
-            if (collectedThisDay) r.scanned += 1;
-            return;
-          }
           r.eligible += 1;
           const done = claims.some((c) => sameName(c) && istDay(c.claimedAt) === day);
           if (done) r.scanned += 1;

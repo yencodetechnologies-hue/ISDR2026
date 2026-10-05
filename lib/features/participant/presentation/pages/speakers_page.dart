@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
+import '../programme.dart';
 import 'schedule_detail_page.dart';
 
 class _Colors {
@@ -101,15 +102,20 @@ class _SpeakersPageState extends State<SpeakersPage> {
     sessions.sort((a, b) => a.start.compareTo(b.start));
 
     // Group by speaker name; insertion order = order of their first session.
+    // A panel stored as "A · B" is listed once for each person.
     final byName = <String, _Speaker>{};
     for (final s in sessions) {
-      final name = s.schedule['speakerName']?.toString().trim() ?? '';
-      if (name.isEmpty) continue;
-      final speaker = byName.putIfAbsent(
-        name.toLowerCase(),
-        () => _Speaker(name, s.schedule['speakerPhoto']?.toString() ?? ''),
-      );
-      speaker.sessions.add(s);
+      final names = splitSpeakerNames(s.schedule['speakerName']?.toString());
+      for (final name in names) {
+        final speaker = byName.putIfAbsent(
+          name.toLowerCase(),
+          () => _Speaker(name, s.schedule['speakerPhoto']?.toString() ?? ''),
+        );
+        final already = speaker.sessions.any(
+          (existing) => identical(existing.schedule, s.schedule),
+        );
+        if (!already) speaker.sessions.add(s);
+      }
     }
 
     if (!mounted) return;

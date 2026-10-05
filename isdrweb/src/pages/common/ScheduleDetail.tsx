@@ -4,7 +4,7 @@ import { SessionContent } from "@/components/SessionContent";
 import { Avatar, Button, ErrorState, Icon, Loading, Page, Pill, useToast } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { fmtTime, monthShort, scheduleTimes, weekdayLong } from "@/lib/format";
-import { loadFavorites, loadSchedule, toggleFavorite } from "@/lib/schedules";
+import { displaySpeaker } from "@/lib/schedules";
 import { useAppLayout } from "@/lib/appLayout";
 import ScheduleDetailApp from "./ScheduleDetailApp";
 
@@ -114,12 +114,12 @@ function ScheduleDetailWeb() {
               <Pill color={isLive ? "#EF4444" : isPast ? "#9CA3AF" : "#3B82F6"}>{status}</Pill>
               <Pill color="#8B5CF6">{isKeynote ? "KEYNOTE" : "SESSION"}</Pill>
             </div>
-            {s.speakerName && (
+            {displaySpeaker(s.speakerName) && (
               <div className="mt-5 flex items-center gap-4">
-                <Avatar src={s.speakerPhoto} name={s.speakerName} size={60} />
+                <Avatar src={s.speakerPhoto} name={displaySpeaker(s.speakerName)} size={60} />
                 <div>
                   <div className="eyebrow">Speaker</div>
-                  <div className="mt-0.5 text-lg font-semibold">{s.speakerName}</div>
+                  <div className="mt-0.5 text-lg font-semibold">{displaySpeaker(s.speakerName)}</div>
                 </div>
               </div>
             )}

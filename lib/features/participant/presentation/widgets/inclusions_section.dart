@@ -166,8 +166,7 @@ class InclusionsSectionState extends State<InclusionsSection> {
             final dates = ((i['dates'] as List?) ?? const [])
                 .map((d) => d.toString())
                 .toList();
-            // No dates = offered on every day of the event.
-            if (dates.isNotEmpty && !dates.contains(day.iso)) continue;
+            if (!dates.contains(day.iso)) continue;
             final name = i['name']?.toString() ?? '';
             items.add(claimOn(name, day.iso));
           }

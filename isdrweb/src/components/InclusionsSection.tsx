@@ -60,7 +60,7 @@ export default function InclusionsSection({ showHeader = true }: { showHeader?: 
         const items = inclusions
           .filter((i) => {
             const dates: string[] = (i.dates ?? []).map(String);
-            return !dates.length || dates.includes(iso);
+            return dates.includes(iso);
           })
           .map((i) => claimOn(String(i.name ?? ""), iso));
         if (items.length) out.push({ iso, items });

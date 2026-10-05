@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
+import '../programme.dart';
 import 'schedule_detail_page.dart';
 
 class _Colors {
@@ -172,29 +173,67 @@ class _UpcomingSchedulesPageState extends State<UpcomingSchedulesPage> {
 
     final now = DateTime.now();
     final widgets = <Widget>[];
-    DateTime? lastDay;
+    final byDay = <DateTime, List<_Item>>{};
     for (final item in _items) {
       final day = DateTime(item.start.year, item.start.month, item.start.day);
-      if (day != lastDay) {
-        lastDay = day;
-        final isToday = DateUtils.isSameDay(day, now);
+      byDay.putIfAbsent(day, () => []).add(item);
+    }
+    for (final day in byDay.keys) {
+      final isToday = DateUtils.isSameDay(day, now);
+      widgets.add(
+        Padding(
+          padding: EdgeInsets.only(top: widgets.isEmpty ? 4 : 14, bottom: 8),
+          child: Text(
+            isToday
+                ? 'Today · ${DateFormat('d MMM').format(day)}'
+                : DateFormat('EEEE, d MMM').format(day),
+            style: GoogleFonts.inter(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: _Colors.muted,
+            ),
+          ),
+        ),
+      );
+      final halls = <String, List<_Item>>{};
+      for (final item in byDay[day]!) {
+        final hall = item.schedule['hall']?.toString().trim() ?? '';
+        halls.putIfAbsent(hall.isEmpty ? 'Other' : hall, () => []).add(item);
+      }
+      final hallNames = halls.keys.toList()
+        ..sort(
+          (a, b) => programmeHallRank(a).compareTo(programmeHallRank(b)),
+        );
+      for (final hall in hallNames) {
         widgets.add(
           Padding(
-            padding: EdgeInsets.only(top: widgets.isEmpty ? 4 : 14, bottom: 8),
-            child: Text(
-              isToday
-                  ? 'Today · ${DateFormat('d MMM').format(day)}'
-                  : DateFormat('EEEE, d MMM').format(day),
-              style: GoogleFonts.inter(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: _Colors.muted,
-              ),
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.location_on_rounded,
+                  size: 14,
+                  color: Color(0xFF93C5FD),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    hall,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF93C5FD),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         );
+        for (final item in halls[hall]!) {
+          widgets.add(_row(item, now));
+        }
       }
-      widgets.add(_row(item, now));
     }
     return widgets;
   }
@@ -202,13 +241,10 @@ class _UpcomingSchedulesPageState extends State<UpcomingSchedulesPage> {
   Widget _row(_Item item, DateTime now) {
     final isLive = !now.isBefore(item.start);
     final color = isLive ? _Colors.live : _Colors.upcoming;
-    final hall = item.schedule['hall']?.toString() ?? '';
-    final speaker = item.schedule['speakerName']?.toString() ?? '';
-    final meta = [
-      '${DateFormat('h:mm a').format(item.start)} - '
-          '${DateFormat('h:mm a').format(item.end)}',
-      if (hall.isNotEmpty) hall,
-    ].join('  ·  ');
+    final speaker = displaySpeaker(item.schedule['speakerName']?.toString());
+    final meta =
+        '${DateFormat('h:mm a').format(item.start)} - '
+        '${DateFormat('h:mm a').format(item.end)}';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),

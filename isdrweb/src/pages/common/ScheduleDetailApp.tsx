@@ -6,7 +6,7 @@ import { Icon, Spinner, useToast } from "@/components/ui";
 import { asset } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { scheduleTimes } from "@/lib/format";
-import { loadFavorites, loadSchedule, toggleFavorite } from "@/lib/schedules";
+import { displaySpeaker, loadFavorites, loadSchedule, toggleFavorite } from "@/lib/schedules";
 
 const DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -116,7 +116,7 @@ export default function ScheduleDetailApp() {
   const now = new Date();
   const isLive = !!w && now >= w.start && now < w.end;
   const isPast = !!w && now > w.end;
-  const name = String(s?.speakerName ?? "");
+  const name = displaySpeaker(s?.speakerName);
   const photo = String(s?.speakerPhoto ?? "");
   const scheduleName = String(s?.scheduleName ?? "");
   const description = String(s?.description ?? "");
@@ -177,13 +177,15 @@ export default function ScheduleDetailApp() {
                 {photo ? (
                   <img src={photo} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="font-outfit text-2xl font-bold">{initials || "?"}</span>
+                  <span className="font-outfit text-2xl font-bold">{name ? initials || "?" : "IS"}</span>
                 )}
               </span>
             </span>
             <div className="ml-3 min-w-0 flex-1">
-              <Pill icon="mic" label="SPEAKER" from="#7C3AED" to="#6366F1" />
-              <div className="mt-[5px] font-outfit text-[18px] font-extrabold leading-[1.15]">{name}</div>
+              <Pill icon={name ? "mic" : "event_note"} label={name ? "SPEAKER" : "SESSION"} from="#7C3AED" to="#6366F1" />
+              <div className="mt-[5px] font-outfit text-[18px] font-extrabold leading-[1.15]">
+                {name || hall || "Programme"}
+              </div>
               <div className="mt-1 text-[10px] font-medium text-white/80">Inspiring Minds&nbsp; |&nbsp; Building Futures</div>
               <span
                 className="mt-[7px] inline-flex items-center gap-[5px] rounded-full border px-2.5 py-1 text-[10.5px] font-extrabold tracking-[0.5px]"

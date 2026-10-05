@@ -273,13 +273,13 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
     }
   }
 
-  void _openClaimSheet(String inclusionName, String packageId) {
+  void _openClaimSheet(String inclusionName) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ClaimInclusionScannerPage(
           inclusionName: inclusionName,
-          packageId: packageId,
+          packageId: '',
           event: _event ?? const {},
           apartmentId: widget.apartmentId,
           api: _api,
@@ -455,7 +455,7 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
                   ),
                   const SizedBox(height: 22),
                   const Text(
-                    'Packages & Inclusions',
+                    'Inclusions',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -463,28 +463,7 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if ((_event!['packages'] as List? ?? []).isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0A0A12),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFFCBD5E1),
-                          style: BorderStyle.solid,
-                        ),
-                      ),
-                      child: const Text(
-                        'No packages configured for this event.',
-                        style: TextStyle(color: Color(0xFF9CA3AF)),
-                      ),
-                    )
-                  else
-                    ...List<Map<String, dynamic>>.from(
-                      (_event!['packages'] as List).map(
-                        (p) => Map<String, dynamic>.from(p as Map),
-                      ),
-                    ).map((pkg) => _buildPackageCard(pkg)),
+                  _buildInclusionGrid(),
                 ],
               ),
             ),
@@ -618,24 +597,71 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
     );
   }
 
-  Widget _buildPackageCard(Map<String, dynamic> pkg) {
-    final today = DateTime.now().toIso8601String().substring(0, 10);
-    final rawInclusions = (pkg['inclusions'] as List? ?? []);
-    // Every inclusion is listed; ones not scheduled for today are greyed out and explain why when tapped.
-    final entries = <Map<String, dynamic>>[];
-    for (final e in rawInclusions) {
-      final inc = e is Map
-          ? Map<String, dynamic>.from(e)
-          : {'name': e.toString(), 'dates': const []};
-      final dates = (inc['dates'] as List? ?? [])
-          .map((d) => d.toString())
-          .toList();
-      entries.add({'name': inc['name'].toString(), 'dates': dates});
+  /// India calendar date (YYYY-MM-DD), matching the claim API.
+  String _indiaToday() {
+    final ist = DateTime.now().toUtc().add(const Duration(hours: 5, minutes: 30));
+    final y = ist.year.toString().padLeft(4, '0');
+    final m = ist.month.toString().padLeft(2, '0');
+    final d = ist.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  /// One tile per inclusion name across every package. Available when today
+  /// is ticked on at least one package; dates are the union of those ticks.
+  List<Map<String, dynamic>> _collapsedInclusions() {
+    final today = _indiaToday();
+    final merged = <String, Map<String, dynamic>>{};
+    final order = <String>[];
+    for (final p in (_event?['packages'] as List? ?? const [])) {
+      if (p is! Map) continue;
+      for (final e in (p['inclusions'] as List? ?? const [])) {
+        final inc = e is Map
+            ? Map<String, dynamic>.from(e)
+            : {'name': e.toString(), 'dates': const <String>[]};
+        final name = (inc['name']?.toString() ?? '').trim();
+        if (name.isEmpty) continue;
+        final key = name.toLowerCase();
+        final dates = (inc['dates'] as List? ?? const [])
+            .map((d) => d.toString())
+            .toList();
+        final hit = dates.contains(today);
+        if (!merged.containsKey(key)) {
+          order.add(key);
+          merged[key] = {
+            'name': name,
+            'dates': dates.toSet().toList(),
+            'available': hit,
+          };
+        } else {
+          final existing = merged[key]!;
+          existing['dates'] = <String>{
+            ...(existing['dates'] as List<String>),
+            ...dates,
+          }.toList();
+          if (hit) existing['available'] = true;
+        }
+      }
     }
-    final rate = pkg['rate'];
-    final isFree = rate == null || rate == 0;
+    return [for (final key in order) merged[key]!];
+  }
+
+  Widget _buildInclusionGrid() {
+    final entries = _collapsedInclusions();
+    if (entries.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A0A12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFCBD5E1)),
+        ),
+        child: const Text(
+          'No inclusions configured for this event.',
+          style: TextStyle(color: Color(0xFF9CA3AF)),
+        ),
+      );
+    }
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF14141F),
@@ -649,92 +675,37 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  pkg['name']?.toString() ?? '',
-                  style: const TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: isFree
-                      ? const Color(0x2622C55E)
-                      : const Color(0x263B82F6),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  isFree ? 'Free' : '₹$rate',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: isFree
-                        ? const Color(0xFF86EFAC)
-                        : const Color(0xFF2563EB),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (entries.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text(
-                'No inclusions listed.',
-                style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-              ),
-            )
-          else ...[
-            const SizedBox(height: 8),
-            // Three equal tiles per row; each row is as tall as its tallest tile.
-            for (var r = 0; r < entries.length; r += 3) ...[
-              if (r > 0) const SizedBox(height: 8),
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var c = r; c < r + 3; c++) ...[
-                      if (c > r) const SizedBox(width: 8),
-                      Expanded(
-                        child: c < entries.length
-                            ? _buildInclusionTile(entries[c], pkg, today)
-                            : const SizedBox.shrink(),
-                      ),
-                    ],
+          for (var r = 0; r < entries.length; r += 3) ...[
+            if (r > 0) const SizedBox(height: 8),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var c = r; c < r + 3; c++) ...[
+                    if (c > r) const SizedBox(width: 8),
+                    Expanded(
+                      child: c < entries.length
+                          ? _buildInclusionTile(entries[c])
+                          : const SizedBox.shrink(),
+                    ),
                   ],
-                ),
+                ],
               ),
-            ],
+            ),
           ],
         ],
       ),
     );
   }
 
-  /// One inclusion tile: tap to scan-claim it, or (not scheduled today) a
-  /// message saying which days it is on.
-  Widget _buildInclusionTile(
-    Map<String, dynamic> inc,
-    Map<String, dynamic> pkg,
-    String today,
-  ) {
+  /// One inclusion tile: a tick when today is scheduled, otherwise a lock.
+  Widget _buildInclusionTile(Map<String, dynamic> inc) {
     final name = inc['name'] as String;
     final dates = inc['dates'] as List<String>;
-    final availableToday = dates.isEmpty || dates.contains(today);
+    final availableToday = inc['available'] == true;
     final color = availableToday
-        ? const Color(0xFF2563EB)
+        ? const Color(0xFF22C55E)
         : const Color(0xFFCBD5E1);
     return Material(
       color: availableToday ? const Color(0xFF1E1E2A) : const Color(0xFF0A0A12),
@@ -743,7 +714,7 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
         borderRadius: BorderRadius.circular(10),
         onTap: () {
           if (availableToday) {
-            _openClaimSheet(name, pkg['id']?.toString() ?? '');
+            _openClaimSheet(name);
             return;
           }
           ScaffoldMessenger.of(context)
@@ -753,7 +724,9 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
                 backgroundColor: AppTheme.errorColor,
                 behavior: SnackBarBehavior.floating,
                 content: Text(
-                  '"$name" is not available today. Scheduled for: ${_formatScheduleDates(dates)}.',
+                  dates.isEmpty
+                      ? '"$name" is not available today. No days selected.'
+                      : '"$name" is not available today. Scheduled for: ${_formatScheduleDates(dates)}.',
                 ),
               ),
             );
@@ -765,7 +738,7 @@ class _UserEventDetailsPageState extends State<UserEventDetailsPage> {
             children: [
               Icon(
                 availableToday
-                    ? Icons.restaurant_rounded
+                    ? Icons.check_rounded
                     : Icons.lock_outline_rounded,
                 size: 20,
                 color: color,

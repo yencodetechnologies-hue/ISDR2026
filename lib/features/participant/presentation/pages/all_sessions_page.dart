@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/services/api_service.dart';
+import '../programme.dart';
 import 'schedule_detail_page.dart';
 
 /// Every session of the event ("View All" on the home's Today's Schedule),
@@ -151,6 +152,77 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
       (a, b) => (a['start'] as DateTime).compareTo(b['start'] as DateTime),
     );
     return list;
+  }
+
+  List<Widget> _sectioned(List<Map<String, dynamic>> shown) {
+    final byDay = <DateTime, List<Map<String, dynamic>>>{};
+    for (final item in shown) {
+      final start = item['start'] as DateTime;
+      final day = DateTime(start.year, start.month, start.day);
+      byDay.putIfAbsent(day, () => []).add(item);
+    }
+    final widgets = <Widget>[];
+    for (final day in byDay.keys) {
+      if (_day == null) {
+        widgets.add(
+          Padding(
+            padding: EdgeInsets.only(top: widgets.isEmpty ? 4 : 12, bottom: 8),
+            child: Text(
+              DateFormat('EEEE, d MMM').format(day),
+              style: GoogleFonts.inter(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: Colors.white60,
+              ),
+            ),
+          ),
+        );
+      }
+      final halls = <String, List<Map<String, dynamic>>>{};
+      for (final item in byDay[day]!) {
+        final schedule = Map<String, dynamic>.from(item['schedule'] as Map);
+        final hall = schedule['hall']?.toString().trim() ?? '';
+        halls.putIfAbsent(hall.isEmpty ? 'Other' : hall, () => []).add(item);
+      }
+      final hallNames = halls.keys.toList()
+        ..sort((a, b) => programmeHallRank(a).compareTo(programmeHallRank(b)));
+      for (final hall in hallNames) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 2, bottom: 8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.location_on_rounded,
+                  size: 14,
+                  color: Color(0xFF93C5FD),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    hall,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF93C5FD),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        for (final item in halls[hall]!) {
+          widgets.add(
+            _SessionCard(
+              item: item,
+              dayNumber: _day == null ? 0 : _dayNumber(item['start'] as DateTime),
+            ),
+          );
+        }
+      }
+    }
+    return widgets;
   }
 
   String get _eventTitle {
@@ -341,13 +413,9 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
                         style: GoogleFonts.inter(color: Colors.white60),
                       ),
                     )
-                  : ListView.builder(
+                  : ListView(
                       padding: const EdgeInsets.fromLTRB(14, 6, 14, 20),
-                      itemCount: shown.length,
-                      itemBuilder: (_, i) => _SessionCard(
-                        item: shown[i],
-                        dayNumber: _dayNumber(shown[i]['start'] as DateTime),
-                      ),
+                      children: _sectioned(shown),
                     ),
             ),
           ],
@@ -379,7 +447,7 @@ class _SessionCard extends StatelessWidget {
     final now = DateTime.now();
     final live = !now.isBefore(start) && now.isBefore(end);
     final done = !now.isBefore(end);
-    final name = s['speakerName']?.toString() ?? '';
+    final name = displaySpeaker(s['speakerName']?.toString());
     final photo = s['speakerPhoto']?.toString() ?? '';
     final hall = s['hall']?.toString() ?? '';
     final ring = _ringColors[name.hashCode.abs() % _ringColors.length];

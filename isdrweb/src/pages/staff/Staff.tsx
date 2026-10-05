@@ -22,10 +22,11 @@ import { fullNameOf } from "@/lib/exporter";
 import { ClaimHistoryModal } from "./ClaimHistory";
 import { ScannerModal } from "./Scanner";
 import { useAuth } from "@/lib/auth";
-import { cap, fmtDate, fmtDMon, fullName, idOf, isoDay, parseDate } from "@/lib/format";
+import { istDay } from "@/components/InclusionsSection";
+import { cap, fmtDate, fmtDMon, fullName, idOf, parseDate } from "@/lib/format";
 import { useLogout } from "../common/Profile";
 import { useAppLayout } from "@/lib/appLayout";
-import { StaffEventDetailApp, StaffEventsApp } from "./StaffScanApp";
+import { StaffEventDetailApp, StaffEventsApp, collapsedInclusions } from "./StaffScanApp";
 
 /** Event cards in a responsive grid. */
 function EventCards({ events }: { events: any[] }) {
@@ -207,6 +208,7 @@ function StaffEventDetailWeb() {
 
   const checkedIn = regs.filter((r) => r.status === "checked_in").length;
   const registered = regs.filter((r) => r.status === "registered").length;
+  const inclusions = collapsedInclusions(event?.packages ?? [], istDay(new Date()));
 
   return (
     <Page
@@ -264,66 +266,45 @@ function StaffEventDetailWeb() {
             </Panel>
             <Panel
               className="lg:col-span-2"
-              title="Packages & Inclusions"
+              title="Inclusions"
               subtitle="Click an inclusion to scan and claim it"
               icon="redeem"
               iconColor="#3B82F6"
             >
-              {(event.packages ?? []).length === 0 ? (
-                <div className="text-sm text-muted">No packages configured for this event.</div>
+              {inclusions.length === 0 ? (
+                <div className="text-sm text-muted">No inclusions configured for this event.</div>
               ) : (
-                <div className="space-y-4">
-                  {(event.packages as any[]).map((pkg) => {
-                    const today = isoDay(new Date());
-                    const incs = (pkg.inclusions ?? []).map((i: any) =>
-                      i && typeof i === "object"
-                        ? { name: String(i.name), dates: (i.dates ?? []).map(String) }
-                        : { name: String(i), dates: [] as string[] },
-                    );
-                    const rate = Number(pkg.rate) || 0;
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-5">
+                  {inclusions.map((inc) => {
+                    const scheduled = [...inc.dates]
+                      .sort()
+                      .map((d) => fmtDMon(new Date(`${d}T00:00:00`)))
+                      .join(", ");
                     return (
-                      <div key={pkg.id}>
-                        <div className="mb-2 flex items-center gap-2">
-                          <span className="flex-1 font-semibold">{pkg.name}</span>
-                          <Pill color={rate === 0 ? "#22C55E" : "#3B82F6"}>{rate === 0 ? "Free" : `₹${rate}`}</Pill>
-                        </div>
-                        {incs.length === 0 ? (
-                          <div className="text-sm text-muted">No inclusions listed.</div>
-                        ) : (
-                          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-5">
-                            {incs.map((inc: { name: string; dates: string[] }) => {
-                              const ok = inc.dates.length === 0 || inc.dates.includes(today);
-                              return (
-                                <button
-                                  key={inc.name}
-                                  onClick={() =>
-                                    ok
-                                      ? setScan({ kind: "claim", name: inc.name, packageId: String(pkg.id ?? "") })
-                                      : toast(
-                                          `"${inc.name}" is not available today. Scheduled for: ${[...inc.dates]
-                                            .sort()
-                                            .map((d) => fmtDMon(new Date(`${d}T00:00:00`)))
-                                            .join(", ")}.`,
-                                          "error",
-                                        )
-                                  }
-                                  className={`flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center text-[13px] font-semibold transition ${
-                                    ok ? "border-line bg-field hover:border-accent/60" : "border-line bg-bg text-muted"
-                                  }`}
-                                >
-                                  <Icon
-                                    name={ok ? "restaurant" : "lock"}
-                                    size={20}
-                                    color={ok ? "#2563EB" : "#6B7280"}
-                                    outline={!ok}
-                                  />
-                                  <span className="line-clamp-2">{inc.name}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
+                      <button
+                        key={inc.name}
+                        onClick={() =>
+                          inc.available
+                            ? setScan({ kind: "claim", name: inc.name })
+                            : toast(
+                                scheduled
+                                  ? `"${inc.name}" is not available today. Scheduled for: ${scheduled}.`
+                                  : `"${inc.name}" is not available today. No days selected.`,
+                                "error",
+                              )
+                        }
+                        className={`flex flex-col items-center gap-1.5 rounded-lg border px-2 py-3 text-center text-[13px] font-semibold transition ${
+                          inc.available ? "border-line bg-field hover:border-accent/60" : "border-line bg-bg text-muted"
+                        }`}
+                      >
+                        <Icon
+                          name={inc.available ? "check" : "lock"}
+                          size={20}
+                          color={inc.available ? "#22C55E" : "#6B7280"}
+                          outline={!inc.available}
+                        />
+                        <span className="line-clamp-2">{inc.name}</span>
+                      </button>
                     );
                   })}
                 </div>

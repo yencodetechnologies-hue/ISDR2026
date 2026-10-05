@@ -4,8 +4,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { AppBar, Icon, useToast } from "@/components/ui";
 import { AppBarAction } from "@/components/app/AppChrome";
 import { AppSpinner } from "@/components/app/AppControls";
+import { istDay } from "@/components/InclusionsSection";
 import { get, post } from "@/lib/api";
-import { idOf, isoDay, parseDate } from "@/lib/format";
+import { idOf, parseDate } from "@/lib/format";
 
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const hm = (d: Date) => {
@@ -91,6 +92,30 @@ type Scan = {
   packageId?: string;
 };
 
+/** One tile per inclusion name. Available when today is ticked on any package. */
+export function collapsedInclusions(packages: any[], today: string) {
+  const merged = new Map<string, { name: string; dates: string[]; available: boolean }>();
+  const order: string[] = [];
+  for (const pkg of packages ?? []) {
+    for (const e of (pkg?.inclusions ?? []) as any[]) {
+      const name = String(e && typeof e === "object" ? e.name : e).trim();
+      if (!name) continue;
+      const key = name.toLowerCase();
+      const dates = ((e && typeof e === "object" ? e.dates : []) ?? []).map(String);
+      const hit = dates.includes(today);
+      const existing = merged.get(key);
+      if (!existing) {
+        order.push(key);
+        merged.set(key, { name, dates: [...new Set(dates)], available: hit });
+      } else {
+        existing.dates = [...new Set([...existing.dates, ...dates])];
+        if (hit) existing.available = true;
+      }
+    }
+  }
+  return order.map((key) => merged.get(key)!);
+}
+
 export function StaffEventDetailApp() {
   const { id = "" } = useParams<{ id: string }>();
   const toast = useToast();
@@ -144,7 +169,8 @@ export function StaffEventDetailApp() {
   const start = fmtDay(event?.eventDate);
   const end = fmtDay(event?.eventEndDate);
   const dateText = end && end !== start ? `${start} - ${end}` : start;
-  const today = isoDay(new Date());
+  const today = istDay(new Date());
+  const inclusions = collapsedInclusions(event?.packages ?? [], today);
   const scheduleDates = (dates: string[]) =>
     [...dates]
       .sort()
@@ -215,75 +241,47 @@ export function StaffEventDetailApp() {
             {attendanceButton("exit", "Exit Scan", "logout", "#EF4444")}
           </div>
 
-          <div className="mt-[22px] text-base font-bold">Packages &amp; Inclusions</div>
+          <div className="mt-[22px] text-base font-bold">Inclusions</div>
           <div className="mt-3">
-            {(event.packages ?? []).length === 0 ? (
+            {inclusions.length === 0 ? (
               <div className="rounded-2xl border border-[#CBD5E1] bg-bg p-5 text-muted">
-                No packages configured for this event.
+                No inclusions configured for this event.
               </div>
             ) : (
-              (event.packages as any[]).map((pkg) => {
-                const entries = ((pkg.inclusions ?? []) as any[]).map((e) =>
-                  e && typeof e === "object"
-                    ? { name: String(e.name), dates: ((e.dates ?? []) as any[]).map(String) }
-                    : { name: String(e), dates: [] as string[] },
-                );
-                const isFree = !pkg.rate;
-                return (
-                  <div key={pkg.id} className="mb-3 rounded-2xl bg-card p-4 shadow-[0_4px_12px_rgba(255,255,255,0.05)]">
-                    <div className="flex items-center">
-                      <div className="flex-1 text-[15.5px] font-bold">{pkg.name}</div>
+              <div className="rounded-2xl bg-card p-4 shadow-[0_4px_12px_rgba(255,255,255,0.05)]">
+                <div className="grid grid-cols-3 gap-2">
+                  {inclusions.map((inc) => (
+                    <button
+                      key={inc.name}
+                      onClick={() =>
+                        inc.available
+                          ? setScan({ kind: "claim", name: inc.name })
+                          : toast(
+                              inc.dates.length
+                                ? `"${inc.name}" is not available today. Scheduled for: ${scheduleDates(inc.dates)}.`
+                                : `"${inc.name}" is not available today. No days selected.`,
+                              "error",
+                            )
+                      }
+                      className="flex flex-col items-center justify-center rounded-[10px] px-2 py-3 text-center"
+                      style={{ background: inc.available ? "#1E1E2A" : "#0A0A12" }}
+                    >
+                      <Icon
+                        name={inc.available ? "check" : "lock"}
+                        outline={!inc.available}
+                        size={20}
+                        color={inc.available ? "#22C55E" : "#CBD5E1"}
+                      />
                       <span
-                        className="ml-2.5 rounded-lg px-2.5 py-1 text-[13px] font-bold"
-                        style={
-                          isFree
-                            ? { background: "rgba(34,197,94,0.15)", color: "#86EFAC" }
-                            : { background: "rgba(59,130,246,0.15)", color: "#2563EB" }
-                        }
+                        className="mt-1.5 line-clamp-2 text-[13px] font-semibold"
+                        style={{ color: inc.available ? "#fff" : "#9CA3AF" }}
                       >
-                        {isFree ? "Free" : `₹${pkg.rate}`}
+                        {inc.name}
                       </span>
-                    </div>
-                    {entries.length === 0 ? (
-                      <div className="mt-2 text-[13px] text-[#94A3B8]">No inclusions listed.</div>
-                    ) : (
-                      <div className="mt-2 grid grid-cols-3 gap-2">
-                        {entries.map((inc) => {
-                          const ok = !inc.dates.length || inc.dates.includes(today);
-                          return (
-                            <button
-                              key={inc.name}
-                              onClick={() =>
-                                ok
-                                  ? setScan({ kind: "claim", name: inc.name, packageId: String(pkg.id ?? "") })
-                                  : toast(
-                                      `"${inc.name}" is not available today. Scheduled for: ${scheduleDates(inc.dates)}.`,
-                                      "error",
-                                    )
-                              }
-                              className="flex flex-col items-center justify-center rounded-[10px] px-2 py-3 text-center"
-                              style={{ background: ok ? "#1E1E2A" : "#0A0A12" }}
-                            >
-                              <Icon
-                                name={ok ? "restaurant" : "lock"}
-                                outline={!ok}
-                                size={20}
-                                color={ok ? "#2563EB" : "#CBD5E1"}
-                              />
-                              <span
-                                className="mt-1.5 line-clamp-2 text-[13px] font-semibold"
-                                style={{ color: ok ? "#fff" : "#9CA3AF" }}
-                              >
-                                {inc.name}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>

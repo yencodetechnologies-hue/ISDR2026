@@ -68,6 +68,51 @@ export async function loadSchedule(eventId: string, scheduleId: string) {
 export const scheduleHref = (item: { event: any; schedule: any }) =>
   `/schedule?e=${encodeURIComponent(idOf(item.event))}&s=${encodeURIComponent(idOf(item.schedule))}`;
 
+/** Halls in scientific-programme order. Any other hall follows these. */
+export const PROGRAMME_HALLS = [
+  "Dr J G Kannappan Hall",
+  "Dr M Rahmatullah Hall",
+  "Dr C V Subbarao Hall",
+];
+
+const hallRank = (hall: string) => {
+  const i = PROGRAMME_HALLS.indexOf(hall);
+  return i === -1 ? PROGRAMME_HALLS.length : i;
+};
+
+/** Keep time order inside each hall. Halls follow the programme order. */
+export function groupByHall<T>(items: T[], hallOf: (item: T) => string): { hall: string; list: T[] }[] {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const hall = hallOf(item).trim() || "Other";
+    const list = groups.get(hall);
+    if (list) list.push(item);
+    else groups.set(hall, [item]);
+  }
+  return [...groups.entries()]
+    .sort((a, b) => hallRank(a[0]) - hallRank(b[0]) || a[0].localeCompare(b[0]))
+    .map(([hall, list]) => ({ hall, list }));
+}
+
+const PLACEHOLDER_SPEAKER = /^(—|-|speaker not listed)$/i;
+
+/** Panel names are stored joined with " · ". Placeholders such as "—" are dropped. */
+export function splitSpeakerNames(raw: unknown): string[] {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const part of String(raw ?? "").split(" · ")) {
+    const name = part.trim();
+    if (!name || PLACEHOLDER_SPEAKER.test(name)) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push(name);
+  }
+  return names;
+}
+
+export const displaySpeaker = (raw: unknown) => splitSpeakerNames(raw).join(" · ");
+
 /* Favourites (hearted schedules) */
 
 export async function loadFavorites(): Promise<Set<string>> {

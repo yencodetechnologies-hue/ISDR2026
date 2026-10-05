@@ -21,7 +21,7 @@ const packageInclusionSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     // 'YYYY-MM-DD' strings for the event days this inclusion is offered on.
-    // Empty = available on every day of the event.
+    // Empty = not offered on any day (the details-page day ticks are the source of truth).
     dates: { type: [String], default: [] },
   },
   { _id: false }

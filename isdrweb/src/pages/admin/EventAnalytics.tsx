@@ -134,7 +134,7 @@ export default function EventAnalytics({
       // Who could claim each inclusion in this scope.
       if (p) {
         for (const inc of normalizeInclusions(p.inclusions)) {
-          const incDays = inc.dates.length ? inc.dates : days;
+          const incDays = inc.dates;
           const n = day === "all" ? incDays.length : incDays.includes(day) ? 1 : 0;
           if (!n) continue;
           if (!byInclusion.has(inc.name)) byInclusion.set(inc.name, { claimed: 0, eligible: 0 });

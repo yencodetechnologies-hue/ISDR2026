@@ -5,7 +5,15 @@ import { AppBar, Avatar, Icon, useToast } from "@/components/ui";
 import { AppSpinner } from "@/components/app/AppControls";
 import { get } from "@/lib/api";
 import { fmtDMon, fmtTimeStr, idOf, monthShort, sameDay, weekday, weekdayLong } from "@/lib/format";
-import { loadAllSchedules, scheduleHref, toggleFavorite, type ScheduleItem } from "@/lib/schedules";
+import {
+  displaySpeaker,
+  groupByHall,
+  loadAllSchedules,
+  scheduleHref,
+  splitSpeakerNames,
+  toggleFavorite,
+  type ScheduleItem,
+} from "@/lib/schedules";
 
 /* ------------------------------------------------------------------ */
 /* 1. Upcoming Schedules (Screen 3)                                     */
@@ -65,14 +73,20 @@ export function UpcomingSchedulesApp() {
                     ? `Today · ${group.day.getDate()} ${monthShort(group.day)}`
                     : `${weekdayLong(group.day)}, ${group.day.getDate()} ${monthShort(group.day)}`}
                 </div>
-                <div className="space-y-2.5">
-                  {group.list.map((it) => {
+                <div className="space-y-4">
+                  {groupByHall(group.list, (it) => String(it.schedule.hall ?? "")).map((hallGroup) => (
+                    <div key={hallGroup.hall}>
+                      <div className="mb-2 flex items-center gap-1.5 font-inter text-[12px] font-bold text-[#93C5FD]">
+                        <Icon name="location_on" size={14} />
+                        {hallGroup.hall}
+                      </div>
+                      <div className="space-y-2.5">
+                  {hallGroup.list.map((it) => {
                     const s = it.schedule ?? {};
                     const isLive = now >= it.start && now < it.end;
                     const fromTime = String(s.fromTime ?? "");
                     const toTime = String(s.toTime ?? "");
-                    const hall = String(s.hall ?? "");
-                    const speaker = String(s.speakerName ?? "");
+                    const speaker = displaySpeaker(s.speakerName);
 
                     return (
                       <div
@@ -84,9 +98,7 @@ export function UpcomingSchedulesApp() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <div className="font-inter text-[11px] font-semibold text-muted">
-                              {[fromTime && toTime ? `${fmtTimeStr(fromTime)} - ${fmtTimeStr(toTime)}` : "", hall]
-                                .filter(Boolean)
-                                .join("  ·  ")}
+                              {fromTime && toTime ? `${fmtTimeStr(fromTime)} - ${fmtTimeStr(toTime)}` : ""}
                             </div>
                             <div className="mt-1 truncate font-outfit text-[14.5px] font-bold text-white group-hover:text-[#60A5FA]">
                               {s.scheduleName}
@@ -108,6 +120,9 @@ export function UpcomingSchedulesApp() {
                       </div>
                     );
                   })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             );
@@ -152,6 +167,13 @@ export function AllSessionsApp() {
   const list = (items ?? [])
     .filter((i) => !activeDay || sameDay(i.start, activeDay))
     .sort((a, b) => a.start.getTime() - b.start.getTime());
+  const dayGroups: { day: Date; list: ScheduleItem[] }[] = [];
+  for (const it of list) {
+    const d = new Date(it.start.getFullYear(), it.start.getMonth(), it.start.getDate());
+    const last = dayGroups[dayGroups.length - 1];
+    if (last && sameDay(last.day, d)) last.list.push(it);
+    else dayGroups.push({ day: d, list: [it] });
+  }
 
   const now = new Date();
 
@@ -228,54 +250,71 @@ export function AllSessionsApp() {
             </div>
           </div>
         ) : (
-          list.map((it) => {
-            const s = it.schedule ?? {};
-            const isLive = now >= it.start && now < it.end;
-            const isDone = now >= it.end;
-            const fromTime = String(s.fromTime ?? "");
-            const toTime = String(s.toTime ?? "");
-            const hall = String(s.hall ?? "");
-            const speakerPhoto = String(s.speakerPhoto ?? "");
-            const speakerName = String(s.speakerName ?? "");
+          dayGroups.map((group) => (
+            <div key={group.day.getTime()} className="mb-6">
+              {!activeDay && (
+                <div className="mb-2 font-inter text-[12.5px] font-bold text-muted">
+                  {weekdayLong(group.day)}, {group.day.getDate()} {monthShort(group.day)}
+                </div>
+              )}
+              {groupByHall(group.list, (it) => String(it.schedule.hall ?? "")).map((hallGroup) => (
+                <div key={hallGroup.hall} className="mb-4">
+                  <div className="mb-2 flex items-center gap-1.5 font-inter text-[12px] font-bold text-[#93C5FD]">
+                    <Icon name="location_on" size={14} />
+                    {hallGroup.hall}
+                  </div>
+                  <div className="space-y-3">
+                    {hallGroup.list.map((it) => {
+                      const s = it.schedule ?? {};
+                      const isLive = now >= it.start && now < it.end;
+                      const isDone = now >= it.end;
+                      const fromTime = String(s.fromTime ?? "");
+                      const toTime = String(s.toTime ?? "");
+                      const speakerPhoto = String(s.speakerPhoto ?? "");
+                      const speakerName = displaySpeaker(s.speakerName);
+                      const avatarName = splitSpeakerNames(s.speakerName)[0] ?? "";
 
-            return (
-              <div
-                key={idOf(s)}
-                onClick={() => navigate(scheduleHref(it))}
-                className="group cursor-pointer rounded-[16px] border border-white/[0.08] bg-[#14141F] p-4 transition hover:bg-white/[0.03] active:scale-[0.99]"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="font-inter text-[11.5px] font-semibold text-[#60A5FA]">
-                    {[fromTime && toTime ? `${fmtTimeStr(fromTime)} - ${fmtTimeStr(toTime)}` : "", hall]
-                      .filter(Boolean)
-                      .join("  •  ")}
+                      return (
+                        <div
+                          key={idOf(s)}
+                          onClick={() => navigate(scheduleHref(it))}
+                          className="group cursor-pointer rounded-[16px] border border-white/[0.08] bg-[#14141F] p-4 transition hover:bg-white/[0.03] active:scale-[0.99]"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="font-inter text-[11.5px] font-semibold text-[#60A5FA]">
+                              {fromTime && toTime ? `${fmtTimeStr(fromTime)} - ${fmtTimeStr(toTime)}` : ""}
+                            </div>
+                            <span
+                              className="rounded-full px-2 py-0.5 font-inter text-[10px] font-extrabold"
+                              style={{
+                                background: isLive
+                                  ? "rgba(34,197,94,0.18)"
+                                  : isDone
+                                    ? "rgba(100,116,139,0.2)"
+                                    : "rgba(59,130,246,0.18)",
+                                color: isLive ? "#22C55E" : isDone ? "#94A3B8" : "#60A5FA",
+                              }}
+                            >
+                              {isLive ? "Live" : isDone ? "Completed" : "Upcoming"}
+                            </span>
+                          </div>
+                          <div className="mt-1.5 font-outfit text-[15px] font-bold text-white group-hover:text-[#60A5FA]">
+                            {s.scheduleName}
+                          </div>
+                          {speakerName && (
+                            <div className="mt-2.5 flex items-center gap-2.5">
+                              <Avatar src={speakerPhoto} name={avatarName} size={30} />
+                              <div className="truncate font-inter text-xs font-semibold text-white/80">{speakerName}</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  <span
-                    className="rounded-full px-2 py-0.5 font-inter text-[10px] font-extrabold"
-                    style={{
-                      background: isLive
-                        ? "rgba(34,197,94,0.18)"
-                        : isDone
-                          ? "rgba(100,116,139,0.2)"
-                          : "rgba(59,130,246,0.18)",
-                      color: isLive ? "#22C55E" : isDone ? "#94A3B8" : "#60A5FA",
-                    }}
-                  >
-                    {isLive ? "Live" : isDone ? "Completed" : "Upcoming"}
-                  </span>
                 </div>
-                <div className="mt-1.5 font-outfit text-[15px] font-bold text-white group-hover:text-[#60A5FA]">
-                  {s.scheduleName}
-                </div>
-                {speakerName && (
-                  <div className="mt-2.5 flex items-center gap-2.5">
-                    <Avatar src={speakerPhoto} name={speakerName} size={30} />
-                    <div className="truncate font-inter text-xs font-semibold text-white/80">{speakerName}</div>
-                  </div>
-                )}
-              </div>
-            );
-          })
+              ))}
+            </div>
+          ))
         )}
       </div>
     </div>
@@ -358,7 +397,7 @@ export function FavoritesApp() {
                   const fromTime = String(s.fromTime ?? "");
                   const toTime = String(s.toTime ?? "");
                   const hall = String(s.hall ?? "");
-                  const speaker = String(s.speakerName ?? "");
+                  const speaker = displaySpeaker(s.speakerName);
 
                   return (
                     <div
@@ -414,11 +453,13 @@ export function SpeakersApp() {
       if (r.error) return setError(r.error || "Could not load speakers");
       const map = new Map<string, { name: string; photo: string; sessions: ScheduleItem[] }>();
       for (const it of r.items) {
-        const name = String(it.schedule.speakerName ?? "").trim();
-        if (!name) continue;
-        const key = name.toLowerCase();
-        if (!map.has(key)) map.set(key, { name, photo: String(it.schedule.speakerPhoto ?? ""), sessions: [] });
-        map.get(key)!.sessions.push(it);
+        const photo = String(it.schedule.speakerPhoto ?? "");
+        for (const name of splitSpeakerNames(it.schedule.speakerName)) {
+          const key = name.toLowerCase();
+          if (!map.has(key)) map.set(key, { name, photo, sessions: [] });
+          const entry = map.get(key)!;
+          if (!entry.sessions.some((s) => idOf(s.schedule) === idOf(it.schedule))) entry.sessions.push(it);
+        }
       }
       setSpeakers([...map.values()]);
     });

@@ -16,7 +16,15 @@ import {
   weekday,
   weekdayLong,
 } from "@/lib/format";
-import { loadAllSchedules, scheduleHref, toggleFavorite, type ScheduleItem } from "@/lib/schedules";
+import {
+  displaySpeaker,
+  groupByHall,
+  loadAllSchedules,
+  scheduleHref,
+  splitSpeakerNames,
+  toggleFavorite,
+  type ScheduleItem,
+} from "@/lib/schedules";
 import { PARTICIPANT_MODULES } from "./modules";
 import { useAppLayout } from "@/lib/appLayout";
 import { ParticipantMoreApp } from "./ParticipantHomeApp";
@@ -34,6 +42,42 @@ function DayHeading({ label, count }: { label: React.ReactNode; count: number })
 }
 
 const dayHeader = (d: Date) => `${weekdayLong(d)}, ${d.getDate()} ${monthShort(d)}`;
+
+function HallHeading({ hall, count }: { hall: string; count: number }) {
+  return (
+    <div className="mb-2.5 flex items-center gap-2">
+      <Icon name="location_on" size={16} color="#93C5FD" />
+      <h3 className="text-sm font-semibold text-[#93C5FD]">{hall}</h3>
+      <span className="text-xs text-muted">{count}</span>
+    </div>
+  );
+}
+
+function SessionsByHall({
+  list,
+  actions,
+  showDate,
+}: {
+  list: ScheduleItem[];
+  actions: ReturnType<typeof useScheduleActions>;
+  showDate?: boolean;
+}) {
+  const halls = groupByHall(list, (it) => String(it.schedule.hall ?? ""));
+  return (
+    <div className="space-y-5">
+      {halls.map((g) => (
+        <div key={g.hall}>
+          <HallHeading hall={g.hall} count={g.list.length} />
+          <div className="space-y-2.5">
+            {g.list.map((it) => (
+              <ScheduleRow key={idOf(it.schedule)} item={it} actions={actions} showDate={showDate} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /** Group consecutive items by calendar day. */
 function byDay<T>(list: T[], dayOf: (t: T) => Date | null) {
@@ -81,11 +125,7 @@ function UpcomingSchedulesWeb() {
               label={g.day && sameDay(g.day, new Date()) ? "Today" : g.day && dayHeader(g.day)}
               count={g.list.length}
             />
-            <div className="space-y-2.5">
-              {g.list.map((it) => (
-                <ScheduleRow key={idOf(it.schedule)} item={it} actions={actions} />
-              ))}
-            </div>
+            <SessionsByHall list={g.list} actions={actions} />
           </div>
         ))
       )}
@@ -157,12 +197,15 @@ function AllSessionsWeb() {
         <Loading />
       ) : list.length === 0 ? (
         <Empty icon="event_busy" title="No sessions on this day" />
+      ) : day ? (
+        <SessionsByHall list={list} actions={actions} />
       ) : (
-        <div className="space-y-2.5">
-          {list.map((it) => (
-            <ScheduleRow key={idOf(it.schedule)} item={it} actions={actions} showDate={!day} />
-          ))}
-        </div>
+        byDay(list, (i) => startOfDay(i.start)).map((g) => (
+          <div key={g.day?.getTime() ?? "none"} className="mb-8">
+            {g.day && <DayHeading label={dayHeader(g.day)} count={g.list.length} />}
+            <SessionsByHall list={g.list} actions={actions} />
+          </div>
+        ))
       )}
       {actions.sheet}
     </Page>
@@ -233,7 +276,7 @@ function FavoritesWeb() {
                       </div>
                       <div className="truncate font-semibold group-hover:text-[#93C5FD]">{s.scheduleName}</div>
                       <div className="truncate text-xs text-muted">
-                        {[s.speakerName, s.hall].filter(Boolean).join(" · ")}
+                        {[displaySpeaker(s.speakerName), s.hall].filter(Boolean).join(" · ")}
                       </div>
                     </div>
                     <span onClick={(e) => e.stopPropagation()}>
@@ -269,11 +312,13 @@ function SpeakersWeb() {
       if (r.error) return setError(r.error || "Could not load speakers");
       const map = new Map<string, { name: string; photo: string; sessions: ScheduleItem[] }>();
       for (const it of r.items) {
-        const name = String(it.schedule.speakerName ?? "").trim();
-        if (!name) continue;
-        const key = name.toLowerCase();
-        if (!map.has(key)) map.set(key, { name, photo: String(it.schedule.speakerPhoto ?? ""), sessions: [] });
-        map.get(key)!.sessions.push(it);
+        const photo = String(it.schedule.speakerPhoto ?? "");
+        for (const name of splitSpeakerNames(it.schedule.speakerName)) {
+          const key = name.toLowerCase();
+          if (!map.has(key)) map.set(key, { name, photo, sessions: [] });
+          const entry = map.get(key)!;
+          if (!entry.sessions.some((s) => idOf(s.schedule) === idOf(it.schedule))) entry.sessions.push(it);
+        }
       }
       setSpeakers([...map.values()]);
     });

@@ -8,6 +8,7 @@ import '../../../../core/models/user_model.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../widgets/session_content_section.dart';
+import '../programme.dart';
 
 class _Colors {
   static const bg = Color(0xFF0A0F24);
@@ -116,7 +117,7 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
   @override
   Widget build(BuildContext context) {
     final scheduleName = _s['scheduleName']?.toString() ?? '';
-    final speakerName = _s['speakerName']?.toString() ?? '';
+    final speakerName = displaySpeaker(_s['speakerName']?.toString());
     final speakerPhoto = _s['speakerPhoto']?.toString() ?? '';
     final description = _s['description']?.toString() ?? '';
     final hall = _s['hall']?.toString() ?? '';
@@ -306,7 +307,7 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
                   : null,
               child: photo.isEmpty
                   ? Text(
-                      initials.isEmpty ? '?' : initials,
+                      initials.isEmpty ? (name.isEmpty ? 'IS' : '?') : initials,
                       style: GoogleFonts.outfit(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
@@ -323,12 +324,12 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
               children: [
                 _pill(
                   Icons.mic_rounded,
-                  'SPEAKER',
+                  name.isEmpty ? 'SESSION' : 'SPEAKER',
                   const [Color(0xFF7C3AED), Color(0xFF6366F1)],
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  name,
+                  name.isEmpty ? 'Programme' : name,
                   style: GoogleFonts.outfit(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,

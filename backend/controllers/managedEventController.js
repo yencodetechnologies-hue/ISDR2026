@@ -152,20 +152,6 @@ function validateAndBuildAnswers(formQuestions, rawAnswers) {
   return answers;
 }
 
-/** The event's days as 'YYYY-MM-DD' (India time), from eventDate to eventEndDate. */
-function eventDaysOf(event) {
-  const istDay = (d) => new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-  if (!event || !event.eventDate) return [];
-  const out = [];
-  let d = new Date(`${istDay(event.eventDate)}T00:00:00Z`);
-  const end = new Date(`${istDay(event.eventEndDate || event.eventDate)}T00:00:00Z`);
-  while (d <= end && out.length < 60) {
-    out.push(d.toISOString().slice(0, 10));
-    d = new Date(d.getTime() + 86400000);
-  }
-  return out;
-}
-
 /** Accepts legacy plain-string inclusions (from before the per-day matrix existed) as well as
  *  the current { name, dates } shape — and tolerates Mongoose returning a bare string when an
  *  old document's inclusions array couldn't be cast to the current subdocument schema. */
@@ -1008,29 +994,6 @@ const bulkImportRegistrations = async (req, res) => {
   }
 };
 
-/** Welcome kit is once per person, on any day in this window (India dates). */
-const WELCOME_KIT_FROM = '2026-10-07';
-const WELCOME_KIT_TO = '2026-10-11';
-
-function isWelcomeKit(name) {
-  return /welcome[\s-]*kit/i.test(String(name || ''));
-}
-
-function welcomeKitOpen(day) {
-  return day >= WELCOME_KIT_FROM && day <= WELCOME_KIT_TO;
-}
-
-function welcomeKitDays() {
-  const out = [];
-  let d = new Date(`${WELCOME_KIT_FROM}T00:00:00Z`);
-  const end = new Date(`${WELCOME_KIT_TO}T00:00:00Z`);
-  while (d <= end) {
-    out.push(d.toISOString().slice(0, 10));
-    d = new Date(d.getTime() + 86400000);
-  }
-  return out;
-}
-
 /** Claims an event package inclusion (e.g. Lunch, Kit, Dinner) for a participant by QR payload or ID number */
 const claimInclusion = async (req, res) => {
   try {
@@ -1078,36 +1041,28 @@ const claimInclusion = async (req, res) => {
       if (!inclusion) {
         return deny(`"${String(inclusionName).trim()}" is not included in ${pkgLabel}`);
       }
-      if (isWelcomeKit(inclusion.name)) {
-        if (!welcomeKitOpen(today)) {
-          return deny('Welcome kit can only be collected from 7 October to 11 October.');
-        }
-      } else {
-        // No dates = offered on every day of the event.
-        const days = inclusion.dates.length ? inclusion.dates : eventDaysOf(event);
-        if (!days.includes(today)) {
-          return deny(`"${inclusion.name}" is not available today. Available on: ${[...days].sort().join(', ') || 'no days'}`);
-        }
+      // Only the days ticked on the event details page. Empty = not offered.
+      const days = Array.isArray(inclusion.dates) ? inclusion.dates : [];
+      if (!days.includes(today)) {
+        const listed = [...days].sort().join(', ');
+        return deny(
+          listed
+            ? `"${inclusion.name}" is not available today. Available on: ${listed}`
+            : `"${inclusion.name}" is not available today. No days selected.`
+        );
       }
-    } else if (isWelcomeKit(inclusionName) && !welcomeKitOpen(today)) {
-      return deny('Welcome kit can only be collected from 7 October to 11 October.');
     }
 
     const claimedList = reg.claimedInclusions || [];
     const sameInclusion = (c) =>
       String(c.inclusionName).trim().toLowerCase() === String(inclusionName).trim().toLowerCase();
-    // Welcome kit: one collection for the whole window, not once per day.
-    const alreadyClaimed = isWelcomeKit(inclusionName)
-      ? claimedList.some((c) => isWelcomeKit(c.inclusionName))
-      : claimedList.some((c) => sameInclusion(c) && istDay(c.claimedAt || new Date()) === today);
+    const alreadyClaimed = claimedList.some((c) => sameInclusion(c) && istDay(c.claimedAt || new Date()) === today);
 
     if (alreadyClaimed) {
       return res.json({
         success: false,
         alreadyClaimed: true,
-        error: isWelcomeKit(inclusionName)
-          ? 'Welcome kit has already been collected.'
-          : 'This entitlement has already been redeemed for today.',
+        error: 'This entitlement has already been redeemed for today.',
         registration: registrationDto(reg, event),
       });
     }
@@ -1188,9 +1143,6 @@ const getMyRegistration = async (req, res) => {
 
 module.exports = {
   normalizeInclusions,
-  isWelcomeKit,
-  welcomeKitOpen,
-  welcomeKitDays,
   createParticipantRegistration,
   listEvents,
   createEvent,
