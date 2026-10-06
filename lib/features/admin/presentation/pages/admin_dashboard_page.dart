@@ -19,6 +19,7 @@ import 'tabs/managed_events_tab.dart';
 import '../widgets/management_module_grid.dart';
 import 'manage_speakers_page.dart';
 import 'manage_exhibitors_page.dart';
+import 'manage_preconference_page.dart';
 import 'manage_banner_page.dart';
 import 'manage_news_ticker_page.dart';
 import 'manage_youtube_live_page.dart';
@@ -404,6 +405,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       );
       return;
     }
+    if (label.trim().toLowerCase() == 'preconference') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ManagePreconferencePage()),
+      );
+      return;
+    }
     if (label.trim().toLowerCase() == 'brochure') {
       Navigator.push(
         context,
@@ -707,6 +715,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'Awards',
       'Feed',
       'Support Tickets',
+      'Preconference',
     ];
     final isHostel = false;
     final totalRooms = totalRoomCountForProperty(blocks: state.blocks);

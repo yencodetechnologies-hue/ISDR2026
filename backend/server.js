@@ -23,6 +23,7 @@ const certificateRoutes = require('./routes/certificateRoutes');
 const youtubeLiveRoutes = require('./routes/youtubeLiveRoutes');
 const livePhotoRoutes = require('./routes/livePhotoRoutes');
 const awardRoutes = require('./routes/awardRoutes');
+const preconferenceRoutes = require('./routes/preconferenceRoutes');
 const { startReminderScheduler } = require('./utils/reminderScheduler');
 
 if (!process.env.JWT_SECRET) {
@@ -62,6 +63,7 @@ app.use('/api/certificates', certificateRoutes);
 app.use('/api/youtube-live', youtubeLiveRoutes);
 app.use('/api/live-photo', livePhotoRoutes);
 app.use('/api/awards', awardRoutes);
+app.use('/api/preconference', preconferenceRoutes);
 
 // 404
 app.use((req, res) => {

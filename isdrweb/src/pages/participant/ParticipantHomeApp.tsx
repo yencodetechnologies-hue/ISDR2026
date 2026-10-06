@@ -35,10 +35,11 @@ export const PARTICIPANT_APP_MODULES: AppModule[] = [
   { label: "Exhibitors", icon: "storefront", color: "#EF4444", to: "/participant/exhibitors" },
   { label: "Q/A", icon: "question_answer", color: "#3B82F6", to: "/participant/qa" },
   { label: "Polls", icon: "poll", color: "#8B5CF6", to: "/participant/polls" },
-  { label: "About", icon: "menu_book", color: "#6366F1", to: "/participant/about" },
+  { label: "Preconference", icon: "school", color: "#6366F1", to: "/participant/preconference" },
   { label: "Conference", icon: "school", color: "#2563EB", to: "/participant/conference" },
   { label: "Accommodation", icon: "hotel", color: "#0EA5E9", to: "/participant/accommodation" },
   { label: "Awards", icon: "emoji_events", color: "#F59E0B", to: "/participant/awards" },
+  { label: "About", icon: "menu_book", color: "#6366F1", to: "/participant/about" },
 ];
 
 const SOCIAL_LINKS = [

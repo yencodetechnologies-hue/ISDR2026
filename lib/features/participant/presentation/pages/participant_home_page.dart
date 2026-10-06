@@ -14,6 +14,7 @@ import '../../../admin/presentation/pages/event_schedule_list_page.dart';
 import '../../../admin/presentation/pages/event_schedules_page.dart';
 // import '../../../admin/presentation/widgets/auto_scroll_banner.dart'; // image banner swiping — commented out
 import 'about_isdr_page.dart';
+import 'preconference_page.dart';
 import 'organizing_committee_page.dart';
 import 'student_conference_page.dart';
 import 'awards_page.dart';
@@ -679,10 +680,13 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       ),
     ),
     _ParticipantModuleItem(
-      label: 'About',
-      icon: Icons.menu_book_rounded,
+      label: 'Preconference',
+      icon: Icons.school_rounded,
       color: const Color(0xFF6366F1),
-      onTap: () => _onTileTap('About ISDR'),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PreconferencePage()),
+      ),
     ),
     _ParticipantModuleItem(
       label: 'Conference',
@@ -701,6 +705,12 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       icon: Icons.emoji_events_rounded,
       color: const Color(0xFFF59E0B),
       onTap: () => _onTileTap('Awards'),
+    ),
+    _ParticipantModuleItem(
+      label: 'About',
+      icon: Icons.menu_book_rounded,
+      color: const Color(0xFF6366F1),
+      onTap: () => _onTileTap('About ISDR'),
     ),
   ];
 

@@ -1349,6 +1349,7 @@ export function AdminMore() {
     { label: "Support", icon: "help", color: "#0EA5E9", to: "/support" },
     { label: "Brochure", icon: "menu_book", color: "#84CC16", to: "/brochure" },
     { label: "Awards", icon: "emoji_events", color: "#F59E0B", to: "/awards" },
+    { label: "Preconference", icon: "school", color: "#6366F1", to: "/admin/preconference" },
     { label: "Change Password", icon: "lock", color: "#9CA3AF", to: "/change-password" },
   ];
   return (

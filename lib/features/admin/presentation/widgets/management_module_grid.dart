@@ -102,6 +102,7 @@ const List<_ModuleVisual> _predefinedVisuals = [
     Icons.support_agent_rounded,
     group: 'ACCOUNT',
   ),
+  _ModuleVisual('Preconference', Icons.school_rounded, group: 'ACCOUNT'),
 ];
 
 class _ModuleGroupData {
@@ -273,6 +274,7 @@ Color _moduleColor(String label) {
     'awards': Color(0xFFEAB308),
     'feed': Color(0xFFEC4899),
     'support tickets': Color(0xFFEF4444),
+    'preconference': Color(0xFF6366F1),
     'more': Color(0xFF64748B),
   };
   const fallback = [

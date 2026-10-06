@@ -24,8 +24,15 @@ export const PARTICIPANT_MODULES: ModuleItem[] = [
   { label: "Exhibitors", sub: "Trade stalls", icon: "storefront", color: "#EF4444", to: "/participant/exhibitors" },
   { label: "Q/A", sub: "Questions & answers", icon: "question_answer", color: "#3B82F6", to: "/participant/qa" },
   { label: "Polls", sub: "Vote on session polls", icon: "poll", color: "#8B5CF6", to: "/participant/polls" },
-  { label: "About", sub: "About ISDR", icon: "menu_book", color: "#6366F1", to: "/participant/about" },
+  {
+    label: "Preconference",
+    sub: "Pre-conference courses",
+    icon: "school",
+    color: "#6366F1",
+    to: "/participant/preconference",
+  },
   { label: "Conference", sub: "Student conference", icon: "school", color: "#2563EB", to: "/participant/conference" },
   { label: "Accommodation", sub: "Stay & services", icon: "hotel", color: "#0EA5E9", to: "/participant/accommodation" },
   { label: "Awards", sub: "Conference awards", icon: "emoji_events", color: "#F59E0B", to: "/participant/awards" },
+  { label: "About", sub: "About ISDR", icon: "menu_book", color: "#6366F1", to: "/participant/about" },
 ];

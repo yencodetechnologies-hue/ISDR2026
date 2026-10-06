@@ -58,7 +58,7 @@ const NAV: Record<Role, NavSection[]> = {
     {
       title: "Conference",
       items: [
-        { label: "About", icon: "info", color: "#6366F1", to: "/participant/about" },
+        { label: "Preconference", icon: "school", color: "#6366F1", to: "/participant/preconference" },
         { label: "Committee", icon: "account_balance", color: "#A855F7", to: "/participant/committee" },
         { label: "Student Conference", icon: "school", color: "#2563EB", to: "/participant/conference" },
         { label: "Accommodation", icon: "hotel", color: "#0EA5E9", to: "/participant/accommodation" },
@@ -85,6 +85,7 @@ const NAV: Record<Role, NavSection[]> = {
         { label: "Schedules", icon: "calendar_month", color: "#F97316", to: "/admin/schedules", match: ["/schedule"] },
         { label: "Speakers", icon: "mic", color: "#A855F7", to: "/admin/speakers" },
         { label: "Exhibitors", icon: "storefront", color: "#EF4444", to: "/admin/exhibitors" },
+        { label: "Preconference", icon: "school", color: "#6366F1", to: "/admin/preconference" },
       ],
     },
     {

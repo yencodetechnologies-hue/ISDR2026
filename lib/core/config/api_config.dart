@@ -182,6 +182,7 @@ class ApiConfig {
   // Speakers (management Speakers page; picked when adding a schedule)
   static String get speakers => '$baseUrl/speakers';
   static String get exhibitors => '$baseUrl/exhibitors';
+  static String get preconference => '$baseUrl/preconference';
   static String get homeBanner => '$baseUrl/home-banner';
   static String get newsTicker => '$baseUrl/news-ticker';
   static String get certificates => '$baseUrl/certificates';

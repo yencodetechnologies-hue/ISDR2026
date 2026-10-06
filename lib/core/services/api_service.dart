@@ -2021,6 +2021,46 @@ class ApiService {
   Future<Map<String, dynamic>> deleteExhibitor(String exhibitorId) =>
       _sessionContentCall(() => _dio.delete('${ApiConfig.exhibitors}/$exhibitorId'));
 
+  /// Pre-conference courses (any login), ordered by S No.
+  Future<Map<String, dynamic>> listPreconference() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.preconference));
+
+  Future<Map<String, dynamic>> createPreconference({
+    required int serialNo,
+    required String date,
+    required String course,
+    required String venue,
+  }) =>
+      _sessionContentCall(() => _dio.post(
+            ApiConfig.preconference,
+            data: {
+              'serialNo': serialNo,
+              'date': date,
+              'course': course,
+              'venue': venue,
+            },
+          ));
+
+  Future<Map<String, dynamic>> updatePreconference(
+    String id, {
+    required int serialNo,
+    required String date,
+    required String course,
+    required String venue,
+  }) =>
+      _sessionContentCall(() => _dio.put(
+            '${ApiConfig.preconference}/$id',
+            data: {
+              'serialNo': serialNo,
+              'date': date,
+              'course': course,
+              'venue': venue,
+            },
+          ));
+
+  Future<Map<String, dynamic>> deletePreconference(String id) =>
+      _sessionContentCall(() => _dio.delete('${ApiConfig.preconference}/$id'));
+
   Future<Map<String, dynamic>> deleteSpeaker(String speakerId) =>
       _sessionContentCall(() => _dio.delete('${ApiConfig.speakers}/$speakerId'));
 

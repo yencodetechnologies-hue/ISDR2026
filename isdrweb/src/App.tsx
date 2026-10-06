@@ -16,6 +16,7 @@ import ParticipantCertificate from "./pages/participant/Certificate";
 import ParticipantExhibitors from "./pages/participant/Exhibitors";
 import ParticipantHome from "./pages/participant/Home";
 import { AboutIsdr, Accommodation, Committee, StudentConference } from "./pages/participant/Info";
+import ParticipantPreconference from "./pages/participant/Preconference";
 import { AllSessions, Favorites, ParticipantMore, Speakers, UpcomingSchedules } from "./pages/participant/Lists";
 import { AskSpeaker, MyQuestions, ParticipantPolls, ParticipantQa } from "./pages/participant/QaPolls";
 import { AvailableInclusionsApp, ClaimedInclusionsApp } from "./pages/participant/InclusionsApp";
@@ -39,6 +40,7 @@ import { EventList, EventEditor, EventDetail } from "./pages/admin/Events";
 import { ScheduleList, EventSchedules, ScheduleEditor } from "./pages/admin/Schedules";
 import ManageSpeakers from "./pages/admin/Speakers";
 import ManageExhibitors from "./pages/admin/Exhibitors";
+import ManagePreconference from "./pages/admin/Preconference";
 import ManageBanner from "./pages/admin/Banner";
 import {
   ManageTicker,
@@ -106,6 +108,7 @@ export default function App() {
             <Route path="/participant/feed" element={<Feed />} />
             <Route path="/participant/committee" element={<Committee />} />
             <Route path="/participant/about" element={<AboutIsdr />} />
+            <Route path="/participant/preconference" element={<ParticipantPreconference />} />
             <Route path="/participant/conference" element={<StudentConference />} />
             <Route path="/participant/accommodation" element={<Accommodation />} />
             <Route path="/participant/awards" element={<Awards />} />
@@ -144,6 +147,7 @@ export default function App() {
             <Route path="/admin/speakers/new" element={<SpeakerFormApp />} />
             <Route path="/admin/speakers/:id/edit" element={<SpeakerFormApp />} />
             <Route path="/admin/exhibitors" element={<ManageExhibitors />} />
+            <Route path="/admin/preconference" element={<ManagePreconference />} />
             <Route path="/admin/exhibitors/new" element={<ExhibitorFormApp />} />
             <Route path="/admin/banner" element={<ManageBanner />} />
             <Route path="/admin/ticker" element={<ManageTicker />} />
