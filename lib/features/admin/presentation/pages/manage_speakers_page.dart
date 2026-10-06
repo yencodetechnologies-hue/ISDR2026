@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
+import 'speaker_questions_page.dart';
 
 /// Management's Speakers page: every speaker of the property. Speakers are
 /// added here and then picked from a dropdown when adding a schedule.
@@ -220,26 +221,37 @@ class _ManageSpeakersPageState extends State<ManageSpeakersPage> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: GoogleFonts.outfit(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+            child: InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SpeakerQuestionsPage(
+                    speakerId: s['id'].toString(),
+                    speakerName: name,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  s['mobileNumber']?.toString() ?? '',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: DarkColors.muted,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: GoogleFonts.outfit(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    'Questions',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: DarkColors.muted,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           Column(

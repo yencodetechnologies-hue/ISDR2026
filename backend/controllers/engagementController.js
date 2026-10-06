@@ -103,6 +103,7 @@ const speakerQuestions = async (req, res) => {
         const speaker = byId.get(String(q.speakerId));
         return {
           id: q._id.toString(),
+          speakerId: String(q.speakerId || ''),
           participantName: q.participantName || '',
           speakerName: speaker ? speaker.name : 'Speaker',
           speakerPhoto: speaker ? speaker.photo || '' : '',

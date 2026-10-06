@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Avatar,
   Button,
@@ -33,6 +34,7 @@ export default function ManageSpeakers() {
 }
 
 function ManageSpeakersWeb() {
+  const navigate = useNavigate();
   const toast = useToast();
   const confirm = useConfirm();
   const [speakers, setSpeakers] = useState<any[] | null>(null);
@@ -153,13 +155,18 @@ function ManageSpeakersWeb() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {shownSpeakers.map((s) => (
             <div key={idOf(s)} className="card flex flex-col p-5">
-              <div className="flex items-start gap-3.5">
+              <button
+                type="button"
+                onClick={() => navigate(`/admin/speakers/${idOf(s)}/questions`)}
+                className="flex w-full items-start gap-3.5 text-left"
+              >
                 <Avatar src={s.photo} name={s.name} size={56} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">{s.name}</div>
                   <div className="truncate text-sm text-[#93C5FD]">{speakerPass(s)}</div>
+                  <div className="mt-1 text-xs text-muted">Questions</div>
                 </div>
-              </div>
+              </button>
               <div className="mt-4 flex items-center gap-2 border-t border-line pt-3">
                 <span className="flex flex-1 items-center gap-2 text-xs text-muted">
                   <Switch

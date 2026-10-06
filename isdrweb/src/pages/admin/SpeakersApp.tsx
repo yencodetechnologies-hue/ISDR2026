@@ -92,14 +92,17 @@ export function SpeakersListApp() {
                     </span>
                   )}
                 </span>
-                <div className="ml-3 min-w-0 flex-1">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/admin/speakers/${idOf(s)}/questions`)}
+                  className="ml-3 min-w-0 flex-1 text-left"
+                >
                   <div className="font-outfit text-[15px] font-bold">{name}</div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Switch checked={s.askEnabled === true} onChange={(v) => toggleAsk(s, v)} />
-                    <span className="text-[11px] text-muted">
-                      {s.askEnabled === true ? "Open for questions" : "Off"}
-                    </span>
-                  </div>
+                  <div className="mt-0.5 text-[11px] text-muted">Questions</div>
+                </button>
+                <div className="flex flex-col items-center">
+                  <Switch checked={s.askEnabled === true} onChange={(v) => toggleAsk(s, v)} />
+                  <span className="text-[11px] text-muted">{s.askEnabled === true ? "On" : "Off"}</span>
                 </div>
                 <button
                   title="Edit"

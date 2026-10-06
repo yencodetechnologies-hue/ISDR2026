@@ -39,6 +39,7 @@ import { ExhibitorFormApp } from "./pages/admin/ExhibitorsApp";
 import { EventList, EventEditor, EventDetail } from "./pages/admin/Events";
 import { ScheduleList, EventSchedules, ScheduleEditor } from "./pages/admin/Schedules";
 import ManageSpeakers from "./pages/admin/Speakers";
+import SpeakerQuestions from "./pages/admin/SpeakerQuestions";
 import ManageExhibitors from "./pages/admin/Exhibitors";
 import ManagePreconference from "./pages/admin/Preconference";
 import ManageSchedulePdf from "./pages/admin/SchedulePdf";
@@ -160,6 +161,7 @@ export default function App() {
             <Route path="/admin/speakers" element={<ManageSpeakers />} />
             <Route path="/admin/speakers/new" element={<SpeakerFormApp />} />
             <Route path="/admin/speakers/:id/edit" element={<SpeakerFormApp />} />
+            <Route path="/admin/speakers/:id/questions" element={<SpeakerQuestions />} />
             <Route path="/admin/exhibitors" element={<ManageExhibitors />} />
             <Route path="/admin/preconference" element={<ManagePreconference />} />
             <Route path="/admin/exhibitors/new" element={<ExhibitorFormApp />} />
