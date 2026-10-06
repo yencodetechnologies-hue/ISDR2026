@@ -4,7 +4,7 @@ import { SessionContent } from "@/components/SessionContent";
 import { Avatar, Button, ErrorState, Icon, Loading, Page, Pill, useToast } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { fmtTime, monthShort, scheduleTimes, weekdayLong } from "@/lib/format";
-import { displaySpeaker } from "@/lib/schedules";
+import { displaySpeaker, loadFavorites, loadSchedule, toggleFavorite } from "@/lib/schedules";
 import { useAppLayout } from "@/lib/appLayout";
 import ScheduleDetailApp from "./ScheduleDetailApp";
 

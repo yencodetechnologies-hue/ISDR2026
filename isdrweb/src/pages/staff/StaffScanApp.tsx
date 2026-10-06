@@ -101,7 +101,7 @@ export function collapsedInclusions(packages: any[], today: string) {
       const name = String(e && typeof e === "object" ? e.name : e).trim();
       if (!name) continue;
       const key = name.toLowerCase();
-      const dates = ((e && typeof e === "object" ? e.dates : []) ?? []).map(String);
+      const dates = ((e && typeof e === "object" ? e.dates : []) ?? []).map((d: unknown) => String(d));
       const hit = dates.includes(today);
       const existing = merged.get(key);
       if (!existing) {
