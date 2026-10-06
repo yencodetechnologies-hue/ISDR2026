@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/app_theme.dart';
 import '../../../../core/services/api_service.dart';
 import 'add_event_schedule_page.dart';
+import '../../../participant/presentation/programme.dart';
 
 /// Schedules (speaker sessions) of one event, with an "Add Schedule" button.
 class EventScheduleListPage extends StatefulWidget {
@@ -335,14 +336,18 @@ class _EventScheduleListPageState extends State<EventScheduleListPage> {
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  s['speakerName']?.toString() ?? '',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF3B82F6),
+                for (final speaker in splitSpeakerNames(
+                  s['speakerName']?.toString(),
+                ))
+                  Text(
+                    speaker,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF3B82F6),
+                      height: 1.25,
+                    ),
                   ),
-                ),
                 const SizedBox(height: 4),
                 Text(
                   '${date != null ? _dateFmt.format(date) : ''} · '

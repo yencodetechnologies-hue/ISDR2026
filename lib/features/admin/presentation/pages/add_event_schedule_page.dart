@@ -3,10 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
+import '../../../participant/presentation/programme.dart';
 import '../widgets/event_package_sheet.dart' show eventDays;
 
-/// Form to add a schedule to an event. It's shown only to participants of the
-/// picked packages. The speaker is a name typed on the schedule.
+/// Form to add a schedule to an event. Every attendee can see it. The speaker
+/// names are typed on the schedule, one box each.
 class AddEventSchedulePage extends StatefulWidget {
   final Map<String, dynamic> event;
 
@@ -21,12 +22,11 @@ class AddEventSchedulePage extends StatefulWidget {
 
 class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   final _formKey = GlobalKey<FormState>();
-  final _speaker = TextEditingController();
+  final List<TextEditingController> _speakers = [TextEditingController()];
   final _name = TextEditingController();
   final _hall = TextEditingController();
   final _description = TextEditingController();
 
-  final Set<String> _packageIds = {}; // packages whose participants see it
   final Set<String> _dates = {}; // picked event days (yyyy-MM-dd)
   bool _sameTime = true; // one From/To for every picked date
   TimeOfDay? _from; // used when _sameTime
@@ -35,65 +35,37 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   final Map<String, TimeOfDay> _fromByDate = {};
   final Map<String, TimeOfDay> _toByDate = {};
   bool _saving = false;
-
-  /// Separate times per date only makes sense with more than one date picked.
   bool get _perDate => !_sameTime && _dates.length > 1;
 
   /// Picked event days in calendar order.
   List<({String iso, String label})> get _pickedDays =>
       eventDays(widget.event).where((d) => _dates.contains(d.iso)).toList();
 
-  /// Walk-in package. It stays on the event, but is not a schedule audience.
-  bool _isSpotRegister(String name) =>
-      RegExp(r'^spot register$', caseSensitive: false).hasMatch(name.trim());
-
-  /// Every package on the event, including Spot register.
-  List<({String id, String name})> get _eventPackages =>
-      ((widget.event['packages'] as List?) ?? const [])
-          .whereType<Map>()
-          .map(
-            (p) => (
-              id: p['id']?.toString() ?? '',
-              name: p['name']?.toString() ?? '',
-            ),
-          )
-          .where((p) => p.id.isNotEmpty)
-          .toList();
-
-  /// Packages that can be chosen as who sees this session.
-  List<({String id, String name})> get _packages =>
-      _eventPackages.where((p) => !_isSpotRegister(p.name)).toList();
-
   String get _eventId =>
       widget.event['id']?.toString() ?? widget.event['_id']?.toString() ?? '';
 
   bool get _isEdit => widget.schedule != null;
 
-  /// Packages the schedule was saved with that no longer exist on the event.
-  int _removedPackages = 0;
-
-  /// Old schedules saved before packages existed (shown to everyone).
-  bool get _hadNoPackages =>
-      _isEdit && ((widget.schedule!['packageIds'] as List?) ?? const []).isEmpty;
+  String get _speakerName => _speakers
+      .map((c) => c.text.trim())
+      .where((name) => name.isNotEmpty)
+      .join(' · ');
 
   @override
   void initState() {
     super.initState();
     final s = widget.schedule;
     if (s != null) {
-      _speaker.text = s['speakerName']?.toString() ?? '';
+      final names = splitSpeakerNames(s['speakerName']?.toString());
+      if (names.isNotEmpty) {
+        _speakers.first.dispose();
+        _speakers
+          ..clear()
+          ..addAll(names.map((name) => TextEditingController(text: name)));
+      }
       _name.text = s['scheduleName']?.toString() ?? '';
       _hall.text = s['hall']?.toString() ?? '';
       _description.text = s['description']?.toString() ?? '';
-      // Keep selectable packages the event still has. Spot register is hidden
-      // from this form, so a saved id for it is dropped and not counted as deleted.
-      final saved = ((s['packageIds'] as List?) ?? const [])
-          .map((id) => id.toString())
-          .toList();
-      final onEvent = _eventPackages.map((p) => p.id).toSet();
-      final selectable = _packages.map((p) => p.id).toSet();
-      _packageIds.addAll(saved.where(selectable.contains));
-      _removedPackages = saved.where((id) => !onEvent.contains(id)).length;
       final utc = DateTime.tryParse(s['date']?.toString() ?? '')?.toUtc();
       if (utc != null) {
         _dates.add(
@@ -115,7 +87,9 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
 
   @override
   void dispose() {
-    _speaker.dispose();
+    for (final speaker in _speakers) {
+      speaker.dispose();
+    }
     _name.dispose();
     _hall.dispose();
     _description.dispose();
@@ -159,10 +133,8 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
   Future<void> _save() async {
+    if (_speakerName.isEmpty) return _toast('Enter a speaker name');
     if (!_formKey.currentState!.validate()) return;
-    if (_packageIds.isEmpty && !_hadNoPackages) {
-      return _toast('Select at least one package');
-    }
     if (_dates.isEmpty) return _toast('Select at least one event day');
     final slots = <Map<String, String>>[];
     for (final day in _pickedDays) {
@@ -186,8 +158,8 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
         ? await ApiService().updateEventSchedule(
             eventId: _eventId,
             scheduleId: widget.schedule!['id'].toString(),
-            speakerName: _speaker.text.trim(),
-            packageIds: _packageIds.toList(),
+            speakerName: _speakerName,
+            packageIds: const [],
             scheduleName: _name.text.trim(),
             hall: _hall.text.trim(),
             slot: slots.first,
@@ -195,8 +167,8 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
           )
         : await ApiService().createEventSchedule(
             eventId: _eventId,
-            speakerName: _speaker.text.trim(),
-            packageIds: _packageIds.toList(),
+            speakerName: _speakerName,
+            packageIds: const [],
             scheduleName: _name.text.trim(),
             hall: _hall.text.trim(),
             slots: slots,
@@ -260,49 +232,6 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
           ),
         ),
       ],
-    );
-  }
-
-  /// Which packages' participants see this schedule (one or more).
-  Widget _packageChips() {
-    final packages = _packages;
-    return InputDecorator(
-      decoration: darkInputDecoration(
-        'Packages (who can see it)',
-        Icons.card_membership_outlined,
-      ),
-      child: packages.isEmpty
-          ? const Text(
-              'This event has no packages. Add packages to the event first.',
-              style: TextStyle(color: DarkColors.muted),
-            )
-          : Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: packages.map((p) {
-                final selected = _packageIds.contains(p.id);
-                return FilterChip(
-                  label: Text(p.name),
-                  selected: selected,
-                  showCheckmark: true,
-                  checkmarkColor: Colors.white,
-                  selectedColor: DarkColors.accent,
-                  backgroundColor: DarkColors.card,
-                  side: const BorderSide(color: DarkColors.line),
-                  labelStyle: TextStyle(
-                    color: selected ? Colors.white : DarkColors.muted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  onSelected: (_) => setState(() {
-                    if (selected) {
-                      _packageIds.remove(p.id);
-                    } else {
-                      _packageIds.add(p.id);
-                    }
-                  }),
-                );
-              }).toList(),
-            ),
     );
   }
 
@@ -372,47 +301,61 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _packageChips(),
-            if (_removedPackages > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 8, left: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.info_outline_rounded,
-                      size: 16,
-                      color: Color(0xFFFBBF24),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Speakers',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: Colors.white,
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        _removedPackages == 1
-                            ? 'The package this schedule was saved with has been deleted from the event. Select its package again.'
-                            : '$_removedPackages packages this schedule was saved with have been deleted from the event. Select its packages again.',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFFFBBF24),
-                        ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Add speaker',
+                  onPressed: () => setState(
+                    () => _speakers.add(TextEditingController()),
+                  ),
+                  icon: const Icon(Icons.add_rounded, color: DarkColors.accent),
+                ),
+              ],
+            ),
+            for (var i = 0; i < _speakers.length; i++) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _speakers[i],
+                      style: fieldStyle,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: darkInputDecoration(
+                        _speakers.length > 1 ? 'Speaker ${i + 1}' : 'Speaker',
+                        Icons.person_outline,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  if (_speakers.length > 1)
+                    IconButton(
+                      tooltip: 'Remove speaker',
+                      onPressed: () {
+                        final removed = _speakers[i];
+                        setState(() => _speakers.removeAt(i));
+                        WidgetsBinding.instance.addPostFrameCallback(
+                          (_) => removed.dispose(),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: DarkColors.muted,
+                      ),
+                    ),
+                ],
               ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _speaker,
-              style: fieldStyle,
-              textCapitalization: TextCapitalization.words,
-              decoration: darkInputDecoration(
-                'Speaker',
-                Icons.person_outline,
-              ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Enter a speaker name'
-                  : null,
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+            ],
             TextFormField(
               controller: _name,
               style: fieldStyle,

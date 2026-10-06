@@ -4,7 +4,6 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Avatar,
   Button,
-  Checkbox,
   Empty,
   ErrorState,
   Field,
@@ -24,16 +23,12 @@ import { FilterSelect, distinct, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { fmtDate, fmtDayDate, fmtTimeStr, idOf, parseDate } from "@/lib/format";
 import { useAppLayout } from "@/lib/appLayout";
+import { splitSpeakerNames } from "@/lib/schedules";
 import { EventScheduleListApp, EventSchedulesApp, ScheduleFormApp } from "./SchedulesApp";
 
 /* =========================================================================
    SCHEDULE TABLE (shared with Event detail)
 ========================================================================= */
-
-/** Walk-in package. It stays on the event, but is not a schedule audience. */
-function isSpotRegisterName(name: unknown) {
-  return /^spot register$/i.test(String(name ?? "").trim());
-}
 
 /** Calendar day a schedule is stored on (UTC date, shown as a local heading). */
 function scheduleCalendarDay(s: any): Date | null {
@@ -174,6 +169,7 @@ export function ScheduleTable({
           <tbody>
             {shown.map((row, i) => {
               const s = row.s;
+              const speakers = splitSpeakerNames(s.speakerName);
               const showDay = i === 0 || row.dayKey !== shown[i - 1].dayKey;
               return (
                 <Fragment key={idOf(s)}>
@@ -188,13 +184,21 @@ export function ScheduleTable({
                     <td className="tabular-nums text-muted">{row.serial}</td>
                     <td className="font-medium">{s.scheduleName}</td>
                     <td>
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-start gap-2.5">
                         {s.speakerPhoto ? (
                           <img src={s.speakerPhoto} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
                         ) : (
-                          <Avatar name={s.speakerName} size={32} />
+                          <Avatar name={speakers[0] || s.scheduleName} size={32} />
                         )}
-                        <span className="text-white/80">{s.speakerName || "—"}</span>
+                        <span className="min-w-0 text-white/80">
+                          {speakers.length === 0
+                            ? "—"
+                            : speakers.map((name, n) => (
+                                <span key={n} className="block leading-snug">
+                                  {name}
+                                </span>
+                              ))}
+                        </span>
                       </div>
                     </td>
                     <td className="whitespace-nowrap text-white/75">{dayOf(s)}</td>
@@ -364,9 +368,7 @@ function ScheduleEditorWeb() {
   const editing = !!scheduleId;
 
   const [event, setEvent] = useState<any>(null);
-  const [existing, setExisting] = useState<any>(null);
-  const [speakerName, setSpeakerName] = useState("");
-  const [packageIds, setPackageIds] = useState<string[]>([]);
+  const [speakers, setSpeakers] = useState<string[]>([""]);
   const [scheduleName, setScheduleName] = useState("");
   const [hall, setHall] = useState("");
   const [date, setDate] = useState("");
@@ -381,9 +383,8 @@ function ScheduleEditorWeb() {
     get(`/managed-events/${eventId}/schedules`).then((r) => {
       const s = (r.schedules ?? []).find((x: any) => idOf(x) === scheduleId);
       if (!s) return toast("Schedule not found", "error");
-      setExisting(s);
-      setSpeakerName(String(s.speakerName ?? ""));
-      setPackageIds((s.packageIds ?? []).map(String));
+      const names = splitSpeakerNames(s.speakerName);
+      setSpeakers(names.length ? names : [""]);
       setScheduleName(s.scheduleName ?? "");
       setHall(s.hall ?? "");
       setDate(String(s.date ?? "").slice(0, 10));
@@ -393,34 +394,15 @@ function ScheduleEditorWeb() {
     });
   }, [eventId, scheduleId, toast]);
 
-  // Drop Spot register if a saved schedule still lists it. Event and schedule
-  // load separately, so this runs once both are in.
-  useEffect(() => {
-    if (!event) return;
-    const spotIds = new Set(
-      ((event.packages ?? []) as any[])
-        .filter((p) => isSpotRegisterName(p?.name))
-        .map((p) => String(p.id)),
-    );
-    if (!spotIds.size) return;
-    setPackageIds((ids) => {
-      const next = ids.filter((id) => !spotIds.has(id));
-      return next.length === ids.length ? ids : next;
-    });
-  }, [event, existing]);
-
-  const packages: any[] = ((event?.packages ?? []) as any[]).filter((p) => !isSpotRegisterName(p?.name));
+  const setSpeaker = (index: number, value: string) =>
+    setSpeakers((list) => list.map((name, i) => (i === index ? value : name)));
 
   const save = async () => {
-    const spotIds = new Set(
-      ((event?.packages ?? []) as any[])
-        .filter((p) => isSpotRegisterName(p?.name))
-        .map((p) => String(p.id)),
-    );
-    const audienceIds = packageIds.filter((id) => !spotIds.has(id));
-    if (!speakerName.trim()) return toast("Enter a speaker name", "error");
-    if (!audienceIds.length && !(editing && existing && !(existing.packageIds ?? []).length))
-      return toast("Select at least one package", "error");
+    const speakerName = speakers
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .join(" · ");
+    if (!speakerName) return toast("Enter a speaker name", "error");
     if (!scheduleName.trim()) return toast("Enter schedule name", "error");
     if (!date) return toast("Select a date", "error");
     if (!fromTime || !toTime) return toast("Set from/to time", "error");
@@ -428,8 +410,8 @@ function ScheduleEditorWeb() {
     setSaving(true);
     const fields = {
       scheduleName: scheduleName.trim(),
-      speakerName: speakerName.trim(),
-      packageIds: audienceIds,
+      speakerName,
+      packageIds: [] as string[],
       hall: hall.trim(),
       date,
       fromTime,
@@ -457,74 +439,73 @@ function ScheduleEditorWeb() {
 
   return (
     <Page title={editing ? "Edit Schedule" : "Add Schedule"} subtitle={event?.title} width={1000}>
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Panel className="lg:col-span-2" title="Session" icon="event_note" iconColor="#F97316">
-          <div className="space-y-4">
-            <Field label="Schedule Name *">
-              <Input
-                value={scheduleName}
-                onChange={(e) => setScheduleName(e.target.value)}
-                placeholder="e.g. Keynote Address"
-              />
+      <Panel title="Session" icon="event_note" iconColor="#F97316">
+        <div className="space-y-4">
+          <Field label="Schedule Name *">
+            <Input
+              value={scheduleName}
+              onChange={(e) => setScheduleName(e.target.value)}
+              placeholder="e.g. Keynote Address"
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Speaker *">
+              <div className="space-y-2">
+                {speakers.map((name, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input
+                      value={name}
+                      onChange={(e) => setSpeaker(i, e.target.value)}
+                      placeholder="e.g. Dr. Anita Rao"
+                    />
+                    {speakers.length > 1 && (
+                      <IconButton
+                        icon="close"
+                        outline
+                        title="Remove speaker"
+                        onClick={() => setSpeakers((list) => list.filter((_, j) => j !== i))}
+                      />
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setSpeakers((list) => [...list, ""])}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-accent"
+                >
+                  <Icon name="add" size={18} />
+                  Add speaker
+                </button>
+              </div>
             </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Speaker *">
-                <Input
-                  value={speakerName}
-                  onChange={(e) => setSpeakerName(e.target.value)}
-                  placeholder="e.g. Dr. Anita Rao"
-                />
-              </Field>
-              <Field label="Hall / Room">
-                <Input value={hall} onChange={(e) => setHall(e.target.value)} placeholder="e.g. Main Hall" />
-              </Field>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Date *">
-                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-              </Field>
-              <Field label="From Time *">
-                <Input type="time" value={fromTime} onChange={(e) => setFromTime(e.target.value)} />
-              </Field>
-              <Field label="To Time *">
-                <Input type="time" value={toTime} onChange={(e) => setToTime(e.target.value)} />
-              </Field>
-            </div>
-            <Field label="Description">
-              <TextArea
-                rows={5}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional description"
-              />
+            <Field label="Hall / Room">
+              <Input value={hall} onChange={(e) => setHall(e.target.value)} placeholder="e.g. Main Hall" />
             </Field>
           </div>
-        </Panel>
-        <div className="space-y-5">
-          <Panel title="Packages *" subtitle="Who can see this session" icon="inventory_2" iconColor="#A855F7">
-            {packages.length === 0 ? (
-              <div className="text-sm text-muted">Add a package to this event first.</div>
-            ) : (
-              <div className="space-y-2.5">
-                {packages.map((p) => {
-                  const pid = String(p.id);
-                  return (
-                    <Checkbox
-                      key={pid}
-                      checked={packageIds.includes(pid)}
-                      onChange={(on) => setPackageIds((l) => (on ? [...l, pid] : l.filter((x) => x !== pid)))}
-                      label={p.name}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </Panel>
-          <Button full icon="check" loading={saving} onClick={save}>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Date *">
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </Field>
+            <Field label="From Time *">
+              <Input type="time" value={fromTime} onChange={(e) => setFromTime(e.target.value)} />
+            </Field>
+            <Field label="To Time *">
+              <Input type="time" value={toTime} onChange={(e) => setToTime(e.target.value)} />
+            </Field>
+          </div>
+          <Field label="Description">
+            <TextArea
+              rows={5}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Optional description"
+            />
+          </Field>
+          <Button icon="check" loading={saving} onClick={save}>
             {editing ? "Save Changes" : "Create Schedule"}
           </Button>
         </div>
-      </div>
+      </Panel>
     </Page>
   );
 }

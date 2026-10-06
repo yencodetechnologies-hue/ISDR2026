@@ -6,6 +6,7 @@ import { AppSpinner, AppSwitch } from "@/components/app/AppControls";
 import { AppChip, AppDecorator } from "@/components/app/AppForm";
 import { get, post, put } from "@/lib/api";
 import { fmtTimeStr, idOf, parseDate } from "@/lib/format";
+import { splitSpeakerNames } from "@/lib/schedules";
 import { del } from "@/lib/api";
 import { eventDays } from "./EventManage";
 
@@ -17,11 +18,6 @@ const timeText = (d: Date) => {
   return `${h % 12 || 12}:${String(d.getMinutes()).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
 };
 const titleClass = "text-[18px] font-bold";
-
-/** Walk-in package. It stays on the event, but is not a schedule audience. */
-function isSpotRegisterName(name: unknown) {
-  return /^spot register$/i.test(String(name ?? "").trim());
-}
 
 /* ------------------------------------------------------------------ */
 /* Event Schedules — the app's EventSchedulesPage (pick an event)       */
@@ -311,7 +307,11 @@ function ScheduleListCard({
             </span>
           )}
         </div>
-        <div className="mt-0.5 text-[13px] font-semibold text-accent">{s.speakerName}</div>
+        <div className="mt-0.5 text-[13px] font-semibold leading-snug text-accent">
+          {splitSpeakerNames(s.speakerName).map((name, n) => (
+            <div key={n}>{name}</div>
+          ))}
+        </div>
         <div className="mt-1 text-[12.5px] text-muted">
           {w ? dayText(w.day) : ""} · {fmtTimeStr(s.fromTime)} - {fmtTimeStr(s.toTime)}
         </div>
@@ -453,10 +453,7 @@ export function ScheduleFormApp() {
   const scheduleId = params.get("schedule") ?? "";
   const isEdit = !!scheduleId;
   const [event, setEvent] = useState<any>(null);
-  const [existing, setExisting] = useState<any>(null);
-  const [speakerName, setSpeakerName] = useState("");
-  const [packageIds, setPackageIds] = useState<string[]>([]);
-  const [removedPackages, setRemovedPackages] = useState(0);
+  const [speakers, setSpeakers] = useState<string[]>([""]);
   const [name, setName] = useState("");
   const [hall, setHall] = useState("");
   const [description, setDescription] = useState("");
@@ -480,20 +477,11 @@ export function ScheduleFormApp() {
       if (isEdit && sch.success) {
         const s = (sch.schedules ?? []).find((x: any) => idOf(x) === scheduleId);
         if (s) {
-          setExisting(s);
-          setSpeakerName(String(s.speakerName ?? ""));
+          const names = splitSpeakerNames(s.speakerName);
+          setSpeakers(names.length ? names : [""]);
           setName(s.scheduleName ?? "");
           setHall(s.hall ?? "");
           setDescription(s.description ?? "");
-          const allPackages = (e?.packages ?? []) as any[];
-          const onEvent = new Set(allPackages.map((p) => String(p.id)));
-          const spotIds = new Set(
-            allPackages.filter((p) => isSpotRegisterName(p?.name)).map((p) => String(p.id)),
-          );
-          const saved: string[] = (s.packageIds ?? []).map(String);
-          const kept = saved.filter((id) => onEvent.has(id) && !spotIds.has(id));
-          setPackageIds(kept);
-          setRemovedPackages(saved.filter((id) => !onEvent.has(id)).length);
           const d = new Date(String(s.date ?? ""));
           if (!isNaN(d.getTime()))
             setDates([
@@ -506,22 +494,21 @@ export function ScheduleFormApp() {
     })();
   }, [eventId, scheduleId, isEdit]);
 
-  const packages: { id: string; name: string }[] = ((event?.packages ?? []) as any[])
-    .map((p) => ({ id: String(p.id ?? ""), name: String(p.name ?? "") }))
-    .filter((p) => p.id && !isSpotRegisterName(p.name));
   const days = event ? eventDays(event) : [];
   const pickedDays = days.filter((d) => dates.includes(d.iso));
   const perDate = !sameTime && dates.length > 1;
-  const hadNoPackages = isEdit && existing && !(existing.packageIds ?? []).length;
 
   const save = async () => {
+    const speakerName = speakers
+      .map((n) => n.trim())
+      .filter(Boolean)
+      .join(" · ");
     const e: Record<string, string> = {};
-    if (!speakerName.trim()) e.speaker = "Enter a speaker name";
+    if (!speakerName) e.speaker = "Enter a speaker name";
     if (!name.trim()) e.name = "Enter the schedule name";
     if (!hall.trim()) e.hall = "Enter the hall";
     setErrors(e);
     if (Object.keys(e).length) return;
-    if (!packageIds.length && !hadNoPackages) return toast("Select at least one package");
     if (!dates.length) return toast("Select at least one event day");
     const slots: { date: string; fromTime: string; toTime: string }[] = [];
     for (const day of pickedDays) {
@@ -535,16 +522,16 @@ export function ScheduleFormApp() {
     setSaving(true);
     const r = isEdit
       ? await put(`/managed-events/${eventId}/schedules/${scheduleId}`, {
-          speakerName: speakerName.trim(),
-          packageIds,
+          speakerName,
+          packageIds: [] as string[],
           scheduleName: name.trim(),
           hall: hall.trim(),
           ...slots[0],
           description: description.trim(),
         })
       : await post(`/managed-events/${eventId}/schedules`, {
-          speakerName: speakerName.trim(),
-          packageIds,
+          speakerName,
+          packageIds: [] as string[],
           scheduleName: name.trim(),
           hall: hall.trim(),
           slots,
@@ -565,7 +552,8 @@ export function ScheduleFormApp() {
     } else toast(r.error || (isEdit ? "Failed to update schedule" : "Failed to add schedule"));
   };
 
-  const togglePackage = (id: string) => setPackageIds((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id]));
+  const setSpeaker = (index: number, value: string) =>
+    setSpeakers((list) => list.map((n, i) => (i === index ? value : n)));
   const toggleDay = (iso: string) =>
     setDates((l) => (isEdit ? [iso] : l.includes(iso) ? l.filter((x) => x !== iso) : [...l, iso]));
 
@@ -576,38 +564,40 @@ export function ScheduleFormApp() {
         <AppSpinner />
       ) : (
         <div className="space-y-3 p-4 pt-5">
-          <AppDecorator label="Packages (who can see it)" icon="card_membership">
-            {packages.length === 0 ? (
-              <span className="text-muted">This event has no packages. Add packages to the event first.</span>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {packages.map((p) => (
-                  <AppChip
-                    key={p.id}
-                    label={p.name}
-                    check
-                    selected={packageIds.includes(p.id)}
-                    onClick={() => togglePackage(p.id)}
-                  />
-                ))}
+          <div className="flex items-center justify-between px-1">
+            <span className="text-sm font-semibold">Speakers</span>
+            <button
+              type="button"
+              onClick={() => setSpeakers((list) => [...list, ""])}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/15 text-accent"
+              title="Add speaker"
+            >
+              <Icon name="add" size={20} />
+            </button>
+          </div>
+          {speakers.map((speaker, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <TextArea
+                  label={speakers.length > 1 ? `Speaker ${i + 1}` : "Speaker"}
+                  icon="person"
+                  value={speaker}
+                  onChange={(v) => setSpeaker(i, v)}
+                  error={i === 0 ? errors.speaker : undefined}
+                />
               </div>
-            )}
-          </AppDecorator>
-          {removedPackages > 0 && (
-            <div className="ml-1 flex items-start gap-1.5 text-xs text-[#FBBF24]">
-              <Icon name="info" outline size={16} color="#FBBF24" />
-              {removedPackages === 1
-                ? "The package this schedule was saved with has been deleted from the event. Select its package again."
-                : `${removedPackages} packages this schedule was saved with have been deleted from the event. Select its packages again.`}
+              {speakers.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setSpeakers((list) => list.filter((_, j) => j !== i))}
+                  className="mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/5"
+                  title="Remove speaker"
+                >
+                  <Icon name="close" size={18} />
+                </button>
+              )}
             </div>
-          )}
-          <TextArea
-            label="Speaker"
-            icon="person"
-            value={speakerName}
-            onChange={setSpeakerName}
-            error={errors.speaker}
-          />
+          ))}
           <TextArea
             label="Name of the schedule"
             icon="event_note"

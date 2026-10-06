@@ -100,7 +100,7 @@ function readSlots(body) {
  * { speakerName, scheduleName, hall, description, packageIds, slots }.
  * The speaker is a typed name, not a speaker account.
  */
-function readScheduleForm(event, body, existing = null) {
+function readScheduleForm(event, body) {
   const speakerName = String(body.speakerName || '').trim();
   const scheduleName = String(body.scheduleName || '').trim();
   const hall = String(body.hall || '').trim();
@@ -109,9 +109,7 @@ function readScheduleForm(event, body, existing = null) {
   const packageIds = readPackageIds(body);
 
   if (!speakerName) return { error: 'Enter a speaker name' };
-  // Editing an old schedule that has no packages may keep it shown to everyone.
-  const keepNoPackages = existing && (existing.packageIds || []).length === 0;
-  if (packageIds.length === 0 && !keepNoPackages) return { error: 'Select at least one package' };
+  // An empty list means every package can see the session.
   const eventPackageIds = new Set((event.packages || []).map((p) => String(p.id)));
   if (packageIds.some((id) => !eventPackageIds.has(id))) return { error: 'Package not found on this event' };
   if (!scheduleName) return { error: 'Schedule name is required' };
@@ -187,7 +185,7 @@ const updateSchedule = async (req, res) => {
       () => null
     );
     if (!schedule) return res.status(404).json({ success: false, error: 'Schedule not found' });
-    const form = readScheduleForm(event, req.body, schedule);
+    const form = readScheduleForm(event, req.body);
     if (form.error) return res.status(400).json({ success: false, error: form.error });
     if (form.slots.length !== 1) {
       return res.status(400).json({ success: false, error: 'A schedule has exactly one date' });

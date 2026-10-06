@@ -4,7 +4,7 @@ import { SessionContent } from "@/components/SessionContent";
 import { Avatar, Button, ErrorState, Icon, Loading, Page, Pill, useToast } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { fmtTime, monthShort, scheduleTimes, weekdayLong } from "@/lib/format";
-import { displaySpeaker, loadFavorites, loadSchedule, toggleFavorite } from "@/lib/schedules";
+import { loadFavorites, loadSchedule, splitSpeakerNames, toggleFavorite } from "@/lib/schedules";
 import { useAppLayout } from "@/lib/appLayout";
 import ScheduleDetailApp from "./ScheduleDetailApp";
 
@@ -56,6 +56,7 @@ function ScheduleDetailWeb() {
     );
 
   const s = data.schedule;
+  const speakers = splitSpeakerNames(s.speakerName);
   const venue = String(data.event?.venue ?? "");
   const w = scheduleTimes(s);
   const now = new Date();
@@ -114,12 +115,16 @@ function ScheduleDetailWeb() {
               <Pill color={isLive ? "#EF4444" : isPast ? "#9CA3AF" : "#3B82F6"}>{status}</Pill>
               <Pill color="#8B5CF6">{isKeynote ? "KEYNOTE" : "SESSION"}</Pill>
             </div>
-            {displaySpeaker(s.speakerName) && (
+            {speakers.length > 0 && (
               <div className="mt-5 flex items-center gap-4">
-                <Avatar src={s.speakerPhoto} name={displaySpeaker(s.speakerName)} size={60} />
+                <Avatar src={s.speakerPhoto} name={speakers[0]} size={60} />
                 <div>
                   <div className="eyebrow">Speaker</div>
-                  <div className="mt-0.5 text-lg font-semibold">{displaySpeaker(s.speakerName)}</div>
+                  {speakers.map((name, i) => (
+                    <div key={i} className="mt-0.5 text-lg font-semibold leading-snug">
+                      {name}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

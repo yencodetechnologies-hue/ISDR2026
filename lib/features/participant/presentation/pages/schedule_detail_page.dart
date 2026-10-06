@@ -117,7 +117,7 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
   @override
   Widget build(BuildContext context) {
     final scheduleName = _s['scheduleName']?.toString() ?? '';
-    final speakerName = displaySpeaker(_s['speakerName']?.toString());
+    final speakers = splitSpeakerNames(_s['speakerName']?.toString());
     final speakerPhoto = _s['speakerPhoto']?.toString() ?? '';
     final description = _s['description']?.toString() ?? '';
     final hall = _s['hall']?.toString() ?? '';
@@ -222,7 +222,7 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 14),
         children: [
-          _speakerHeader(speakerName, speakerPhoto, isLive, isPast),
+          _speakerHeader(speakers, speakerPhoto, isLive, isPast),
           const SizedBox(height: 10),
           _titlePanel(scheduleName, eventTitle),
           pair(dateTile, timeTile),
@@ -241,7 +241,13 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
 
   /// Glowing card: speaker photo, "SPEAKER" pill, name, tagline, status pill
   /// and the light-bulb quote on the right.
-  Widget _speakerHeader(String name, String photo, bool isLive, bool isPast) {
+  Widget _speakerHeader(
+    List<String> names,
+    String photo,
+    bool isLive,
+    bool isPast,
+  ) {
+    final name = names.isEmpty ? '' : names.first;
     final initials = name
         .trim()
         .split(RegExp(r'\s+'))
@@ -328,15 +334,27 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
                   const [Color(0xFF7C3AED), Color(0xFF6366F1)],
                 ),
                 const SizedBox(height: 5),
-                Text(
-                  name.isEmpty ? 'Programme' : name,
-                  style: GoogleFonts.outfit(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 1.15,
-                  ),
-                ),
+                if (names.isEmpty)
+                  Text(
+                    'Programme',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1.15,
+                    ),
+                  )
+                else
+                  for (final speaker in names)
+                    Text(
+                      speaker,
+                      style: GoogleFonts.outfit(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.15,
+                      ),
+                    ),
                 const SizedBox(height: 4),
                 Text(
                   'Inspiring Minds  |  Building Futures',

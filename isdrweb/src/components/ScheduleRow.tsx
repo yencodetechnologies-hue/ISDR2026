@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fmtTime, idOf } from "@/lib/format";
 import {
-  displaySpeaker,
   loadFavorites,
   loadReminders,
   reminderLabel,
@@ -116,8 +115,8 @@ export function ScheduleRow({
   const color = isLive ? "#EF4444" : isDone ? "#9CA3AF" : "#3B82F6";
   const fav = actions?.favorites.has(id) ?? false;
   const rem = actions?.reminders.get(id);
-  const speaker = displaySpeaker(s.speakerName);
-  const avatarName = splitSpeakerNames(s.speakerName)[0] ?? "";
+  const speaker = splitSpeakerNames(s.speakerName);
+  const avatarName = speaker[0] ?? "";
   return (
     <div
       onClick={() => navigate(scheduleHref(item))}
@@ -139,10 +138,15 @@ export function ScheduleRow({
         <div className="min-w-0 flex-1">
           <div className="truncate text-[15px] font-semibold group-hover:text-[#93C5FD]">{s.scheduleName}</div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
-            {speaker && (
-              <span className="flex items-center gap-1">
-                <Icon name="mic" size={13} outline />
-                {speaker}
+            {speaker.length > 0 && (
+              <span className="flex flex-col gap-0.5">
+                {speaker.map((name, i) => (
+                  <span key={i} className="flex items-center gap-1">
+                    {i === 0 && <Icon name="mic" size={13} outline />}
+                    {i > 0 && <span className="w-[13px]" />}
+                    {name}
+                  </span>
+                ))}
               </span>
             )}
             {s.hall && (

@@ -6,7 +6,7 @@ import { Icon, Spinner, useToast } from "@/components/ui";
 import { asset } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { scheduleTimes } from "@/lib/format";
-import { displaySpeaker, loadFavorites, loadSchedule, toggleFavorite } from "@/lib/schedules";
+import { loadFavorites, loadSchedule, splitSpeakerNames, toggleFavorite } from "@/lib/schedules";
 
 const DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -116,7 +116,8 @@ export default function ScheduleDetailApp() {
   const now = new Date();
   const isLive = !!w && now >= w.start && now < w.end;
   const isPast = !!w && now > w.end;
-  const name = displaySpeaker(s?.speakerName);
+  const speakers = splitSpeakerNames(s?.speakerName);
+  const name = speakers[0] ?? "";
   const photo = String(s?.speakerPhoto ?? "");
   const scheduleName = String(s?.scheduleName ?? "");
   const description = String(s?.description ?? "");
@@ -184,7 +185,9 @@ export default function ScheduleDetailApp() {
             <div className="ml-3 min-w-0 flex-1">
               <Pill icon={name ? "mic" : "event_note"} label={name ? "SPEAKER" : "SESSION"} from="#7C3AED" to="#6366F1" />
               <div className="mt-[5px] font-outfit text-[18px] font-extrabold leading-[1.15]">
-                {name || hall || "Programme"}
+                {speakers.length
+                  ? speakers.map((speaker, i) => <div key={i}>{speaker}</div>)
+                  : hall || "Programme"}
               </div>
               <div className="mt-1 text-[10px] font-medium text-white/80">Inspiring Minds&nbsp; |&nbsp; Building Futures</div>
               <span
