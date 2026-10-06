@@ -95,7 +95,7 @@ function AdminHomeWeb() {
           value={value(stats?.staff)}
           icon="badge"
           color="#F59E0B"
-          onClick={() => navigate("/admin/team")}
+          onClick={() => navigate("/admin/team?tab=staff")}
         />
         <StatCard
           label="Speakers"

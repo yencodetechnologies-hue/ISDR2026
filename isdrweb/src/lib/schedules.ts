@@ -73,6 +73,10 @@ export const PROGRAMME_HALLS = [
   "Dr J G Kannappan Hall",
   "Dr M Rahmatullah Hall",
   "Dr C V Subbarao Hall",
+  "SBDCH Auditorium",
+  "SBDCH Auditorium Lecture Hall 4",
+  "SBDCH Auditorium Halls 1–7",
+  "E-Poster Presentations",
 ];
 
 const hallRank = (hall: string) => {

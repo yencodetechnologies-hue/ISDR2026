@@ -161,8 +161,10 @@ const NAV: Record<Role, NavSection[]> = {
     {
       title: "Event",
       items: [
-        { label: "Events", icon: "event", color: "#3B82F6", to: "/staff/events" },
-        { label: "Support Tickets", icon: "support_agent", color: "#06B6D4", to: "/support" },
+        { label: "Events", icon: "event", color: "#F97316", to: "/staff/events" },
+        { label: "History", icon: "history", color: "#14B8A6", to: "/staff/history" },
+        { label: "Support Tickets", icon: "support_agent", color: "#EF4444", to: "/support" },
+        { label: "Accommodation", icon: "hotel", color: "#0EA5E9", to: "/accommodation" },
         { label: "Brochure", icon: "menu_book", color: "#84CC16", to: "/brochure" },
       ],
     },

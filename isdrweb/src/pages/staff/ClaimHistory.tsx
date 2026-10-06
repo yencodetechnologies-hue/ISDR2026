@@ -15,7 +15,7 @@ type Claim = {
 };
 
 /** Every inclusion claimed across the events, newest first, with search + per-inclusion filter (app's UserClaimHistoryPage). */
-export function ClaimHistoryModal({ onClose }: { onClose: () => void }) {
+export function ClaimHistoryPanel() {
   const [claims, setClaims] = useState<Claim[] | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("__all");
@@ -56,7 +56,7 @@ export function ClaimHistoryModal({ onClose }: { onClose: () => void }) {
   );
 
   return (
-    <Modal open onClose={onClose} title="Scan & Claim History" width={760}>
+    <>
       <SearchBox value={search} onChange={setSearch} placeholder="Search participant, ID number, inclusion…" />
       {claims && claims.length > 0 && (
         <div className="mt-3">
@@ -110,6 +110,14 @@ export function ClaimHistoryModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+export function ClaimHistoryModal({ onClose }: { onClose: () => void }) {
+  return (
+    <Modal open onClose={onClose} title="Scan & Claim History" width={760}>
+      <ClaimHistoryPanel />
     </Modal>
   );
 }

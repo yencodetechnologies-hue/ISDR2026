@@ -24,7 +24,7 @@ import {
   useConfirm,
   useToast,
 } from "@/components/ui";
-import { del, get, post, put } from "@/lib/api";
+import { del, formData, get, post, put } from "@/lib/api";
 import { FilterSelect, distinct, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import type { QrConfig } from "@/lib/exporter";
@@ -805,9 +805,15 @@ function ManagementTeamWeb() {
   const confirm = useConfirm();
   const [users, setUsers] = useState<any[] | null>(null);
   const [staff, setStaff] = useState<any[] | null>(null);
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   // ?tab=staff opens the Event Staff tab (the app's "Event Staff" module).
-  const [tab, setTab] = useState<"mgmt" | "staff">(params.get("tab") === "staff" ? "staff" : "mgmt");
+  const tab: "mgmt" | "staff" = params.get("tab") === "staff" ? "staff" : "mgmt";
+  const setTab = (next: "mgmt" | "staff") => {
+    const nextParams = new URLSearchParams(params);
+    if (next === "staff") nextParams.set("tab", "staff");
+    else nextParams.delete("tab");
+    setParams(nextParams, { replace: true });
+  };
   const [teamSearch, setTeamSearch] = useState("");
   const [approvalFilter, setApprovalFilter] = useState("");
   const [activeFilter, setActiveFilter] = useState("");
@@ -826,6 +832,12 @@ function ManagementTeamWeb() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
+  const [addingStaff, setAddingStaff] = useState(false);
+  const [staffName, setStaffName] = useState("");
+  const [staffMobile, setStaffMobile] = useState("");
+  const [staffEmail, setStaffEmail] = useState("");
+  const [staffPassword, setStaffPassword] = useState("");
+  const [savingStaff, setSavingStaff] = useState(false);
 
   const load = useCallback(async () => {
     const [mu, st] = await Promise.all([get("/auth/management-users"), get("/auth/users")]);
@@ -902,6 +914,42 @@ function ManagementTeamWeb() {
     } else toast(r.error || "Failed", "error");
   };
 
+  const openStaffForm = () => {
+    setStaffName("");
+    setStaffMobile("");
+    setStaffEmail("");
+    setStaffPassword("");
+    setAddingStaff(true);
+  };
+
+  const saveStaff = async () => {
+    if (!staffName.trim()) return toast("Name is required", "error");
+    if (!staffMobile.trim()) return toast("Mobile number is required", "error");
+    if (staffMobile.trim().length !== 10) return toast("Enter a valid 10-digit mobile number", "error");
+    if (!staffEmail.trim()) return toast("Email address is required", "error");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(staffEmail.trim())) return toast("Enter a valid email address", "error");
+    if (!staffPassword) return toast("Password is required", "error");
+    if (staffPassword.length < 6) return toast("Password must be at least 6 characters", "error");
+    setSavingStaff(true);
+    const r = await post(
+      "/auth/register",
+      formData({
+        name: staffName.trim(),
+        username: staffName.trim(),
+        email: staffEmail.trim(),
+        password: staffPassword,
+        mobileNumber: staffMobile.trim(),
+        userType: "user",
+      }),
+    );
+    setSavingStaff(false);
+    if (r.success) {
+      toast("Event staff added successfully", "success");
+      setAddingStaff(false);
+      load();
+    } else toast(r.error || "Failed to add event staff", "error");
+  };
+
   return (
     <Page
       title="Team"
@@ -930,19 +978,24 @@ function ManagementTeamWeb() {
             </Button>
           </div>
         ) : (
-          <ExportMenu
-            title="Event Staff"
-            rows={shownStaff}
-            columns={[
-              { header: "Pass no.", value: (u: any) => teamPass(u, "EVENT STAFF"), width: 12 },
-              { header: "Name", value: (u: any) => u.name, width: 24 },
-              { header: "Mobile", value: (u: any) => u.mobileNumber, width: 14 },
-              { header: "Email", value: (u: any) => u.email, width: 26 },
-              { header: "Approval", value: (u: any) => cap(u.status ?? "pending"), width: 11 },
-              { header: "Status", value: (u: any) => (u.isActive ? "Active" : "Inactive"), width: 10 },
-            ]}
-            qr={teamQr("EVENT STAFF")}
-          />
+          <div className="flex flex-wrap gap-2">
+            <ExportMenu
+              title="Event Staff"
+              rows={shownStaff}
+              columns={[
+                { header: "Pass no.", value: (u: any) => teamPass(u, "EVENT STAFF"), width: 12 },
+                { header: "Name", value: (u: any) => u.name, width: 24 },
+                { header: "Mobile", value: (u: any) => u.mobileNumber, width: 14 },
+                { header: "Email", value: (u: any) => u.email, width: 26 },
+                { header: "Approval", value: (u: any) => cap(u.status ?? "pending"), width: 11 },
+                { header: "Status", value: (u: any) => (u.isActive ? "Active" : "Inactive"), width: 10 },
+              ]}
+              qr={teamQr("EVENT STAFF")}
+            />
+            <Button icon="person_add" onClick={openStaffForm}>
+              Add Event Staff
+            </Button>
+          </div>
         )
       }
     >
@@ -1046,7 +1099,15 @@ function ManagementTeamWeb() {
           (!staff ? (
             <Loading />
           ) : staff.length === 0 ? (
-            <Empty icon="badge" title="No event staff" />
+            <Empty
+              icon="badge"
+              title="No event staff"
+              action={
+                <Button icon="person_add" onClick={openStaffForm}>
+                  Add Event Staff
+                </Button>
+              }
+            />
           ) : (
             <div className="card overflow-x-auto">
               <table className="data-table">
@@ -1139,6 +1200,52 @@ function ManagementTeamWeb() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={editing ? "Leave blank to keep the current password" : "At least 6 characters"}
+            />
+          </Field>
+        </div>
+      </Modal>
+      <Modal
+        open={addingStaff}
+        onClose={() => !savingStaff && setAddingStaff(false)}
+        title="Add Event Staff"
+        width={460}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setAddingStaff(false)} disabled={savingStaff}>
+              Cancel
+            </Button>
+            <Button loading={savingStaff} onClick={saveStaff}>
+              Add Event Staff
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Field label="Full name">
+            <Input value={staffName} onChange={(e) => setStaffName(e.target.value)} placeholder="Full name" />
+          </Field>
+          <Field label="Mobile number">
+            <Input
+              value={staffMobile}
+              inputMode="numeric"
+              maxLength={10}
+              onChange={(e) => setStaffMobile(e.target.value.replace(/\D/g, ""))}
+              placeholder="10-digit mobile number"
+            />
+          </Field>
+          <Field label="Email address">
+            <Input
+              value={staffEmail}
+              type="email"
+              onChange={(e) => setStaffEmail(e.target.value)}
+              placeholder="name@example.com"
+            />
+          </Field>
+          <Field label="Set password">
+            <PasswordInput
+              value={staffPassword}
+              onChange={(e) => setStaffPassword(e.target.value)}
+              placeholder="At least 6 characters"
             />
           </Field>
         </div>

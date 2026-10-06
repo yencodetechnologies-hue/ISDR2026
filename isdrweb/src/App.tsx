@@ -52,7 +52,7 @@ import {
   AdminMore,
 } from "./pages/admin/Settings";
 /* Staff */
-import { StaffHome, StaffEventList, StaffEventDetail, StaffMore } from "./pages/staff/Staff";
+import { StaffHome, StaffEventList, StaffEventDetail, StaffHistory, StaffMore } from "./pages/staff/Staff";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -163,6 +163,7 @@ export default function App() {
           {/* Staff (Event Staff / User / Tenant) */}
           <Route element={<Guard roles={["user"]} />}>
             <Route path="/staff" element={<StaffHome />} />
+            <Route path="/staff/history" element={<StaffHistory />} />
             <Route path="/staff/more" element={<StaffMore />} />
           </Route>
           {/* Event list + scanning: event staff, and admins (the app's "Scan Inclusion") */}

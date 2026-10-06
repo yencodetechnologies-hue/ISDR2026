@@ -6,7 +6,7 @@ import type { Role } from "./nav";
  * app bars, module grids…). Other roles keep the website's own phone layout
  * until they are converted. Desktop is never affected.
  */
-export const APP_LAYOUT_ROLES: Role[] = ["apartment", "participant"];
+export const APP_LAYOUT_ROLES: Role[] = ["apartment", "participant", "user"];
 
 /** True inside the Shell when the current page should render the app's phone layout. */
 export const AppLayoutContext = createContext(false);

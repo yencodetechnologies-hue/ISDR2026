@@ -2,6 +2,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  AppBannerCarousel,
+  AppLivePhotoButton,
+  AppLiveShowCard,
+  AppTickerStrap,
+  useUnreadCount,
+} from "@/components/app/AppHome";
+import { AppBarAction } from "@/components/app/AppChrome";
+import {
+  AppBar,
   Avatar,
   Button,
   Empty,
@@ -15,18 +24,18 @@ import {
   Tabs,
   useToast,
 } from "@/components/ui";
-import { LivePhotoButton, ModuleGrid, SectionTitle } from "@/components/widgets";
+import { LivePhotoButton, ModuleGrid, SectionTitle, tickerTextFromLines, useHomeBanner } from "@/components/widgets";
 import { get, post } from "@/lib/api";
 import ExportMenu from "@/components/ExportMenu";
 import { fullNameOf } from "@/lib/exporter";
-import { ClaimHistoryModal } from "./ClaimHistory";
+import { ClaimHistoryModal, ClaimHistoryPanel } from "./ClaimHistory";
 import { ScannerModal } from "./Scanner";
 import { useAuth } from "@/lib/auth";
 import { istDay } from "@/components/InclusionsSection";
 import { cap, fmtDate, fmtDMon, fullName, idOf, parseDate } from "@/lib/format";
 import { useLogout } from "../common/Profile";
 import { useAppLayout } from "@/lib/appLayout";
-import { StaffEventDetailApp, StaffEventsApp, collapsedInclusions } from "./StaffScanApp";
+import { ClaimHistoryApp, StaffEventDetailApp, StaffEventsApp, collapsedInclusions } from "./StaffScanApp";
 
 /** Event cards in a responsive grid. */
 function EventCards({ events }: { events: any[] }) {
@@ -69,7 +78,109 @@ function EventCards({ events }: { events: any[] }) {
    STAFF HOME
 ========================================================================= */
 
+/** Same modules as the app's event-staff home, in the same order and colours. */
+const STAFF_MODULES = [
+  { label: "Profile", sub: "Your account", icon: "person", color: "#6366F1", to: "/my-profile" },
+  { label: "Events", sub: "Scan inclusions", icon: "event", color: "#F97316", to: "/staff/events" },
+  { label: "History", sub: "Scans and claims", icon: "history", color: "#14B8A6", to: "/staff/history" },
+  { label: "QR Pass", sub: "Your staff pass", icon: "qr_code_2", color: "#8B5CF6", to: "/pass?role=EVENT%20STAFF" },
+  { label: "Support Tickets", sub: "Help desk", icon: "support_agent", color: "#EF4444", to: "/support" },
+  { label: "Accommodation", sub: "Stay details", icon: "hotel", color: "#0EA5E9", to: "/accommodation" },
+];
+
+function StaffNewsTicker() {
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      get("/news-ticker").then((r) => {
+        if (!alive || !r.success || !r.ticker) return;
+        const t = r.ticker.enabled === false ? "" : tickerTextFromLines(String(r.ticker.text ?? ""));
+        setText(t || null);
+      });
+    load();
+    const id = setInterval(load, 60000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, []);
+  if (!text) return null;
+  return <AppTickerStrap text={text} />;
+}
+
+/** Event staff home at phone width — the app's dashboard. */
+function StaffHomeApp() {
+  const navigate = useNavigate();
+  const logout = useLogout();
+  const unread = useUnreadCount();
+  const banners = useHomeBanner();
+
+  return (
+    <div className="min-h-screen bg-bg">
+      <AppBar
+        title="Dashboard"
+        back={false}
+        titleClassName="text-[18px] font-bold"
+        actions={
+          <>
+            <AppBarAction
+              icon="notifications"
+              title="Notifications"
+              badge={unread}
+              onClick={() => navigate("/notifications")}
+            />
+            <AppBarAction icon="logout" title="Logout" onClick={logout} />
+          </>
+        }
+      />
+      <div className="px-3 pt-1">
+        {banners.length > 0 && (
+          <div className="overflow-hidden rounded-2xl">
+            <AppBannerCarousel images={banners} height={160} />
+          </div>
+        )}
+        <div className={banners.length > 0 ? "mt-3" : ""}>
+          <StaffNewsTicker />
+        </div>
+        <div className="mt-3">
+          <AppLiveShowCard />
+        </div>
+      </div>
+      <div className="px-3 pb-8 pt-3">
+        <div className="mb-3 ml-1 text-lg font-bold">Quick Options</div>
+        <div className="grid grid-cols-6 gap-0.5 rounded-2xl border border-white/[0.06] bg-card px-1 py-2">
+          {STAFF_MODULES.map((m) => (
+            <button
+              key={m.label}
+              onClick={() => navigate(m.to)}
+              className="flex flex-col items-center pt-0.5 transition active:scale-95"
+            >
+              <span
+                className="flex h-[46px] w-[46px] items-center justify-center rounded-[13px]"
+                style={{ background: m.color }}
+              >
+                <Icon name={m.icon} size={22} />
+              </span>
+              <span className="mt-1 line-clamp-2 h-6 px-0.5 text-center text-[10.5px] font-semibold leading-[1.15] text-white/90">
+                {m.label}
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className="mt-3.5">
+          <AppLivePhotoButton />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function StaffHome() {
+  return useAppLayout() ? <StaffHomeApp /> : <StaffHomeWeb />;
+}
+
+function StaffHomeWeb() {
   const { user } = useAuth();
   const [events, setEvents] = useState<any[] | null>(null);
 
@@ -98,29 +209,9 @@ export function StaffHome() {
       <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Events" value={events ? events.length : "–"} icon="event" color="#3B82F6" />
         <StatCard label="Participants" value={events ? participants : "–"} icon="group" color="#10B981" />
-        <div className="col-span-2">
-          <ModuleGrid
-            cols="grid-cols-2 h-full"
-            items={[
-              {
-                label: "QR Pass",
-                sub: "Your staff pass",
-                icon: "qr_code_2",
-                color: "#10B981",
-                to: "/pass?role=EVENT%20STAFF",
-              },
-              {
-                label: "Notifications",
-                sub: "Your alerts",
-                icon: "notifications",
-                color: "#F59E0B",
-                to: "/notifications",
-              },
-              { label: "Support", sub: "Support tickets", icon: "help", color: "#06B6D4", to: "/support" },
-              { label: "Events", sub: "All events", icon: "event", color: "#3B82F6", to: "/staff/events" },
-            ]}
-          />
-        </div>
+      </div>
+      <div className="mt-4">
+        <ModuleGrid cols="grid-cols-2 sm:grid-cols-3" items={STAFF_MODULES} />
       </div>
 
       <div className="mt-5">
@@ -447,14 +538,25 @@ function StaffEventDetailWeb() {
    STAFF MORE
 ========================================================================= */
 
+/** Scan & claim history for every event — the app's History module. */
+export function StaffHistory() {
+  const navigate = useNavigate();
+  if (useAppLayout()) return <ClaimHistoryApp onClose={() => navigate("/staff")} />;
+  return (
+    <Page title="Scan & Claim History" subtitle="Every inclusion claimed across your events" back={false}>
+      <ClaimHistoryPanel />
+    </Page>
+  );
+}
+
 export function StaffMore() {
   const doLogout = useLogout();
   return (
     <Page title="More" back={false}>
       <ModuleGrid
         items={[
+          ...STAFF_MODULES,
           { label: "Notifications", icon: "notifications", color: "#F59E0B", to: "/notifications" },
-          { label: "Support", icon: "help", color: "#06B6D4", to: "/support" },
           { label: "Change Password", icon: "lock", color: "#3B82F6", to: "/change-password" },
           { label: "Brochure", icon: "menu_book", color: "#84CC16", to: "/brochure" },
           { label: "Logout", icon: "logout", color: "#EF4444", onClick: doLogout },
