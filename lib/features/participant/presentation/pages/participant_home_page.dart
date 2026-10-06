@@ -1085,44 +1085,6 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Banner sits in front of the blue fade — no gap between them.
-            // Image banner swiping — commented out.
-            // Stack(
-            //   children: [
-            //     Container(
-            //       height: 140,
-            //       decoration: const BoxDecoration(
-            //         gradient: LinearGradient(
-            //           begin: Alignment.topCenter,
-            //           end: Alignment.bottomCenter,
-            //           colors: [
-            //             Color(0xFF60A5FA),
-            //             Color(0x0060A5FA),
-            //           ],
-            //         ),
-            //       ),
-            //     ),
-            //     Padding(
-            //       padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-            //       child: Container(
-            //         decoration: BoxDecoration(
-            //           borderRadius: BorderRadius.circular(20),
-            //           boxShadow: [
-            //             BoxShadow(
-            //               color: Colors.black.withValues(alpha: 0.15),
-            //               blurRadius: 12,
-            //               offset: const Offset(0, 6),
-            //             ),
-            //           ],
-            //         ),
-            //         child: const ClipRRect(
-            //           borderRadius: BorderRadius.all(Radius.circular(20)),
-            //           child: AutoScrollBanner(items: defaultManagementBanners),
-            //         ),
-            //       ),
-            //     ),
-            //   ],
-            // ),
             // Live Show Hero Banner Card
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

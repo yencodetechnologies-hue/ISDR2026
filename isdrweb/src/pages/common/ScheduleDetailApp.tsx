@@ -285,7 +285,7 @@ export default function ScheduleDetailApp() {
                   <Icon name="description" size={18} />
                 </span>
                 <div className="ml-2.5 min-w-0 flex-1 border-l-[1.5px] border-[#3B82F6]/80 pl-3">
-                  <div className="text-[10.5px] font-bold tracking-[0.8px] text-white/85">ABOUT THIS SESSION</div>
+                  <div className="text-[10.5px] font-bold tracking-[0.8px] text-white/85">DESIGNATION & AFFILIATION</div>
                   <div className="mt-[5px] whitespace-pre-wrap text-[12.5px] leading-[1.45] text-white/90">{description}</div>
                 </div>
               </div>

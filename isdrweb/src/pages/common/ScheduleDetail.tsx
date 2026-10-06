@@ -133,7 +133,7 @@ function ScheduleDetailWeb() {
               <div className="mt-6 border-t border-line pt-5">
                 <div className="eyebrow flex items-center gap-2">
                   <Icon name="description" size={16} />
-                  About this session
+                  Designation & Affiliation
                 </div>
                 <div className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-white/85">
                   {s.description}

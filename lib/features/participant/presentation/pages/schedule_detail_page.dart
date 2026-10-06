@@ -586,7 +586,7 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
     );
   }
 
-  /// "About this session" card: document icon, accent line and the text.
+  /// "Designation & Affiliation" card: document icon, accent line and the text.
   Widget _aboutCard(String description) {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
@@ -647,7 +647,7 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ABOUT THIS SESSION',
+                        'DESIGNATION & AFFILIATION',
                         style: GoogleFonts.inter(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,

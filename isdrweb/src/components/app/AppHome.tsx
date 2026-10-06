@@ -77,12 +77,6 @@ export function AppHomeHeader({ profilePath }: { profilePath: string }) {
 /* dots at the bottom (the app's AutoScrollBanner)                      */
 /* ------------------------------------------------------------------ */
 
-export const DEFAULT_BANNERS = [
-  asset("isdr-slider.webp"),
-  asset("Gemini_Generated_Image_bg38yfbg38yfbg38.png"),
-  asset("Gemini_Generated_Image_avabulavabulavab.png"),
-];
-
 export function AppBannerCarousel({ images, height = 170 }: { images: string[]; height?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const [page, setPage] = useState(0);

@@ -123,9 +123,3 @@ class _AutoScrollBannerState extends State<AutoScrollBanner> {
   }
 }
 
-/// Banner set for the management home page and login screen.
-const List<BannerItem> defaultManagementBanners = [
-  BannerItem(imagePath: 'assets/isdr-slider.webp'),
-  BannerItem(imagePath: 'assets/Gemini_Generated_Image_bg38yfbg38yfbg38.png'),
-  BannerItem(imagePath: 'assets/Gemini_Generated_Image_avabulavabulavab.png'),
-];
