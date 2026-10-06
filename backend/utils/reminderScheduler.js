@@ -53,7 +53,7 @@ async function sendDueReminders() {
 
     const schedules = await EventSchedule.find({
       _id: { $in: [...new Set(due.map((r) => String(r.scheduleId)))] },
-    }).select('apartmentId scheduleName speakerName fromTime toTime hall');
+    }).select('apartmentId eventId scheduleName speakerName fromTime toTime hall');
     const byId = new Map(schedules.map((s) => [String(s._id), s]));
 
     for (const reminder of due) {
@@ -79,7 +79,7 @@ async function sendDueReminders() {
             : `Starting now: ${schedule.scheduleName}`,
         body: details,
         type: 'schedule_reminder',
-        data: { scheduleId: String(schedule._id) },
+        data: { scheduleId: String(schedule._id), eventId: schedule.eventId ? String(schedule.eventId) : '' },
         apartmentId: schedule.apartmentId,
       });
     }

@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Empty, ErrorState, Icon, IconButton, Loading, Page, useToast } from "@/components/ui";
+import { useNavigate } from "react-router-dom";
 import { del, get, put, qs } from "@/lib/api";
 import { fmtTime, idOf, monthLong, parseDate, startOfDay } from "@/lib/format";
 import { useAppLayout } from "@/lib/appLayout";
+import { NOTIFICATION_TYPES, notificationHref, notificationMeta, useLiveNotifications } from "@/lib/notifications";
 import NotificationsApp from "./NotificationsApp";
 
 type Filter = { key: string; type?: string; read?: boolean };
@@ -11,10 +13,7 @@ const FILTERS: (Filter & { label: string })[] = [
   { key: "unread", label: "Unread", read: false },
   { key: "read", label: "Read", read: true },
   { key: "all", label: "All" },
-  { key: "message", label: "Message", type: "message" },
-  { key: "maintenance", label: "Maintenance", type: "maintenance" },
-  { key: "complaint", label: "Complaint", type: "complaint" },
-  { key: "notice", label: "Notice", type: "notice" },
+  ...NOTIFICATION_TYPES.map((t) => ({ key: t.key, label: t.label, type: t.key })),
 ];
 const LIMIT = 20;
 
@@ -35,6 +34,9 @@ export default function Notifications() {
 
 function NotificationsWeb() {
   const toast = useToast();
+  const navigate = useNavigate();
+  const { revision, refresh } = useLiveNotifications();
+  const seenRevision = useRef(revision);
   const [filter, setFilter] = useState<Filter>(FILTERS[0]);
   const [items, setItems] = useState<any[]>([]);
   const [page, setPage] = useState(1);
@@ -44,9 +46,10 @@ function NotificationsWeb() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(
-    async (p: number) => {
-      if (p === 1) setLoading(true);
-      else setLoadingMore(true);
+    async (p: number, silent = false) => {
+      if (p === 1) {
+        if (!silent) setLoading(true);
+      } else setLoadingMore(true);
       const res = await get(
         `/notifications${qs({ page: p, limit: LIMIT, type: filter.type, read: filter.read === undefined ? undefined : String(filter.read) })}`,
       );
@@ -67,21 +70,37 @@ function NotificationsWeb() {
     load(1);
   }, [load]);
 
+  useEffect(() => {
+    if (seenRevision.current === revision) return;
+    seenRevision.current = revision;
+    load(1, true);
+  }, [revision, load]);
+
   const markRead = async (n: any) => {
     if (n.read) return;
     setItems((l) => l.map((x) => (idOf(x) === idOf(n) ? { ...x, read: true } : x)));
     await put(`/notifications/${idOf(n)}/read`);
+    refresh();
+  };
+
+  const open = (n: any) => {
+    void markRead(n);
+    const href = notificationHref(n);
+    if (href) navigate(href);
   };
 
   const markAll = async () => {
     const res = await put("/notifications/read-all");
-    if (res.success) setItems((l) => l.map((x) => ({ ...x, read: true })));
-    else toast(res.error || "Failed", "error");
+    if (res.success) {
+      setItems((l) => l.map((x) => ({ ...x, read: true })));
+      refresh();
+    } else toast(res.error || "Failed", "error");
   };
 
   const remove = async (n: any) => {
     setItems((l) => l.filter((x) => idOf(x) !== idOf(n)));
     const res = await del(`/notifications/${idOf(n)}`);
+    refresh();
     if (!res.success) {
       toast(res.error || "Failed to delete", "error");
       load(1);
@@ -102,10 +121,7 @@ function NotificationsWeb() {
     all: "inbox",
     unread: "mark_email_unread",
     read: "drafts",
-    message: "chat",
-    maintenance: "build",
-    complaint: "report",
-    notice: "campaign",
+    ...Object.fromEntries(NOTIFICATION_TYPES.map((t) => [t.key, t.icon])),
   };
 
   return (
@@ -167,13 +183,18 @@ function NotificationsWeb() {
                       return (
                         <div
                           key={idOf(n)}
-                          onClick={() => markRead(n)}
+                          onClick={() => open(n)}
                           className={`group flex cursor-pointer gap-4 px-5 py-4 transition hover:bg-white/[0.03] ${n.read ? "" : "bg-accent/[0.05]"}`}
                         >
                           <div
-                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${n.read ? "bg-white/5" : "bg-accent/15"}`}
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                            style={{ background: n.read ? "rgba(255,255,255,0.05)" : `${notificationMeta(n.type).color}26` }}
                           >
-                            <Icon name="notifications" size={20} color={n.read ? "#9CA3AF" : "#60A5FA"} />
+                            <Icon
+                              name={notificationMeta(n.type).icon}
+                              size={20}
+                              color={n.read ? "#9CA3AF" : notificationMeta(n.type).color}
+                            />
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start gap-2">

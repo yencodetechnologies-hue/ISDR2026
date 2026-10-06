@@ -26,6 +26,7 @@ import {
 } from "@/components/ui";
 import { LivePhotoButton, ModuleGrid, SectionTitle, tickerTextFromLines, useHomeBanner } from "@/components/widgets";
 import { get, post } from "@/lib/api";
+import { useLiveNotifications } from "@/lib/notifications";
 import ExportMenu from "@/components/ExportMenu";
 import { fullNameOf } from "@/lib/exporter";
 import { ClaimHistoryModal, ClaimHistoryPanel } from "./ClaimHistory";
@@ -114,6 +115,7 @@ function StaffHomeApp() {
   const navigate = useNavigate();
   const logout = useLogout();
   const unread = useUnreadCount();
+  const { askPermission } = useLiveNotifications();
   const banners = useHomeBanner();
 
   return (
@@ -128,7 +130,10 @@ function StaffHomeApp() {
               icon="notifications"
               title="Notifications"
               badge={unread}
-              onClick={() => navigate("/notifications")}
+              onClick={() => {
+                askPermission();
+                navigate("/notifications");
+              }}
             />
             <AppBarAction icon="logout" title="Logout" onClick={logout} />
           </>

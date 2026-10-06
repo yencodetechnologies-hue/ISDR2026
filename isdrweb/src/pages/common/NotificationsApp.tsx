@@ -2,8 +2,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppBar, Icon, Spinner, useToast } from "@/components/ui";
 import { AppBarAction } from "@/components/app/AppChrome";
+import { useNavigate } from "react-router-dom";
 import { del, get, put, qs } from "@/lib/api";
 import { idOf, parseDate } from "@/lib/format";
+import { NOTIFICATION_TYPES, notificationHref, notificationMeta, useLiveNotifications } from "@/lib/notifications";
 
 type Filter = { type?: string; read?: boolean };
 const LIMIT = 20;
@@ -26,18 +28,14 @@ function stamp(d: Date) {
   const two = (n: number) => String(n).padStart(2, "0");
   return `${MON[d.getMonth()]} ${two(d.getDate())}, ${d.getFullYear()} • ${two(h % 12 || 12)}:${two(d.getMinutes())} ${h < 12 ? "AM" : "PM"}`;
 }
-const TYPE: Record<string, [string, string]> = {
-  maintenance: ["#13275D", "build"],
-  complaint: ["#DC2626", "report_problem"],
-  notice: ["#13275D", "campaign"],
-  message: ["#10B981", "message"],
-  permission: ["#13275D", "lock"],
-  user_status: ["#DC2626", "person"],
-};
+const TYPE: Record<string, [string, string]> = Object.fromEntries(
+  NOTIFICATION_TYPES.map((t) => [t.key, [t.color, t.icon]]),
+);
 
 /** The app's NotificationItem: swipe left to delete, tap to mark read. */
 function NotificationCard({ n, onTap, onDelete }: { n: any; onTap: () => void; onDelete: () => void }) {
-  const [typeColor, typeIcon] = TYPE[n.type] ?? ["#13275D", "notifications"];
+  const meta = notificationMeta(n.type);
+  const [typeColor, typeIcon] = TYPE[n.type] ?? [meta.color, meta.icon];
   const unread = !n.read;
   const d = parseDate(n.createdAt) ?? new Date();
   const [dx, setDx] = useState(0);
@@ -125,6 +123,9 @@ function NotificationCard({ n, onTap, onDelete }: { n: any; onTap: () => void; o
 /** Notifications at phone width — the app's NotificationsPage (opens on Unread). */
 export default function NotificationsApp() {
   const toast = useToast();
+  const navigate = useNavigate();
+  const { revision, refresh } = useLiveNotifications();
+  const seenRevision = useRef(0);
   const [filter, setFilter] = useState<Filter>({ read: false });
   const [items, setItems] = useState<any[]>([]);
   const [unread, setUnread] = useState(0);
@@ -140,9 +141,9 @@ export default function NotificationsApp() {
     if (r.success) setUnread(Number(r.count) || 0);
   }, []);
   const load = useCallback(
-    async (p: number) => {
+    async (p: number, silent = false) => {
       fetching.current = true;
-      if (p === 1) setLoading(true);
+      if (p === 1 && !silent) setLoading(true);
       const r = await get(
         `/notifications${qs({ page: p, limit: LIMIT, type: filter.type, read: filter.read === undefined ? undefined : String(filter.read) })}`,
       );
@@ -163,6 +164,13 @@ export default function NotificationsApp() {
     loadCount();
   }, [load, loadCount]);
 
+  useEffect(() => {
+    if (seenRevision.current === revision) return;
+    seenRevision.current = revision;
+    load(1, true);
+    loadCount();
+  }, [revision, load, loadCount]);
+
   // Next page at 90% scrolled.
   useEffect(() => {
     const onScroll = () => {
@@ -178,18 +186,26 @@ export default function NotificationsApp() {
     setItems((l) => l.map((x) => (idOf(x) === idOf(n) ? { ...x, read: true } : x)));
     setUnread((c) => Math.max(0, c - 1));
     await put(`/notifications/${idOf(n)}/read`);
+    refresh();
+  };
+  const open = (n: any) => {
+    void markRead(n);
+    const href = notificationHref(n);
+    if (href) navigate(href);
   };
   const markAll = async () => {
     const r = await put("/notifications/read-all");
     if (r.success) {
       setItems((l) => l.map((x) => ({ ...x, read: true })));
       setUnread(0);
+      refresh();
     } else toast(r.error || "Failed");
   };
   const remove = async (n: any) => {
     setItems((l) => l.filter((x) => idOf(x) !== idOf(n)));
     if (!n.read) setUnread((c) => Math.max(0, c - 1));
     const r = await del(`/notifications/${idOf(n)}`);
+    refresh();
     if (!r.success) {
       toast(r.error || "Failed to delete");
       load(1);
@@ -241,10 +257,7 @@ export default function NotificationsApp() {
                     {menuItem("read", "Read")}
                     {menuItem("all", "All")}
                     <div className="my-2 h-px bg-white/10" />
-                    {menuItem("message", "Message")}
-                    {menuItem("maintenance", "Maintenance")}
-                    {menuItem("complaint", "Complaint")}
-                    {menuItem("notice", "Notice")}
+                    {NOTIFICATION_TYPES.map((t) => menuItem(t.key, t.label))}
                   </div>
                 </>
               )}
@@ -328,7 +341,7 @@ export default function NotificationsApp() {
                 <span className="font-sora text-sm font-bold">{g.label}</span>
               </div>
               {g.list.map((n) => (
-                <NotificationCard key={idOf(n)} n={n} onTap={() => markRead(n)} onDelete={() => remove(n)} />
+                <NotificationCard key={idOf(n)} n={n} onTap={() => open(n)} onDelete={() => remove(n)} />
               ))}
             </div>
           ))}

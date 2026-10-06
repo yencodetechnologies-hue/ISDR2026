@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Icon, Input, Modal, Spinner } from "@/components/ui";
 import type { ApiResult } from "@/lib/api";
 import { fmtDate } from "@/lib/format";
+import { startQrCamera } from "./startQrCamera";
 
 const AUTO_NEXT_SECONDS = 3;
 
@@ -62,31 +63,21 @@ export function ScannerModal({
     setCamError(null);
     (async () => {
       try {
-        const { Html5Qrcode } = await import("html5-qrcode");
-        if (cancelled) return;
-        const q = new Html5Qrcode(regionId);
-        scanner.current = q;
-        await q.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 240, height: 240 } },
-          (text: string) => {
-            if (text.trim()) run({ qrData: text });
-          },
-          () => {},
-        );
-        if (cancelled) await q.stop().catch(() => {});
+        const cam = await startQrCamera(regionId, (text) => run({ qrData: text }), () => cancelled);
+        if (!cam || cancelled) {
+          await cam?.stop();
+          return;
+        }
+        scanner.current = cam;
       } catch {
         if (!cancelled) setCamError("Camera not available. Allow camera access, or switch to Manual Code.");
       }
     })();
     return () => {
       cancelled = true;
-      const q = scanner.current;
+      const cam = scanner.current;
       scanner.current = null;
-      if (q)
-        q.stop()
-          .then(() => q.clear())
-          .catch(() => {});
+      cam?.stop();
     };
   }, [mode, result, run]);
 
@@ -110,17 +101,19 @@ export function ScannerModal({
     setMode("qr");
   };
 
-  const reg: any = result?.registration && typeof result.registration === "object" ? result.registration : {};
-  const used = result?.alreadyClaimed === true;
-  const denied = !!result && !result.success && !used;
+  const success = result?.success === true;
+  const reg: any = result?.registration && typeof result.registration === "object" ? result.registration : null;
+  const used = !!result && !success && result.alreadyClaimed === true && !!reg;
+  const denied = !!result && !success && !used;
+  const r = reg ?? {};
   const pkg = (event?.packages ?? []).find(
-    (p: any) => String(p.id) === String(reg.packageId) || p.name === reg.packageName,
+    (p: any) => String(p.id) === String(r.packageId) || p.name === r.packageName,
   );
   const rate = Number(pkg?.rate) || 0;
-  const packageText = reg.packageName
+  const packageText = r.packageName
     ? pkg
-      ? `${reg.packageName} — ${rate === 0 ? "Free" : `₹${rate}`}`
-      : reg.packageName
+      ? `${r.packageName} — ${rate === 0 ? "Free" : `₹${rate}`}`
+      : r.packageName
     : "";
   const tone = denied ? "#FCA5A5" : used ? "#FCD34D" : "#86EFAC";
   const bg = denied ? "rgba(239,68,68,0.15)" : used ? "rgba(245,158,11,0.15)" : "rgba(34,197,94,0.15)";
@@ -151,29 +144,31 @@ export function ScannerModal({
               {denied ? "ACCESS DENIED" : used ? "ALREADY CLAIMED" : "ACCESS GRANTED"}
             </div>
             <div className="my-3 border-t border-white/10" />
-            {reg.name && (
+            {r.name && (
               <div className="mb-2 text-xl font-black" style={{ color: tone }}>
-                {String(reg.name).toUpperCase()}
+                {String(r.name).toUpperCase()}
               </div>
             )}
-            {line("ID Number", String(reg.idNumber ?? (Object.keys(reg).length ? "Spot" : "")))}
-            {line("Type", Object.keys(reg).length && !/^spot register$/i.test(String(reg.packageName || "")) ? String(reg.participantType || "") : "")}
+            {line("ID Number", String(r.idNumber ?? (reg ? "Spot" : "")))}
+            {line("Type", reg && !/^spot register$/i.test(String(r.packageName || "")) ? String(r.participantType || "") : "")}
             {line("Package", packageText)}
             {line("Date", fmtDate(new Date()))}
             {line("Venue", String(event?.venue ?? ""))}
             {line(itemLabel, name)}
-            <div className="mt-3 rounded-lg bg-black/20 px-3 py-2.5 text-sm font-semibold">
-              {result.success
-                ? successText
-                : String(result.error || result.message || "") ||
-                  (used
-                    ? "This entitlement has already been redeemed."
-                    : "This participant is not eligible for this benefit.")}
+            <div className="mt-3 rounded-lg bg-black/20 px-3 py-2.5 text-sm font-semibold" style={{ color: tone }}>
+              {denied
+                ? String(result.error || result.message || "") || "This participant is not eligible for this benefit."
+                : used
+                  ? "This entitlement has already been redeemed."
+                  : successText}
             </div>
           </div>
           <Button full icon="qr_code_scanner" className="mt-4 py-3" onClick={reset}>
-            Scan Next Participant ({left})
+            {left > 0 ? `Scan Next Participant (${left})` : "Scan Next Participant"}
           </Button>
+          <button type="button" onClick={onClose} className="mx-auto mt-2.5 block h-10 rounded-full px-4 text-sm text-white/70">
+            Done &amp; Go Back
+          </button>
         </div>
       ) : (
         <div>
@@ -220,12 +215,13 @@ export function ScannerModal({
               <Input
                 autoFocus
                 value={code}
+                maxLength={25}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="e.g. UG0001"
-                className="font-mono"
+                placeholder="e.g. 1001"
+                className="text-center font-mono tracking-[3px]"
               />
               <Button type="submit" full loading={busy} disabled={!code.trim()} className="mt-4 py-3">
-                {busy ? "Verifying..." : "Verify"}
+                {busy ? "Verifying..." : `Verify & Claim ${name}`}
               </Button>
             </form>
           )}

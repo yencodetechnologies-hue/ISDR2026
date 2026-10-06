@@ -7,6 +7,7 @@ import { AppSpinner } from "@/components/app/AppControls";
 import { istDay } from "@/components/InclusionsSection";
 import { get, post } from "@/lib/api";
 import { idOf, parseDate } from "@/lib/format";
+import { startQrCamera } from "./startQrCamera";
 
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const hm = (d: Date) => {
@@ -350,33 +351,23 @@ function ScannerApp({
     setCamReady(false);
     (async () => {
       try {
-        const { Html5Qrcode } = await import("html5-qrcode");
-        if (cancelled) return;
-        const q = new Html5Qrcode(regionId);
-        scanner.current = q;
-        await q.start(
-          { facingMode: "environment" },
-          { fps: 10 },
-          (text: string) => {
-            if (text.trim()) run({ qrData: text });
-          },
-          () => {},
-        );
-        if (cancelled) await q.stop().catch(() => {});
-        else setCamReady(true);
+        const cam = await startQrCamera(regionId, (text) => run({ qrData: text }), () => cancelled);
+        if (!cam || cancelled) {
+          await cam?.stop();
+          return;
+        }
+        scanner.current = cam;
+        setCamReady(true);
       } catch {
         if (!cancelled) setCamDenied(true);
       }
     })();
     return () => {
       cancelled = true;
-      const q = scanner.current;
+      const cam = scanner.current;
       scanner.current = null;
       setTorch(false);
-      if (q)
-        q.stop()
-          .then(() => q.clear())
-          .catch(() => {});
+      cam?.stop();
     };
   }, [qrMode, result, run]);
 

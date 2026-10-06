@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { asset, get } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useLiveNotifications, useUnreadCount } from "@/lib/notifications";
 import { fmtTimeStr, sameDay } from "@/lib/format";
 import { loadAllSchedules, scheduleHref, type ScheduleItem } from "@/lib/schedules";
 import { useLogout } from "@/pages/common/Profile";
@@ -13,29 +14,14 @@ import { Icon } from "../ui";
 /* logout, profile avatar (the app's _buildHomeHeader)                  */
 /* ------------------------------------------------------------------ */
 
-export function useUnreadCount() {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    let alive = true;
-    const load = () =>
-      get("/notifications/unread-count").then((r) => {
-        if (alive && r.success) setCount(Number(r.count) || 0);
-      });
-    load();
-    const t = setInterval(load, 60000);
-    return () => {
-      alive = false;
-      clearInterval(t);
-    };
-  }, []);
-  return count;
-}
+export { useUnreadCount };
 
 export function AppHomeHeader({ profilePath }: { profilePath: string }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const logout = useLogout();
   const unread = useUnreadCount();
+  const { askPermission } = useLiveNotifications();
   const name = String(user?.name ?? "");
   const photo = String(user?.profilePic ?? "");
   return (
@@ -50,7 +36,10 @@ export function AppHomeHeader({ profilePath }: { profilePath: string }) {
         </div>
       </div>
       <button
-        onClick={() => navigate("/notifications")}
+        onClick={() => {
+          askPermission();
+          navigate("/notifications");
+        }}
         aria-label="Notifications"
         className="relative flex h-12 w-12 items-center justify-center rounded-full active:bg-white/10"
       >

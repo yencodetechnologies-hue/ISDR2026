@@ -1,35 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-refresh/only-export-components */
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { get } from "@/lib/api";
+import { useLiveNotifications, useUnreadCount } from "@/lib/notifications";
 import { REMINDER_CHOICES, reminderLabel } from "@/lib/schedules";
 import { Icon, IconButton, Modal } from "./ui";
 
 /** Bell with the unread count; opens Notifications. */
 export function NotificationBell() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    let alive = true;
-    const load = () =>
-      get("/notifications/unread-count").then((r) => {
-        if (alive && r.success) setCount(Number(r.count) || 0);
-      });
-    load();
-    const t = setInterval(load, 60000);
-    return () => {
-      alive = false;
-      clearInterval(t);
-    };
-  }, [location.pathname]);
+  const count = useUnreadCount();
+  const { askPermission } = useLiveNotifications();
   return (
     <IconButton
       icon="notifications"
       outline
       title="Notifications"
       badge={count}
-      onClick={() => navigate("/notifications")}
+      onClick={() => {
+        askPermission();
+        navigate("/notifications");
+      }}
     />
   );
 }

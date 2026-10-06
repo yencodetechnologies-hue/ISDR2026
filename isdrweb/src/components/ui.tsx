@@ -816,14 +816,15 @@ export function Modal({
 }
 
 type ToastKind = "info" | "success" | "error";
-const ToastCtx = createContext<(msg: string, kind?: ToastKind) => void>(() => {});
+type ToastOpts = { onClick?: () => void; duration?: number; icon?: string };
+const ToastCtx = createContext<(msg: string, kind?: ToastKind, opts?: ToastOpts) => void>(() => {});
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = useState<{ id: number; msg: string; kind: ToastKind }[]>([]);
-  const show = useCallback((msg: string, kind: ToastKind = "info") => {
+  const [toasts, setToasts] = useState<{ id: number; msg: string; kind: ToastKind; onClick?: () => void; icon?: string }[]>([]);
+  const show = useCallback((msg: string, kind: ToastKind = "info", opts?: ToastOpts) => {
     const id = Date.now() + Math.random();
-    setToasts((t) => [...t, { id, msg, kind }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
+    setToasts((t) => [...t, { id, msg, kind, onClick: opts?.onClick, icon: opts?.icon }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), opts?.duration ?? 3200);
   }, []);
   return (
     <ToastCtx.Provider value={show}>
@@ -832,11 +833,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="animate-sheet pointer-events-auto flex w-full items-start gap-2.5 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white shadow-2xl"
+            role={t.onClick ? "button" : undefined}
+            onClick={t.onClick}
+            className={`animate-sheet pointer-events-auto flex w-full items-start gap-2.5 rounded-xl border border-white/10 px-4 py-3 text-left text-sm font-medium text-white shadow-2xl ${t.onClick ? "cursor-pointer" : ""}`}
             style={{ background: t.kind === "error" ? "#DC2626" : t.kind === "success" ? "#16A34A" : "#1F2937" }}
           >
-            <Icon name={t.kind === "error" ? "error" : t.kind === "success" ? "check_circle" : "info"} size={19} />
-            <span className="flex-1">{t.msg}</span>
+            <Icon
+              name={t.icon ?? (t.kind === "error" ? "error" : t.kind === "success" ? "check_circle" : "info")}
+              size={19}
+            />
+            <span className="flex-1 whitespace-pre-wrap">{t.msg}</span>
           </div>
         ))}
       </div>
