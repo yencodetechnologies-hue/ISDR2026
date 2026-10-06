@@ -13,6 +13,13 @@ export const PARTICIPANT_MODULES: ModuleItem[] = [
   },
   { label: "Favorites", sub: "Your saved sessions", icon: "star", color: "#E11D48", to: "/participant/favorites" },
   { label: "Brochure", sub: "Conference brochure", icon: "menu_book", color: "#10B981", to: "/brochure" },
+  {
+    label: "UG Paper",
+    sub: "Papers and e-posters",
+    icon: "picture_as_pdf",
+    color: "#F59E0B",
+    to: "/participant/ug-paper",
+  },
   { label: "Help & Support", sub: "Raise a ticket", icon: "help", color: "#06B6D4", to: "/support" },
   {
     label: "Preconference",

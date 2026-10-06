@@ -1,3 +1,7 @@
+const { execFile } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const multer = require('multer');
 const cloudinary = require('../config/cloudinary');
 
@@ -100,10 +104,66 @@ const uploadPdfToCloudinary = (fileBuffer, { folder = 'isdr/schedule', publicId 
       .end(fileBuffer);
   });
 
+const GS_BINS = process.platform === 'win32' ? ['gswin64c', 'gswin32c', 'gs'] : ['gs'];
+
+function runGhostscript(bin, input, output) {
+  return new Promise((resolve, reject) => {
+    execFile(
+      bin,
+      [
+        '-sDEVICE=pdfwrite',
+        '-dCompatibilityLevel=1.4',
+        '-dPDFSETTINGS=/ebook',
+        '-dNOPAUSE',
+        '-dQUIET',
+        '-dBATCH',
+        `-sOutputFile=${output}`,
+        input,
+      ],
+      { timeout: 120000 },
+      (error) => (error ? reject(error) : resolve())
+    );
+  });
+}
+
+// Shrink a PDF with Ghostscript (/ebook) when the binary is installed.
+// Returns the original buffer when Ghostscript is missing or the result is not smaller.
+const compressPdfBuffer = async (fileBuffer) => {
+  if (!fileBuffer || !fileBuffer.length) return fileBuffer;
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ug-paper-'));
+  const input = path.join(dir, 'in.pdf');
+  const output = path.join(dir, 'out.pdf');
+  try {
+    fs.writeFileSync(input, fileBuffer);
+    let compressed = false;
+    for (const bin of GS_BINS) {
+      try {
+        await runGhostscript(bin, input, output);
+        compressed = true;
+        break;
+      } catch (error) {
+        if (error && error.code !== 'ENOENT') {
+          console.warn(`PDF compress via ${bin} failed:`, error.message || error);
+        }
+      }
+    }
+    if (!compressed || !fs.existsSync(output)) return fileBuffer;
+    const next = fs.readFileSync(output);
+    if (!next.length || next.length >= fileBuffer.length) return fileBuffer;
+    return next;
+  } catch (error) {
+    console.warn('PDF compress skipped:', error.message || error);
+    return fileBuffer;
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+};
+
 module.exports = {
   upload,
   uploadSingleImage,
   uploadSinglePdf,
   uploadToCloudinary,
   uploadPdfToCloudinary,
+  compressPdfBuffer,
 };

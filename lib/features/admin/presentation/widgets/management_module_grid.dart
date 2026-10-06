@@ -83,6 +83,7 @@ const List<_ModuleVisual> _predefinedVisuals = [
   ),
   _ModuleVisual('Event Schedules', Icons.event_note_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Schedule PDF', Icons.picture_as_pdf_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('UG Paper PDF', Icons.picture_as_pdf_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Speakers', Icons.groups_rounded, group: 'ACCOUNT'),
   _ModuleVisual(
     'Scan Inclusion',

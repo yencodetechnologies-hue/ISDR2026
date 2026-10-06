@@ -190,6 +190,7 @@ class ApiConfig {
   static String get livePhoto => '$baseUrl/live-photo';
   static String get awards => '$baseUrl/awards';
   static String get schedulePdf => '$baseUrl/schedule-pdf';
+  static String get ugPaperPdf => '$baseUrl/ug-paper-pdf';
   // Help & Support tickets (participant <-> event staff / admin chat)
   static String get helpTickets => '$baseUrl/support-tickets';
 

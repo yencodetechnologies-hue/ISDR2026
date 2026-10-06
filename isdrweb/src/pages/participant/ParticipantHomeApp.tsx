@@ -40,6 +40,7 @@ export const PARTICIPANT_APP_MODULES: AppModule[] = [
   { label: "Accommodation", icon: "hotel", color: "#0EA5E9", to: "/participant/accommodation" },
   { label: "Awards", icon: "emoji_events", color: "#F59E0B", to: "/participant/awards" },
   { label: "About", icon: "menu_book", color: "#6366F1", to: "/participant/about" },
+  { label: "UG Paper", icon: "picture_as_pdf", color: "#F59E0B", to: "/participant/ug-paper" },
 ];
 
 const SOCIAL_LINKS = [
@@ -67,6 +68,31 @@ const SOCIAL_LINKS = [
 ];
 
 const SCHEDULE_ACCENTS = ["#14B8A6", "#2563EB", "#8B5CF6", "#F59E0B"];
+
+/** Full-width third row under the two-row module grid. */
+export function UgPaperHomeRow() {
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      onClick={() => navigate("/participant/ug-paper")}
+      className="flex w-full items-center gap-3 rounded-2xl border border-[#F59E0B]/40 bg-gradient-to-br from-[#78350F] to-[#B45309] px-3.5 py-3 text-left shadow-[0_4px_14px_rgba(180,83,9,0.35)] transition active:scale-[0.99]"
+    >
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-white/15">
+        <Icon name="picture_as_pdf" size={22} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-outfit text-[15px] font-extrabold leading-tight text-white">
+          UG Paper and E-Poster Presentation
+        </span>
+        <span className="mt-0.5 block text-[11px] font-medium text-white/80">View the presentation PDF</span>
+      </span>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#B45309]">
+        <Icon name="arrow_forward" size={16} />
+      </span>
+    </button>
+  );
+}
 
 function AdminNewsTicker() {
   const [text, setText] = useState<string | null>(null);
@@ -208,6 +234,8 @@ export default function ParticipantHomeApp() {
           modules={PARTICIPANT_APP_MODULES}
           moreTo="/participant/more"
         />
+
+        <UgPaperHomeRow />
 
         {/* YouTube Live Capsule */}
         <YoutubeLiveCapsule />

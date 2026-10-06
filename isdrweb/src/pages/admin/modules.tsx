@@ -5,6 +5,7 @@ export const ADMIN_MODULES: ModuleItem[] = [
   { label: "Events", sub: "Events & participants", icon: "event", color: "#3B82F6", to: "/admin/events" },
   { label: "Schedules", sub: "Sessions by event", icon: "calendar_month", color: "#F97316", to: "/admin/schedules" },
   { label: "Schedule PDF", sub: "Upload programme PDF", icon: "picture_as_pdf", color: "#F97316", to: "/admin/schedule-pdf" },
+  { label: "UG Paper PDF", sub: "Upload presentation PDF", icon: "picture_as_pdf", color: "#F59E0B", to: "/admin/ug-paper-pdf" },
   { label: "Speakers", sub: "Speaker accounts", icon: "mic", color: "#A855F7", to: "/admin/speakers" },
   { label: "Exhibitors", sub: "Trade stalls", icon: "storefront", color: "#EF4444", to: "/admin/exhibitors" },
   {

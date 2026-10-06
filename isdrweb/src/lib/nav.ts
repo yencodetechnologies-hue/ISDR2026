@@ -64,6 +64,7 @@ const NAV: Record<Role, NavSection[]> = {
         { label: "Accommodation", icon: "hotel", color: "#0EA5E9", to: "/participant/accommodation" },
         { label: "Exhibitors", icon: "storefront", color: "#EF4444", to: "/participant/exhibitors" },
         { label: "Brochure", icon: "menu_book", color: "#10B981", to: "/brochure" },
+        { label: "UG Paper", icon: "picture_as_pdf", color: "#F59E0B", to: "/participant/ug-paper" },
       ],
     },
     {
@@ -84,6 +85,7 @@ const NAV: Record<Role, NavSection[]> = {
         { label: "Events", icon: "event", color: "#3B82F6", to: "/admin/events" },
         { label: "Schedules", icon: "calendar_month", color: "#F97316", to: "/admin/schedules", match: ["/schedule"] },
         { label: "Schedule PDF", icon: "picture_as_pdf", color: "#F97316", to: "/admin/schedule-pdf" },
+        { label: "UG Paper PDF", icon: "picture_as_pdf", color: "#F59E0B", to: "/admin/ug-paper-pdf" },
         { label: "Speakers", icon: "mic", color: "#A855F7", to: "/admin/speakers" },
         { label: "Exhibitors", icon: "storefront", color: "#EF4444", to: "/admin/exhibitors" },
         { label: "Preconference", icon: "school", color: "#6366F1", to: "/admin/preconference" },

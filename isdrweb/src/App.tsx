@@ -42,6 +42,8 @@ import ManageSpeakers from "./pages/admin/Speakers";
 import ManageExhibitors from "./pages/admin/Exhibitors";
 import ManagePreconference from "./pages/admin/Preconference";
 import ManageSchedulePdf from "./pages/admin/SchedulePdf";
+import ManageUgPaperPdf from "./pages/admin/UgPaperPdf";
+import UgPaperPdf from "./pages/common/UgPaperPdf";
 import ManageBanner from "./pages/admin/Banner";
 import {
   ManageTicker,
@@ -110,6 +112,7 @@ export default function App() {
             <Route path="/participant/committee" element={<Committee />} />
             <Route path="/participant/about" element={<AboutIsdr />} />
             <Route path="/participant/preconference" element={<ParticipantPreconference />} />
+            <Route path="/participant/ug-paper" element={<UgPaperPdf />} />
             <Route path="/participant/conference" element={<StudentConference />} />
             <Route path="/participant/accommodation" element={<Accommodation />} />
             <Route path="/participant/awards" element={<Awards />} />
@@ -143,6 +146,7 @@ export default function App() {
             <Route path="/admin/events/:id" element={<EventDetail />} />
             <Route path="/admin/schedules" element={<ScheduleList />} />
             <Route path="/admin/schedule-pdf" element={<ManageSchedulePdf />} />
+            <Route path="/admin/ug-paper-pdf" element={<ManageUgPaperPdf />} />
             <Route path="/admin/schedules/event/:eventId" element={<EventSchedules />} />
             <Route path="/admin/schedules/new" element={<ScheduleEditor />} />
             <Route path="/admin/speakers" element={<ManageSpeakers />} />

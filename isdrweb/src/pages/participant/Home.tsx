@@ -19,7 +19,7 @@ import { loadAllSchedules, type ScheduleItem } from "@/lib/schedules";
 import { PARTICIPANT_MODULES } from "./modules";
 
 import { useAppLayout } from "@/lib/appLayout";
-import ParticipantHomeApp from "./ParticipantHomeApp";
+import ParticipantHomeApp, { UgPaperHomeRow } from "./ParticipantHomeApp";
 
 const DAY_SHOWN = 3;
 
@@ -244,7 +244,10 @@ function ParticipantHomeWeb() {
 
       {/* Everything else */}
       <SectionTitle>Explore</SectionTitle>
-      <ModuleGrid items={PARTICIPANT_MODULES} />
+      <UgPaperHomeRow />
+      <div className="mt-4">
+        <ModuleGrid items={PARTICIPANT_MODULES} />
+      </div>
 
       {/* Follow us */}
       <div className="card mt-8 flex flex-wrap items-center gap-4 px-6 py-5">

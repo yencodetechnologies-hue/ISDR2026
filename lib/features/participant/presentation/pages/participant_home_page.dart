@@ -32,6 +32,7 @@ import '../../../admin/presentation/pages/brochure_page.dart';
 import '../../../../core/widgets/get_live_photo_button.dart';
 import 'speakers_page.dart';
 import 'program_schedule_page.dart';
+import 'ug_paper_page.dart';
 import 'participant_qa_page.dart';
 import 'participant_polls_page.dart';
 import 'participant_exhibitors_page.dart';
@@ -712,6 +713,15 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       color: const Color(0xFF6366F1),
       onTap: () => _onTileTap('About ISDR'),
     ),
+    _ParticipantModuleItem(
+      label: 'UG Paper',
+      icon: Icons.picture_as_pdf_rounded,
+      color: const Color(0xFFF59E0B),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const UgPaperPage()),
+      ),
+    ),
   ];
 
   /// Opens the same "More" overflow page the module grid's own More tile
@@ -1101,6 +1111,8 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                     ),
                     child: _buildModuleGrid(_allModuleItems),
                   ),
+                  const SizedBox(height: 12),
+                  _buildUgPaperRow(),
                   const SizedBox(height: 20),
 
                   // YouTube live capsule, admin banner + Today's Schedule (day tabs + list)
@@ -2436,6 +2448,94 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Full-width third row under the two-row module grid.
+  Widget _buildUgPaperRow() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const UgPaperPage()),
+        ),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF78350F), Color(0xFFB45309)],
+            ),
+            border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFB45309).withValues(alpha: 0.35),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'UG Paper and E-Poster Presentation',
+                        style: GoogleFonts.outfit(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          height: 1.15,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'View the presentation PDF',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 16,
+                    color: Color(0xFFB45309),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
