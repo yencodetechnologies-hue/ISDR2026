@@ -45,7 +45,7 @@ function PaperPosterPdfAdminApp() {
 
   return (
     <div className="min-h-screen bg-bg text-white">
-      <AppBar title="Paper & Poster" titleClassName="text-[18px] font-bold" />
+      <AppBar title="Paper & E-Poster" titleClassName="text-[18px] font-bold" />
       <input
         ref={fileRef}
         type="file"
@@ -79,12 +79,12 @@ function PaperPosterPdfAdminApp() {
                   {meta.url}
                 </a>
               ) : (
-                <div className="text-xs text-muted">Upload a PDF to show it in Paper & Poster</div>
+                <div className="text-xs text-muted">Upload a PDF to show it in Paper & E-Poster</div>
               )}
             </div>
           </div>
           <p className="text-[13px] leading-relaxed text-muted">
-            Participants open this file from Paper & Poster on the home grid. Choose a PDF to replace it. The server
+            Participants open this file from Paper & E-Poster on the home grid. Choose a PDF to replace it. The server
             compresses the file before it is stored on Cloudinary.
           </p>
           <button
@@ -120,7 +120,7 @@ function ManagePaperPosterPdfWeb() {
 
   return (
     <Page
-      title="Paper & Poster"
+      title="Paper & E-Poster"
       subtitle="Upload presentation PDF"
       width={760}
       actions={
@@ -147,7 +147,7 @@ function ManagePaperPosterPdfWeb() {
           <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-accent/20 bg-accent/5 p-3.5 text-sm">
             <Icon name="info" outline size={18} color="#60A5FA" />
             <span className="text-white/70">
-              Paper & Poster on the participant home opens this PDF from Cloudinary. Upload a PDF to publish it, or
+              Paper & E-Poster on the participant home opens this PDF from Cloudinary. Upload a PDF to publish it, or
               upload again to replace it. The file is compressed before upload when Ghostscript is available.
             </span>
           </div>

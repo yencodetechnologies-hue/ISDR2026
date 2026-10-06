@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import '../../../../core/services/api_service.dart';
 
-/// Paper and poster presentation PDF loaded from Cloudinary.
+/// Paper and e-poster presentation PDF loaded from Cloudinary.
 class PaperPosterPage extends StatefulWidget {
   const PaperPosterPage({super.key});
 
@@ -99,7 +99,7 @@ class _PaperPosterPageState extends State<PaperPosterPage> {
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
-          'Paper and Poster Presentation',
+          'Paper and E-Poster Presentation',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w700,

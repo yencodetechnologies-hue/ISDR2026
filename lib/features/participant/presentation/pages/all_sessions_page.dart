@@ -159,20 +159,7 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
       if (_day == null) return true;
       return start is DateTime && _sameDay(start, _day!);
     }).toList();
-    list.sort((a, b) {
-      final as = a['start'];
-      final bs = b['start'];
-      if (as is! DateTime && bs is! DateTime) return 0;
-      if (as is! DateTime) return 1;
-      if (bs is! DateTime) return -1;
-      final day = DateTime(as.year, as.month, as.day)
-          .compareTo(DateTime(bs.year, bs.month, bs.day));
-      if (day != 0) return day;
-      final aTime = a['hasTime'] == true;
-      final bTime = b['hasTime'] == true;
-      if (aTime != bTime) return aTime ? -1 : 1;
-      return as.compareTo(bs);
-    });
+    list.sort(compareParticipantItems);
     return list;
   }
 
@@ -205,55 +192,21 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
           ),
         );
       }
-      final halls = <String, List<Map<String, dynamic>>>{};
-      for (final item in byDay[day]!) {
-        final schedule = Map<String, dynamic>.from(item['schedule'] as Map);
-        final hall = schedule['hall']?.toString().trim() ?? '';
-        halls.putIfAbsent(hall.isEmpty ? 'Other' : hall, () => []).add(item);
-      }
-      final hallNames = halls.keys.toList()
-        ..sort((a, b) => programmeHallRank(a).compareTo(programmeHallRank(b)));
-      for (final hall in hallNames) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(top: 2, bottom: 8),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.location_on_rounded,
-                  size: 14,
-                  color: Color(0xFF93C5FD),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    hall,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF93C5FD),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-        for (final item in halls[hall]!) {
-          widgets.add(_SessionCard(item: item));
-        }
-      }
+      _addHallRuns(widgets, byDay[day]!);
     }
     if (undated.isNotEmpty && _day == null) {
-      final halls = <String, List<Map<String, dynamic>>>{};
-      for (final item in undated) {
-        final schedule = Map<String, dynamic>.from(item['schedule'] as Map);
-        final hall = schedule['hall']?.toString().trim() ?? '';
-        halls.putIfAbsent(hall.isEmpty ? 'Other' : hall, () => []).add(item);
-      }
-      final hallNames = halls.keys.toList()
-        ..sort((a, b) => programmeHallRank(a).compareTo(programmeHallRank(b)));
-      for (final hall in hallNames) {
+      _addHallRuns(widgets, undated);
+    }
+    return widgets;
+  }
+
+  /// Hall heading whenever the hall changes, keeping the admin S.No order.
+  void _addHallRuns(List<Widget> widgets, List<Map<String, dynamic>> items) {
+    String? lastHall;
+    for (final item in items) {
+      final hall = sessionHall(item);
+      if (hall != lastHall) {
+        lastHall = hall;
         widgets.add(
           Padding(
             padding: const EdgeInsets.only(top: 2, bottom: 8),
@@ -279,12 +232,9 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
             ),
           ),
         );
-        for (final item in halls[hall]!) {
-          widgets.add(_SessionCard(item: item));
-        }
       }
+      widgets.add(_SessionCard(item: item));
     }
-    return widgets;
   }
 
   String get _eventTitle {

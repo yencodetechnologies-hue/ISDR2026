@@ -35,7 +35,7 @@ export const PARTICIPANT_APP_MODULES: AppModule[] = [
   { label: "Favorites", icon: "star", color: "#E11D48", to: "/participant/favorites" },
   { label: "Brochure", icon: "menu_book", color: "#10B981", to: "/brochure" },
   { label: "Help & Support", icon: "help", color: "#06B6D4", to: "/support" },
-  { label: "Paper & Poster", icon: "picture_as_pdf", color: "#EA580C", to: "/participant/paper-poster" },
+  { label: "Paper & E-Poster", icon: "picture_as_pdf", color: "#EA580C", to: "/participant/paper-poster" },
   { label: "Preconference", icon: "school", color: "#6366F1", to: "/participant/preconference" },
   { label: "Certificate", icon: "workspace_premium", color: "#F59E0B", to: "/participant/certificate" },
   { label: "Exhibitors", icon: "storefront", color: "#EF4444", to: "/participant/exhibitors" },
@@ -45,7 +45,7 @@ export const PARTICIPANT_APP_MODULES: AppModule[] = [
   { label: "Accommodation", icon: "hotel", color: "#0EA5E9", to: "/participant/accommodation" },
   { label: "Awards", icon: "emoji_events", color: "#F59E0B", to: "/participant/awards" },
   { label: "About", icon: "menu_book", color: "#6366F1", to: "/participant/about" },
-  { label: "UG Paper", icon: "picture_as_pdf", color: "#F59E0B", to: "/participant/ug-paper" },
+  { label: "UG PAPER &\nE-POSTER", icon: "picture_as_pdf", color: "#F59E0B", to: "/participant/ug-paper" },
   { label: "Hall Arrangement", icon: "meeting_room", color: "#14B8A6", to: "/participant/hall-arrangement" },
 ];
 

@@ -23,7 +23,7 @@ export const PARTICIPANT_MODULES: ModuleItem[] = [
   { label: "Favorites", sub: "Your saved sessions", icon: "star", color: "#E11D48", to: "/participant/favorites" },
   { label: "Brochure", sub: "Conference brochure", icon: "menu_book", color: "#10B981", to: "/brochure" },
   {
-    label: "UG Paper",
+    label: "UG PAPER & E-POSTER",
     sub: "Papers and e-posters",
     icon: "picture_as_pdf",
     color: "#F59E0B",
@@ -46,7 +46,7 @@ export const PARTICIPANT_MODULES: ModuleItem[] = [
   },
   { label: "Exhibitors", sub: "Trade stalls", icon: "storefront", color: "#EF4444", to: "/participant/exhibitors" },
   { label: "Q/A", sub: "Questions & answers", icon: "question_answer", color: "#3B82F6", to: "/participant/qa" },
-  { label: "Paper & Poster", sub: "Presentation PDF", icon: "picture_as_pdf", color: "#EA580C", to: "/participant/paper-poster" },
+  { label: "Paper & E-Poster", sub: "Presentation PDF", icon: "picture_as_pdf", color: "#EA580C", to: "/participant/paper-poster" },
   { label: "Conference", sub: "Student conference", icon: "school", color: "#2563EB", to: "/participant/conference" },
   { label: "Accommodation", sub: "Stay & services", icon: "hotel", color: "#0EA5E9", to: "/participant/accommodation" },
   { label: "Awards", sub: "Conference awards", icon: "emoji_events", color: "#F59E0B", to: "/participant/awards" },

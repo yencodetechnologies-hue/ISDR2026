@@ -100,12 +100,20 @@ class _SpeakersPageState extends State<SpeakersPage> {
         sessions.add(_Session(s, event, start, end));
       }
     }
-    sessions.sort((a, b) {
-      if (a.start == null && b.start == null) return 0;
-      if (a.start == null) return 1;
-      if (b.start == null) return -1;
-      return a.start!.compareTo(b.start!);
-    });
+    sessions.sort(
+      (a, b) => compareParticipantItems(
+        {
+          'schedule': a.schedule,
+          'start': a.start,
+          'hasTime': a.start != null && a.end != null,
+        },
+        {
+          'schedule': b.schedule,
+          'start': b.start,
+          'hasTime': b.start != null && b.end != null,
+        },
+      ),
+    );
 
     // Group by speaker name; insertion order = order of their first session.
     // A panel stored as "A · B" is listed once for each person.

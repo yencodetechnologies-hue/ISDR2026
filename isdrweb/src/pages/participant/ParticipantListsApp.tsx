@@ -33,7 +33,7 @@ export function UpcomingSchedulesApp() {
     if (res.error) return setError(res.error || "Could not load schedules");
     const now = new Date();
     setError(null);
-    setItems(res.items.filter((i) => i.end > now).sort((a, b) => a.start.getTime() - b.start.getTime()));
+    setItems(res.items.filter((i) => i.end > now).sort(compareScheduleItems));
   }, []);
 
   useEffect(() => {
@@ -78,8 +78,8 @@ export function UpcomingSchedulesApp() {
                     : `${weekdayLong(group.day)}, ${group.day.getDate()} ${monthShort(group.day)}`}
                 </div>
                 <div className="space-y-4">
-                  {groupByHall(group.list, (it) => String(it.schedule.hall ?? "")).map((hallGroup) => (
-                    <div key={hallGroup.hall}>
+                  {groupByHall(group.list, (it) => String(it.schedule.hall ?? "")).map((hallGroup, hallIndex) => (
+                    <div key={`${hallGroup.hall}-${hallIndex}`}>
                       <div className="mb-2 flex items-center gap-1.5 font-inter text-[12px] font-bold text-[#93C5FD]">
                         <Icon name="location_on" size={14} />
                         {hallGroup.hall}
@@ -268,8 +268,8 @@ export function AllSessionsApp() {
                   {weekdayLong(group.day)}, {group.day.getDate()} {monthShort(group.day)}
                 </div>
               )}
-              {groupByHall(group.list, (it) => String(it.schedule.hall ?? "")).map((hallGroup) => (
-                <div key={hallGroup.hall} className="mb-4">
+              {groupByHall(group.list, (it) => String(it.schedule.hall ?? "")).map((hallGroup, hallIndex) => (
+                <div key={`${hallGroup.hall}-${hallIndex}`} className="mb-4">
                   <div className="mb-2 flex items-center gap-1.5 font-inter text-[12px] font-bold text-[#93C5FD]">
                     <Icon name="location_on" size={14} />
                     {hallGroup.hall}
@@ -329,8 +329,8 @@ export function AllSessionsApp() {
             </div>
           ))}
           {showUndated &&
-            groupByHall(undated, (o) => String(o.schedule.hall ?? "")).map((hallGroup) => (
-              <div key={`open-${hallGroup.hall}`} className="mb-4">
+            groupByHall(undated, (o) => String(o.schedule.hall ?? "")).map((hallGroup, hallIndex) => (
+              <div key={`open-${hallGroup.hall}-${hallIndex}`} className="mb-4">
                 <div className="mb-2 flex items-center gap-1.5 font-inter text-[12px] font-bold text-[#93C5FD]">
                   <Icon name="location_on" size={14} />
                   {hallGroup.hall}

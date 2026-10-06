@@ -90,7 +90,12 @@ class _UpcomingSchedulesPageState extends State<UpcomingSchedulesPage> {
         items.add(_Item(s, event, start, end));
       }
     }
-    items.sort((a, b) => a.start.compareTo(b.start));
+    items.sort(
+      (a, b) => compareParticipantItems(
+        {'schedule': a.schedule, 'start': a.start, 'hasTime': true},
+        {'schedule': b.schedule, 'start': b.start, 'hasTime': true},
+      ),
+    );
 
     if (!mounted) return;
     setState(() {
@@ -195,44 +200,39 @@ class _UpcomingSchedulesPageState extends State<UpcomingSchedulesPage> {
           ),
         ),
       );
-      final halls = <String, List<_Item>>{};
+      String? lastHall;
       for (final item in byDay[day]!) {
         final hall = item.schedule['hall']?.toString().trim() ?? '';
-        halls.putIfAbsent(hall.isEmpty ? 'Other' : hall, () => []).add(item);
-      }
-      final hallNames = halls.keys.toList()
-        ..sort(
-          (a, b) => programmeHallRank(a).compareTo(programmeHallRank(b)),
-        );
-      for (final hall in hallNames) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(top: 4, bottom: 8),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.location_on_rounded,
-                  size: 14,
-                  color: Color(0xFF93C5FD),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    hall,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF93C5FD),
+        final label = hall.isEmpty ? 'Other' : hall;
+        if (label != lastHall) {
+          lastHall = label;
+          widgets.add(
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 8),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.location_on_rounded,
+                    size: 14,
+                    color: Color(0xFF93C5FD),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF93C5FD),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-        for (final item in halls[hall]!) {
-          widgets.add(_row(item, now));
+          );
         }
+        widgets.add(_row(item, now));
       }
     }
     return widgets;

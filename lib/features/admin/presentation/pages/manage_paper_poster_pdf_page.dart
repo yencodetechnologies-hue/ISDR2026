@@ -75,7 +75,7 @@ class _ManagePaperPosterPdfPageState extends State<ManagePaperPosterPdfPage> {
       backgroundColor: DarkColors.bg,
       appBar: buildDarkAppBar(
         title: Text(
-          'Paper & Poster',
+          'Paper & E-Poster',
           style: GoogleFonts.outfit(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -143,7 +143,7 @@ class _ManagePaperPosterPdfPageState extends State<ManagePaperPosterPdfPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Participants open this file from Paper & Poster on the home grid. Choose a PDF to replace it.',
+                  'Participants open this file from Paper & E-Poster on the home grid. Choose a PDF to replace it.',
                   style: GoogleFonts.inter(fontSize: 13, color: DarkColors.muted, height: 1.4),
                 ),
                 const SizedBox(height: 16),

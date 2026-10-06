@@ -410,12 +410,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
           start.month == date.month &&
           start.day == date.day;
     }).toList();
-    items.sort((a, b) {
-      final aTime = a['hasTime'] == true;
-      final bTime = b['hasTime'] == true;
-      if (aTime != bTime) return aTime ? -1 : 1;
-      return (a['start'] as DateTime).compareTo(b['start'] as DateTime);
-    });
+    items.sort(compareParticipantItems);
     return items;
   }
 
@@ -700,7 +695,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       ),
     ),
     _ParticipantModuleItem(
-      label: 'Paper &\nPoster',
+      label: 'Paper &\nE-Poster',
       icon: Icons.picture_as_pdf_rounded,
       color: const Color(0xFFEA580C),
       onTap: () => Navigator.push(
@@ -742,7 +737,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       onTap: () => _onTileTap('About ISDR'),
     ),
     _ParticipantModuleItem(
-      label: 'UG Paper',
+      label: 'UG PAPER &\nE-POSTER',
       icon: Icons.picture_as_pdf_rounded,
       color: const Color(0xFFF59E0B),
       onTap: () => Navigator.push(
@@ -792,7 +787,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
           items: [
             ...overflow.map(
               (item) => _ModuleSheetItem(
-                label: item.label.replaceAll('\n', ' '),
+                label: item.label,
                 icon: item.icon,
                 color: item.color,
                 onTap: item.onTap,
@@ -2720,7 +2715,7 @@ class _MoreModulesPage extends StatelessWidget {
                 crossAxisCount: 4,
                 mainAxisSpacing: 6,
                 crossAxisSpacing: 2,
-                childAspectRatio: 0.95,
+                childAspectRatio: 0.82,
               ),
               itemBuilder: (context, index) {
                 final item = items[index];
@@ -2744,12 +2739,12 @@ class _MoreModulesPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        item.label.replaceAll('\n', ' '),
+                        item.label,
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          fontSize: 10.5,
+                          fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: Colors.white.withValues(alpha: 0.9),
                           height: 1.15,

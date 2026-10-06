@@ -25,7 +25,7 @@ export const ADMIN_APP_MODULES: AppModule[] = [
   { label: "Event Schedules", icon: "event_note", color: "#22C55E", to: "/admin/schedules" },
   { label: "Schedule PDF", icon: "picture_as_pdf", color: "#F97316", to: "/admin/schedule-pdf" },
   { label: "UG Paper PDF", icon: "picture_as_pdf", color: "#F59E0B", to: "/admin/ug-paper-pdf" },
-  { label: "Paper & Poster", icon: "picture_as_pdf", color: "#EA580C", to: "/admin/paper-poster" },
+  { label: "Paper & E-Poster", icon: "picture_as_pdf", color: "#EA580C", to: "/admin/paper-poster" },
   { label: "Speakers", icon: "groups", color: "#EC4899", to: "/admin/speakers" },
   { label: "Scan Inclusion", icon: "qr_code_scanner", color: "#F59E0B", to: "/staff/events" },
   { label: "Q&A & Polls", icon: "forum", color: "#06B6D4", to: "/admin/engagement" },

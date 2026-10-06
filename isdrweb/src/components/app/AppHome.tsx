@@ -288,7 +288,7 @@ function ModuleTile({ m, onTap }: { m: AppModule; onTap: () => void }) {
       >
         <Icon name={m.icon} size={22} />
       </span>
-      <span className="mt-1 line-clamp-2 h-6 px-0.5 text-center text-[10.5px] font-semibold leading-[1.15] text-white/90">
+      <span className="mt-1 line-clamp-2 h-6 whitespace-pre-line px-0.5 text-center text-[10px] font-semibold leading-[1.15] text-white/90">
         {m.label}
       </span>
     </button>

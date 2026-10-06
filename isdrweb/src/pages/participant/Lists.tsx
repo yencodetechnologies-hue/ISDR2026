@@ -69,8 +69,8 @@ function SessionsByHall({
   const halls = groupByHall(list, (it) => String(it.schedule.hall ?? ""));
   return (
     <div className="space-y-5">
-      {halls.map((g) => (
-        <div key={g.hall}>
+      {halls.map((g, i) => (
+        <div key={`${g.hall}-${i}`}>
           <HallHeading hall={g.hall} count={g.list.length} />
           <div className="space-y-2.5">
             {g.list.map((it) => (

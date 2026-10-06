@@ -85,23 +85,6 @@ export async function loadSchedule(eventId: string, scheduleId: string) {
 export const scheduleHref = (item: { event: any; schedule: any }) =>
   `/schedule?e=${encodeURIComponent(idOf(item.event))}&s=${encodeURIComponent(idOf(item.schedule))}`;
 
-/** Halls in scientific-programme order. Any other hall follows these. */
-export const PROGRAMME_HALLS = [
-  "Dr J G Kannappan Hall",
-  "Dr M Rahmatullah Hall",
-  "Dr C V Subbarao Hall",
-  "SBDCH Auditorium",
-  "SBDCH Auditorium Lecture Hall 4",
-  "Oral Surgery Seminar Hall",
-  "SBDCH Auditorium Halls 1–7",
-  "E-Poster Presentations",
-];
-
-const hallRank = (hall: string) => {
-  const i = PROGRAMME_HALLS.indexOf(hall);
-  return i === -1 ? PROGRAMME_HALLS.length : i;
-};
-
 function savedOrder(schedule: any): number | null {
   const n = Number(schedule?.sortOrder);
   return Number.isInteger(n) && n > 0 ? n : null;
@@ -122,18 +105,19 @@ export function compareScheduleItems(a: ScheduleItem, b: ScheduleItem): number {
   return String(idOf(a.schedule)).localeCompare(String(idOf(b.schedule)));
 }
 
-/** Keep the incoming order inside each hall. Halls follow the programme order. */
+/**
+ * Consecutive sessions that share a hall, in the order they were given.
+ * Callers pass the admin S.No order. A hall is not pulled above an earlier serial.
+ */
 export function groupByHall<T>(items: T[], hallOf: (item: T) => string): { hall: string; list: T[] }[] {
-  const groups = new Map<string, T[]>();
+  const groups: { hall: string; list: T[] }[] = [];
   for (const item of items) {
     const hall = hallOf(item).trim() || "Other";
-    const list = groups.get(hall);
-    if (list) list.push(item);
-    else groups.set(hall, [item]);
+    const last = groups[groups.length - 1];
+    if (last && last.hall === hall) last.list.push(item);
+    else groups.push({ hall, list: [item] });
   }
-  return [...groups.entries()]
-    .sort((a, b) => hallRank(a[0]) - hallRank(b[0]) || a[0].localeCompare(b[0]))
-    .map(([hall, list]) => ({ hall, list }));
+  return groups;
 }
 
 const PLACEHOLDER_SPEAKER = /^(—|-|speaker not listed)$/i;

@@ -84,7 +84,7 @@ const List<_ModuleVisual> _predefinedVisuals = [
   _ModuleVisual('Event Schedules', Icons.event_note_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Schedule PDF', Icons.picture_as_pdf_rounded, group: 'ACCOUNT'),
   _ModuleVisual('UG Paper PDF', Icons.picture_as_pdf_rounded, group: 'ACCOUNT'),
-  _ModuleVisual('Paper & Poster', Icons.picture_as_pdf_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('Paper & E-Poster', Icons.picture_as_pdf_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Hall Arrangement', Icons.meeting_room_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Speakers', Icons.groups_rounded, group: 'ACCOUNT'),
   _ModuleVisual(

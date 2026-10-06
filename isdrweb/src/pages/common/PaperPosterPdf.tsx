@@ -5,7 +5,7 @@ import { get } from "@/lib/api";
 
 const EMPTY = "No presentation PDF has been uploaded yet";
 
-/** Loads the paper and poster PDF from Cloudinary and renders it page by page. */
+/** Loads the paper and e-poster PDF from Cloudinary and renders it page by page. */
 export default function PaperPosterPdf() {
   const [pages, setPages] = useState<string[]>([]);
   const [total, setTotal] = useState(0);
@@ -69,7 +69,7 @@ export default function PaperPosterPdf() {
     return (
       <div className="min-h-screen bg-[#0F172A]">
         <AppBar
-          title="Paper and Poster Presentation"
+          title="Paper and E-Poster Presentation"
           titleClassName="text-[18px] font-bold"
           actions={
             <span className="mr-3 rounded-xl bg-black/25 px-2.5 py-1 text-[13px] font-bold">
@@ -94,7 +94,7 @@ ${error}`}</div>
 
   return (
     <Page
-      title="Paper and Poster Presentation"
+      title="Paper and E-Poster Presentation"
       subtitle="Presentation PDF"
       back={false}
       width={960}

@@ -737,7 +737,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'Event Schedules',
       'Schedule PDF',
       'UG Paper PDF',
-      'Paper & Poster',
+      'Paper & E-Poster',
       'Speakers',
       'Scan Inclusion',
       'Q&A & Polls',
