@@ -2272,6 +2272,9 @@ class ApiService {
     // One entry per date: {date: yyyy-MM-dd, fromTime: HH:mm, toTime: HH:mm}
     required List<Map<String, String>> slots,
     String description = '',
+    bool hideDate = false,
+    bool hideFromTime = false,
+    bool hideToTime = false,
   }) async {
     try {
       final formData = FormData.fromMap({
@@ -2281,6 +2284,9 @@ class ApiService {
         'hall': hall,
         'slots': jsonEncode(slots),
         'description': description,
+        'hideDate': hideDate,
+        'hideFromTime': hideFromTime,
+        'hideToTime': hideToTime,
       });
       final response = await _dio.post(
         ApiConfig.managedEventSchedules(eventId),
@@ -2310,6 +2316,9 @@ class ApiService {
     String hall = '',
     required Map<String, String> slot,
     String description = '',
+    bool hideDate = false,
+    bool hideFromTime = false,
+    bool hideToTime = false,
   }) async {
     try {
       final response = await _dio.put(
@@ -2321,6 +2330,9 @@ class ApiService {
           'hall': hall,
           ...slot,
           'description': description,
+          'hideDate': hideDate,
+          'hideFromTime': hideFromTime,
+          'hideToTime': hideToTime,
         },
       );
       return {

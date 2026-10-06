@@ -25,6 +25,9 @@ const toDto = (s) => ({
   date: s.date,
   fromTime: s.fromTime,
   toTime: s.toTime,
+  hideDate: !!s.hideDate,
+  hideFromTime: !!s.hideFromTime,
+  hideToTime: !!s.hideToTime,
   description: s.description || '',
   updatedAt: s.updatedAt || null,
 });
@@ -107,6 +110,10 @@ function readScheduleForm(event, body) {
   const description = String(body.description || '').trim();
   const rawSlots = readSlots(body);
   const packageIds = readPackageIds(body);
+  const flag = (value) => value === true || value === 'true' || value === 1 || value === '1';
+  const hideDate = flag(body.hideDate);
+  const hideFromTime = flag(body.hideFromTime);
+  const hideToTime = flag(body.hideToTime);
 
   // An empty list means every package can see the session.
   const eventPackageIds = new Set((event.packages || []).map((p) => String(p.id)));
@@ -146,7 +153,7 @@ function readScheduleForm(event, body) {
     seenDays.add(picked);
     slots.push({ date, fromTime: hasFrom ? fromTime : '', toTime: hasTo ? toTime : '' });
   }
-  return { speakerName, scheduleName, hall, description, packageIds, slots };
+  return { speakerName, scheduleName, hall, description, packageIds, hideDate, hideFromTime, hideToTime, slots };
 }
 
 // POST /api/managed-events/:id/schedules  { speakerName, packageIds, scheduleName, hall, slots, description }
@@ -171,6 +178,9 @@ const createSchedule = async (req, res) => {
         date: slot.date,
         fromTime: slot.fromTime,
         toTime: slot.toTime,
+        hideDate: form.hideDate,
+        hideFromTime: form.hideFromTime,
+        hideToTime: form.hideToTime,
         description: form.description,
       }))
     );
@@ -211,6 +221,9 @@ const updateSchedule = async (req, res) => {
       date: slot.date,
       fromTime: slot.fromTime,
       toTime: slot.toTime,
+      hideDate: form.hideDate,
+      hideFromTime: form.hideFromTime,
+      hideToTime: form.hideToTime,
       description: form.description,
     });
     await schedule.save();

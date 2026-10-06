@@ -138,7 +138,7 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
         now.isBefore(window.end);
     final isPast = window != null && now.isAfter(window.end);
 
-    final calendarDay = _calendarDay();
+    final calendarDay = scheduleDateVisible(_s) ? _calendarDay() : null;
     final dateTile = calendarDay == null
         ? null
         : _InfoTile(
@@ -147,15 +147,18 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
             label: 'DATE',
             value: DateFormat('EEEE,\nd MMM yyyy').format(calendarDay),
           );
-    final timeTile = window == null
+    final shownFrom = visibleFromTime(_s);
+    final shownTo = visibleToTime(_s);
+    final timeTile = window == null || (shownFrom.isEmpty && shownTo.isEmpty)
         ? null
         : _InfoTile(
             icon: Icons.access_time_rounded,
             color: const Color(0xFF14B8A6),
             label: 'TIME',
-            value:
-                '${DateFormat('h:mm a').format(window.start)} -\n'
-                '${DateFormat('h:mm a').format(window.end)}',
+            value: [
+              if (shownFrom.isNotEmpty) DateFormat('h:mm a').format(window.start),
+              if (shownTo.isNotEmpty) DateFormat('h:mm a').format(window.end),
+            ].join(' -\n'),
           );
     final hallTile = hall.isEmpty
         ? null

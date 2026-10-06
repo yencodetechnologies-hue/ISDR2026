@@ -35,6 +35,10 @@ const eventScheduleSchema = new mongoose.Schema(
     date: { type: Date, default: null },
     fromTime: { type: String, default: '', trim: true }, // "HH:mm" or ""
     toTime: { type: String, default: '', trim: true }, // "HH:mm" or ""
+    // When set, participants still store the value but do not see that box.
+    hideDate: { type: Boolean, default: false },
+    hideFromTime: { type: Boolean, default: false },
+    hideToTime: { type: Boolean, default: false },
     description: { type: String, default: '', trim: true },
   },
   { timestamps: true }

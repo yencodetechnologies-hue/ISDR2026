@@ -165,6 +165,12 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
       if (as is! DateTime && bs is! DateTime) return 0;
       if (as is! DateTime) return 1;
       if (bs is! DateTime) return -1;
+      final day = DateTime(as.year, as.month, as.day)
+          .compareTo(DateTime(bs.year, bs.month, bs.day));
+      if (day != 0) return day;
+      final aTime = a['hasTime'] == true;
+      final bTime = b['hasTime'] == true;
+      if (aTime != bTime) return aTime ? -1 : 1;
       return as.compareTo(bs);
     });
     return list;
@@ -198,6 +204,10 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
             ),
           ),
         );
+      }
+      var serial = 1;
+      for (final item in byDay[day]!) {
+        item['serial'] = serial++;
       }
       final halls = <String, List<Map<String, dynamic>>>{};
       for (final item in byDay[day]!) {
@@ -239,6 +249,10 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
       }
     }
     if (undated.isNotEmpty && _day == null) {
+      var serial = 1;
+      for (final item in undated) {
+        item['serial'] = serial++;
+      }
       final halls = <String, List<Map<String, dynamic>>>{};
       for (final item in undated) {
         final schedule = Map<String, dynamic>.from(item['schedule'] as Map);
@@ -508,11 +522,14 @@ class _SessionCard extends StatelessWidget {
     final end = item['end'];
     final fromRaw = s['fromTime']?.toString().trim() ?? '';
     final toRaw = s['toTime']?.toString().trim() ?? '';
+    final shownFrom = visibleFromTime(s);
+    final shownTo = visibleToTime(s);
     final hasTime =
         fromRaw.isNotEmpty &&
         toRaw.isNotEmpty &&
         start is DateTime &&
         end is DateTime;
+    final serial = item['serial'];
     final now = DateTime.now();
     final live = hasTime && !now.isBefore(start) && now.isBefore(end);
     final done = hasTime && !now.isBefore(end);
@@ -605,6 +622,18 @@ class _SessionCard extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (serial is int)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: Text(
+                                  '$serial',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF93C5FD),
+                                  ),
+                                ),
+                              ),
                             Expanded(
                               child: Text(
                                 s['scheduleName']?.toString() ?? '',
@@ -643,11 +672,13 @@ class _SessionCard extends StatelessWidget {
                           runSpacing: 4,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            if (hasTime)
+                            if (shownFrom.isNotEmpty || shownTo.isNotEmpty)
                               meta(
                                 Icons.access_time_rounded,
-                                '${DateFormat('h:mm a').format(start)} - '
-                                '${DateFormat('h:mm a').format(end)}',
+                                [
+                                  if (shownFrom.isNotEmpty) _clock(shownFrom),
+                                  if (shownTo.isNotEmpty) _clock(shownTo),
+                                ].join(' - '),
                               ),
                             if (hall.isNotEmpty)
                               meta(Icons.location_on_rounded, hall),
@@ -667,6 +698,13 @@ class _SessionCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static String _clock(String hhmm) {
+    final p = hhmm.split(':');
+    final h = int.tryParse(p[0]) ?? 0;
+    final m = p.length > 1 ? int.tryParse(p[1]) ?? 0 : 0;
+    return DateFormat('h:mm a').format(DateTime(2026, 1, 1, h, m));
   }
 
   Widget _placeholder() => Container(

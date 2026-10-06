@@ -1,13 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fmtTimeStr, idOf } from "@/lib/format";
+import { idOf } from "@/lib/format";
 import {
   loadFavorites,
   loadReminders,
   reminderLabel,
   scheduleHref,
   setReminder,
+  participantTimeLabel,
   splitSpeakerNames,
   toggleFavorite,
   type ScheduleItem,
@@ -112,6 +113,7 @@ export function ScheduleRow({
   const now = new Date();
   const fromTime = String(s.fromTime ?? "").trim();
   const toTime = String(s.toTime ?? "").trim();
+  const clock = participantTimeLabel(s);
   const hasTime = !!(fromTime && toTime && item.start && item.end);
   const isLive = hasTime && now >= item.start && now < item.end;
   const isDone = hasTime && now >= item.end;
@@ -125,17 +127,16 @@ export function ScheduleRow({
       onClick={() => navigate(scheduleHref(item))}
       className="card card-hover group flex cursor-pointer items-stretch overflow-hidden"
     >
-      {hasTime && (
+      {clock && (
         <div className="flex w-[92px] shrink-0 flex-col justify-center border-r border-line bg-white/[0.02] px-3 py-3 text-center sm:w-[108px]">
-          {showDate && item.start && (
+          {showDate && item.start && !s.hideDate && (
             <div className="text-[10.5px] font-semibold text-muted">
               {item.start.getDate()}/{item.start.getMonth() + 1}
             </div>
           )}
           <div className="text-[13px] font-bold" style={{ color }}>
-            {fmtTimeStr(fromTime)}
+            {clock}
           </div>
-          <div className="text-[11px] text-muted">{fmtTimeStr(toTime)}</div>
         </div>
       )}
       <div className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3">

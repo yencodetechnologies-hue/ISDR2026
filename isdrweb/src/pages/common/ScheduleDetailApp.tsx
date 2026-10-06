@@ -6,14 +6,10 @@ import { Icon, Spinner, useToast } from "@/components/ui";
 import { asset } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { scheduleDay, scheduleTimes } from "@/lib/format";
-import { loadFavorites, loadSchedule, splitSpeakerNames, toggleFavorite } from "@/lib/schedules";
+import { loadFavorites, loadSchedule, participantShowsDate, participantTimeLabel, splitSpeakerNames, toggleFavorite } from "@/lib/schedules";
 
 const DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const hm = (d: Date) => {
-  const h = d.getHours();
-  return `${h % 12 || 12}:${String(d.getMinutes()).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
-};
 
 /** Dark round app-bar button (the app's _CircleButton). */
 function CircleButton({ icon, onClick, badge }: { icon: string; onClick: () => void; badge?: boolean }) {
@@ -248,7 +244,7 @@ export default function ScheduleDetailApp() {
           </div>
 
           {tiles(
-            day ? (
+            day && participantShowsDate(s) ? (
               <InfoTile
                 icon="calendar_month"
                 color="#3B82F6"
@@ -256,7 +252,9 @@ export default function ScheduleDetailApp() {
                 value={`${DAY[day.getDay()]},\n${day.getDate()} ${MON[day.getMonth()]} ${day.getFullYear()}`}
               />
             ) : null,
-            w ? <InfoTile icon="schedule" color="#14B8A6" label="TIME" value={`${hm(w.start)} -\n${hm(w.end)}`} /> : null,
+            participantTimeLabel(s) ? (
+              <InfoTile icon="schedule" color="#14B8A6" label="TIME" value={participantTimeLabel(s).replace(" - ", " -\n")} />
+            ) : null,
           )}
           {tiles(
             hall ? <InfoTile icon="apartment" color="#8B5CF6" label="HALL" value={hall} /> : null,

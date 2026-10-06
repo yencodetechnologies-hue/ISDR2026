@@ -37,16 +37,24 @@ function scheduleCalendarDay(s: any): Date | null {
   return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 
-/** Day, then start time, then end time. A later update comes after a shared slot. */
+/** Timed sessions first, by from then to. Sessions without a clock follow them. */
+function timeRank(s: any) {
+  const from = String(s.fromTime ?? "").trim();
+  if (!from) return "99:99";
+  const to = String(s.toTime ?? "").trim() || "99:99";
+  return `${from}\0${to}`;
+}
+
+/** Day, then clock. A session with no date sits after the dated days. */
 function compareSchedules(a: any, b: any) {
-  const da = scheduleCalendarDay(a)?.getTime() ?? 0;
-  const db = scheduleCalendarDay(b)?.getTime() ?? 0;
+  const da = scheduleCalendarDay(a)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+  const db = scheduleCalendarDay(b)?.getTime() ?? Number.MAX_SAFE_INTEGER;
   if (da !== db) return da - db;
-  const from = String(a.fromTime ?? "").localeCompare(String(b.fromTime ?? ""));
-  if (from) return from;
-  const to = String(a.toTime ?? "").localeCompare(String(b.toTime ?? ""));
-  if (to) return to;
-  return (parseDate(a.updatedAt)?.getTime() ?? 0) - (parseDate(b.updatedAt)?.getTime() ?? 0);
+  const time = timeRank(a).localeCompare(timeRank(b));
+  if (time) return time;
+  const name = String(a.scheduleName ?? "").localeCompare(String(b.scheduleName ?? ""));
+  if (name) return name;
+  return String(idOf(a)).localeCompare(String(idOf(b)));
 }
 
 type OrderedSchedule = { s: any; serial: number; dayKey: string; dayLabel: string };
@@ -201,9 +209,23 @@ export function ScheduleTable({
                         </span>
                       </div>
                     </td>
-                    <td className="whitespace-nowrap text-white/75">{dayOf(s)}</td>
                     <td className="whitespace-nowrap text-white/75">
-                      {s.fromTime && s.toTime ? `${fmtTimeStr(s.fromTime)} – ${fmtTimeStr(s.toTime)}` : "—"}
+                      {dayOf(s) || "—"}
+                      {s.hideDate && <span className="ml-1 text-[10px] uppercase tracking-wide text-muted">hidden</span>}
+                    </td>
+                    <td className="whitespace-nowrap text-white/75">
+                      {s.fromTime || s.toTime ? (
+                        <>
+                          {s.hideFromTime ? "—" : s.fromTime ? fmtTimeStr(s.fromTime) : "—"}
+                          {" – "}
+                          {s.hideToTime ? "—" : s.toTime ? fmtTimeStr(s.toTime) : "—"}
+                          {(s.hideFromTime || s.hideToTime) && (
+                            <span className="ml-1 text-[10px] uppercase tracking-wide text-muted">hidden</span>
+                          )}
+                        </>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     <td className="text-white/75">{s.hall || "—"}</td>
                     <td className="whitespace-nowrap text-right align-middle">
@@ -359,6 +381,28 @@ export function ScheduleEditor() {
   return useAppLayout() ? <ScheduleFormApp /> : <ScheduleEditorWeb />;
 }
 
+function HideBox({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-muted">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-3.5 w-3.5 accent-[#3B82F6]"
+      />
+      {label}
+    </label>
+  );
+}
+
 function ScheduleEditorWeb() {
   const navigate = useNavigate();
   const toast = useToast();
@@ -374,6 +418,9 @@ function ScheduleEditorWeb() {
   const [date, setDate] = useState("");
   const [fromTime, setFromTime] = useState("");
   const [toTime, setToTime] = useState("");
+  const [hideDate, setHideDate] = useState(false);
+  const [hideFromTime, setHideFromTime] = useState(false);
+  const [hideToTime, setHideToTime] = useState(false);
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -390,6 +437,9 @@ function ScheduleEditorWeb() {
       setDate(String(s.date ?? "").slice(0, 10));
       setFromTime(s.fromTime ?? "");
       setToTime(s.toTime ?? "");
+      setHideDate(!!s.hideDate);
+      setHideFromTime(!!s.hideFromTime);
+      setHideToTime(!!s.hideToTime);
       setDescription(s.description ?? "");
     });
   }, [eventId, scheduleId, toast]);
@@ -416,6 +466,9 @@ function ScheduleEditorWeb() {
       date,
       fromTime,
       toTime,
+      hideDate,
+      hideFromTime,
+      hideToTime,
       description: description.trim(),
     };
     const res = editing
@@ -485,12 +538,15 @@ function ScheduleEditorWeb() {
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Date">
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <HideBox label="Hide date" checked={hideDate} onChange={setHideDate} />
             </Field>
             <Field label="From Time">
               <Input type="time" value={fromTime} onChange={(e) => setFromTime(e.target.value)} />
+              <HideBox label="Hide from time" checked={hideFromTime} onChange={setHideFromTime} />
             </Field>
             <Field label="To Time">
               <Input type="time" value={toTime} onChange={(e) => setToTime(e.target.value)} />
+              <HideBox label="Hide to time" checked={hideToTime} onChange={setHideToTime} />
             </Field>
           </div>
           <Field label="Description">

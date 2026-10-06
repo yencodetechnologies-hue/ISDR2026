@@ -36,3 +36,21 @@ List<String> splitSpeakerNames(String? raw) {
 }
 
 String displaySpeaker(String? raw) => splitSpeakerNames(raw).join(' · ');
+
+bool scheduleFlag(Map schedule, String key) => schedule[key] == true;
+
+/// From time shown to a participant. Empty when the admin hid that box.
+String visibleFromTime(Map schedule) {
+  if (scheduleFlag(schedule, 'hideFromTime')) return '';
+  return schedule['fromTime']?.toString().trim() ?? '';
+}
+
+/// To time shown to a participant. Empty when the admin hid that box.
+String visibleToTime(Map schedule) {
+  if (scheduleFlag(schedule, 'hideToTime')) return '';
+  return schedule['toTime']?.toString().trim() ?? '';
+}
+
+bool scheduleDateVisible(Map schedule) =>
+    !scheduleFlag(schedule, 'hideDate') &&
+    (schedule['date']?.toString().trim().isNotEmpty ?? false);

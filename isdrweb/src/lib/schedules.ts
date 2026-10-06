@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { get, post } from "./api";
-import { idOf, parseDate, scheduleDay, scheduleTimes, startOfDay } from "./format";
+import { fmtTimeStr, idOf, parseDate, scheduleDay, scheduleTimes, startOfDay } from "./format";
 
 export type ScheduleItem = { schedule: any; event: any; start: Date; end: Date };
 
@@ -134,6 +134,21 @@ export function splitSpeakerNames(raw: unknown): string[] {
 }
 
 export const displaySpeaker = (raw: unknown) => splitSpeakerNames(raw).join(" · ");
+
+export const visibleFromTime = (s: any) => (s?.hideFromTime ? "" : String(s?.fromTime ?? "").trim());
+export const visibleToTime = (s: any) => (s?.hideToTime ? "" : String(s?.toTime ?? "").trim());
+
+/** Clock text for participants. A hidden from or to time is left out. */
+export function participantTimeLabel(s: any) {
+  const from = visibleFromTime(s);
+  const to = visibleToTime(s);
+  if (from && to) return `${fmtTimeStr(from)} - ${fmtTimeStr(to)}`;
+  if (from) return fmtTimeStr(from);
+  if (to) return fmtTimeStr(to);
+  return "";
+}
+
+export const participantShowsDate = (s: any) => !s?.hideDate && !!s?.date;
 
 /* Favourites (hearted schedules) */
 

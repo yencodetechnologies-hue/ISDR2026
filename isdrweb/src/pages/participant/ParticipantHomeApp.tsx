@@ -15,10 +15,11 @@ import { AppPage } from "@/components/app/AppChrome";
 import { Icon } from "@/components/ui";
 import { ReminderSheet, YoutubeLiveCapsule, tickerTextFromLines, useHomeBanner } from "@/components/widgets";
 import { get } from "@/lib/api";
-import { fmtTimeStr, sameDay } from "@/lib/format";
+import { sameDay } from "@/lib/format";
 import {
   loadAllSchedules,
   loadFavorites,
+  participantTimeLabel,
   openAsItem,
   scheduleHref,
   toggleFavorite,
@@ -318,6 +319,7 @@ export default function ParticipantHomeApp() {
                   const scheduleId = String(s.id ?? s._id ?? "");
                   const fromTime = String(s.fromTime ?? "");
                   const toTime = String(s.toTime ?? "");
+                  const clock = participantTimeLabel(s);
                   const hasTime = !!(fromTime && toTime);
                   const isLive = hasTime && now >= it.start && now < it.end;
                   const isDone = hasTime && now >= it.end;
@@ -346,9 +348,9 @@ export default function ParticipantHomeApp() {
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
-                              {fromTime && toTime ? (
+                              {clock ? (
                                 <div className="min-w-0 flex-1 truncate text-[11px] font-semibold text-white/50">
-                                  {fmtTimeStr(fromTime)} - {fmtTimeStr(toTime)}
+                                  {clock}
                                 </div>
                               ) : (
                                 <span className="flex-1" />

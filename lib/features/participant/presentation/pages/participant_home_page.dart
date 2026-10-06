@@ -23,6 +23,7 @@ import 'claimed_inclusion_page.dart';
 import 'available_inclusion_page.dart';
 import 'schedule_detail_page.dart';
 import 'all_sessions_page.dart';
+import '../programme.dart';
 import 'participant_profile_page.dart';
 import 'participant_feed_page.dart';
 import 'favorites_page.dart';
@@ -409,9 +410,12 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
           start.month == date.month &&
           start.day == date.day;
     }).toList();
-    items.sort(
-      (a, b) => (a['start'] as DateTime).compareTo(b['start'] as DateTime),
-    );
+    items.sort((a, b) {
+      final aTime = a['hasTime'] == true;
+      final bTime = b['hasTime'] == true;
+      if (aTime != bTime) return aTime ? -1 : 1;
+      return (a['start'] as DateTime).compareTo(b['start'] as DateTime);
+    });
     return items;
   }
 
@@ -1425,8 +1429,8 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       final scheduleName = schedule['scheduleName']?.toString() ?? '';
       final speakerName = schedule['speakerName']?.toString() ?? '';
       final speakerPhoto = schedule['speakerPhoto']?.toString() ?? '';
-      final fromTime = schedule['fromTime']?.toString() ?? '';
-      final toTime = schedule['toTime']?.toString() ?? '';
+      final fromTime = visibleFromTime(schedule);
+      final toTime = visibleToTime(schedule);
       final hall = schedule['hall']?.toString() ?? '';
 
       return Column(
@@ -1610,10 +1614,12 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                               ),
                             ],
                             const SizedBox(height: 3),
-                            if (fromTime.isNotEmpty || hall.isNotEmpty)
+                            if (fromTime.isNotEmpty ||
+                                toTime.isNotEmpty ||
+                                hall.isNotEmpty)
                               Row(
                                 children: [
-                                  if (fromTime.isNotEmpty &&
+                                  if (fromTime.isNotEmpty ||
                                       toTime.isNotEmpty) ...[
                                     Icon(
                                       Icons.access_time_rounded,
@@ -1624,7 +1630,11 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '${_fmtTimeStr(fromTime)} - ${_fmtTimeStr(toTime)}',
+                                      [
+                                        if (fromTime.isNotEmpty)
+                                          _fmtTimeStr(fromTime),
+                                        if (toTime.isNotEmpty) _fmtTimeStr(toTime),
+                                      ].join(' - '),
                                       style: GoogleFonts.inter(
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.w500,
@@ -2011,6 +2021,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       child: _scheduleListRow(
         items[i],
         _scheduleAccents[i % _scheduleAccents.length],
+        serial: i + 1,
       ),
     );
   }
@@ -2184,16 +2195,18 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     );
   }
 
-  Widget _scheduleListRow(Map<String, dynamic> item, Color accent) {
+  Widget _scheduleListRow(Map<String, dynamic> item, Color accent, {int? serial}) {
     final schedule = item['schedule'] as Map<String, dynamic>;
     final event = item['event'] as Map<String, dynamic>;
     final start = item['start'] as DateTime;
     final end = item['end'] as DateTime;
     final now = DateTime.now();
     final scheduleName = schedule['scheduleName']?.toString() ?? '';
-    final fromTime = schedule['fromTime']?.toString().trim() ?? '';
-    final toTime = schedule['toTime']?.toString().trim() ?? '';
-    final hasTime = fromTime.isNotEmpty && toTime.isNotEmpty;
+    final fromTime = visibleFromTime(schedule);
+    final toTime = visibleToTime(schedule);
+    final hasClock = schedule['fromTime']?.toString().trim().isNotEmpty == true &&
+        schedule['toTime']?.toString().trim().isNotEmpty == true;
+    final hasTime = hasClock;
     final isLive = hasTime && !now.isBefore(start) && now.isBefore(end);
     final isDone = hasTime && !now.isBefore(end);
     final hall = schedule['hall']?.toString() ?? '';
@@ -2246,10 +2259,21 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                                 color: rowAccent.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Icon(
-                                Icons.calendar_today_rounded,
-                                size: 16,
-                                color: rowAccent,
+                              child: Center(
+                                child: serial == null
+                                    ? Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 16,
+                                        color: rowAccent,
+                                      )
+                                    : Text(
+                                        '$serial',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                          color: rowAccent,
+                                        ),
+                                      ),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -2259,11 +2283,16 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                                 children: [
                                   Row(
                                     children: [
-                                      if (fromTime.isNotEmpty &&
+                                      if (fromTime.isNotEmpty ||
                                           toTime.isNotEmpty)
                                         Expanded(
                                           child: Text(
-                                            '${_fmtTimeStr(fromTime)} - ${_fmtTimeStr(toTime)}',
+                                            [
+                                              if (fromTime.isNotEmpty)
+                                                _fmtTimeStr(fromTime),
+                                              if (toTime.isNotEmpty)
+                                                _fmtTimeStr(toTime),
+                                            ].join(' - '),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: GoogleFonts.inter(

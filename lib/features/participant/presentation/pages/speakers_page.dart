@@ -285,10 +285,11 @@ class _SpeakersPageState extends State<SpeakersPage> {
 
   Widget _sessionRow(_Session s) {
     final hall = s.schedule['hall']?.toString().trim() ?? '';
-    final from = s.schedule['fromTime']?.toString().trim() ?? '';
-    final to = s.schedule['toTime']?.toString().trim() ?? '';
+    final from = visibleFromTime(s.schedule);
+    final to = visibleToTime(s.schedule);
     final parts = <String>[
-      if (s.start != null) DateFormat('EEE, d MMM').format(s.start!),
+      if (s.start != null && scheduleDateVisible(s.schedule))
+        DateFormat('EEE, d MMM').format(s.start!),
       if (s.start != null && s.end != null && from.isNotEmpty && to.isNotEmpty)
         '${DateFormat('h:mm a').format(s.start!)} - ${DateFormat('h:mm a').format(s.end!)}',
       if (hall.isNotEmpty) hall,

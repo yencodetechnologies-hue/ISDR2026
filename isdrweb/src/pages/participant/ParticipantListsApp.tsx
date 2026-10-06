@@ -4,11 +4,12 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppBar, Avatar, Icon, useToast } from "@/components/ui";
 import { AppSpinner } from "@/components/app/AppControls";
 import { get } from "@/lib/api";
-import { fmtDMon, fmtTimeStr, idOf, monthShort, sameDay, weekday, weekdayLong } from "@/lib/format";
+import { fmtDMon, idOf, monthShort, sameDay, weekday, weekdayLong } from "@/lib/format";
 import {
   displaySpeaker,
   groupByHall,
   loadAllSchedules,
+  participantTimeLabel,
   openAsItem,
   scheduleHref,
   splitSpeakerNames,
@@ -86,8 +87,6 @@ export function UpcomingSchedulesApp() {
                   {hallGroup.list.map((it) => {
                     const s = it.schedule ?? {};
                     const isLive = now >= it.start && now < it.end;
-                    const fromTime = String(s.fromTime ?? "");
-                    const toTime = String(s.toTime ?? "");
                     const speaker = displaySpeaker(s.speakerName);
 
                     return (
@@ -100,7 +99,7 @@ export function UpcomingSchedulesApp() {
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <div className="font-inter text-[11px] font-semibold text-muted">
-                              {fromTime && toTime ? `${fmtTimeStr(fromTime)} - ${fmtTimeStr(toTime)}` : ""}
+                              {participantTimeLabel(s)}
                             </div>
                             <div className="mt-1 truncate font-outfit text-[14.5px] font-bold text-white group-hover:text-[#60A5FA]">
                               {s.scheduleName}
@@ -277,9 +276,9 @@ export function AllSessionsApp() {
                   <div className="space-y-3">
                     {hallGroup.list.map((it) => {
                       const s = it.schedule ?? {};
-                      const fromTime = String(s.fromTime ?? "");
-                      const toTime = String(s.toTime ?? "");
-                      const hasTime = !!(fromTime && toTime);
+                      const clock = participantTimeLabel(s);
+                      const hasTime = !!(String(s.fromTime ?? "").trim() && String(s.toTime ?? "").trim());
+                      const serial = group.list.findIndex((row) => idOf(row.schedule) === idOf(s)) + 1;
                       const isLive = hasTime && now >= it.start && now < it.end;
                       const isDone = hasTime && now >= it.end;
                       const speakerPhoto = String(s.speakerPhoto ?? "");
@@ -294,7 +293,8 @@ export function AllSessionsApp() {
                         >
                           <div className="flex items-center justify-between">
                             <div className="font-inter text-[11.5px] font-semibold text-[#60A5FA]">
-                              {fromTime && toTime ? `${fmtTimeStr(fromTime)} - ${fmtTimeStr(toTime)}` : ""}
+                              {serial > 0 ? `${serial}. ` : ""}
+                              {clock}
                             </div>
                             {hasTime && (
                               <span
@@ -438,8 +438,6 @@ export function FavoritesApp() {
               <div className="space-y-2.5">
                 {group.list.map((s) => {
                   const ev = events[String(s.eventId)] ?? { id: s.eventId };
-                  const fromTime = String(s.fromTime ?? "");
-                  const toTime = String(s.toTime ?? "");
                   const hall = String(s.hall ?? "");
                   const speaker = displaySpeaker(s.speakerName);
 
@@ -452,7 +450,7 @@ export function FavoritesApp() {
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="font-inter text-[11px] font-semibold text-muted">
-                            {[fromTime && toTime ? `${fmtTimeStr(fromTime)} - ${fmtTimeStr(toTime)}` : "", hall]
+                            {[participantTimeLabel(s), hall]
                               .filter(Boolean)
                               .join("  ·  ")}
                           </div>
@@ -552,8 +550,6 @@ export function SpeakersApp() {
                 <div className="mt-2.5 space-y-1.5">
                   {sp.sessions.map((it) => {
                     const s = it.schedule ?? {};
-                    const fromTime = String(s.fromTime ?? "");
-                    const toTime = String(s.toTime ?? "");
                     const hall = String(s.hall ?? "");
 
                     return (
@@ -568,8 +564,8 @@ export function SpeakersApp() {
                           </div>
                           <div className="mt-0.5 font-inter text-[11px] text-[#60A5FA]">
                             {[
-                              s.date ? `${weekday(it.start)}, ${it.start.getDate()} ${monthShort(it.start)}` : "",
-                              fromTime && toTime ? `${fmtTimeStr(fromTime)} - ${fmtTimeStr(toTime)}` : "",
+                              s.date && !s.hideDate ? `${weekday(it.start)}, ${it.start.getDate()} ${monthShort(it.start)}` : "",
+                              participantTimeLabel(s),
                               hall,
                             ]
                               .filter(Boolean)

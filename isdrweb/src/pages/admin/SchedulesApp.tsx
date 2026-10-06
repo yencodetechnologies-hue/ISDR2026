@@ -119,20 +119,23 @@ function windowOf(s: any) {
   };
 }
 
-/** Day, then start time, then end time. A later update comes after a shared slot. */
+function timeRank(s: any) {
+  const from = String(s.fromTime ?? "").trim();
+  if (!from) return "99:99";
+  const to = String(s.toTime ?? "").trim() || "99:99";
+  return `${from}\0${to}`;
+}
+
+/** Day, then clock. A session with no date sits after the dated days. */
 function compareSchedules(a: any, b: any) {
-  const da = windowOf(a)?.day.getTime() ?? 0;
-  const db = windowOf(b)?.day.getTime() ?? 0;
+  const da = windowOf(a)?.day.getTime() ?? Number.MAX_SAFE_INTEGER;
+  const db = windowOf(b)?.day.getTime() ?? Number.MAX_SAFE_INTEGER;
   if (da !== db) return da - db;
-  const from = String(a.fromTime ?? "").localeCompare(String(b.fromTime ?? ""));
-  if (from) return from;
-  const to = String(a.toTime ?? "").localeCompare(String(b.toTime ?? ""));
-  if (to) return to;
-  const updated = (s: any) => {
-    const t = new Date(s.updatedAt ?? 0).getTime();
-    return Number.isNaN(t) ? 0 : t;
-  };
-  return updated(a) - updated(b);
+  const time = timeRank(a).localeCompare(timeRank(b));
+  if (time) return time;
+  const name = String(a.scheduleName ?? "").localeCompare(String(b.scheduleName ?? ""));
+  if (name) return name;
+  return String(idOf(a)).localeCompare(String(idOf(b)));
 }
 
 /** Per-day serial numbers, restarting at 1 each calendar day. */
@@ -467,6 +470,9 @@ export function ScheduleFormApp() {
   const [sameTime, setSameTime] = useState(true);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [hideDate, setHideDate] = useState(false);
+  const [hideFromTime, setHideFromTime] = useState(false);
+  const [hideToTime, setHideToTime] = useState(false);
   const [fromByDate, setFromByDate] = useState<Record<string, string>>({});
   const [toByDate, setToByDate] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -495,6 +501,9 @@ export function ScheduleFormApp() {
             ]);
           setFrom(String(s.fromTime ?? ""));
           setTo(String(s.toTime ?? ""));
+          setHideDate(!!s.hideDate);
+          setHideFromTime(!!s.hideFromTime);
+          setHideToTime(!!s.hideToTime);
         }
       }
     })();
@@ -535,6 +544,9 @@ export function ScheduleFormApp() {
           scheduleName: name.trim(),
           hall: hall.trim(),
           ...slots[0],
+          hideDate,
+          hideFromTime,
+          hideToTime,
           description: description.trim(),
         })
       : await post(`/managed-events/${eventId}/schedules`, {
@@ -543,6 +555,9 @@ export function ScheduleFormApp() {
           scheduleName: name.trim(),
           hall: hall.trim(),
           slots,
+          hideDate,
+          hideFromTime,
+          hideToTime,
           description: description.trim(),
         });
     setSaving(false);
@@ -660,6 +675,18 @@ export function ScheduleFormApp() {
               <TimeField label="To time" value={to} onChange={setTo} />
             </div>
           )}
+          <label className="flex cursor-pointer items-center justify-between px-1 py-1">
+            <span className="text-sm font-semibold">Hide date</span>
+            <AppSwitch checked={hideDate} onChange={setHideDate} />
+          </label>
+          <label className="flex cursor-pointer items-center justify-between px-1 py-1">
+            <span className="text-sm font-semibold">Hide from time</span>
+            <AppSwitch checked={hideFromTime} onChange={setHideFromTime} />
+          </label>
+          <label className="flex cursor-pointer items-center justify-between px-1 py-1">
+            <span className="text-sm font-semibold">Hide to time</span>
+            <AppSwitch checked={hideToTime} onChange={setHideToTime} />
+          </label>
           <TextArea label="Description" icon="notes" value={description} onChange={setDescription} rows={3} />
           <div className="pt-2">
             <button

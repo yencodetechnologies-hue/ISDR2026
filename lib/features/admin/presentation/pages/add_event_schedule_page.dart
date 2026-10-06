@@ -35,6 +35,9 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   final Map<String, TimeOfDay> _fromByDate = {};
   final Map<String, TimeOfDay> _toByDate = {};
   bool _saving = false;
+  bool _hideDate = false;
+  bool _hideFromTime = false;
+  bool _hideToTime = false;
   bool get _perDate => !_sameTime && _dates.length > 1;
 
   /// Picked event days in calendar order.
@@ -82,6 +85,9 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
 
       _from = time(s['fromTime']);
       _to = time(s['toTime']);
+      _hideDate = s['hideDate'] == true;
+      _hideFromTime = s['hideFromTime'] == true;
+      _hideToTime = s['hideToTime'] == true;
     }
   }
 
@@ -170,6 +176,9 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
             hall: _hall.text.trim(),
             slot: slots.first,
             description: _description.text.trim(),
+            hideDate: _hideDate,
+            hideFromTime: _hideFromTime,
+            hideToTime: _hideToTime,
           )
         : await ApiService().createEventSchedule(
             eventId: _eventId,
@@ -179,6 +188,9 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
             hall: _hall.text.trim(),
             slots: slots,
             description: _description.text.trim(),
+            hideDate: _hideDate,
+            hideFromTime: _hideFromTime,
+            hideToTime: _hideToTime,
           );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -211,6 +223,19 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _hideSwitch(String label, bool value, ValueChanged<bool> onChanged) {
+    return SwitchListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      value: value,
+      activeThumbColor: DarkColors.accent,
+      title: Text(
+        label,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+      ),
+      onChanged: onChanged,
     );
   }
 
@@ -421,6 +446,18 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
                 const SizedBox(height: 12),
               ]
             else ...[_timeRow(), const SizedBox(height: 12)],
+            _hideSwitch('Hide date', _hideDate, (v) => setState(() => _hideDate = v)),
+            _hideSwitch(
+              'Hide from time',
+              _hideFromTime,
+              (v) => setState(() => _hideFromTime = v),
+            ),
+            _hideSwitch(
+              'Hide to time',
+              _hideToTime,
+              (v) => setState(() => _hideToTime = v),
+            ),
+            const SizedBox(height: 8),
             TextFormField(
               controller: _description,
               style: fieldStyle,

@@ -3,8 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { SessionContent } from "@/components/SessionContent";
 import { Avatar, Button, ErrorState, Icon, Loading, Page, Pill, useToast } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
-import { fmtTime, monthShort, scheduleDay, scheduleTimes, weekdayLong } from "@/lib/format";
-import { loadFavorites, loadSchedule, splitSpeakerNames, toggleFavorite } from "@/lib/schedules";
+import { monthShort, scheduleDay, scheduleTimes, weekdayLong } from "@/lib/format";
+import { loadFavorites, loadSchedule, participantShowsDate, participantTimeLabel, splitSpeakerNames, toggleFavorite } from "@/lib/schedules";
 import { useAppLayout } from "@/lib/appLayout";
 import ScheduleDetailApp from "./ScheduleDetailApp";
 
@@ -146,13 +146,14 @@ function ScheduleDetailWeb() {
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="card divide-y divide-line overflow-hidden">
             {day &&
+              participantShowsDate(s) &&
               row(
                 "calendar_month",
                 "#3B82F6",
                 "Date",
                 `${weekdayLong(day)}, ${day.getDate()} ${monthShort(day)} ${day.getFullYear()}`,
               )}
-            {w && row("schedule", "#14B8A6", "Time", `${fmtTime(w.start)} - ${fmtTime(w.end)}`)}
+            {participantTimeLabel(s) && row("schedule", "#14B8A6", "Time", participantTimeLabel(s))}
             {s.hall && row("apartment", "#8B5CF6", "Hall", s.hall)}
             {venue &&
               row(
