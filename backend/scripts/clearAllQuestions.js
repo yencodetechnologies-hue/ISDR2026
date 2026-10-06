@@ -1,3 +1,4 @@
+
 /**
  * Permanently delete every session Q&A and speaker Q&A document.
  * Run: node scripts/clearAllQuestions.js
