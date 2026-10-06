@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Icon, Modal, Select, Spinner } from "@/components/ui";
 import { DEFAULT_TYPE_COLOR, normalizeHex } from "@/components/DelegateBadge";
-import { post } from "@/lib/api";
+import { get, post } from "@/lib/api";
 
 /**
  * Import participants from an Excel sheet whose header row has the same fields
@@ -173,7 +173,7 @@ async function downloadTemplate(packageName: string) {
 export function ImportParticipantsModal({
   eventId,
   packages,
-  registrations,
+  registrations: _registrations,
   onClose,
   onDone,
 }: {
@@ -184,6 +184,18 @@ export function ImportParticipantsModal({
   onDone: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  // The list on screen is one page. Duplicate checks need every mobile number and ID.
+  const [known, setKnown] = useState<any[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    get(`/managed-events/${eventId}/registrations`).then((res) => {
+      if (cancelled) return;
+      setKnown(res.success ? (res.registrations ?? []) : _registrations);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId]);
   const [templatePkg, setTemplatePkg] = useState(packages.length ? String(packages[0].id) : "");
   const [downloading, setDownloading] = useState(false);
   const templatePackage = packages.find((p) => String(p.id) === templatePkg) ?? null;
@@ -199,11 +211,12 @@ export function ImportParticipantsModal({
 
   const parsed: Parsed | null = (() => {
     if (!rows) return null;
+    const directory = known ?? [];
     const registered = new Set(
-      registrations.map((r) => String(r.mobileNumber ?? "").replace(/[^\d+]/g, "")).filter(Boolean),
+      directory.map((r) => String(r.mobileNumber ?? "").replace(/[^\d+]/g, "")).filter(Boolean),
     );
     const usedIds = new Set(
-      registrations
+      directory
         .map((r) =>
           String(r.idNumber ?? "")
             .trim()
@@ -297,7 +310,7 @@ export function ImportParticipantsModal({
             <Button variant="outline" disabled={importing} onClick={onClose}>
               Cancel
             </Button>
-            <Button icon="upload" loading={importing} disabled={!parsed?.ready.length} onClick={runImport}>
+            <Button icon="upload" loading={importing || known === null} disabled={!parsed?.ready.length || known === null} onClick={runImport}>
               {parsed?.ready.length
                 ? `Import ${parsed.ready.length} participant${parsed.ready.length === 1 ? "" : "s"}`
                 : "Import"}

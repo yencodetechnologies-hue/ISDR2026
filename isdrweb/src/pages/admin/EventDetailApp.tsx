@@ -9,7 +9,6 @@ import { Icon, useConfirm, useToast } from "@/components/ui";
 import { del, get, put, qs } from "@/lib/api";
 import { fullNameOf } from "@/lib/exporter";
 import { idOf, parseDate } from "@/lib/format";
-import { idPrefixes, inCreatedRange, inIdRange } from "@/components/ListFilters";
 import {
   BadgeModal,
   ClaimsModal,
@@ -23,6 +22,7 @@ import {
 import { ImportParticipantsModal } from "./ImportParticipants";
 import { PARTICIPANT_EXPORT_COLUMNS, PARTICIPANT_QR, shownParticipantType } from "./participantExport";
 
+const PARTICIPANT_PAGE_SIZES = [15, 20, 40, 50];
 const WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 /** "Wed, 30 Sep 2026 · 9:00 AM" (the app's _dateFmt · _timeFmt). */
@@ -115,18 +115,6 @@ function StatPill({ text, color }: { text: string; color: string }) {
   );
 }
 
-/** Keep a saved row in the list. A missing id leaves the list unchanged. */
-function upsertById(list: any[] | null | undefined, saved: any): any[] {
-  if (!saved || typeof saved !== "object" || !idOf(saved)) return list ? [...list] : [];
-  const current = list ?? [];
-  const sid = idOf(saved);
-  const idx = current.findIndex((row) => idOf(row) === sid);
-  if (idx === -1) return [saved, ...current];
-  const next = current.slice();
-  next[idx] = { ...current[idx], ...saved };
-  return next;
-}
-
 function savedEventFor(id: string, state: unknown) {
   const event = (state as { event?: any } | null)?.event;
   if (!event || typeof event !== "object") return null;
@@ -159,10 +147,25 @@ export default function EventDetailApp() {
   const [badgeFor, setBadgeFor] = useState<any | null>(null);
   const [claimsFor, setClaimsFor] = useState<any | null>(null);
   const [importing, setImporting] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(40);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [listMeta, setListMeta] = useState({ total: 0, totalAll: 0, page: 1, pages: 1, limit: 15, idPrefixes: [] as string[] });
   const eventGen = useRef(0);
   const regsGen = useRef(0);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const filterKey = [debouncedSearch, idPrefix, idFrom, idTo, createdFrom, createdTo, pageSize].join("|");
+  const [appliedKey, setAppliedKey] = useState(filterKey);
+  if (filterKey !== appliedKey) {
+    setAppliedKey(filterKey);
+    if (page !== 1) setPage(1);
+  }
 
   const show = (msg: string, kind: "success" | "error" = "success") => {
     setMessage(msg);
@@ -176,20 +179,62 @@ export default function EventDetailApp() {
     setIncStats(Object.fromEntries(rows.map((r) => [`${r.packageName}|${r.name}`, r])));
   }, [id]);
 
+  const listQuery = useCallback(
+    (extra: { page?: number; limit?: number; exportAll?: boolean } = {}) =>
+      qs({
+        page: extra.page,
+        limit: extra.limit,
+        search: debouncedSearch,
+        idPrefix,
+        idFrom: idPrefix ? idFrom : "",
+        idTo: idPrefix ? idTo : "",
+        createdFrom,
+        createdTo,
+        export: extra.exportAll ? 1 : "",
+      }),
+    [debouncedSearch, idPrefix, idFrom, idTo, createdFrom, createdTo],
+  );
+
   const loadRegs = useCallback(
     async (silent = false) => {
       const gen = ++regsGen.current;
       if (!silent) setLoadingRegs(true);
       try {
-        const res = await get(`/managed-events/${id}/registrations`);
+        const res = await get(`/managed-events/${id}/registrations${listQuery({ page, limit: pageSize })}`);
         if (gen !== regsGen.current) return;
-        if (res.success) setRegistrations(res.registrations ?? []);
+        if (!res.success) return;
+        setRegistrations(res.registrations ?? []);
+        setListMeta({
+          total: Number(res.total ?? 0),
+          totalAll: Number(res.totalAll ?? 0),
+          page: Number(res.page ?? 1),
+          pages: Number(res.pages ?? 1),
+          limit: Number(res.limit ?? pageSize),
+          idPrefixes: res.idPrefixes ?? [],
+        });
+        if (res.page && Number(res.page) !== page) setPage(Number(res.page));
       } finally {
-        if (gen === regsGen.current && !silent) setLoadingRegs(false);
+        if (gen === regsGen.current) setLoadingRegs(false);
       }
     },
-    [id],
+    [id, listQuery, page, pageSize],
   );
+
+  const loadExportRows = useCallback(async () => {
+    const res = await get(`/managed-events/${id}/registrations${listQuery({ exportAll: true })}`);
+    if (!res.success) throw new Error(res.error || "Could not load participants");
+    return res.registrations ?? [];
+  }, [id, listQuery]);
+
+  const openBadge = async (r: any) => {
+    if (r.qrCode) {
+      setBadgeFor(r);
+      return;
+    }
+    const res = await get(`/managed-events/${id}/registrations${qs({ regId: idOf(r) })}`);
+    if (res.success && res.registration) setBadgeFor(res.registration);
+    else show(res.error || "Could not open the badge", "error");
+  };
 
   const loadAll = useCallback(async () => {
     const gen = ++eventGen.current;
@@ -197,12 +242,14 @@ export default function EventDetailApp() {
     if (gen !== eventGen.current) return;
     if (!ev.success) return setError(ev.error || "Could not load event");
     setEvent(ev.event);
-    await loadRegs();
     loadStats();
-  }, [id, loadRegs, loadStats]);
+  }, [id, loadStats]);
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+  useEffect(() => {
+    loadRegs();
+  }, [loadRegs]);
   // A newer reload wins. An older poll must not write the list after a save.
   useEffect(() => {
     const t = setInterval(() => {
@@ -262,7 +309,7 @@ export default function EventDetailApp() {
     setBusy(false);
     if (res.success) {
       show("Participant deleted");
-      loadAll();
+      loadRegs(true);
     } else show(res.error || "Failed to delete participant", "error");
   };
 
@@ -274,20 +321,9 @@ export default function EventDetailApp() {
         .filter(Boolean),
     );
 
-  const q = search.trim().toLowerCase();
-  const shown = registrations.filter(
-    (r) =>
-      inIdRange(r, idPrefix, idFrom, idTo) &&
-      inCreatedRange(r, createdFrom, createdTo) &&
-      (!q ||
-        Object.values(r).some(
-          (v) => (typeof v === "string" || typeof v === "number") && String(v).toLowerCase().includes(q),
-        )),
-  );
-  const visibleShown = shown.slice(0, visibleCount);
-  useEffect(() => {
-    setVisibleCount(40);
-  }, [q, idPrefix, idFrom, idTo, createdFrom, createdTo]);
+  const regsFiltered = !!(debouncedSearch || idPrefix || createdFrom || createdTo);
+  const pageStart = listMeta.total === 0 ? 0 : (listMeta.page - 1) * listMeta.limit + 1;
+  const pageEnd = Math.min(listMeta.page * listMeta.limit, listMeta.total);
 
   if (error)
     return (
@@ -431,9 +467,9 @@ export default function EventDetailApp() {
 
         {/* Participants */}
         <div className="mt-4 text-[17px] font-extrabold">
-          {q || createdFrom || createdTo || idPrefix
-            ? `Participants (${shown.length} of ${registrations.length})`
-            : `Participants (${registrations.length})`}
+          {regsFiltered
+            ? `Participants (${listMeta.total} of ${listMeta.totalAll})`
+            : `Participants (${listMeta.totalAll})`}
         </div>
         {/* Website extras kept on phones: Excel import and list download. */}
         <div className="mb-1.5 mt-1 flex flex-wrap items-center gap-2">
@@ -443,12 +479,13 @@ export default function EventDetailApp() {
           <ExportMenu
             small
             title={`${event.title || "Event"} - Participants`}
-            rows={shown}
+            loadRows={loadExportRows}
             columns={PARTICIPANT_EXPORT_COLUMNS}
             qr={PARTICIPANT_QR}
           />
         </div>
-        <div className="relative">
+        <div className="flex items-center gap-2">
+        <div className="relative min-w-0 flex-1">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
             <Icon name="search" size={20} color="#9CA3AF" />
           </span>
@@ -468,10 +505,23 @@ export default function EventDetailApp() {
             </button>
           )}
         </div>
+          <select
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+            aria-label="Participants per page"
+            className="shrink-0 rounded-xl border border-[#8E8E98] bg-field px-2 py-2.5 text-sm outline-none focus:border-accent"
+          >
+            {PARTICIPANT_PAGE_SIZES.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="mt-2 flex items-center gap-2">
           <select value={idPrefix} onChange={(e) => setIdPrefix(e.target.value)} className="rounded-xl border border-[#8E8E98] bg-field text-sm outline-none focus:border-accent px-2 py-2">
             <option value="">All ID codes</option>
-            {idPrefixes(registrations).map((p) => (
+            {listMeta.idPrefixes.map((p) => (
               <option key={p} value={p}>
                 {p}
               </option>
@@ -518,14 +568,14 @@ export default function EventDetailApp() {
         <div className="mt-2.5">
           {loadingRegs ? (
             <AppSpinner top={24} />
-          ) : shown.length === 0 ? (
+          ) : listMeta.total === 0 ? (
             <div className="py-2 text-muted">
-              {registrations.length === 0
+              {listMeta.totalAll === 0
                 ? "No participants registered for this event yet."
                 : "No participants match your search."}
             </div>
           ) : (
-            visibleShown.map((r) => {
+            registrations.map((r) => {
               const regId = idOf(r);
               const open = expanded.has(regId);
               const name = fullNameOf(r) || r.name || r.idNumber || "Participant";
@@ -610,7 +660,7 @@ export default function EventDetailApp() {
                           </button>
                           <button
                             title="QR"
-                            onClick={() => setBadgeFor(r)}
+                            onClick={() => openBadge(r)}
                             className="flex h-10 w-10 items-center justify-center rounded-full active:bg-white/10"
                           >
                             <Icon name="qr_code_2" size={22} />
@@ -631,14 +681,30 @@ export default function EventDetailApp() {
               );
             })
           )}
-          {shown.length > visibleShown.length && (
-            <button
-              type="button"
-              onClick={() => setVisibleCount((n) => n + 40)}
-              className="mt-1 w-full rounded-xl border border-line py-2.5 text-sm font-semibold"
-            >
-              Show more ({shown.length - visibleShown.length} left)
-            </button>
+          {listMeta.total > 0 && (
+            <div className="mt-1 flex items-center justify-between gap-2 text-sm text-muted">
+              <span>
+                {pageStart}–{pageEnd} of {listMeta.total}
+              </span>
+              <span className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="rounded-xl border border-line px-3 py-2 text-sm font-semibold disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={page >= listMeta.pages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded-xl border border-line px-3 py-2 text-sm font-semibold disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -667,13 +733,9 @@ export default function EventDetailApp() {
           onSaved={(saved) => {
             const wasNew = !regEditing;
             setRegEditing(undefined);
-            if (saved && typeof saved === "object" && idOf(saved)) {
-              regsGen.current += 1;
-              setRegistrations((list) => upsertById(list, saved));
-            }
-            loadAll();
+            loadRegs(true);
             if (!wasNew) show("Participant updated successfully");
-            else if (Object.keys(saved).length) setBadgeFor(saved);
+            else if (saved && Object.keys(saved).length) setBadgeFor(saved);
           }}
         />
       )}
@@ -692,7 +754,7 @@ export default function EventDetailApp() {
           packages={packages}
           registrations={registrations}
           onClose={() => setImporting(false)}
-          onDone={loadAll}
+          onDone={() => loadRegs(true)}
         />
       )}
     </div>

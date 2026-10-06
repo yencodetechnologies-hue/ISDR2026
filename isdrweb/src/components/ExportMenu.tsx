@@ -9,12 +9,15 @@ import { exportExcel, exportPdf, exportQrZip, type ExportColumn, type QrConfig }
 export default function ExportMenu<T>({
   title,
   rows,
+  loadRows,
   columns,
   qr,
   small,
 }: {
   title: string;
-  rows: T[] | null | undefined;
+  rows?: T[] | null | undefined;
+  /** Fetches the rows when a format is chosen, so the list page does not download them up front. */
+  loadRows?: () => Promise<T[]>;
   columns: ExportColumn<T>[];
   qr?: QrConfig<T>;
   small?: boolean;
@@ -62,10 +65,15 @@ export default function ExportMenu<T>({
 
   const run = async (kind: "excel" | "pdf" | "zip") => {
     setOpen(false);
-    const list = rows ?? [];
-    if (!list.length) return toast("Nothing to download", "error");
-    setBusy(kind === "zip" ? `0 / ${list.length}` : kind);
+    setBusy(kind);
+    let list = rows ?? [];
     try {
+      if (loadRows) list = (await loadRows()) ?? [];
+      if (!list.length) {
+        setBusy(null);
+        return toast("Nothing to download", "error");
+      }
+      if (kind === "zip") setBusy(`0 / ${list.length}`);
       if (kind === "excel") await exportExcel(title, columns, list, qr);
       else if (kind === "pdf") await exportPdf(title, columns, list, qr);
       else if (qr) await exportQrZip(title, list, qr, (d, t) => setBusy(`${d} / ${t}`));
@@ -95,7 +103,7 @@ export default function ExportMenu<T>({
         small={small}
         icon="download"
         loading={!!busy}
-        disabled={!!busy || !rows}
+        disabled={!!busy || (!loadRows && !rows)}
         onClick={toggle}
       >
         {busy && busy.includes("/") ? `Zipping ${busy}` : "Download"}

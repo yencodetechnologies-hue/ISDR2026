@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Avatar,
@@ -27,7 +27,7 @@ import { PARTICIPANT_EXPORT_COLUMNS, PARTICIPANT_QR, shownParticipantType } from
 import EventDetailApp from "./EventDetailApp";
 import { useAppLayout } from "@/lib/appLayout";
 import EventsApp from "./EventsApp";
-import { FilterSelect, distinct, idPrefixes, inCreatedRange, inIdRange, matches } from "@/components/ListFilters";
+import { FilterSelect, distinct, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { fmtDate, idOf, parseDate, cap } from "@/lib/format";
 import { BadgeModal, ClaimsModal, displayName, PackageCard, PackageModal, ParticipantModal } from "./EventManage";
@@ -317,11 +317,46 @@ function EventEditorWeb() {
   );
 }
 
+const PARTICIPANT_PAGE_SIZES = [15, 20, 40, 50];
+
+type PackageCount = { packageId: string; packageName: string; n: number };
+
+type ParticipantListMeta = {
+  total: number;
+  totalAll: number;
+  page: number;
+  pages: number;
+  limit: number;
+  packages: string[];
+  types: string[];
+  statuses: string[];
+  idPrefixes: string[];
+  packageCounts: PackageCount[];
+};
+
+const emptyListMeta = (): ParticipantListMeta => ({
+  total: 0,
+  totalAll: 0,
+  page: 1,
+  pages: 1,
+  limit: 15,
+  packages: [],
+  types: [],
+  statuses: [],
+  idPrefixes: [],
+  packageCounts: [],
+});
+
 /** Participants tab: every package with how many participants it has; anyone outside them under "Other passes". */
-function PackageCounts({ packages, registrations }: { packages: any[]; registrations: any[] }) {
-  const inPackage = (r: any, p: any) => (r.packageId && r.packageId === p.id) || (!r.packageId && r.packageName === p.name);
-  const rows = packages.map((p) => ({ name: String(p.name ?? "Package"), n: registrations.filter((r) => inPackage(r, p)).length }));
-  const other = registrations.filter((r) => !packages.some((p) => inPackage(r, p))).length;
+function PackageCounts({ packages, packageCounts }: { packages: any[]; packageCounts: PackageCount[] }) {
+  const inPackage = (c: PackageCount, p: any) =>
+    (c.packageId && c.packageId === p.id) || (!c.packageId && c.packageName === p.name);
+  const rows = packages.map((p) => ({
+    name: String(p.name ?? "Package"),
+    n: packageCounts.filter((c) => inPackage(c, p)).reduce((sum, c) => sum + c.n, 0),
+  }));
+  const matched = rows.reduce((sum, p) => sum + p.n, 0);
+  const other = packageCounts.reduce((sum, c) => sum + c.n, 0) - matched;
   return (
     <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
       {rows.map((p) => (
@@ -346,20 +381,6 @@ function PackageCounts({ packages, registrations }: { packages: any[]; registrat
    EVENT DETAIL — overview, packages, participants, schedules
    (mirrors the app's event_management_details_page.dart)
 ========================================================================= */
-
-const PARTICIPANT_PAGE_SIZE = 50;
-
-/** Keep a saved row in the list. A missing id leaves the list unchanged. */
-function upsertById(list: any[] | null | undefined, saved: any): any[] {
-  if (!saved || typeof saved !== "object" || !idOf(saved)) return list ? [...list] : [];
-  const current = list ?? [];
-  const sid = idOf(saved);
-  const idx = current.findIndex((row) => idOf(row) === sid);
-  if (idx === -1) return [saved, ...current];
-  const next = current.slice();
-  next[idx] = { ...current[idx], ...saved };
-  return next;
-}
 
 function savedEventFor(id: string, state: unknown) {
   const event = (state as { event?: any } | null)?.event;
@@ -409,10 +430,59 @@ function EventDetailWeb() {
   const [badgeFor, setBadgeFor] = useState<any | null>(null);
   const [claimsFor, setClaimsFor] = useState<any | null>(null);
   const [importing, setImporting] = useState(false);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [listMeta, setListMeta] = useState<ParticipantListMeta>(emptyListMeta);
+  const [analyticsRegs, setAnalyticsRegs] = useState<any[] | null>(null);
   const eventGen = useRef(0);
   const schedGen = useRef(0);
   const regsGen = useRef(0);
+  const analyticsGen = useRef(0);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const filterKey = [
+    debouncedSearch,
+    pkgFilter,
+    typeFilter,
+    statusFilter,
+    claimFilter,
+    idPrefix,
+    idFrom,
+    idTo,
+    createdFrom,
+    createdTo,
+    pageSize,
+  ].join("|");
+  const [appliedKey, setAppliedKey] = useState(filterKey);
+  if (filterKey !== appliedKey) {
+    setAppliedKey(filterKey);
+    if (page !== 1) setPage(1);
+  }
+
+  const listQuery = useCallback(
+    (extra: { page?: number; limit?: number; exportAll?: boolean } = {}) =>
+      qs({
+        page: extra.page,
+        limit: extra.limit,
+        search: debouncedSearch,
+        package: pkgFilter,
+        type: typeFilter,
+        status: statusFilter,
+        claim: claimFilter,
+        idPrefix,
+        idFrom: idPrefix ? idFrom : "",
+        idTo: idPrefix ? idTo : "",
+        createdFrom,
+        createdTo,
+        export: extra.exportAll ? 1 : "",
+      }),
+    [debouncedSearch, pkgFilter, typeFilter, statusFilter, claimFilter, idPrefix, idFrom, idTo, createdFrom, createdTo],
+  );
 
   const loadStats = useCallback(async () => {
     const res = await get(`/managed-events/summary${qs({ eventId: id, date: "to-date" })}`);
@@ -423,11 +493,48 @@ function EventDetailWeb() {
 
   const loadRegs = useCallback(async () => {
     const gen = ++regsGen.current;
-    const regs = await get(`/managed-events/${id}/registrations`);
+    const regs = await get(`/managed-events/${id}/registrations${listQuery({ page, limit: pageSize })}`);
     if (gen !== regsGen.current) return;
     // Keep the list on screen if a background refresh fails.
-    if (regs.success) setRegistrations(regs.registrations ?? []);
+    if (!regs.success) return;
+    setRegistrations(regs.registrations ?? []);
+    setListMeta({
+      total: Number(regs.total ?? 0),
+      totalAll: Number(regs.totalAll ?? 0),
+      page: Number(regs.page ?? 1),
+      pages: Number(regs.pages ?? 1),
+      limit: Number(regs.limit ?? pageSize),
+      packages: regs.packages ?? [],
+      types: regs.types ?? [],
+      statuses: regs.statuses ?? [],
+      idPrefixes: regs.idPrefixes ?? [],
+      packageCounts: regs.packageCounts ?? [],
+    });
+    if (regs.page && Number(regs.page) !== page) setPage(Number(regs.page));
+  }, [id, listQuery, page, pageSize]);
+
+  const loadAnalytics = useCallback(async () => {
+    const gen = ++analyticsGen.current;
+    const regs = await get(`/managed-events/${id}/registrations`);
+    if (gen !== analyticsGen.current) return;
+    if (regs.success) setAnalyticsRegs(regs.registrations ?? []);
   }, [id]);
+
+  const loadExportRows = useCallback(async () => {
+    const regs = await get(`/managed-events/${id}/registrations${listQuery({ exportAll: true })}`);
+    if (!regs.success) throw new Error(regs.error || "Could not load participants");
+    return regs.registrations ?? [];
+  }, [id, listQuery]);
+
+  const openBadge = async (r: any) => {
+    if (r.qrCode) {
+      setBadgeFor(r);
+      return;
+    }
+    const res = await get(`/managed-events/${id}/registrations${qs({ regId: idOf(r) })}`);
+    if (res.success && res.registration) setBadgeFor(res.registration);
+    else toast(res.error || "Could not open the badge", "error");
+  };
 
   const load = useCallback(async () => {
     const evGen = ++eventGen.current;
@@ -441,27 +548,28 @@ function EventDetailWeb() {
       setEvent(ev.event);
     }
     if (schGen === schedGen.current && sch.success) setSchedules(sch.schedules ?? []);
-    // Participants are a separate request so the event screen is not held
-    // until every registration has been downloaded.
-    loadRegs();
-  }, [id, loadRegs]);
+  }, [id]);
   useEffect(() => {
     load();
   }, [load]);
   useEffect(() => {
+    loadRegs();
+  }, [loadRegs]);
+  useEffect(() => {
     if (tab === "packages") loadStats();
   }, [tab, loadStats]);
+  useEffect(() => {
+    if (tab === "analytics") loadAnalytics();
+  }, [tab, loadAnalytics]);
   // A newer reload wins. An older poll must not write the list after a save.
   useEffect(() => {
     const t = setInterval(() => {
-      const needsRegs = tab === "regs" || tab === "analytics";
-      const needsStats = tab === "packages";
-      if (!needsRegs && !needsStats) return;
-      if (needsRegs) loadRegs();
-      else loadStats();
+      if (tab === "regs") loadRegs();
+      else if (tab === "analytics") loadAnalytics();
+      else if (tab === "packages") loadStats();
     }, 8000);
     return () => clearInterval(t);
-  }, [tab, loadRegs, loadStats]);
+  }, [tab, loadRegs, loadAnalytics, loadStats]);
 
   const packages: any[] = event?.packages ?? [];
   const isCancelled = event?.status === "cancelled";
@@ -520,7 +628,7 @@ function EventDetailWeb() {
     setBusy(false);
     if (res.success) {
       toast("Participant deleted", "success");
-      load();
+      loadRegs();
     } else toast(res.error || "Failed to delete participant", "error");
   };
 
@@ -533,35 +641,18 @@ function EventDetailWeb() {
     } else toast(res.error || "Could not delete", "error");
   };
 
-  // Search every text / number field, like the app.
-  const q = search.trim().toLowerCase();
-  const filteredRegs = useMemo(
-    () =>
-      (registrations ?? []).filter(
-        (r) =>
-          (!q ||
-            Object.values(r).some(
-              (v) => (typeof v === "string" || typeof v === "number") && String(v).toLowerCase().includes(q),
-            )) &&
-          (!pkgFilter || (r.packageName ?? "") === pkgFilter) &&
-          (!typeFilter || shownParticipantType(r) === typeFilter) &&
-          (!statusFilter || (r.status ?? "registered") === statusFilter) &&
-          (!claimFilter || (claimFilter === "claimed") === (r.claimedInclusions ?? []).length > 0) &&
-          inIdRange(r, idPrefix, idFrom, idTo) &&
-          inCreatedRange(r, createdFrom, createdTo),
-      ),
-    [registrations, q, pkgFilter, typeFilter, statusFilter, claimFilter, idPrefix, idFrom, idTo, createdFrom, createdTo],
+  const regsFiltered = !!(
+    debouncedSearch ||
+    pkgFilter ||
+    typeFilter ||
+    statusFilter ||
+    claimFilter ||
+    idPrefix ||
+    createdFrom ||
+    createdTo
   );
-  const regsFiltered = !!(q || pkgFilter || typeFilter || statusFilter || claimFilter || idPrefix || createdFrom || createdTo);
-  const pageCount = Math.max(1, Math.ceil(filteredRegs.length / PARTICIPANT_PAGE_SIZE));
-  const safePage = Math.min(page, pageCount - 1);
-  const visibleRegs = filteredRegs.slice(
-    safePage * PARTICIPANT_PAGE_SIZE,
-    (safePage + 1) * PARTICIPANT_PAGE_SIZE,
-  );
-  useEffect(() => {
-    setPage(0);
-  }, [q, pkgFilter, typeFilter, statusFilter, claimFilter, idPrefix, idFrom, idTo, createdFrom, createdTo]);
+  const pageStart = listMeta.total === 0 ? 0 : (listMeta.page - 1) * listMeta.limit + 1;
+  const pageEnd = Math.min(listMeta.page * listMeta.limit, listMeta.total);
 
   const existingIds = (self: any | null) =>
     new Set(
@@ -631,7 +722,7 @@ function EventDetailWeb() {
         tabs={[
           { value: "info", label: "Overview" },
           { value: "packages", label: "Packages", count: packages.length },
-          { value: "regs", label: "Participants", count: registrations?.length },
+          { value: "regs", label: "Participants", count: registrations ? listMeta.totalAll : undefined },
           { value: "schedules", label: "Schedules", count: schedules?.length },
           { value: "analytics", label: "Analytics" },
         ]}
@@ -699,7 +790,7 @@ function EventDetailWeb() {
                 <span className="flex-1">
                   <span className="block font-semibold">Participants</span>
                   <span className="block text-xs text-muted">
-                    {registrations?.length ?? 0} registered · add or edit
+                    {registrations ? listMeta.totalAll : 0} registered · add or edit
                   </span>
                 </span>
                 <Icon name="chevron_right" color="#6B7280" />
@@ -752,34 +843,51 @@ function EventDetailWeb() {
               <div className="flex-1 text-sm text-muted">
                 {registrations
                   ? regsFiltered
-                    ? `Participants (${filteredRegs.length} of ${registrations.length})`
-                    : `Participants (${registrations.length})`
+                    ? `Participants (${listMeta.total} of ${listMeta.totalAll})`
+                    : `Participants (${listMeta.totalAll})`
                   : ""}
               </div>
-              <div className="w-full sm:w-72">
-                <SearchBox value={search} onChange={setSearch} placeholder="Search participants…" />
+              <div className="flex w-full items-center gap-2 sm:w-auto">
+                <div className="w-full sm:w-72">
+                  <SearchBox value={search} onChange={setSearch} placeholder="Search participants…" />
+                </div>
+                <label className="flex shrink-0 items-center gap-2 text-sm text-muted">
+                  Show
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                    aria-label="Participants per page"
+                    className="input w-20"
+                  >
+                    {PARTICIPANT_PAGE_SIZES.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
               {registrations && packages.length > 0 && (
-                <PackageCounts packages={packages} registrations={registrations} />
+                <PackageCounts packages={packages} packageCounts={listMeta.packageCounts} />
               )}
               <div className="flex w-full flex-wrap gap-2">
                 <FilterSelect
                   label="packages"
                   value={pkgFilter}
                   onChange={setPkgFilter}
-                  options={distinct((registrations ?? []).map((r) => r.packageName))}
+                  options={listMeta.packages}
                 />
                 <FilterSelect
                   label="participant types"
                   value={typeFilter}
                   onChange={setTypeFilter}
-                  options={distinct((registrations ?? []).map((r) => shownParticipantType(r)).filter(Boolean))}
+                  options={listMeta.types}
                 />
                 <FilterSelect
                   label="statuses"
                   value={statusFilter}
                   onChange={setStatusFilter}
-                  options={distinct((registrations ?? []).map((r) => r.status ?? "registered")).map((s) => ({
+                  options={listMeta.statuses.map((s) => ({
                     value: s,
                     label: cap(s.replace("_", " ")),
                   }))}
@@ -797,7 +905,7 @@ function EventDetailWeb() {
                   label="ID codes"
                   value={idPrefix}
                   onChange={setIdPrefix}
-                  options={idPrefixes(registrations ?? [])}
+                  options={listMeta.idPrefixes}
                 />
                 {idPrefix && (
                   <div className="flex items-center gap-2">
@@ -839,7 +947,7 @@ function EventDetailWeb() {
               </div>
               <ExportMenu
                 title={`${event?.title || "Event"} - Participants`}
-                rows={filteredRegs}
+                loadRows={loadExportRows}
                 columns={PARTICIPANT_EXPORT_COLUMNS}
                 qr={PARTICIPANT_QR}
               />
@@ -852,12 +960,12 @@ function EventDetailWeb() {
             </div>
             {!registrations ? (
               <Loading />
-            ) : filteredRegs.length === 0 ? (
+            ) : listMeta.total === 0 ? (
               <div className="p-5">
                 <Empty
                   icon="group_off"
                   title={
-                    registrations.length === 0
+                    listMeta.totalAll === 0
                       ? "No participants registered for this event yet."
                       : "No participants match your search."
                   }
@@ -877,7 +985,7 @@ function EventDetailWeb() {
                     </tr>
                   </thead>
                   <tbody>
-                    {visibleRegs.map((r) => {
+                    {registrations.map((r) => {
                       const regId = idOf(r);
                       const name = displayName(r) || r.idNumber || "Participant";
                       const line = [r.designation, r.institution].filter(Boolean).join(" · ");
@@ -933,7 +1041,7 @@ function EventDetailWeb() {
                                   size={19}
                                   onClick={() => setRegEditing(r)}
                                 />
-                                <IconButton icon="qr_code_2" title="QR" size={20} onClick={() => setBadgeFor(r)} />
+                                <IconButton icon="qr_code_2" title="QR" size={20} onClick={() => openBadge(r)} />
                                 <IconButton
                                   icon="delete"
                                   outline
@@ -976,17 +1084,20 @@ function EventDetailWeb() {
                 </table>
               </div>
             )}
-            {registrations && filteredRegs.length > PARTICIPANT_PAGE_SIZE && (
+            {registrations && listMeta.total > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-3 text-sm text-muted">
                 <span>
-                  Showing {safePage * PARTICIPANT_PAGE_SIZE + 1}–
-                  {Math.min((safePage + 1) * PARTICIPANT_PAGE_SIZE, filteredRegs.length)} of {filteredRegs.length}
+                  Showing {pageStart}–{pageEnd} of {listMeta.total}
                 </span>
                 <span className="flex gap-2">
-                  <Button variant="outline" disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>
+                  <Button variant="outline" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
                     Previous
                   </Button>
-                  <Button variant="outline" disabled={safePage + 1 >= pageCount} onClick={() => setPage(safePage + 1)}>
+                  <Button
+                    variant="outline"
+                    disabled={page >= listMeta.pages}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
                     Next
                   </Button>
                 </span>
@@ -995,7 +1106,9 @@ function EventDetailWeb() {
           </div>
         )}
 
-        {tab === "analytics" && <EventAnalytics event={event} registrations={registrations} onRefresh={loadRegs} />}
+        {tab === "analytics" && (
+          <EventAnalytics event={event} registrations={analyticsRegs} onRefresh={loadAnalytics} />
+        )}
 
         {tab === "schedules" && (
           <ScheduleTable
@@ -1031,13 +1144,9 @@ function EventDetailWeb() {
           onSaved={(saved) => {
             const wasNew = !regEditing;
             setRegEditing(undefined);
-            if (saved && typeof saved === "object" && idOf(saved)) {
-              regsGen.current += 1;
-              setRegistrations((list) => upsertById(list, saved));
-            }
-            load();
+            loadRegs();
             if (!wasNew) toast("Participant updated successfully", "success");
-            else if (Object.keys(saved).length) setBadgeFor(saved);
+            else if (saved && Object.keys(saved).length) setBadgeFor(saved);
           }}
         />
       )}
@@ -1051,7 +1160,7 @@ function EventDetailWeb() {
           packages={packages}
           registrations={registrations ?? []}
           onClose={() => setImporting(false)}
-          onDone={load}
+          onDone={loadRegs}
         />
       )}
     </Page>

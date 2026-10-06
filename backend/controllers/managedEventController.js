@@ -257,12 +257,13 @@ function capsName(value) {
   return String(value || '').trim().toUpperCase();
 }
 
-function registrationDto(reg, event) {
+function registrationDto(reg, event, options = {}) {
+  const slim = !!options.slim;
   const firstName = capsName(reg.firstName);
   const middleName = capsName(reg.middleName);
   const lastName = capsName(reg.lastName);
   const composed = [firstName, middleName, lastName].filter(Boolean).join(' ');
-  return {
+  const dto = {
     id: reg._id.toString(),
     eventId: reg.eventId?.toString?.() || String(reg.eventId),
     name: composed || capsName(reg.name),
@@ -290,16 +291,6 @@ function registrationDto(reg, event) {
     packageId: reg.packageId || '',
     packageName: reg.packageName || '',
     source: reg.source || 'public',
-    answers: Array.isArray(reg.answers)
-      ? reg.answers.map((a) => ({
-          questionId: a.questionId,
-          label: a.label,
-          type: a.type,
-          value: a.value,
-        }))
-      : [],
-    otp: reg.otp,
-    qrCode: reg.qrCode,
     status: reg.status,
     checkedInAt: reg.checkedInAt,
     claimedInclusions: Array.isArray(reg.claimedInclusions)
@@ -309,10 +300,6 @@ function registrationDto(reg, event) {
           claimedAt: c.claimedAt,
           reclaimedByAdmin: !!c.reclaimedByAdmin,
         }))
-      : [],
-    // Entry/exit scans, one row per event day (India time) — used by the admin Analytics tab.
-    attendance: Array.isArray(reg.attendance)
-      ? reg.attendance.map((a) => ({ day: a.day, entryAt: a.entryAt || null, exitAt: a.exitAt || null }))
       : [],
     createdAt: reg.createdAt,
     event: event
@@ -324,6 +311,179 @@ function registrationDto(reg, event) {
           publicSlug: event.publicSlug,
         }
       : undefined,
+  };
+  // A page of the admin list does not need form answers, the pass code, or scan history.
+  if (slim) return dto;
+  dto.answers = Array.isArray(reg.answers)
+    ? reg.answers.map((a) => ({
+        questionId: a.questionId,
+        label: a.label,
+        type: a.type,
+        value: a.value,
+      }))
+    : [];
+  dto.otp = reg.otp;
+  dto.qrCode = reg.qrCode;
+  // Entry/exit scans, one row per event day (India time) — used by the admin Analytics tab.
+  dto.attendance = Array.isArray(reg.attendance)
+    ? reg.attendance.map((a) => ({ day: a.day, entryAt: a.entryAt || null, exitAt: a.exitAt || null }))
+    : [];
+  return dto;
+}
+
+const PARTICIPANT_PAGE_SIZES = [15, 20, 40, 50];
+const LIST_SEARCH_FIELDS = [
+  'name',
+  'firstName',
+  'middleName',
+  'lastName',
+  'mobileNumber',
+  'email',
+  'institution',
+  'designation',
+  'idNumber',
+  'packageName',
+  'participantType',
+];
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function istDayBound(day, end) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+  return new Date(`${day}T${end ? '23:59:59.999' : '00:00:00.000'}+05:30`);
+}
+
+/** Filters shared by the paged list and the export download. */
+function registrationListFilter(eventId, query) {
+  const filter = { eventId };
+  const and = [];
+  const q = String(query.search || '').trim();
+  if (q) {
+    const rx = new RegExp(escapeRegex(q), 'i');
+    and.push({ $or: LIST_SEARCH_FIELDS.map((field) => ({ [field]: rx })) });
+  }
+
+  const pkg = String(query.package || '').trim();
+  if (pkg) filter.packageName = pkg;
+
+  const type = String(query.type || '').trim();
+  if (type) {
+    and.push({ packageName: { $not: /^spot register$/i } });
+    if (type === 'Delegate') {
+      and.push({
+        $or: [{ participantType: 'Delegate' }, { participantType: '' }, { participantType: null }],
+      });
+    } else {
+      filter.participantType = type;
+    }
+  }
+
+  const status = String(query.status || '').trim();
+  if (status) filter.status = status;
+
+  const claim = String(query.claim || '').trim();
+  if (claim === 'claimed') and.push({ 'claimedInclusions.0': { $exists: true } });
+  if (claim === 'none') {
+    and.push({
+      $or: [{ claimedInclusions: { $exists: false } }, { claimedInclusions: { $size: 0 } }],
+    });
+  }
+
+  const prefix = String(query.idPrefix || '').trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(prefix)) {
+    filter.idNumber = new RegExp(`^${prefix}`, 'i');
+    const from = parseInt(String(query.idFrom || '').replace(/\D/g, ''), 10);
+    const to = parseInt(String(query.idTo || '').replace(/\D/g, ''), 10);
+    if (!Number.isNaN(from) || !Number.isNaN(to)) {
+      const checks = [{ $ne: ['$$n', null] }];
+      if (!Number.isNaN(from)) checks.push({ $gte: ['$$n', from] });
+      if (!Number.isNaN(to)) checks.push({ $lte: ['$$n', to] });
+      and.push({
+        $expr: {
+          $let: {
+            vars: {
+              n: {
+                $convert: {
+                  input: { $substrCP: [{ $toUpper: { $ifNull: ['$idNumber', ''] } }, 2, 12] },
+                  to: 'int',
+                  onError: null,
+                  onNull: null,
+                },
+              },
+            },
+            in: { $and: checks },
+          },
+        },
+      });
+    }
+  }
+
+  const createdFrom = istDayBound(String(query.createdFrom || '').trim(), false);
+  const createdTo = istDayBound(String(query.createdTo || '').trim(), true);
+  if (createdFrom || createdTo) {
+    filter.createdAt = {};
+    if (createdFrom) filter.createdAt.$gte = createdFrom;
+    if (createdTo) filter.createdAt.$lte = createdTo;
+  }
+
+  if (and.length) filter.$and = and;
+  return filter;
+}
+
+async function registrationListFacets(eventId) {
+  const [types, statuses, prefixes, packageNames, packageGroups, totalAll] = await Promise.all([
+    EventRegistration.aggregate([
+      { $match: { eventId, packageName: { $not: /^spot register$/i } } },
+      {
+        $group: {
+          _id: {
+            $cond: [{ $in: [{ $ifNull: ['$participantType', ''] }, ['', null]] }, 'Delegate', '$participantType'],
+          },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]),
+    EventRegistration.distinct('status', { eventId }),
+    EventRegistration.aggregate([
+      { $match: { eventId } },
+      {
+        $project: {
+          prefix: { $toUpper: { $substrCP: [{ $ifNull: ['$idNumber', ''] }, 0, 2] } },
+        },
+      },
+      { $match: { prefix: { $regex: '^[A-Z]{2}$' } } },
+      { $group: { _id: '$prefix' } },
+      { $sort: { _id: 1 } },
+    ]),
+    EventRegistration.distinct('packageName', { eventId }),
+    EventRegistration.aggregate([
+      { $match: { eventId } },
+      {
+        $group: {
+          _id: {
+            packageId: { $ifNull: ['$packageId', ''] },
+            packageName: { $ifNull: ['$packageName', ''] },
+          },
+          n: { $sum: 1 },
+        },
+      },
+    ]),
+    EventRegistration.countDocuments({ eventId }),
+  ]);
+
+  return {
+    types: types.map((row) => row._id).filter(Boolean),
+    statuses: statuses.filter(Boolean).sort(),
+    idPrefixes: prefixes.map((row) => row._id),
+    packages: packageNames.map((name) => String(name || '').trim()).filter(Boolean).sort((a, b) => a.localeCompare(b)),
+    packageCounts: packageGroups.map((row) => ({
+      packageId: row._id.packageId || '',
+      packageName: row._id.packageName || '',
+      n: row.n,
+    })),
+    totalAll,
   };
 }
 
@@ -536,6 +696,9 @@ const deleteEvent = async (req, res) => {
 };
 
 // GET /api/managed-events/:id/registrations
+// No limit: every registration (staff scan, analytics, the Flutter app).
+// limit=15|20|40|50: one page for the admin list. export=1: the filtered set for download.
+// regId: one full registration (the QR badge, which the page itself omits).
 const listRegistrations = async (req, res) => {
   try {
     const apartmentId = resolveApartmentId(req);
@@ -546,16 +709,65 @@ const listRegistrations = async (req, res) => {
     if (apartmentId && event.apartmentId.toString() !== apartmentId) {
       return res.status(403).json({ success: false, error: 'Not authorized for this event' });
     }
-    // lean() skips Mongoose document wrapping. The list does not repeat the parent
-    // event on every row — that object was identical for the whole response.
-    const regs = await EventRegistration.find({ eventId: event._id })
-      .select('-fcmTokens -favoriteSchedules')
+
+    const regId = String(req.query.regId || '').trim();
+    if (regId) {
+      if (!mongoose.Types.ObjectId.isValid(regId)) {
+        return res.status(400).json({ success: false, error: 'Invalid registration' });
+      }
+      const one = await EventRegistration.findOne({ _id: regId, eventId: event._id })
+        .select('-fcmTokens -favoriteSchedules')
+        .lean();
+      if (!one) return res.status(404).json({ success: false, error: 'Registration not found' });
+      return res.json({ success: true, registration: registrationDto(one) });
+    }
+
+    const wantsPage = req.query.limit !== undefined && String(req.query.limit) !== '';
+    const wantsExport = String(req.query.export || '') === '1';
+    if (!wantsPage || wantsExport) {
+      const filter = wantsExport ? registrationListFilter(event._id, req.query) : { eventId: event._id };
+      const regs = await EventRegistration.find(filter)
+        .select('-fcmTokens -favoriteSchedules')
+        .sort({ createdAt: -1 })
+        .lean();
+      return res.json({
+        success: true,
+        registrations: regs.map((r) => registrationDto(r)),
+        count: regs.length,
+        total: regs.length,
+      });
+    }
+
+    const requested = Number(req.query.limit);
+    const limit = PARTICIPANT_PAGE_SIZES.includes(requested) ? requested : 15;
+    const filter = registrationListFilter(event._id, req.query);
+    const [total, facets] = await Promise.all([
+      EventRegistration.countDocuments(filter),
+      registrationListFacets(event._id),
+    ]);
+    const pages = Math.max(1, Math.ceil(total / limit));
+    const page = Math.min(Math.max(parseInt(req.query.page, 10) || 1, 1), pages);
+    const regs = await EventRegistration.find(filter)
+      .select('-fcmTokens -favoriteSchedules -attendance -answers -otp -qrCode')
       .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
       .lean();
+
     res.json({
       success: true,
-      registrations: regs.map((r) => registrationDto(r)),
+      registrations: regs.map((r) => registrationDto(r, undefined, { slim: true })),
       count: regs.length,
+      total,
+      totalAll: facets.totalAll,
+      page,
+      limit,
+      pages,
+      packages: facets.packages,
+      types: facets.types,
+      statuses: facets.statuses,
+      idPrefixes: facets.idPrefixes,
+      packageCounts: facets.packageCounts,
     });
   } catch (error) {
     console.error('listRegistrations error:', error);
