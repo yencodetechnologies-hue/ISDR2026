@@ -48,6 +48,7 @@ import ManageHallArrangementPdf from "./pages/admin/HallArrangementPdf";
 import ManagePaperPosterPdf from "./pages/admin/PaperPosterPdf";
 import UgPaperPdf from "./pages/common/UgPaperPdf";
 import HallArrangementPdf from "./pages/common/HallArrangementPdf";
+import PreconferencePdf from "./pages/common/PreconferencePdf";
 import PaperPosterPdf from "./pages/common/PaperPosterPdf";
 import ManageBanner from "./pages/admin/Banner";
 import {
@@ -117,6 +118,7 @@ export default function App() {
             <Route path="/participant/committee" element={<Committee />} />
             <Route path="/participant/about" element={<AboutIsdr />} />
             <Route path="/participant/preconference" element={<ParticipantPreconference />} />
+            <Route path="/participant/preconference/pdf" element={<PreconferencePdf />} />
             <Route path="/participant/ug-paper" element={<UgPaperPdf />} />
             <Route path="/participant/hall-arrangement" element={<HallArrangementPdf />} />
             <Route path="/participant/paper-poster" element={<PaperPosterPdf />} />

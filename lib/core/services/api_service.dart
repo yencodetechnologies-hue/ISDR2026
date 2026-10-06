@@ -2024,6 +2024,42 @@ class ApiService {
             }),
           ));
 
+  /// The preconference PDF on Cloudinary. url is '' until an admin uploads one.
+  Future<Map<String, dynamic>> getPreconferencePdf() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.preconferencePdf));
+
+  /// Downloads the preconference PDF from its Cloudinary URL.
+  Future<Uint8List> downloadPreconferencePdf() async {
+    final meta = await getPreconferencePdf();
+    if (meta['success'] != true) {
+      throw Exception(meta['error']?.toString() ?? 'Could not load the preconference PDF');
+    }
+    final url = meta['url']?.toString() ?? '';
+    if (url.isEmpty) {
+      throw Exception('No preconference PDF has been uploaded yet');
+    }
+    final response = await _dio.get(
+      url,
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final data = response.data;
+    if (data is Uint8List) return data;
+    if (data is List<int>) return Uint8List.fromList(data);
+    throw Exception('Preconference PDF is empty');
+  }
+
+  /// Admin replaces the preconference PDF participants open from View PDF.
+  Future<Map<String, dynamic>> uploadPreconferencePdf(String filePath) =>
+      _sessionContentCall(() async => _dio.post(
+            ApiConfig.preconferencePdf,
+            data: FormData.fromMap({
+              'pdf': await MultipartFile.fromFile(
+                filePath,
+                filename: filePath.split(Platform.pathSeparator).last,
+              ),
+            }),
+          ));
+
   /// The hall arrangement PDF on Cloudinary. url is '' until an admin uploads one.
   Future<Map<String, dynamic>> getHallArrangementPdf() =>
       _sessionContentCall(() => _dio.get(ApiConfig.hallArrangementPdf));

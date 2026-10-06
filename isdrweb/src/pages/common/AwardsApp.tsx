@@ -105,7 +105,7 @@ export default function AwardsApp() {
             <div className="flex items-center gap-2 rounded-[10px] border border-[#F59E0B]/30 bg-[#F59E0B]/15 px-3 py-2.5">
               <Icon name={winner ? "emoji_events" : "hourglass_top"} size={18} color="#FBBF24" />
               <span className={`text-[#FBBF24] ${winner ? "text-sm font-bold" : "text-[13px] font-semibold"}`}>
-                {winner ?? "Yet to be announced"}
+                {winner ?? "To be announced"}
               </span>
             </div>
           </div>

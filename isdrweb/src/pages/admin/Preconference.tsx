@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AppBar,
   Button,
@@ -114,6 +114,111 @@ function useCourseAdmin() {
   return { items, error, load, draft, setDraft, saving, save, remove, openEdit, toast };
 }
 
+function usePreconferencePdf() {
+  const toast = useToast();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [meta, setMeta] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const load = useCallback(async () => {
+    const r = await get("/preconference-pdf");
+    if (r.success) setMeta(r);
+    else setMeta({ url: "", fileName: "", error: r.error || "Could not load the preconference PDF" });
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const upload = async (file: File) => {
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("pdf", file);
+    const r = await post("/preconference-pdf", fd);
+    setUploading(false);
+    if (r.success) {
+      toast("Preconference PDF updated", "success");
+      setMeta(r);
+    } else toast(r.error || "Upload failed", "error");
+  };
+
+  return { meta, uploading, fileRef, upload };
+}
+
+function PdfUpload({ app }: { app?: boolean }) {
+  const { meta, uploading, fileRef, upload } = usePreconferencePdf();
+  const hasPdf = Boolean(meta?.url);
+  const label = uploading ? "Uploading…" : hasPdf ? "Replace PDF" : "Upload PDF";
+  const input = (
+    <input
+      ref={fileRef}
+      type="file"
+      accept="application/pdf,.pdf"
+      hidden
+      onChange={(e) => {
+        const f = e.target.files?.[0];
+        if (f) upload(f);
+        e.target.value = "";
+      }}
+    />
+  );
+
+  if (app) {
+    return (
+      <div className="mb-4 rounded-[14px] border border-white/10 bg-card p-3.5">
+        {input}
+        <div className="flex items-center gap-3">
+          <Icon name="picture_as_pdf" size={22} color="#6366F1" />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13.5px] font-semibold">
+              {meta?.error || meta?.fileName || "No PDF uploaded yet"}
+            </div>
+            {hasPdf ? (
+              <a href={meta.url} target="_blank" rel="noreferrer" className="mt-1 block break-all text-xs font-medium text-[#93C5FD] underline">
+                {meta.url}
+              </a>
+            ) : (
+              <div className="text-xs text-muted">Participants open this file from View PDF</div>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={() => !uploading && fileRef.current?.click()}
+          className="mt-3 flex h-[46px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#3B82F6] text-[15px] font-bold"
+        >
+          {uploading ? <Spinner size={20} color="#fff" /> : <Icon name="upload_file" size={20} />}
+          {label}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-5 rounded-xl border border-white/10 bg-[#14141F] p-4">
+      {input}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <Icon name="picture_as_pdf" size={18} color="#6366F1" />
+            Preconference PDF
+          </div>
+          <div className="mt-2 text-[13px] text-muted">
+            {meta?.fileName ? `Current file: ${meta.fileName}` : meta?.error || "Participants see View PDF after you upload a file."}
+          </div>
+          {hasPdf && (
+            <a href={meta.url} target="_blank" rel="noreferrer" className="mt-2 block break-all text-sm text-[#93C5FD] underline">
+              {meta.url}
+            </a>
+          )}
+        </div>
+        <Button icon="upload_file" onClick={() => fileRef.current?.click()} loading={uploading}>
+          {label}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function CourseFields({
   draft,
   setDraft,
@@ -153,7 +258,7 @@ function CourseFields({
         <Input value={draft.serialNo} onChange={(e) => setDraft({ ...draft, serialNo: e.target.value })} inputMode="numeric" />
       </Field>
       <Field label="Date">
-        <Input value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} placeholder="08.09.26" />
+        <Input value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} placeholder="08.10.26" />
       </Field>
       <Field label="Pre Conference Course">
         <textarea
@@ -186,6 +291,7 @@ function PreconferenceAdminWeb() {
         </Button>
       }
     >
+      <PdfUpload />
       {error ? (
         <ErrorState message={error} onRetry={load} />
       ) : !items ? (
@@ -259,6 +365,7 @@ function PreconferenceAdminApp() {
     <div className="min-h-screen bg-bg">
       <AppBar title="Preconference" outfit />
       <div className="px-4 pb-24 pt-2">
+        <PdfUpload app />
         {items === null && !error ? (
           <AppSpinner />
         ) : error || !items || items.length === 0 ? (

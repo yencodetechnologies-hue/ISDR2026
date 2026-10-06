@@ -75,6 +75,7 @@ export const PROGRAMME_HALLS = [
   "Dr C V Subbarao Hall",
   "SBDCH Auditorium",
   "SBDCH Auditorium Lecture Hall 4",
+  "Oral Surgery Seminar Hall",
   "SBDCH Auditorium Halls 1–7",
   "E-Poster Presentations",
 ];

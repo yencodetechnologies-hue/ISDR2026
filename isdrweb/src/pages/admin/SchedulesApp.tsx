@@ -18,6 +18,11 @@ const timeText = (d: Date) => {
 };
 const titleClass = "text-[18px] font-bold";
 
+/** Walk-in package. It stays on the event, but is not a schedule audience. */
+function isSpotRegisterName(name: unknown) {
+  return /^spot register$/i.test(String(name ?? "").trim());
+}
+
 /* ------------------------------------------------------------------ */
 /* Event Schedules — the app's EventSchedulesPage (pick an event)       */
 /* ------------------------------------------------------------------ */
@@ -485,11 +490,15 @@ export function ScheduleFormApp() {
           setDescription(s.description ?? "");
           const sid = String(s.speakerId ?? "");
           setSpeakerId(list.some((x) => idOf(x) === sid) ? sid : "");
-          const current = new Set(((e?.packages ?? []) as any[]).map((p) => String(p.id)));
+          const allPackages = (e?.packages ?? []) as any[];
+          const onEvent = new Set(allPackages.map((p) => String(p.id)));
+          const spotIds = new Set(
+            allPackages.filter((p) => isSpotRegisterName(p?.name)).map((p) => String(p.id)),
+          );
           const saved: string[] = (s.packageIds ?? []).map(String);
-          const kept = saved.filter((id) => current.has(id));
+          const kept = saved.filter((id) => onEvent.has(id) && !spotIds.has(id));
           setPackageIds(kept);
-          setRemovedPackages(saved.length - kept.length);
+          setRemovedPackages(saved.filter((id) => !onEvent.has(id)).length);
           const d = new Date(String(s.date ?? ""));
           if (!isNaN(d.getTime()))
             setDates([
@@ -504,7 +513,7 @@ export function ScheduleFormApp() {
 
   const packages: { id: string; name: string }[] = ((event?.packages ?? []) as any[])
     .map((p) => ({ id: String(p.id ?? ""), name: String(p.name ?? "") }))
-    .filter((p) => p.id);
+    .filter((p) => p.id && !isSpotRegisterName(p.name));
   const days = event ? eventDays(event) : [];
   const pickedDays = days.filter((d) => dates.includes(d.iso));
   const perDate = !sameTime && dates.length > 1;

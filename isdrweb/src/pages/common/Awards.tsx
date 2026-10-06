@@ -101,7 +101,7 @@ function AwardsWeb() {
           <div className="px-4 pb-4">
             <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/15 px-3 py-2.5 font-semibold text-[#FBBF24]">
               <Icon name={winner ? "emoji_events" : "hourglass_top"} size={18} />
-              {winner ?? "Yet to be announced"}
+              {winner ?? "To be announced"}
             </div>
           </div>
         )}

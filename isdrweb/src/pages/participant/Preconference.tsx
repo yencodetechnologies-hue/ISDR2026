@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppBar, Empty, ErrorState, Icon, Loading, Page } from "@/components/ui";
 import { AppSpinner } from "@/components/app/AppControls";
 import { get } from "@/lib/api";
@@ -44,7 +45,7 @@ function Hero({ count }: { count?: number }) {
         <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold text-white/80">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1">
             <Icon name="event" size={15} color="#93C5FD" />
-            08.09.26
+            08.10.26
           </span>
           {count != null && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1">
@@ -84,6 +85,19 @@ function CourseCard({ row }: { row: any }) {
   );
 }
 
+function ViewPdfButton() {
+  const navigate = useNavigate();
+  return (
+    <button
+      onClick={() => navigate("/participant/preconference/pdf")}
+      className="mt-4 flex h-[50px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#6366F1] text-[15px] font-bold text-white"
+    >
+      <Icon name="picture_as_pdf" size={20} />
+      View PDF
+    </button>
+  );
+}
+
 function CourseList({ list }: { list: any[] }) {
   return (
     <div className="grid gap-3 lg:grid-cols-2">
@@ -109,6 +123,7 @@ function PreconferenceWeb() {
         ) : (
           <CourseList list={list} />
         )}
+        {list && <ViewPdfButton />}
       </div>
     </Page>
   );
@@ -139,6 +154,7 @@ function PreconferenceApp() {
           ) : (
             list.map((row) => <CourseCard key={idOf(row)} row={row} />)
           )}
+          {list && <ViewPdfButton />}
         </div>
       )}
     </div>

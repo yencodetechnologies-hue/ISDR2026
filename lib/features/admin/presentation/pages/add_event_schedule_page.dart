@@ -49,8 +49,12 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   List<({String iso, String label})> get _pickedDays =>
       eventDays(widget.event).where((d) => _dates.contains(d.iso)).toList();
 
-  /// The event's packages as {id, name}.
-  List<({String id, String name})> get _packages =>
+  /// Walk-in package. It stays on the event, but is not a schedule audience.
+  bool _isSpotRegister(String name) =>
+      RegExp(r'^spot register$', caseSensitive: false).hasMatch(name.trim());
+
+  /// Every package on the event, including Spot register.
+  List<({String id, String name})> get _eventPackages =>
       ((widget.event['packages'] as List?) ?? const [])
           .whereType<Map>()
           .map(
@@ -61,6 +65,10 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
           )
           .where((p) => p.id.isNotEmpty)
           .toList();
+
+  /// Packages that can be chosen as who sees this session.
+  List<({String id, String name})> get _packages =>
+      _eventPackages.where((p) => !_isSpotRegister(p.name)).toList();
 
   String get _eventId =>
       widget.event['id']?.toString() ?? widget.event['_id']?.toString() ?? '';
@@ -89,13 +97,15 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
       _hall.text = s['hall']?.toString() ?? '';
       _description.text = s['description']?.toString() ?? '';
       _speakerId = s['speakerId']?.toString();
-      // Keep only packages the event still has; note any that were deleted.
+      // Keep selectable packages the event still has. Spot register is hidden
+      // from this form, so a saved id for it is dropped and not counted as deleted.
       final saved = ((s['packageIds'] as List?) ?? const [])
           .map((id) => id.toString())
           .toList();
-      final current = _packages.map((p) => p.id).toSet();
-      _packageIds.addAll(saved.where(current.contains));
-      _removedPackages = saved.length - _packageIds.length;
+      final onEvent = _eventPackages.map((p) => p.id).toSet();
+      final selectable = _packages.map((p) => p.id).toSet();
+      _packageIds.addAll(saved.where(selectable.contains));
+      _removedPackages = saved.where((id) => !onEvent.contains(id)).length;
       final utc = DateTime.tryParse(s['date']?.toString() ?? '')?.toUtc();
       if (utc != null) {
         _dates.add(

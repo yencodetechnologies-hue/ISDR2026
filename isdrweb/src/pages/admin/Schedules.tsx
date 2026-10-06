@@ -32,6 +32,11 @@ import { EventScheduleListApp, EventSchedulesApp, ScheduleFormApp } from "./Sche
    SCHEDULE TABLE (shared with Event detail)
 ========================================================================= */
 
+/** Walk-in package. It stays on the event, but is not a schedule audience. */
+function isSpotRegisterName(name: unknown) {
+  return /^spot register$/i.test(String(name ?? "").trim());
+}
+
 /** Calendar day a schedule is stored on (UTC date, shown as a local heading). */
 function scheduleCalendarDay(s: any): Date | null {
   const d = parseDate(s?.date);
@@ -393,13 +398,35 @@ function ScheduleEditorWeb() {
     });
   }, [eventId, scheduleId, toast]);
 
-  const packages: any[] = event?.packages ?? [];
+  // Drop Spot register if a saved schedule still lists it. Event and schedule
+  // load separately, so this runs once both are in.
+  useEffect(() => {
+    if (!event) return;
+    const spotIds = new Set(
+      ((event.packages ?? []) as any[])
+        .filter((p) => isSpotRegisterName(p?.name))
+        .map((p) => String(p.id)),
+    );
+    if (!spotIds.size) return;
+    setPackageIds((ids) => {
+      const next = ids.filter((id) => !spotIds.has(id));
+      return next.length === ids.length ? ids : next;
+    });
+  }, [event, existing]);
+
+  const packages: any[] = ((event?.packages ?? []) as any[]).filter((p) => !isSpotRegisterName(p?.name));
   // Old schedules may only have a speaker name (no linked speaker account).
   const legacySpeaker = editing && existing && !existing.speakerId ? String(existing.speakerName ?? "") : "";
 
   const save = async () => {
+    const spotIds = new Set(
+      ((event?.packages ?? []) as any[])
+        .filter((p) => isSpotRegisterName(p?.name))
+        .map((p) => String(p.id)),
+    );
+    const audienceIds = packageIds.filter((id) => !spotIds.has(id));
     if (!speakerId && !legacySpeaker) return toast("Select a speaker", "error");
-    if (!packageIds.length && !(editing && existing && !(existing.packageIds ?? []).length))
+    if (!audienceIds.length && !(editing && existing && !(existing.packageIds ?? []).length))
       return toast("Select at least one package", "error");
     if (!scheduleName.trim()) return toast("Enter schedule name", "error");
     if (!date) return toast("Select a date", "error");
@@ -409,7 +436,7 @@ function ScheduleEditorWeb() {
     const fields = {
       scheduleName: scheduleName.trim(),
       speakerId,
-      packageIds,
+      packageIds: audienceIds,
       hall: hall.trim(),
       date,
       fromTime,

@@ -99,11 +99,14 @@ class _UgPaperPageState extends State<UgPaperPage> {
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
-          'UG Paper',
+          'UG Paper and E-Poster Presentation',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w700,
-            fontSize: 18,
+            fontSize: 15,
+            height: 1.15,
           ),
         ),
         actions: [

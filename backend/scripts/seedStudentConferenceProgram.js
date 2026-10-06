@@ -21,7 +21,7 @@ const ManagedEvent = require('../models/ManagedEvent');
 const EventSchedule = require('../models/EventSchedule');
 
 const AUDITORIUM = 'SBDCH Auditorium';
-const LECTURE = 'SBDCH Auditorium Lecture Hall 4';
+const ORAL_SURGERY = 'Oral Surgery Seminar Hall';
 const HALLS = 'SBDCH Auditorium Halls 1–7';
 const EPOSTER = 'E-Poster Presentations';
 
@@ -35,8 +35,9 @@ const REPLACE_TO = new Date('2026-10-08T18:30:00.000Z');
 const NONE = '—';
 const SERIES =
   'Research Reimagined: From Idea to Impact | Dental Research Orientation Lecture Series';
-const SESSION_I = `${SERIES}. Session I, 9:15 am–12:00 pm`;
-const AFTERNOON = 'Student Conference Pre-conference Courses, 1:15–3:00 pm';
+const MORNING = `${SERIES}. SBDCH Auditorium, 9:00–10:20 am.`;
+const LEADERSHIP = 'Global Research Leadership: Inspiring the Next Generation.';
+const AFTERNOON = `${SERIES}. Student Conference Pre-conference Courses, SBDCH Auditorium, 12:30–2:20 pm.`;
 
 const panel = (...names) => names.join(' · ');
 
@@ -50,7 +51,7 @@ const PROGRAMME = [
     AUDITORIUM,
     'Translational Proteomics & Systemic Biomarkers: High Throughput Science with Targeted Therapeutics',
     'Dr. Pavithra Krishnaswami',
-    'Senior Scientist, Translational Medicine Unit, Cambridge, Massachusetts, Greater Boston, Sanofi, USA. Moderator: Dr. Khavya C. Convenor: Dr. Sumathi Jones. Co-Convenor: Dr. N. Gold Pearlin Mary. Coordinators: Dr. P. Durgadevi & Dr. Khavya C.',
+    'International Expert Lecture. Senior Scientist, Translational Medicine Unit, Cambridge, Massachusetts, Greater Boston, Sanofi, USA. Moderator: Dr. Khavya C.',
   ],
   [
     D1,
@@ -58,19 +59,32 @@ const PROGRAMME = [
     '10:00',
     AUDITORIUM,
     'Inauguration | Prayer & Lighting of Lamp',
-    panel('Dr. M.S. Kannan', 'Dr. S. Bhuminathan'),
-    'Dr. M.S. Kannan, Dean, Sree Balaji Dental College and Hospital, Chennai, India — Welcome to the World of Discovery. Dr. S. Bhuminathan, Registrar, Bharath Institute of Higher Education and Research, Chennai, India — Empowering the Researchers of tomorrow.',
+    panel(
+      'Dr. M.S. Kannan',
+      'Dr. S. Bhuminathan',
+      'Dr. K. Gnana Shanmugham',
+      'Dr. Sumathi Jones',
+    ),
+    'ISDR/IADR-Indian Division. Dr. M.S. Kannan, Dean, Sree Balaji Dental College and Hospital, Chennai, India — Welcome to the World of Discovery and Invention. Dr. S. Bhuminathan, Registrar, Bharath Institute of Higher Education and Research, Chennai, India — Empowering the Researchers of tomorrow. Dr. K. Gnana Shanmugham, Chairman, Scientific Committee — Connecting the Young Minds. Dr. Sumathi Jones, Convenor — One Journey, Many Ideas, Endless Possibilities.',
   ],
   [
     D1,
     '10:00',
     '10:30',
     AUDITORIUM,
-    'Keynote address',
+    'Distinguished Keynote address',
     'Dr. Narayanan Ramasubbu',
     'Professor & Acting Chair, Associate Dean Research, Rutgers University, USA. Moderator: Dr. N. Gold Pearlin Mary.',
   ],
-  [D1, '10:30', '10:45', AUDITORIUM, 'Vote of Thanks', 'Dr. Sumathi Jones', ''],
+  [
+    D1,
+    '10:30',
+    '10:45',
+    AUDITORIUM,
+    'Celebrating Collaboration & Gratitude',
+    'Dr. N. Gold Pearlin Mary',
+    'Co-Convenor.',
+  ],
   [D1, '10:45', '11:00', AUDITORIUM, 'Research Refreshment Break', NONE, ''],
   [
     D1,
@@ -79,7 +93,7 @@ const PROGRAMME = [
     AUDITORIUM,
     'Aptamers in dentistry: From Molecular recognition to chairside dentistry',
     'Dr. Sylvia Annabel Dass',
-    'Laboratory Manager, ISO 13485 Quality & Validation Expert, Allen Healthcare Products, Penang, Malaysia. Moderator: Dr. P. Durgadevi.',
+    'International Expert Insight. Laboratory Manager, ISO 13485 Quality & Validation Expert, Allen Healthcare Products, Penang, Malaysia. Moderator: Dr. P. Durgadevi.',
   ],
   [
     D1,
@@ -96,7 +110,7 @@ const PROGRAMME = [
     '12:10',
     AUDITORIUM,
     'Demystifying the concept of Research',
-    'Dr. Priyadarshini',
+    'Dr. S. Priya Darshini',
     `Senior Lecturer, Oral Medicine and Radiology, SBDCH. ${SERIES}.`,
   ],
   [
@@ -104,8 +118,8 @@ const PROGRAMME = [
     '12:10',
     '12:30',
     AUDITORIUM,
-    'How to select the right research',
-    'Dr. Shalini',
+    'How to select the right research Topic',
+    'Dr. H. Shalini',
     `Senior Lecturer, Endodontics, SBDCH. ${SERIES}.`,
   ],
   [D1, '12:30', '13:30', AUDITORIUM, 'Research Recharge Lunch', NONE, ''],
@@ -115,7 +129,7 @@ const PROGRAMME = [
     '13:50',
     AUDITORIUM,
     'Digital Prosthodontics: A life saver or fire play. What does the research say?',
-    'Dr. Ramkiran',
+    'Dr. Ram Kiran K',
     `Reader, Prosthodontics, SBDCH. ${SERIES}.`,
   ],
   [
@@ -124,7 +138,7 @@ const PROGRAMME = [
     '14:20',
     AUDITORIUM,
     'Research Reviewed: A beginner’s guide to Systematic review & meta-analysis',
-    'Dr. Balavenkata Bharathi',
+    'Dr. Balavenkata Bharathi Chaturvedula',
     `Reader, Orthodontics, SBDCH. ${SERIES}.`,
   ],
   [
@@ -149,7 +163,71 @@ const PROGRAMME = [
     AUDITORIUM,
     'Targeted Therapeutics of Oral Cancer',
     'Dr. Murugabaskar Balan',
-    'Scientist, Boston Children’s Hospital, Harvard Medical School. Moderator: Dr. Sumathi Jones.',
+    'International Expert Talk. Scientist, Boston Children’s Hospital, Harvard Medical School, USA. Moderator: Dr. Sumathi Jones.',
+  ],
+  [
+    D2,
+    '09:00',
+    '09:20',
+    AUDITORIUM,
+    'Ethics in biomedical research',
+    'Dr. M. Ramya Chellammal',
+    `Senior Lecturer, Pedodontics, SBDCH. ${MORNING}`,
+  ],
+  [
+    D2,
+    '09:20',
+    '09:40',
+    AUDITORIUM,
+    'The Art and Science of Manuscript writing',
+    'Dr. K. Mahalakshmi',
+    `Professor & Head, Microbiology, SBDCH. ${MORNING}`,
+  ],
+  [
+    D2,
+    '09:40',
+    '10:00',
+    AUDITORIUM,
+    'AI in research',
+    'Dr. J. Bhuvaneswarri',
+    `Professor, Periodontics, SBDCH. ${MORNING}`,
+  ],
+  [
+    D2,
+    '10:00',
+    '10:20',
+    AUDITORIUM,
+    'Beyond the P-Value: The Science Behind the Numbers',
+    'Dr. D. Charumathi',
+    `Senior Lecturer, Public Health Dentistry, SBDCH. ${MORNING}`,
+  ],
+  [D2, '10:20', '10:30', AUDITORIUM, 'Research Refreshment Break', NONE, ''],
+  [
+    D2,
+    '10:30',
+    '11:00',
+    AUDITORIUM,
+    'A brief insight into IADR and its role in supporting meaningful research',
+    'Dr. Christopher Fox',
+    `CEO – IADR. ${LEADERSHIP}`,
+  ],
+  [
+    D2,
+    '11:00',
+    '11:30',
+    AUDITORIUM,
+    'An insight into my research and career journey',
+    'Dr. Jennifer Gallagher',
+    `President - IADR. ${LEADERSHIP}`,
+  ],
+  [
+    D2,
+    '11:30',
+    '12:00',
+    AUDITORIUM,
+    'An overview about ISDR/IADR Indian Division',
+    'Dr. S.M. Balaji',
+    `Director of Balaji Dental & Craniofacial Hospital, Chennai, India. ${LEADERSHIP}`,
   ],
   [D2, '12:00', '12:30', AUDITORIUM, 'Felicitation of Pre-conference Resource persons', NONE, ''],
   [
@@ -158,8 +236,8 @@ const PROGRAMME = [
     '12:50',
     AUDITORIUM,
     'Publication Ethics',
-    'Dr. Leenasankari',
-    'Professor, Oral Pathology. Student Conference Pre-conference Courses.',
+    'Dr. S. Leena Sankari',
+    `Professor, Oral and Maxillofacial Pathology and Oral Microbiology, SBDCH. ${AFTERNOON}`,
   ],
   [D2, '12:50', '13:30', AUDITORIUM, 'The Networking Feast', NONE, ''],
   [
@@ -169,7 +247,7 @@ const PROGRAMME = [
     AUDITORIUM,
     'Plagiarism paradox',
     'Dr. R. Mathangi',
-    `Professor & Head, Biochemistry, SBDCH. ${AFTERNOON}.`,
+    `Professor & Head, Biochemistry, SBDCH. ${AFTERNOON}`,
   ],
   [
     D2,
@@ -178,7 +256,7 @@ const PROGRAMME = [
     AUDITORIUM,
     'Don’t just publish - innovate: From Research to Patent',
     'Dr. Sumathi Jones',
-    `Professor & Head, Pharmacology, SBDCH. ${AFTERNOON}.`,
+    `Professor & Head, Pharmacology, SBDCH. ${AFTERNOON}`,
   ],
   [
     D2,
@@ -190,84 +268,21 @@ const PROGRAMME = [
     'Valedictory function.',
   ],
 
-  // Day 2 — Lecture Hall 4
+  // Day 2 — Oral Surgery Seminar Hall
   [
     D2,
-    '09:00',
-    '09:20',
-    LECTURE,
-    'Ethics in biomedical research',
-    'Dr. Ramya',
-    `Senior Lecturer, Pedodontics, SBDCH. ${SESSION_I}.`,
-  ],
-  [
-    D2,
-    '09:20',
-    '09:40',
-    LECTURE,
-    'The Art and Science of Manuscript writing',
-    'Dr. K. Mahalakshmi',
-    `Professor & Head, Microbiology, SBDCH. ${SESSION_I}.`,
-  ],
-  [
-    D2,
-    '09:40',
-    '10:00',
-    LECTURE,
-    'AI in research',
-    'Dr. Bhuvaneshwari',
-    `Professor, Periodontics, SBDCH. ${SESSION_I}.`,
-  ],
-  [
-    D2,
-    '10:00',
-    '10:20',
-    LECTURE,
-    'Beyond the P-Value: The Science Behind the Numbers',
-    'Dr. Charumathi',
-    `Senior Lecturer, Public Health Dentistry, SBDCH. ${SESSION_I}.`,
-  ],
-  [D2, '10:20', '10:30', LECTURE, 'Research Refreshment Break', NONE, ''],
-  [
-    D2,
-    '10:30',
-    '11:00',
-    LECTURE,
-    'A brief insight into IADR and its role in supporting meaningful research',
-    'Dr. Christopher Fox',
-    `CEO – IADR. ${SESSION_I}.`,
-  ],
-  [
-    D2,
-    '11:00',
-    '11:30',
-    LECTURE,
-    'An insight into my research and career journey',
-    'Dr. Jennifer Gallagher',
-    `President - IADR. ${SESSION_I}.`,
-  ],
-  [
-    D2,
-    '11:30',
+    '09:15',
     '12:00',
-    LECTURE,
-    'An overview about ISDR/IADR Indian Division',
-    'Dr. S.M. Balaji',
-    `Director of Balaji Dental & Craniofacial Hospital, Chennai, India. ${SESSION_I}.`,
-  ],
-  [D2, '13:00', '14:30', LECTURE, 'E-Poster Presentation Session III', NONE, ''],
-
-  // Day 2 — e-posters with no hall printed
-  [D2, '09:00', '10:30', EPOSTER, 'E-Poster Presentation Session I', NONE, ''],
-  [
-    D2,
-    '10:30',
-    '12:30',
-    EPOSTER,
-    'E-Poster Presentation Session II',
+    ORAL_SURGERY,
+    'Session I',
     NONE,
-    'Basic Medical Sciences.',
+    'Student Conference Pre-Conference Courses.',
   ],
+  [D2, '13:00', '14:30', ORAL_SURGERY, 'E-Poster Presentation Session III', NONE, ''],
+
+  // Day 2 — e-posters
+  [D2, '09:00', '10:30', EPOSTER, 'E-Poster Presentation Session I', NONE, ''],
+  [D2, '10:30', '12:30', EPOSTER, 'E-Poster Presentation Session II', NONE, ''],
 ];
 
 /** Calendar day in India, so UTC-midnight rows and IST-midnight rows group the same. */

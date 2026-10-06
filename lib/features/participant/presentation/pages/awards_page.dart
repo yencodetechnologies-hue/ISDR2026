@@ -380,7 +380,7 @@ class _AwardsPageState extends State<AwardsPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        winner ?? 'Yet to be announced',
+                        winner ?? 'To be announced',
                         style: GoogleFonts.inter(
                           fontSize: winner == null ? 13 : 14,
                           fontWeight: winner == null

@@ -15,59 +15,59 @@ const PreconferenceCourse = require('../models/PreconferenceCourse');
 const COURSES = [
   {
     serialNo: 1,
-    date: '08.09.26',
+    date: '08.10.26',
     course:
       'PCC 1- UNLOCKING THE BASICS OF RESEARCH METHODOLGY AND BIOSTATISTICS - DR MANJULA DATTA, DR SARUMATHI & TEAM',
-    venue: 'AUDITORIUM I, SBDCH.',
-  },
-  {
-    serialNo: 2,
-    date: '08.09.26',
-    course: 'PCC2- BIOMARKERS IN DENTISTRY FOR PERSONALISED CARE – DR SWAMINATHAN SETHU',
     venue: 'LECTURE HALL I, SBDCH',
   },
   {
+    serialNo: 2,
+    date: '08.10.26',
+    course: 'PCC 2- BIOMARKERS IN DENTISTRY FOR PERSONALISED CARE – DR SWAMINATHAN SETHU',
+    venue: 'LECTURE HALL IV, SBDCH',
+  },
+  {
     serialNo: 3,
-    date: '08.09.26',
+    date: '08.10.26',
     course:
       'PCC 3 -MASTERING HIGH-QUALITY SYSTEMATIC REVIEWS – AN INTERACTIVE WORKSHOP - DR VENKATESH BABU',
     venue: 'BOARD ROOM, SBDCH',
   },
   {
     serialNo: 4,
-    date: '08.09.26',
+    date: '08.10.26',
     course: 'PCC 4 -EVIDENCE SYNTHESIS IN DENTAL RESEARCH - HANDS ON-DR RICHARD KIRUBAKARAN',
     venue: 'LECTURE HALL III, SBDCH',
   },
   {
     serialNo: 5,
-    date: '08.09.26',
-    course: 'PCC 5 – NEUROMUSCULAR DENTISTRY -DR TATU JOY',
+    date: '08.10.26',
+    course: 'PCC 5 – NEUROMUSCULAR DENTISTRY - DR TATU JOY',
     venue: 'PROSTHO SEMINAR HALL SBDCH',
   },
   {
     serialNo: 6,
-    date: '08.09.26',
+    date: '08.10.26',
     course:
       'PCC 6 – CLEFT RESEARCH: FROM IDEAS TO IMPACT-TOPICS, FUNDING, COLLABORATIONS, STUDY DESIGN,AND EXECUTION– DR BADRI TIRUVENKATACHARI & TEAM',
-    venue: 'THE CLEFT & CRANIOFACIAL CENTRE, RELA HOSPITAL, CHENNAI',
+    venue: 'DEPARTMENT OF ORTHODONTICS, SBDCH',
   },
   {
     serialNo: 7,
-    date: '08.09.26',
+    date: '08.10.26',
     course: 'PCC 7 – THE MINIMALIST DENTIST-CHANGING CONCEPTS IN MID- DR KRITHIKA DATTA',
     venue: 'LECTURE HALL II, SBDCH',
   },
   {
     serialNo: 8,
-    date: '08.09.26',
+    date: '08.10.26',
     course:
       'PCC 8 - FUNDING SUCCESS SIMPLIFIED: DESIGNING, WRITING, BUDGETING AND REFINING ICMR AND DST PROPOSALS- DR.AARTHI BHUVARAGHAN',
-    venue: 'THE CLEFT & CRANIOFACIAL CENTRE, RELA HOSPITAL, CHENNAI',
+    venue: 'DEPARTMENT OF ORTHODONTICS, SBDCH',
   },
   {
     serialNo: 9,
-    date: '08.09.26',
+    date: '08.10.26',
     course:
       'PCC 9- STEM CELLS AND SMART BIOMATERIALS IN DENTISTRY: FROM LABORATORY INNOVATION TO CLINICAL REGENERATION- DR RAGHUNANDA KUMAR',
     venue: 'SAVEETHA DENTAL COLLEGE',

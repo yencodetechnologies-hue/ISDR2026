@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
+import 'preconference_pdf_page.dart';
 
 const _accent = Color(0xFF6366F1);
 const _accentSoft = Color(0xFFC7D2FE);
@@ -69,6 +70,7 @@ class _PreconferencePageState extends State<PreconferencePage> {
                       _CourseCard(row: row),
                       const SizedBox(height: 12),
                     ],
+                  if (!_loading) const _ViewPdfButton(),
                 ],
               ),
       ),
@@ -92,6 +94,40 @@ class _PreconferencePageState extends State<PreconferencePage> {
             style: GoogleFonts.inter(fontSize: 13.5, color: DarkColors.muted),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ViewPdfButton extends StatelessWidget {
+  const _ViewPdfButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: SizedBox(
+        height: 50,
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PreconferencePdfPage()),
+          ),
+          style: FilledButton.styleFrom(
+            backgroundColor: _accent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
+          label: Text(
+            'View PDF',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -162,7 +198,7 @@ class _Hero extends StatelessWidget {
                     const Icon(Icons.event_rounded, size: 15, color: Color(0xFF93C5FD)),
                     const SizedBox(width: 6),
                     Text(
-                      '08.09.26',
+                      '08.10.26',
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,

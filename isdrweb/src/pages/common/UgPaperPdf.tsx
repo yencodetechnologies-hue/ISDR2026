@@ -69,8 +69,8 @@ export default function UgPaperPdf() {
     return (
       <div className="min-h-screen bg-[#0F172A]">
         <AppBar
-          title="UG Paper"
-          titleClassName="text-[18px] font-bold"
+          title="UG Paper and E-Poster Presentation"
+          titleClassName="!whitespace-normal text-[14px] font-bold leading-tight"
           actions={
             <span className="mr-3 rounded-xl bg-black/25 px-2.5 py-1 text-[13px] font-bold">
               {!done ? (total > 0 ? `${pages.length} / ${total}` : "Loading…") : `${current} / ${pages.length}`}

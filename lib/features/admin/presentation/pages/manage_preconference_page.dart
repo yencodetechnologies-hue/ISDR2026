@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/api_service.dart';
@@ -15,7 +16,11 @@ class ManagePreconferencePage extends StatefulWidget {
 class _ManagePreconferencePageState extends State<ManagePreconferencePage> {
   final _api = ApiService();
   bool _loading = true;
+  bool _uploading = false;
   String? _error;
+  String _pdfName = '';
+  String _pdfUrl = '';
+  String? _pdfError;
   List<Map<String, dynamic>> _courses = [];
 
   @override
@@ -25,8 +30,13 @@ class _ManagePreconferencePageState extends State<ManagePreconferencePage> {
   }
 
   Future<void> _load() async {
-    final res = await _api.listPreconference();
+    final results = await Future.wait([
+      _api.listPreconference(),
+      _api.getPreconferencePdf(),
+    ]);
     if (!mounted) return;
+    final res = results[0];
+    final pdf = results[1];
     setState(() {
       _loading = false;
       if (res['success'] == true) {
@@ -37,7 +47,41 @@ class _ManagePreconferencePageState extends State<ManagePreconferencePage> {
       } else {
         _error = res['error']?.toString() ?? 'Could not load courses';
       }
+      if (pdf['success'] == true) {
+        _pdfError = null;
+        _pdfName = pdf['fileName']?.toString() ?? '';
+        _pdfUrl = pdf['url']?.toString() ?? '';
+      } else {
+        _pdfError = pdf['error']?.toString() ?? 'Could not load the preconference PDF';
+      }
     });
+  }
+
+  Future<void> _pickAndUpload() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+    );
+    final path = result?.files.single.path;
+    if (path == null || !mounted) return;
+    setState(() => _uploading = true);
+    final res = await _api.uploadPreconferencePdf(path);
+    if (!mounted) return;
+    setState(() => _uploading = false);
+    if (res['success'] == true) {
+      setState(() {
+        _pdfName = res['fileName']?.toString() ?? _pdfName;
+        _pdfUrl = res['url']?.toString() ?? _pdfUrl;
+        _pdfError = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preconference PDF updated')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['error']?.toString() ?? 'Could not upload the PDF')),
+      );
+    }
   }
 
   Future<void> _openForm([Map<String, dynamic>? existing]) async {
@@ -84,6 +128,82 @@ class _ManagePreconferencePageState extends State<ManagePreconferencePage> {
     }
   }
 
+  Widget _pdfCard() {
+    final hasPdf = _pdfUrl.isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: darkCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF6366F1)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _pdfError ?? (_pdfName.isEmpty ? 'No PDF uploaded yet' : _pdfName),
+                      style: GoogleFonts.inter(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (hasPdf)
+                      SelectableText(
+                        _pdfUrl,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: const Color(0xFF93C5FD),
+                          decoration: TextDecoration.underline,
+                        ),
+                      )
+                    else
+                      Text(
+                        'Participants open this file from View PDF',
+                        style: GoogleFonts.inter(fontSize: 12, color: DarkColors.muted),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 46,
+            child: FilledButton.icon(
+              onPressed: _uploading ? null : _pickAndUpload,
+              style: FilledButton.styleFrom(
+                backgroundColor: DarkColors.accent,
+                disabledBackgroundColor: DarkColors.accent.withValues(alpha: 0.35),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              icon: _uploading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+                    )
+                  : const Icon(Icons.upload_file_rounded, color: Colors.white),
+              label: Text(
+                _uploading ? 'Uploading…' : (hasPdf ? 'Replace PDF' : 'Upload PDF'),
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,6 +228,8 @@ class _ManagePreconferencePageState extends State<ManagePreconferencePage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
                 children: [
+                  _pdfCard(),
+                  const SizedBox(height: 16),
                   if (_error != null || _courses.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 80),
