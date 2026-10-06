@@ -31,7 +31,7 @@ import '../widgets/youtube_live_capsule.dart';
 import '../../../admin/presentation/pages/brochure_page.dart';
 import '../../../../core/widgets/get_live_photo_button.dart';
 import 'speakers_page.dart';
-import 'upcoming_schedules_page.dart';
+import 'program_schedule_page.dart';
 import 'participant_qa_page.dart';
 import 'participant_polls_page.dart';
 import 'participant_exhibitors_page.dart';
@@ -342,7 +342,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
   void _openSchedules() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const UpcomingSchedulesPage()),
+      MaterialPageRoute(builder: (_) => const ProgramSchedulePage()),
     );
   }
 

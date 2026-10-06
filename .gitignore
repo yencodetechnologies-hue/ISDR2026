@@ -49,3 +49,7 @@ app.*.map.json
 
 # Firebase service-account keys (private) — never commit
 backend/config/*firebase-adminsdk*.json
+
+# Admin-uploaded programme PDFs (the default file in backend/files stays in git)
+backend/files/uploads/*
+!backend/files/uploads/.gitkeep

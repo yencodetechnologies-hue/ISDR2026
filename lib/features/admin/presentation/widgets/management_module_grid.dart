@@ -82,6 +82,7 @@ const List<_ModuleVisual> _predefinedVisuals = [
     group: 'ACCOUNT',
   ),
   _ModuleVisual('Event Schedules', Icons.event_note_rounded, group: 'ACCOUNT'),
+  _ModuleVisual('Schedule PDF', Icons.picture_as_pdf_rounded, group: 'ACCOUNT'),
   _ModuleVisual('Speakers', Icons.groups_rounded, group: 'ACCOUNT'),
   _ModuleVisual(
     'Scan Inclusion',
@@ -262,6 +263,7 @@ Color _moduleColor(String label) {
     'profile': Color(0xFF6366F1),
     'send notification': Color(0xFFEF4444),
     'event schedules': Color(0xFF22C55E),
+    'schedule pdf': Color(0xFFF97316),
     'speakers': Color(0xFFEC4899),
     'scan inclusion': Color(0xFFF59E0B),
     'q&a & polls': Color(0xFF06B6D4),

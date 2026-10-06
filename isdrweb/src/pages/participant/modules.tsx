@@ -2,7 +2,7 @@ import type { ModuleItem } from "@/components/widgets";
 
 /** The participant modules, in the app's order. */
 export const PARTICIPANT_MODULES: ModuleItem[] = [
-  { label: "Schedule", sub: "Upcoming sessions", icon: "event_note", color: "#F97316", to: "/participant/schedules" },
+  { label: "Schedule", sub: "Programme PDF", icon: "event_note", color: "#F97316", to: "/participant/schedules" },
   { label: "Feed", sub: "Event selfies", icon: "dynamic_feed", color: "#EC4899", to: "/participant/feed" },
   {
     label: "Committee",

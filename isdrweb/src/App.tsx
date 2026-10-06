@@ -41,6 +41,7 @@ import { ScheduleList, EventSchedules, ScheduleEditor } from "./pages/admin/Sche
 import ManageSpeakers from "./pages/admin/Speakers";
 import ManageExhibitors from "./pages/admin/Exhibitors";
 import ManagePreconference from "./pages/admin/Preconference";
+import ManageSchedulePdf from "./pages/admin/SchedulePdf";
 import ManageBanner from "./pages/admin/Banner";
 import {
   ManageTicker,
@@ -141,6 +142,7 @@ export default function App() {
             <Route path="/admin/events/new" element={<EventEditor />} />
             <Route path="/admin/events/:id" element={<EventDetail />} />
             <Route path="/admin/schedules" element={<ScheduleList />} />
+            <Route path="/admin/schedule-pdf" element={<ManageSchedulePdf />} />
             <Route path="/admin/schedules/event/:eventId" element={<EventSchedules />} />
             <Route path="/admin/schedules/new" element={<ScheduleEditor />} />
             <Route path="/admin/speakers" element={<ManageSpeakers />} />

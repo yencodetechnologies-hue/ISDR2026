@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
@@ -1938,6 +1939,42 @@ class ApiService {
       _sessionContentCall(() => _dio.put(
             '${ApiConfig.awards}/$awardNumber',
             data: {'registrationId': registrationId},
+          ));
+
+  /// The programme PDF on Cloudinary: {url, fileName, updatedAt}. url is '' until uploaded.
+  Future<Map<String, dynamic>> getSchedulePdf() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.schedulePdf));
+
+  /// Downloads the schedule PDF from its Cloudinary URL.
+  Future<Uint8List> downloadSchedulePdf() async {
+    final meta = await getSchedulePdf();
+    if (meta['success'] != true) {
+      throw Exception(meta['error']?.toString() ?? 'Could not load the schedule');
+    }
+    final url = meta['url']?.toString() ?? '';
+    if (url.isEmpty) {
+      throw Exception('No schedule PDF has been uploaded yet');
+    }
+    final response = await _dio.get(
+      url,
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final data = response.data;
+    if (data is Uint8List) return data;
+    if (data is List<int>) return Uint8List.fromList(data);
+    throw Exception('Schedule PDF is empty');
+  }
+
+  /// Admin replaces the programme PDF participants see when they open Schedule.
+  Future<Map<String, dynamic>> uploadSchedulePdf(String filePath) =>
+      _sessionContentCall(() async => _dio.post(
+            ApiConfig.schedulePdf,
+            data: FormData.fromMap({
+              'pdf': await MultipartFile.fromFile(
+                filePath,
+                filename: filePath.split(Platform.pathSeparator).last,
+              ),
+            }),
           ));
 
   /// The admin's YouTube live link: {url} ('' when none is set).

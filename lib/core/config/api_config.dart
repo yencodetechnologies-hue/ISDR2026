@@ -189,6 +189,7 @@ class ApiConfig {
   static String get youtubeLive => '$baseUrl/youtube-live';
   static String get livePhoto => '$baseUrl/live-photo';
   static String get awards => '$baseUrl/awards';
+  static String get schedulePdf => '$baseUrl/schedule-pdf';
   // Help & Support tickets (participant <-> event staff / admin chat)
   static String get helpTickets => '$baseUrl/support-tickets';
 

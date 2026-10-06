@@ -39,6 +39,7 @@ import 'management_team_page.dart';
 import 'brochure_page.dart';
 import 'my_profile_page.dart';
 import 'event_schedules_page.dart';
+import 'manage_schedule_pdf_page.dart';
 import 'send_notification_page.dart';
 import '../../../participant/presentation/pages/accommodation_page.dart';
 
@@ -448,6 +449,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       );
       return;
     }
+    if (label.trim().toLowerCase() == 'schedule pdf') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ManageSchedulePdfPage()),
+      );
+      return;
+    }
     if (label.trim().toLowerCase() == 'qr pass') {
       Navigator.push(
         context,
@@ -703,6 +711,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'QR Pass',
       'Send Notification',
       'Event Schedules',
+      'Schedule PDF',
       'Speakers',
       'Scan Inclusion',
       'Q&A & Polls',

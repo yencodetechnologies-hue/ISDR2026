@@ -28,7 +28,8 @@ import {
 import { PARTICIPANT_MODULES } from "./modules";
 import { useAppLayout } from "@/lib/appLayout";
 import { ParticipantMoreApp } from "./ParticipantHomeApp";
-import { AllSessionsApp, FavoritesApp, SpeakersApp, UpcomingSchedulesApp } from "./ParticipantListsApp";
+import { AllSessionsApp, FavoritesApp, SpeakersApp } from "./ParticipantListsApp";
+import SchedulePdf from "../common/SchedulePdf";
 
 /** Day heading with a count, used by the grouped lists. */
 function DayHeading({ label, count }: { label: React.ReactNode; count: number }) {
@@ -91,47 +92,9 @@ function byDay<T>(list: T[], dayOf: (t: T) => Date | null) {
   return groups;
 }
 
-/** Schedule: every session that hasn't ended yet, grouped by day. */
+/** Schedule: the programme PDF from the backend. */
 export function UpcomingSchedules() {
-  return useAppLayout() ? <UpcomingSchedulesApp /> : <UpcomingSchedulesWeb />;
-}
-
-function UpcomingSchedulesWeb() {
-  const actions = useScheduleActions();
-  const [items, setItems] = useState<ScheduleItem[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const load = useCallback(async () => {
-    const r = await loadAllSchedules();
-    if (r.error) return setError(r.error || "Could not load schedules");
-    const now = new Date();
-    setError(null);
-    setItems(r.items.filter((i) => i.end > now));
-  }, []);
-  useEffect(() => {
-    load();
-  }, [load]);
-  return (
-    <Page title="Schedule" subtitle="Every session that hasn't ended yet" width={1000}>
-      {error ? (
-        <ErrorState message={error} onRetry={load} />
-      ) : !items ? (
-        <Loading />
-      ) : items.length === 0 ? (
-        <Empty icon="event_busy" title="No upcoming sessions" />
-      ) : (
-        byDay(items, (i) => startOfDay(i.start)).map((g) => (
-          <div key={g.day?.getTime()} className="mb-8">
-            <DayHeading
-              label={g.day && sameDay(g.day, new Date()) ? "Today" : g.day && dayHeader(g.day)}
-              count={g.list.length}
-            />
-            <SessionsByHall list={g.list} actions={actions} />
-          </div>
-        ))
-      )}
-      {actions.sheet}
-    </Page>
-  );
+  return <SchedulePdf />;
 }
 
 /** All Sessions with day tabs (All Sessions / Day 1 / Day 2 …). */
