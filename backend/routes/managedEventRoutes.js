@@ -8,6 +8,7 @@ const {
   listSchedules,
   createSchedule,
   updateSchedule,
+  reorderSchedule,
   deleteSchedule,
   mySpeakerSessions,
   myFavorites,
@@ -82,6 +83,7 @@ router.post(
   uploadSingleImage('photo'),
   createSchedule
 );
+router.put('/:id/schedules/:scheduleId/order', protect, requireManagement, reorderSchedule);
 router.put('/:id/schedules/:scheduleId', protect, requireManagement, updateSchedule);
 router.delete('/:id/schedules/:scheduleId', protect, requireManagement, deleteSchedule);
 

@@ -29,8 +29,76 @@ const toDto = (s) => ({
   hideFromTime: !!s.hideFromTime,
   hideToTime: !!s.hideToTime,
   description: s.description || '',
+  sortOrder: Number.isInteger(s.sortOrder) && s.sortOrder > 0 ? s.sortOrder : null,
   updatedAt: s.updatedAt || null,
 });
+
+/** UTC calendar day, matching the admin lists. Empty when the session has no date. */
+function calendarKey(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '';
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${month}-${day}`;
+}
+
+function timeRank(s) {
+  const from = String(s.fromTime || '').trim();
+  if (!from) return '99:99';
+  const to = String(s.toTime || '').trim() || '99:99';
+  return `${from}\0${to}`;
+}
+
+function positiveOrder(s) {
+  return Number.isInteger(s.sortOrder) && s.sortOrder > 0 ? s.sortOrder : null;
+}
+
+/** Day, then saved order, then clock. Sessions with no date sit after the dated days. */
+function compareSchedules(a, b) {
+  const ka = calendarKey(a.date);
+  const kb = calendarKey(b.date);
+  if (ka !== kb) {
+    if (!ka) return 1;
+    if (!kb) return -1;
+    return ka < kb ? -1 : 1;
+  }
+  const ao = positiveOrder(a);
+  const bo = positiveOrder(b);
+  if (ao != null && bo != null && ao !== bo) return ao - bo;
+  if (ao != null && bo == null) return -1;
+  if (ao == null && bo != null) return 1;
+  const time = timeRank(a).localeCompare(timeRank(b));
+  if (time) return time;
+  const name = String(a.scheduleName || '').localeCompare(String(b.scheduleName || ''));
+  if (name) return name;
+  return String(a._id).localeCompare(String(b._id));
+}
+
+function orderWithinDay(rows) {
+  return [...rows].sort(compareSchedules);
+}
+
+/** Writes 1…n for this day's current sequence. */
+async function assignContiguous(rows) {
+  const saves = [];
+  rows.forEach((row, i) => {
+    const next = i + 1;
+    if (row.sortOrder === next) return;
+    row.sortOrder = next;
+    saves.push(row.save());
+  });
+  await Promise.all(saves);
+}
+
+/** Other sessions on the same calendar day, in display order. */
+async function daySiblings(eventId, date, excludeId) {
+  const all = await EventSchedule.find({ eventId });
+  const key = calendarKey(date);
+  return orderWithinDay(
+    all.filter((s) => calendarKey(s.date) === key && String(s._id) !== String(excludeId || ''))
+  );
+}
 
 /** Loads the event and checks it belongs to the logged-in property. */
 async function loadOwnedEvent(req, res) {
@@ -57,10 +125,8 @@ const listSchedules = async (req, res) => {
     const schedules = await EventSchedule.find({
       eventId: event._id,
       ...visibleScheduleFilter(packageId),
-    }).sort({
-      date: 1,
-      fromTime: 1,
     });
+    schedules.sort(compareSchedules);
     res.json({ success: true, schedules: schedules.map(toDto) });
   } catch (error) {
     console.error('listSchedules error:', error);
@@ -164,9 +230,14 @@ const createSchedule = async (req, res) => {
     const form = readScheduleForm(event, req.body);
     if (form.error) return res.status(400).json({ success: false, error: form.error });
 
-    // One row per date. The speaker is a typed name, not a speaker account.
-    const created = await EventSchedule.create(
-      form.slots.map((slot) => ({
+    // One row per date, appended after that day's current sequence.
+    const existing = await EventSchedule.find({ eventId: event._id });
+    const payloads = [];
+    for (const slot of form.slots) {
+      const key = calendarKey(slot.date);
+      const siblings = orderWithinDay(existing.filter((s) => calendarKey(s.date) === key));
+      await assignContiguous(siblings);
+      payloads.push({
         eventId: event._id,
         apartmentId: event.apartmentId,
         speakerId: null,
@@ -182,8 +253,10 @@ const createSchedule = async (req, res) => {
         hideFromTime: form.hideFromTime,
         hideToTime: form.hideToTime,
         description: form.description,
-      }))
-    );
+        sortOrder: siblings.length + 1,
+      });
+    }
+    const created = await EventSchedule.create(payloads);
     res.status(201).json({
       success: true,
       schedule: toDto(created[0]),
@@ -211,6 +284,8 @@ const updateSchedule = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Edit one session at a time' });
     }
     const [slot] = form.slots;
+    const previousDate = schedule.date;
+    const movedDay = calendarKey(previousDate) !== calendarKey(slot.date);
     Object.assign(schedule, {
       speakerId: null,
       speakerName: form.speakerName,
@@ -226,10 +301,53 @@ const updateSchedule = async (req, res) => {
       hideToTime: form.hideToTime,
       description: form.description,
     });
+    // Clock edits keep the day's sequence. A date change closes the old day and
+    // appends this session on the new one. The row is still stored on the old
+    // date until save, so both lookups exclude it.
+    if (movedDay) {
+      await assignContiguous(await daySiblings(event._id, previousDate, schedule._id));
+      const dest = await daySiblings(event._id, slot.date, schedule._id);
+      await assignContiguous(dest);
+      schedule.sortOrder = dest.length + 1;
+    }
     await schedule.save();
     res.json({ success: true, schedule: toDto(schedule) });
   } catch (error) {
     console.error('updateSchedule error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+// PUT /api/managed-events/:id/schedules/:scheduleId/order  { serial }
+// Moves one session to that S.No on its own date and shifts the others.
+const reorderSchedule = async (req, res) => {
+  try {
+    const event = await loadOwnedEvent(req, res);
+    if (!event) return;
+    const serial = Number(req.body && req.body.serial);
+    if (!Number.isInteger(serial) || serial < 1) {
+      return res.status(400).json({ success: false, error: 'Enter a whole S.No starting at 1' });
+    }
+    const schedule = await EventSchedule.findOne({ _id: req.params.scheduleId, eventId: event._id }).catch(
+      () => null
+    );
+    if (!schedule) return res.status(404).json({ success: false, error: 'Schedule not found' });
+
+    const rows = await daySiblings(event._id, schedule.date, null);
+    const from = rows.findIndex((s) => String(s._id) === String(schedule._id));
+    if (from < 0) return res.status(404).json({ success: false, error: 'Schedule not found' });
+    const to = Math.min(serial, rows.length) - 1;
+    if (from !== to) {
+      const [moved] = rows.splice(from, 1);
+      rows.splice(to, 0, moved);
+    }
+    await assignContiguous(rows);
+    res.json({ success: true, schedules: rows.map(toDto) });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({ success: false, error: 'Schedule not found' });
+    }
+    console.error('reorderSchedule error:', error);
     res.status(500).json({ success: false, error: error.message || 'Server error' });
   }
 };
@@ -246,6 +364,7 @@ const deleteSchedule = async (req, res) => {
     if (!removed) {
       return res.status(404).json({ success: false, error: 'Schedule not found' });
     }
+    await assignContiguous(await daySiblings(event._id, removed.date, removed._id));
     res.json({ success: true });
   } catch (error) {
     console.error('deleteSchedule error:', error);
@@ -430,6 +549,7 @@ module.exports = {
   listSchedules,
   createSchedule,
   updateSchedule,
+  reorderSchedule,
   deleteSchedule,
   mySpeakerSessions,
   myFavorites,

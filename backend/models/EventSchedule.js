@@ -40,6 +40,9 @@ const eventScheduleSchema = new mongoose.Schema(
     hideFromTime: { type: Boolean, default: false },
     hideToTime: { type: Boolean, default: false },
     description: { type: String, default: '', trim: true },
+    // Position within the calendar day (1…n). Empty until that day is ordered;
+    // the lists then fall back to clock time.
+    sortOrder: { type: Number, min: 1 },
   },
   { timestamps: true }
 );

@@ -39,8 +39,6 @@ const MORNING = `${SERIES}. SBDCH Auditorium, 9:00–10:20 am.`;
 const LEADERSHIP = 'Global Research Leadership: Inspiring the Next Generation.';
 const AFTERNOON = `${SERIES}. Student Conference Pre-conference Courses, SBDCH Auditorium, 12:30–2:20 pm.`;
 
-const panel = (...names) => names.join(' · ');
-
 /** [date, from, to, hall, title, speaker, description] */
 const PROGRAMME = [
   // Day 1 — SBDCH Auditorium
@@ -53,19 +51,42 @@ const PROGRAMME = [
     'Dr. Pavithra Krishnaswami',
     'International Expert Lecture. Senior Scientist, Translational Medicine Unit, Cambridge, Massachusetts, Greater Boston, Sanofi, USA. Moderator: Dr. Khavya C.',
   ],
+  [D1, '09:00', '10:00', AUDITORIUM, 'Prayer & Lighting of Lamp', NONE, ''],
   [
     D1,
     '09:00',
     '10:00',
     AUDITORIUM,
-    'Inauguration | Prayer & Lighting of Lamp',
-    panel(
-      'Dr. M.S. Kannan',
-      'Dr. S. Bhuminathan',
-      'Dr. K. Gnana Shanmugham',
-      'Dr. Sumathi Jones',
-    ),
-    'ISDR/IADR-Indian Division. Dr. M.S. Kannan, Dean, Sree Balaji Dental College and Hospital, Chennai, India — Welcome to the World of Discovery and Invention. Dr. S. Bhuminathan, Registrar, Bharath Institute of Higher Education and Research, Chennai, India — Empowering the Researchers of tomorrow. Dr. K. Gnana Shanmugham, Chairman, Scientific Committee — Connecting the Young Minds. Dr. Sumathi Jones, Convenor — One Journey, Many Ideas, Endless Possibilities.',
+    'Welcome to the World of Discovery and Invention',
+    'Dr. M.S Kannan',
+    'Dean, Sree Balaji Dental College and Hospital, Chennai, India',
+  ],
+  [
+    D1,
+    '09:00',
+    '10:00',
+    AUDITORIUM,
+    'Empowering the Researchers of tomorrow',
+    'Dr. S. Bhuminathan',
+    'Registrar, Bharath Institute of Higher Education and Research, Chennai, India',
+  ],
+  [
+    D1,
+    '09:00',
+    '10:00',
+    AUDITORIUM,
+    'Connecting the Young Minds',
+    'Dr. K. Gnana Shanmugham',
+    'Chairman, Scientific Committee',
+  ],
+  [
+    D1,
+    '09:00',
+    '10:00',
+    AUDITORIUM,
+    'One Journey, Many Ideas, Endless Possibilities',
+    'Dr. Sumathi Jones',
+    'Convenor',
   ],
   [
     D1,
