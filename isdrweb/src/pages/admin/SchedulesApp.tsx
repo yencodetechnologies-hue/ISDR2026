@@ -553,8 +553,18 @@ export function ScheduleFormApp() {
           }),
         );
     setSaving(false);
-    if (r.success) navigate(-1);
-    else toast(r.error || (isEdit ? "Failed to update schedule" : "Failed to add schedule"));
+    if (r.success) {
+      if (eventId) {
+        navigate(`/admin/events/${eventId}`, {
+          replace: true,
+          state: {
+            ...(event ? { event } : {}),
+            ...(r.schedule ? { schedule: r.schedule } : {}),
+            ...(Array.isArray(r.schedules) ? { schedules: r.schedules } : {}),
+          },
+        });
+      } else navigate(-1);
+    } else toast(r.error || (isEdit ? "Failed to update schedule" : "Failed to add schedule"));
   };
 
   const togglePackage = (id: string) => setPackageIds((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id]));

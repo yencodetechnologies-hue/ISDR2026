@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Avatar,
   Button,
@@ -244,7 +244,12 @@ function EventEditorWeb() {
     setSaving(false);
     if (!res.success) return toast(res.error || "Could not save event", "error");
     toast(editing ? "Event updated" : "Event created", "success");
-    navigate(-1);
+    if (editing && eventId) {
+      navigate(`/admin/events/${eventId}`, {
+        replace: true,
+        state: res.event ? { event: res.event } : undefined,
+      });
+    } else navigate(-1);
   };
 
   return (
@@ -344,6 +349,31 @@ function PackageCounts({ packages, registrations }: { packages: any[]; registrat
 
 const PARTICIPANT_PAGE_SIZE = 50;
 
+/** Keep a saved row in the list. A missing id leaves the list unchanged. */
+function upsertById(list: any[] | null | undefined, saved: any): any[] {
+  if (!saved || typeof saved !== "object" || !idOf(saved)) return list ? [...list] : [];
+  const current = list ?? [];
+  const sid = idOf(saved);
+  const idx = current.findIndex((row) => idOf(row) === sid);
+  if (idx === -1) return [saved, ...current];
+  const next = current.slice();
+  next[idx] = { ...current[idx], ...saved };
+  return next;
+}
+
+function savedEventFor(id: string, state: unknown) {
+  const event = (state as { event?: any } | null)?.event;
+  if (!event || typeof event !== "object") return null;
+  return String(event.id ?? event._id ?? "") === id ? event : null;
+}
+
+function savedSchedulesFrom(state: unknown): any[] | null {
+  const nav = state as { schedule?: any; schedules?: any[] } | null;
+  if (Array.isArray(nav?.schedules) && nav.schedules.length) return nav.schedules;
+  if (nav?.schedule && typeof nav.schedule === "object" && idOf(nav.schedule)) return [nav.schedule];
+  return null;
+}
+
 export function EventDetail() {
   // Phone width: the mobile app's event screen.
   return useAppLayout() ? <EventDetailApp /> : <EventDetailWeb />;
@@ -352,11 +382,12 @@ export function EventDetail() {
 function EventDetailWeb() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const confirm = useConfirm();
-  const [event, setEvent] = useState<any>(null);
+  const [event, setEvent] = useState<any>(() => savedEventFor(id, location.state));
   const [registrations, setRegistrations] = useState<any[] | null>(null);
-  const [schedules, setSchedules] = useState<any[] | null>(null);
+  const [schedules, setSchedules] = useState<any[] | null>(() => savedSchedulesFrom(location.state));
   const [incStats, setIncStats] = useState<Record<string, any>>({});
   const [tab, setTab] = useState<"info" | "packages" | "regs" | "schedules" | "analytics">("info");
   const [search, setSearch] = useState("");
@@ -379,7 +410,9 @@ function EventDetailWeb() {
   const [claimsFor, setClaimsFor] = useState<any | null>(null);
   const [importing, setImporting] = useState(false);
   const [page, setPage] = useState(0);
-  const refreshLock = useRef(false);
+  const eventGen = useRef(0);
+  const schedGen = useRef(0);
+  const regsGen = useRef(0);
 
   const loadStats = useCallback(async () => {
     const res = await get(`/managed-events/summary${qs({ eventId: id, date: "to-date" })}`);
@@ -389,25 +422,25 @@ function EventDetailWeb() {
   }, [id]);
 
   const loadRegs = useCallback(async () => {
-    if (refreshLock.current) return;
-    refreshLock.current = true;
-    try {
-      const regs = await get(`/managed-events/${id}/registrations`);
-      // Keep the list on screen if a background refresh fails.
-      if (regs.success) setRegistrations(regs.registrations ?? []);
-    } finally {
-      refreshLock.current = false;
-    }
+    const gen = ++regsGen.current;
+    const regs = await get(`/managed-events/${id}/registrations`);
+    if (gen !== regsGen.current) return;
+    // Keep the list on screen if a background refresh fails.
+    if (regs.success) setRegistrations(regs.registrations ?? []);
   }, [id]);
 
   const load = useCallback(async () => {
+    const evGen = ++eventGen.current;
+    const schGen = ++schedGen.current;
     const [ev, sch] = await Promise.all([
       get(`/managed-events/${id}`),
       get(`/managed-events/${id}/schedules`),
     ]);
-    if (!ev.success) return setError(ev.error || "Could not load event");
-    setEvent(ev.event);
-    setSchedules(sch.schedules ?? []);
+    if (evGen === eventGen.current) {
+      if (!ev.success) return setError(ev.error || "Could not load event");
+      setEvent(ev.event);
+    }
+    if (schGen === schedGen.current && sch.success) setSchedules(sch.schedules ?? []);
     // Participants are a separate request so the event screen is not held
     // until every registration has been downloaded.
     loadRegs();
@@ -418,15 +451,14 @@ function EventDetailWeb() {
   useEffect(() => {
     if (tab === "packages") loadStats();
   }, [tab, loadStats]);
-  // Refresh the open tab only, and never start another download while one is in flight.
+  // A newer reload wins. An older poll must not write the list after a save.
   useEffect(() => {
-    const t = setInterval(async () => {
-      if (refreshLock.current) return;
+    const t = setInterval(() => {
       const needsRegs = tab === "regs" || tab === "analytics";
       const needsStats = tab === "packages";
       if (!needsRegs && !needsStats) return;
-      if (needsRegs) await loadRegs();
-      else await loadStats();
+      if (needsRegs) loadRegs();
+      else loadStats();
     }, 8000);
     return () => clearInterval(t);
   }, [tab, loadRegs, loadStats]);
@@ -461,7 +493,10 @@ function EventDetailWeb() {
       toast(res.error || "Failed to save package", "error");
       return false;
     }
-    if (res.event) setEvent(res.event);
+    if (res.event) {
+      eventGen.current += 1;
+      setEvent(res.event);
+    }
     loadStats();
     toast(okMessage, "success");
     return true;
@@ -996,6 +1031,10 @@ function EventDetailWeb() {
           onSaved={(saved) => {
             const wasNew = !regEditing;
             setRegEditing(undefined);
+            if (saved && typeof saved === "object" && idOf(saved)) {
+              regsGen.current += 1;
+              setRegistrations((list) => upsertById(list, saved));
+            }
             load();
             if (!wasNew) toast("Participant updated successfully", "success");
             else if (Object.keys(saved).length) setBadgeFor(saved);

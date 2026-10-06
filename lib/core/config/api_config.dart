@@ -192,6 +192,7 @@ class ApiConfig {
   static String get schedulePdf => '$baseUrl/schedule-pdf';
   static String get ugPaperPdf => '$baseUrl/ug-paper-pdf';
   static String get hallArrangementPdf => '$baseUrl/hall-arrangement-pdf';
+  static String get paperPosterPdf => '$baseUrl/paper-poster-pdf';
   // Help & Support tickets (participant <-> event staff / admin chat)
   static String get helpTickets => '$baseUrl/support-tickets';
 

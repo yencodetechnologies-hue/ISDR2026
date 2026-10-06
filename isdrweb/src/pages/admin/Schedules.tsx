@@ -423,7 +423,16 @@ function ScheduleEditorWeb() {
     if (!res.success)
       return toast(res.error || (editing ? "Could not update schedule" : "Could not create schedule"), "error");
     toast(editing ? "Schedule updated" : "Schedule created", "success");
-    navigate(-1);
+    if (eventId) {
+      navigate(`/admin/events/${eventId}`, {
+        replace: true,
+        state: {
+          ...(event ? { event } : {}),
+          ...(res.schedule ? { schedule: res.schedule } : {}),
+          ...(Array.isArray(res.schedules) ? { schedules: res.schedules } : {}),
+        },
+      });
+    } else navigate(-1);
   };
 
   return (

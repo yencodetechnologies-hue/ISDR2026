@@ -25,7 +25,7 @@ import {
   toggleFavorite,
   type ScheduleItem,
 } from "@/lib/schedules";
-import { PARTICIPANT_MODULES } from "./modules";
+import { PARTICIPANT_MODULES, PARTICIPANT_POLLS_MODULE } from "./modules";
 import { useAppLayout } from "@/lib/appLayout";
 import { ParticipantMoreApp } from "./ParticipantHomeApp";
 import { AllSessionsApp, FavoritesApp, SpeakersApp } from "./ParticipantListsApp";
@@ -350,7 +350,7 @@ export function ParticipantMore() {
 function ParticipantMoreWeb() {
   return (
     <Page title="All Sections" back={false}>
-      <ModuleGrid items={PARTICIPANT_MODULES} />
+      <ModuleGrid items={[...PARTICIPANT_MODULES, PARTICIPANT_POLLS_MODULE]} />
     </Page>
   );
 }

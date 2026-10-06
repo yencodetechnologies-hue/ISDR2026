@@ -33,6 +33,7 @@ import '../../../../core/widgets/get_live_photo_button.dart';
 import 'speakers_page.dart';
 import 'program_schedule_page.dart';
 import 'ug_paper_page.dart';
+import 'paper_poster_page.dart';
 import 'hall_arrangement_page.dart';
 import 'participant_qa_page.dart';
 import 'participant_polls_page.dart';
@@ -673,12 +674,12 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       ),
     ),
     _ParticipantModuleItem(
-      label: 'Polls',
-      icon: Icons.poll_rounded,
-      color: const Color(0xFF8B5CF6),
+      label: 'Paper &\nPoster',
+      icon: Icons.picture_as_pdf_rounded,
+      color: const Color(0xFFEA580C),
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const ParticipantPollsPage()),
+        MaterialPageRoute(builder: (_) => const PaperPosterPage()),
       ),
     ),
     _ParticipantModuleItem(
@@ -730,6 +731,15 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const HallArrangementPage()),
+      ),
+    ),
+    _ParticipantModuleItem(
+      label: 'Polls',
+      icon: Icons.poll_rounded,
+      color: const Color(0xFF8B5CF6),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ParticipantPollsPage()),
       ),
     ),
   ];

@@ -10,6 +10,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/logout_confirm_sheet.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../participant/presentation/pages/schedule_detail_page.dart';
+import '../../../admin/presentation/widgets/admin_image_banner.dart';
 import '../../../participant/presentation/widgets/live_show_card.dart';
 import '../widgets/speaker_ui.dart';
 import 'speaker_session_polls_page.dart';
@@ -262,6 +263,8 @@ class _SpeakerHomePageState extends State<SpeakerHomePage> {
                   const SizedBox(height: 14),
                   _buildTodaySchedule(now),
                 ],
+                // Same image banner as the participant home (Admin → Banner).
+                const AdminImageBanner(padding: EdgeInsets.only(top: 14)),
                 const SizedBox(height: 14),
                 _buildQuickActions(),
                 const SizedBox(height: 14),

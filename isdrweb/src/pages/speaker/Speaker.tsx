@@ -20,7 +20,7 @@ import {
   useConfirm,
   useToast,
 } from "@/components/ui";
-import { LivePhotoButton, ModuleGrid } from "@/components/widgets";
+import { BannerCarousel, LivePhotoButton, ModuleGrid, useHomeBanner } from "@/components/widgets";
 import { del, get, post, put } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtTime, idOf, monthShort, sameDay, scheduleTimes, timeAgo, weekday } from "@/lib/format";
@@ -55,6 +55,7 @@ const when = (s: Session) =>
 export function SpeakerHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const banner = useHomeBanner();
   const [data, setData] = useState<{ sessions: Session[]; error?: string } | null>(null);
   const [now, setNow] = useState(() => new Date());
 
@@ -158,6 +159,12 @@ export function SpeakerHome() {
           </Panel>
         </div>
       </div>
+
+      {banner.length > 0 && (
+        <div className="mt-5">
+          <BannerCarousel urls={banner} height={260} />
+        </div>
+      )}
 
       {data && !data.error && (
         <Panel

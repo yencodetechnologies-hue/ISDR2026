@@ -31,6 +31,7 @@ export const PARTICIPANT_APP_MODULES: AppModule[] = [
   { label: "Favorites", icon: "star", color: "#E11D48", to: "/participant/favorites" },
   { label: "Brochure", icon: "menu_book", color: "#10B981", to: "/brochure" },
   { label: "Help & Support", icon: "help", color: "#06B6D4", to: "/support" },
+  { label: "Paper & Poster", icon: "picture_as_pdf", color: "#EA580C", to: "/participant/paper-poster" },
   { label: "Preconference", icon: "school", color: "#6366F1", to: "/participant/preconference" },
   { label: "Certificate", icon: "workspace_premium", color: "#F59E0B", to: "/participant/certificate" },
   { label: "Exhibitors", icon: "storefront", color: "#EF4444", to: "/participant/exhibitors" },

@@ -51,6 +51,7 @@ const NAV: Record<Role, NavSection[]> = {
       items: [
         { label: "Q/A", icon: "question_answer", color: "#3B82F6", to: "/participant/qa" },
         { label: "Polls", icon: "poll", color: "#8B5CF6", to: "/participant/polls" },
+        { label: "Paper & Poster", icon: "picture_as_pdf", color: "#EA580C", to: "/participant/paper-poster" },
         { label: "Feed", icon: "dynamic_feed", color: "#EC4899", to: "/participant/feed" },
         { label: "Awards", icon: "emoji_events", color: "#F59E0B", to: "/participant/awards" },
       ],
@@ -87,6 +88,7 @@ const NAV: Record<Role, NavSection[]> = {
         { label: "Schedules", icon: "calendar_month", color: "#F97316", to: "/admin/schedules", match: ["/schedule"] },
         { label: "Schedule PDF", icon: "picture_as_pdf", color: "#F97316", to: "/admin/schedule-pdf" },
         { label: "UG Paper PDF", icon: "picture_as_pdf", color: "#F59E0B", to: "/admin/ug-paper-pdf" },
+        { label: "Paper & Poster", icon: "picture_as_pdf", color: "#EA580C", to: "/admin/paper-poster" },
         { label: "Hall Arrangement", icon: "meeting_room", color: "#14B8A6", to: "/admin/hall-arrangement" },
         { label: "Speakers", icon: "mic", color: "#A855F7", to: "/admin/speakers" },
         { label: "Exhibitors", icon: "storefront", color: "#EF4444", to: "/admin/exhibitors" },

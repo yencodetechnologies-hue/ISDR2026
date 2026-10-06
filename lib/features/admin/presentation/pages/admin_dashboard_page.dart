@@ -42,6 +42,7 @@ import 'event_schedules_page.dart';
 import 'manage_schedule_pdf_page.dart';
 import 'manage_ug_paper_pdf_page.dart';
 import 'manage_hall_arrangement_pdf_page.dart';
+import 'manage_paper_poster_pdf_page.dart';
 import 'send_notification_page.dart';
 import '../../../participant/presentation/pages/accommodation_page.dart';
 
@@ -472,6 +473,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       );
       return;
     }
+    if (label.trim().toLowerCase() == 'paper & poster') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ManagePaperPosterPdfPage()),
+      );
+      return;
+    }
     if (label.trim().toLowerCase() == 'qr pass') {
       Navigator.push(
         context,
@@ -729,6 +737,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'Event Schedules',
       'Schedule PDF',
       'UG Paper PDF',
+      'Paper & Poster',
       'Speakers',
       'Scan Inclusion',
       'Q&A & Polls',

@@ -153,7 +153,12 @@ export default function EventFormApp() {
     const r = editing ? await put(`/managed-events/${eventId}`, fd) : await post("/managed-events", fd);
     setBusy(false);
     if (!r.success) return setError(r.error || (editing ? "Update failed" : "Create failed"));
-    navigate(-1);
+    if (editing && eventId) {
+      navigate(`/admin/events/${eventId}`, {
+        replace: true,
+        state: r.event ? { event: r.event } : undefined,
+      });
+    } else navigate(-1);
   };
 
   const form = (

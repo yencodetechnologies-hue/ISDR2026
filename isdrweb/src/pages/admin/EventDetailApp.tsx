@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { AppBar } from "@/components/ui";
 import { AppBarAction } from "@/components/app/AppChrome";
 import { AppSpinner } from "@/components/app/AppControls";
@@ -115,13 +115,32 @@ function StatPill({ text, color }: { text: string; color: string }) {
   );
 }
 
+/** Keep a saved row in the list. A missing id leaves the list unchanged. */
+function upsertById(list: any[] | null | undefined, saved: any): any[] {
+  if (!saved || typeof saved !== "object" || !idOf(saved)) return list ? [...list] : [];
+  const current = list ?? [];
+  const sid = idOf(saved);
+  const idx = current.findIndex((row) => idOf(row) === sid);
+  if (idx === -1) return [saved, ...current];
+  const next = current.slice();
+  next[idx] = { ...current[idx], ...saved };
+  return next;
+}
+
+function savedEventFor(id: string, state: unknown) {
+  const event = (state as { event?: any } | null)?.event;
+  if (!event || typeof event !== "object") return null;
+  return String(event.id ?? event._id ?? "") === id ? event : null;
+}
+
 /** Event detail at phone width — the app's EventManagementDetailsPage. */
 export default function EventDetailApp() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const confirm = useConfirm();
-  const [event, setEvent] = useState<any>(null);
+  const [event, setEvent] = useState<any>(() => savedEventFor(id, location.state));
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [loadingRegs, setLoadingRegs] = useState(true);
   const [incStats, setIncStats] = useState<Record<string, any>>({});
@@ -141,7 +160,8 @@ export default function EventDetailApp() {
   const [claimsFor, setClaimsFor] = useState<any | null>(null);
   const [importing, setImporting] = useState(false);
   const [visibleCount, setVisibleCount] = useState(40);
-  const refreshLock = useRef(false);
+  const eventGen = useRef(0);
+  const regsGen = useRef(0);
   const [error, setError] = useState<string | null>(null);
 
   const show = (msg: string, kind: "success" | "error" = "success") => {
@@ -158,22 +178,23 @@ export default function EventDetailApp() {
 
   const loadRegs = useCallback(
     async (silent = false) => {
-      if (refreshLock.current) return;
-      refreshLock.current = true;
+      const gen = ++regsGen.current;
       if (!silent) setLoadingRegs(true);
       try {
         const res = await get(`/managed-events/${id}/registrations`);
+        if (gen !== regsGen.current) return;
         if (res.success) setRegistrations(res.registrations ?? []);
       } finally {
-        if (!silent) setLoadingRegs(false);
-        refreshLock.current = false;
+        if (gen === regsGen.current && !silent) setLoadingRegs(false);
       }
     },
     [id],
   );
 
   const loadAll = useCallback(async () => {
+    const gen = ++eventGen.current;
     const ev = await get(`/managed-events/${id}`);
+    if (gen !== eventGen.current) return;
     if (!ev.success) return setError(ev.error || "Could not load event");
     setEvent(ev.event);
     await loadRegs();
@@ -182,11 +203,10 @@ export default function EventDetailApp() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
-  // Refresh claims without stacking another full download on top of one still running.
+  // A newer reload wins. An older poll must not write the list after a save.
   useEffect(() => {
-    const t = setInterval(async () => {
-      if (refreshLock.current) return;
-      await loadRegs(true);
+    const t = setInterval(() => {
+      loadRegs(true);
     }, 8000);
     return () => clearInterval(t);
   }, [loadRegs]);
@@ -218,7 +238,10 @@ export default function EventDetailApp() {
       show(res.error || "Failed to save package", "error");
       return false;
     }
-    if (res.event) setEvent(res.event);
+    if (res.event) {
+      eventGen.current += 1;
+      setEvent(res.event);
+    }
     loadStats();
     show(okMessage);
     return true;
@@ -644,6 +667,10 @@ export default function EventDetailApp() {
           onSaved={(saved) => {
             const wasNew = !regEditing;
             setRegEditing(undefined);
+            if (saved && typeof saved === "object" && idOf(saved)) {
+              regsGen.current += 1;
+              setRegistrations((list) => upsertById(list, saved));
+            }
             loadAll();
             if (!wasNew) show("Participant updated successfully");
             else if (Object.keys(saved).length) setBadgeFor(saved);

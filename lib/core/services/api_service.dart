@@ -2049,6 +2049,42 @@ class ApiService {
             }),
           ));
 
+  /// The paper and poster PDF on Cloudinary. url is '' until an admin uploads one.
+  Future<Map<String, dynamic>> getPaperPosterPdf() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.paperPosterPdf));
+
+  /// Downloads the paper and poster PDF from its Cloudinary URL.
+  Future<Uint8List> downloadPaperPosterPdf() async {
+    final meta = await getPaperPosterPdf();
+    if (meta['success'] != true) {
+      throw Exception(meta['error']?.toString() ?? 'Could not load the presentation');
+    }
+    final url = meta['url']?.toString() ?? '';
+    if (url.isEmpty) {
+      throw Exception('No presentation PDF has been uploaded yet');
+    }
+    final response = await _dio.get(
+      url,
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final data = response.data;
+    if (data is Uint8List) return data;
+    if (data is List<int>) return Uint8List.fromList(data);
+    throw Exception('Presentation PDF is empty');
+  }
+
+  /// Admin replaces the paper and poster PDF participants open from the home grid.
+  Future<Map<String, dynamic>> uploadPaperPosterPdf(String filePath) =>
+      _sessionContentCall(() async => _dio.post(
+            ApiConfig.paperPosterPdf,
+            data: FormData.fromMap({
+              'pdf': await MultipartFile.fromFile(
+                filePath,
+                filename: filePath.split(Platform.pathSeparator).last,
+              ),
+            }),
+          ));
+
   /// The admin's YouTube live link: {url} ('' when none is set).
   Future<Map<String, dynamic>> getYoutubeLive() =>
       _sessionContentCall(() => _dio.get(ApiConfig.youtubeLive));

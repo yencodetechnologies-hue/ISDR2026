@@ -56,7 +56,12 @@ export async function api(
     payload = JSON.stringify(body);
   }
   try {
-    const res = await fetch(`${API_BASE}${path}`, { method, headers: h, body: payload });
+    const res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: h,
+      body: payload,
+      cache: "no-store",
+    });
     let data: Json = {};
     try {
       const parsed = await res.json();

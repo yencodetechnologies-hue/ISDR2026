@@ -24,7 +24,14 @@ import {
   Tabs,
   useToast,
 } from "@/components/ui";
-import { LivePhotoButton, ModuleGrid, SectionTitle, tickerTextFromLines, useHomeBanner } from "@/components/widgets";
+import {
+  BannerCarousel,
+  LivePhotoButton,
+  ModuleGrid,
+  SectionTitle,
+  tickerTextFromLines,
+  useHomeBanner,
+} from "@/components/widgets";
 import { get, post } from "@/lib/api";
 import { useLiveNotifications } from "@/lib/notifications";
 import ExportMenu from "@/components/ExportMenu";
@@ -187,6 +194,7 @@ export function StaffHome() {
 
 function StaffHomeWeb() {
   const { user } = useAuth();
+  const banners = useHomeBanner();
   const [events, setEvents] = useState<any[] | null>(null);
 
   useEffect(() => {
@@ -210,6 +218,12 @@ function StaffHomeWeb() {
           <p className="mt-1.5 text-sm text-white/65">Welcome to the event staff portal</p>
         </div>
       </div>
+
+      {banners.length > 0 && (
+        <div className="mt-5">
+          <BannerCarousel urls={banners} height={260} />
+        </div>
+      )}
 
       <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Events" value={events ? events.length : "–"} icon="event" color="#3B82F6" />

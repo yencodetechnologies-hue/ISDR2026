@@ -4,11 +4,11 @@ import {
   AppLivePhotoButton,
   AppLiveShowCard,
   AppModuleGrid,
-  DEFAULT_BANNERS,
   HOME_SLOTS,
   type AppModule,
 } from "@/components/app/AppHome";
 import { AppPage } from "@/components/app/AppChrome";
+import { useHomeBanner } from "@/components/widgets";
 
 /**
  * The mobile app's admin modules, in the app's order, with its icons and
@@ -25,6 +25,7 @@ export const ADMIN_APP_MODULES: AppModule[] = [
   { label: "Event Schedules", icon: "event_note", color: "#22C55E", to: "/admin/schedules" },
   { label: "Schedule PDF", icon: "picture_as_pdf", color: "#F97316", to: "/admin/schedule-pdf" },
   { label: "UG Paper PDF", icon: "picture_as_pdf", color: "#F59E0B", to: "/admin/ug-paper-pdf" },
+  { label: "Paper & Poster", icon: "picture_as_pdf", color: "#EA580C", to: "/admin/paper-poster" },
   { label: "Speakers", icon: "groups", color: "#EC4899", to: "/admin/speakers" },
   { label: "Scan Inclusion", icon: "qr_code_scanner", color: "#F59E0B", to: "/staff/events" },
   { label: "Q&A & Polls", icon: "forum", color: "#06B6D4", to: "/admin/engagement" },
@@ -43,10 +44,17 @@ export const ADMIN_APP_MODULES: AppModule[] = [
 
 /** Admin home at phone width — the app's management home. */
 export default function AdminHomeApp() {
+  const bannerUrls = useHomeBanner();
   return (
     <div className="min-h-screen bg-bg">
       <AppHomeHeader profilePath="/admin/profile" />
-      <AppBannerCarousel images={DEFAULT_BANNERS} />
+      {bannerUrls.length > 0 && (
+        <div className="px-4 pt-1">
+          <div className="overflow-hidden rounded-2xl">
+            <AppBannerCarousel images={bannerUrls} height={160} />
+          </div>
+        </div>
+      )}
       <div className="px-4 pt-3.5">
         <AppLiveShowCard />
       </div>

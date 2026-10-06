@@ -44,8 +44,10 @@ import ManagePreconference from "./pages/admin/Preconference";
 import ManageSchedulePdf from "./pages/admin/SchedulePdf";
 import ManageUgPaperPdf from "./pages/admin/UgPaperPdf";
 import ManageHallArrangementPdf from "./pages/admin/HallArrangementPdf";
+import ManagePaperPosterPdf from "./pages/admin/PaperPosterPdf";
 import UgPaperPdf from "./pages/common/UgPaperPdf";
 import HallArrangementPdf from "./pages/common/HallArrangementPdf";
+import PaperPosterPdf from "./pages/common/PaperPosterPdf";
 import ManageBanner from "./pages/admin/Banner";
 import {
   ManageTicker,
@@ -116,6 +118,7 @@ export default function App() {
             <Route path="/participant/preconference" element={<ParticipantPreconference />} />
             <Route path="/participant/ug-paper" element={<UgPaperPdf />} />
             <Route path="/participant/hall-arrangement" element={<HallArrangementPdf />} />
+            <Route path="/participant/paper-poster" element={<PaperPosterPdf />} />
             <Route path="/participant/conference" element={<StudentConference />} />
             <Route path="/participant/accommodation" element={<Accommodation />} />
             <Route path="/participant/awards" element={<Awards />} />
@@ -151,6 +154,7 @@ export default function App() {
             <Route path="/admin/schedule-pdf" element={<ManageSchedulePdf />} />
             <Route path="/admin/ug-paper-pdf" element={<ManageUgPaperPdf />} />
             <Route path="/admin/hall-arrangement" element={<ManageHallArrangementPdf />} />
+            <Route path="/admin/paper-poster" element={<ManagePaperPosterPdf />} />
             <Route path="/admin/schedules/event/:eventId" element={<EventSchedules />} />
             <Route path="/admin/schedules/new" element={<ScheduleEditor />} />
             <Route path="/admin/speakers" element={<ManageSpeakers />} />
