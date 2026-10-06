@@ -6,16 +6,6 @@ const SessionQuestion = require('../models/SessionQuestion');
 const SessionPoll = require('../models/SessionPoll');
 const { participantPackageId, visibleScheduleFilter } = require('../utils/schedulePackages');
 
-/** Ids of the speakers who have a session this participant can see. */
-async function visibleSpeakerIds(req) {
-  const ids = await EventSchedule.distinct('speakerId', {
-    apartmentId: req.apartmentId,
-    speakerId: { $ne: null },
-    ...visibleScheduleFilter(await participantPackageId(req)),
-  });
-  return ids.map(String);
-}
-
 const MAX_LENGTH = 1000;
 
 function participantOnly(req, res) {
@@ -29,6 +19,20 @@ function speakerOnly(req, res) {
   res.status(403).json({ success: false, error: 'Only speakers can do this' });
   return false;
 }
+
+const adminQuestionDto = (q, speaker) => ({
+  id: q._id.toString(),
+  participantName: q.participantName || '',
+  speakerId: speaker ? speaker._id.toString() : String(q.speakerId || ''),
+  speakerName: speaker ? speaker.name : 'Speaker',
+  speakerPhoto: speaker ? speaker.photo || '' : '',
+  question: q.question,
+  answer: q.answer || '',
+  answered: !!q.answer,
+  answeredAt: q.answeredAt,
+  isPublic: q.isPublic === true,
+  createdAt: q.createdAt,
+});
 
 function handleError(res, label, error) {
   if (error.name === 'CastError') {
@@ -52,14 +56,13 @@ const questionDto = (q, speaker) => ({
     : {}),
 });
 
-// GET /api/speaker-questions/speakers — speakers a participant can ask (A–Z):
-// those with a session in the participant's package.
+// GET /api/speaker-questions/speakers — speakers management has enabled for questions.
 const listSpeakers = async (req, res) => {
   try {
     if (!participantOnly(req, res)) return;
     const speakers = await Speaker.find({
       apartmentId: req.apartmentId,
-      _id: { $in: await visibleSpeakerIds(req) },
+      askEnabled: true,
     }).sort({ name: 1 });
     res.json({
       success: true,
@@ -82,10 +85,9 @@ const askQuestion = async (req, res) => {
         .json({ success: false, error: `Question must be under ${MAX_LENGTH} characters` });
     }
     const speaker = await Speaker.findOne({ _id: req.body.speakerId, apartmentId: req.apartmentId });
-    if (speaker && !(await visibleSpeakerIds(req)).includes(String(speaker._id))) {
+    if (!speaker || speaker.askEnabled !== true) {
       return res.status(404).json({ success: false, error: 'Speaker not found' });
     }
-    if (!speaker) return res.status(404).json({ success: false, error: 'Speaker not found' });
     const reg = await EventRegistration.findById(req.userId).select('name');
     const created = await SpeakerQuestion.create({
       apartmentId: req.apartmentId,
@@ -132,7 +134,77 @@ const speakerInbox = async (req, res) => {
   }
 };
 
-// POST /api/speaker-questions/:id/answer  { answer } — one time, final.
+// GET /api/speaker-questions/public — published questions and their current answer.
+const publicQuestions = async (req, res) => {
+  try {
+    if (!participantOnly(req, res)) return;
+    const list = await SpeakerQuestion.find({
+      apartmentId: req.apartmentId,
+      isPublic: true,
+      answer: { $nin: ['', null] },
+    })
+      .sort({ updatedAt: -1 })
+      .populate('speakerId', 'name photo');
+    res.json({
+      success: true,
+      questions: list.map((q) => ({
+        id: q._id.toString(),
+        question: q.question,
+        answer: q.answer || '',
+        answeredAt: q.answeredAt,
+        updatedAt: q.updatedAt,
+        speakerName: q.speakerId ? q.speakerId.name : 'Speaker',
+        speakerPhoto: q.speakerId ? q.speakerId.photo || '' : '',
+      })),
+    });
+  } catch (error) {
+    handleError(res, 'publicQuestions', error);
+  }
+};
+
+// PUT /api/speaker-questions/:id/answer  { answer } — management, and it can be edited.
+const adminAnswer = async (req, res) => {
+  try {
+    const answer = String(req.body.answer || '').trim();
+    if (!answer) return res.status(400).json({ success: false, error: 'Type your answer' });
+    if (answer.length > MAX_LENGTH) {
+      return res
+        .status(400)
+        .json({ success: false, error: `Answer must be under ${MAX_LENGTH} characters` });
+    }
+    const existing = await SpeakerQuestion.findOne({
+      _id: req.params.id,
+      apartmentId: req.apartmentId,
+    });
+    if (!existing) return res.status(404).json({ success: false, error: 'Question not found' });
+    existing.answer = answer;
+    existing.answeredAt = new Date();
+    await existing.save();
+    const speaker = await Speaker.findById(existing.speakerId).select('name photo');
+    res.json({ success: true, question: adminQuestionDto(existing, speaker) });
+  } catch (error) {
+    handleError(res, 'adminAnswer', error);
+  }
+};
+
+// PUT /api/speaker-questions/:id/public  { isPublic }
+const setPublic = async (req, res) => {
+  try {
+    const existing = await SpeakerQuestion.findOne({
+      _id: req.params.id,
+      apartmentId: req.apartmentId,
+    });
+    if (!existing) return res.status(404).json({ success: false, error: 'Question not found' });
+    existing.isPublic = req.body.isPublic === true || req.body.isPublic === 'true';
+    await existing.save();
+    const speaker = await Speaker.findById(existing.speakerId).select('name photo');
+    res.json({ success: true, question: adminQuestionDto(existing, speaker) });
+  } catch (error) {
+    handleError(res, 'setPublic', error);
+  }
+};
+
+// POST /api/speaker-questions/:id/answer  { answer } — speaker, one time, final.
 const answerQuestion = async (req, res) => {
   try {
     if (!speakerOnly(req, res)) return;
@@ -247,6 +319,9 @@ module.exports = {
   listSpeakers,
   askQuestion,
   myQuestions,
+  publicQuestions,
+  adminAnswer,
+  setPublic,
   speakerInbox,
   answerQuestion,
   sessionQuestionsForParticipant,

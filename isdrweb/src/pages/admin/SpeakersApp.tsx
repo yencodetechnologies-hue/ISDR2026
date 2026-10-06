@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { AppBar, Icon, Spinner, useConfirm, useToast } from "@/components/ui";
+import { AppBar, Icon, Spinner, Switch, useConfirm, useToast } from "@/components/ui";
 import { AppFab, AppSpinner } from "@/components/app/AppControls";
 import { AppTextField } from "@/components/app/AppForm";
-import { del, formData, get, post, put } from "@/lib/api";
+import { del, get, patch, post, put } from "@/lib/api";
 import { idOf } from "@/lib/format";
 
 /** Dark-screen text field (darkInputDecoration). */
@@ -37,6 +37,13 @@ export function SpeakersListApp() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const toggleAsk = async (s: any, askEnabled: boolean) => {
+    const id = idOf(s);
+    const r = await patch(`/speakers/${id}`, { askEnabled });
+    if (r.success) setSpeakers((l) => l.map((x) => (idOf(x) === id ? { ...x, askEnabled } : x)));
+    else toast(r.error || "Could not update");
+  };
 
   const remove = async (s: any) => {
     if (
@@ -87,7 +94,12 @@ export function SpeakersListApp() {
                 </span>
                 <div className="ml-3 min-w-0 flex-1">
                   <div className="font-outfit text-[15px] font-bold">{name}</div>
-                  <div className="mt-0.5 text-xs text-muted">{s.mobileNumber ?? s.mobile ?? ""}</div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Switch checked={s.askEnabled === true} onChange={(v) => toggleAsk(s, v)} />
+                    <span className="text-[11px] text-muted">
+                      {s.askEnabled === true ? "Open for questions" : "Off"}
+                    </span>
+                  </div>
                 </div>
                 <button
                   title="Edit"
@@ -113,62 +125,39 @@ export function SpeakersListApp() {
   );
 }
 
-/** Add / Edit Speaker — the app's AddSpeakerPage (photo, name, mobile, password). */
+/** Add / Edit Speaker — name only. Asking is turned on from the speaker list. */
 export function SpeakerFormApp() {
   const { id = "" } = useParams<{ id: string }>();
   const isEdit = !!id;
   const navigate = useNavigate();
   const toast = useToast();
   const [loaded, setLoaded] = useState(!isEdit);
-  const [currentPhoto, setCurrentPhoto] = useState("");
   const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [password, setPassword] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isEdit) return;
     get("/speakers").then((r) => {
       const s = (r.speakers ?? []).find((x: any) => idOf(x) === id);
-      if (s) {
-        setName(s.name ?? "");
-        setMobile(s.mobileNumber ?? s.mobile ?? "");
-        setCurrentPhoto(String(s.photo ?? s.photoUrl ?? ""));
-      }
+      if (s) setName(s.name ?? "");
       setLoaded(true);
     });
   }, [id, isEdit]);
-  useEffect(() => {
-    if (!photo) return setPreview(null);
-    const u = URL.createObjectURL(photo);
-    setPreview(u);
-    return () => URL.revokeObjectURL(u);
-  }, [photo]);
 
   const save = async () => {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = "Enter the speaker name";
-    if (!/^\d{10}$/.test(mobile.trim())) e.mobile = "Enter a valid 10-digit mobile number";
-    if (!(isEdit && !password.trim()) && password.trim().length < 6)
-      e.password = "Password must be at least 6 characters";
     setErrors(e);
     if (Object.keys(e).length) return;
     setSaving(true);
-    const fd = formData(
-      { name: name.trim(), mobileNumber: mobile.trim(), ...(password ? { password } : {}) },
-      { photo },
-    );
-    const r = isEdit ? await put(`/speakers/${id}`, fd) : await post("/speakers", fd);
+    const body = { name: name.trim() };
+    const r = isEdit ? await put(`/speakers/${id}`, body) : await post("/speakers", body);
     setSaving(false);
     if (r.success) navigate(-1);
     else toast(r.error || (isEdit ? "Could not save speaker" : "Could not add speaker"));
   };
 
-  const shown = preview ?? (currentPhoto || null);
   return (
     <div className="min-h-screen bg-bg">
       <AppBar title={isEdit ? "Edit Speaker" : "Add Speaker"} outfit />
@@ -176,61 +165,14 @@ export function SpeakerFormApp() {
         <AppSpinner />
       ) : (
         <div className="p-4">
-          <div className="flex justify-center">
-            <button onClick={() => fileRef.current?.click()} className="relative">
-              <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-field">
-                {shown ? (
-                  <img src={shown} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <Icon name="person" size={44} color="#60A5FA" />
-                )}
-              </span>
-              <span className="absolute bottom-0 right-0 rounded-full bg-accent p-[7px]">
-                <Icon name="photo_camera" size={16} />
-              </span>
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) setPhoto(f);
-                e.target.value = "";
-              }}
-            />
-          </div>
-          <div className="mt-1.5 text-center text-xs text-muted">Speaker photo</div>
-          <div className="mt-4 space-y-3">
-            <AppTextField
-              {...dark}
-              label="Name of the speaker"
-              icon="person"
-              value={name}
-              onChange={setName}
-              error={errors.name}
-            />
-            <AppTextField
-              {...dark}
-              label="Mobile number (login)"
-              icon="phone"
-              inputMode="numeric"
-              maxLength={10}
-              value={mobile}
-              onChange={(v) => setMobile(v.replace(/\D/g, ""))}
-              error={errors.mobile}
-            />
-            <AppTextField
-              {...dark}
-              label={isEdit ? "New password (leave blank to keep)" : "Password"}
-              icon="lock"
-              password
-              value={password}
-              onChange={setPassword}
-              error={errors.password}
-            />
-          </div>
+          <AppTextField
+            {...dark}
+            label="Name of the speaker"
+            icon="person"
+            value={name}
+            onChange={setName}
+            error={errors.name}
+          />
           <button
             onClick={saving ? undefined : save}
             className="mt-5 flex h-[50px] w-full items-center justify-center rounded-[14px] bg-accent text-[15px] font-bold"

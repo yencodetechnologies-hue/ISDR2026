@@ -1765,6 +1765,32 @@ class ApiService {
         () => _dio.get('${ApiConfig.speakerQuestions}/mine'),
       );
 
+  /// Published speaker questions and the current answer, for every participant.
+  Future<Map<String, dynamic>> getPublicSpeakerQuestions() =>
+      _sessionContentCall(
+        () => _dio.get('${ApiConfig.speakerQuestions}/public'),
+      );
+
+  /// Management writes or updates the answer on a participant's speaker question.
+  Future<Map<String, dynamic>> answerSpeakerQuestionAsAdmin(
+    String questionId,
+    String answer,
+  ) =>
+      _sessionContentCall(() => _dio.put(
+            '${ApiConfig.speakerQuestions}/$questionId/answer',
+            data: {'answer': answer},
+          ));
+
+  /// Management shows or hides that question and answer on the participant Q/A.
+  Future<Map<String, dynamic>> setSpeakerQuestionPublic(
+    String questionId,
+    bool isPublic,
+  ) =>
+      _sessionContentCall(() => _dio.put(
+            '${ApiConfig.speakerQuestions}/$questionId/public',
+            data: {'isPublic': isPublic},
+          ));
+
   /// Every speaker's session question, with this participant's own answer.
   Future<Map<String, dynamic>> getAllSessionQuestions() => _sessionContentCall(
         () => _dio.get('${ApiConfig.speakerQuestions}/session-questions'),
@@ -1800,42 +1826,27 @@ class ApiService {
   Future<Map<String, dynamic>> listSpeakers() =>
       _sessionContentCall(() => _dio.get(ApiConfig.speakers));
 
-  Future<Map<String, dynamic>> createSpeaker({
-    required String name,
-    required String mobileNumber,
-    required String password,
-    String? photoPath,
-  }) =>
-      _sessionContentCall(() async => _dio.post(
+  Future<Map<String, dynamic>> createSpeaker({required String name}) =>
+      _sessionContentCall(() => _dio.post(
             ApiConfig.speakers,
-            data: FormData.fromMap({
-              'name': name,
-              'mobileNumber': mobileNumber,
-              'password': password,
-              if (photoPath != null)
-                'photo':
-                    await MultipartFile.fromFile(photoPath, filename: 'speaker.jpg'),
-            }),
+            data: {'name': name},
           ));
 
-  /// Admin edits a speaker. An empty [password] keeps the current one.
+  /// Admin renames a speaker. Mobile and password already stored are kept.
   Future<Map<String, dynamic>> updateSpeaker({
     required String id,
     required String name,
-    required String mobileNumber,
-    String password = '',
-    String? photoPath,
   }) =>
-      _sessionContentCall(() async => _dio.put(
+      _sessionContentCall(() => _dio.put(
             '${ApiConfig.speakers}/$id',
-            data: FormData.fromMap({
-              'name': name,
-              'mobileNumber': mobileNumber,
-              if (password.isNotEmpty) 'password': password,
-              if (photoPath != null)
-                'photo':
-                    await MultipartFile.fromFile(photoPath, filename: 'speaker.jpg'),
-            }),
+            data: {'name': name},
+          ));
+
+  /// Show or hide this speaker on the participant Ask a Speaker list.
+  Future<Map<String, dynamic>> setSpeakerAskEnabled(String id, bool askEnabled) =>
+      _sessionContentCall(() => _dio.patch(
+            '${ApiConfig.speakers}/$id',
+            data: {'askEnabled': askEnabled},
           ));
 
   /// Help & Support tickets: a participant's own, or all for staff/admin.

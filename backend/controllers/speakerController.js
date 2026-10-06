@@ -17,8 +17,9 @@ const toDto = (s) => ({
   id: s._id.toString(),
   name: s.name,
   photo: s.photo || '',
-  mobileNumber: s.mobileNumber,
+  mobileNumber: s.mobileNumber || '',
   passNumber: s.passNumber || '',
+  askEnabled: s.askEnabled === true,
   createdAt: s.createdAt,
 });
 
@@ -56,21 +57,20 @@ const listSpeakers = async (req, res) => {
   }
 };
 
-// POST /api/speakers  (multipart: name, mobileNumber, password, optional `photo`)
+// POST /api/speakers  { name } — mobile, password and photo stay optional.
 const createSpeaker = async (req, res) => {
   try {
     const name = String(req.body.name || '').trim();
     const mobileNumber = normalizeMobile10(req.body.mobileNumber);
     const password = String(req.body.password || '');
     if (!name) return res.status(400).json({ success: false, error: 'Speaker name is required' });
-    if (!mobileNumber) {
-      return res.status(400).json({ success: false, error: 'Enter a valid 10-digit mobile number' });
-    }
-    if (password.trim().length < 6) {
+    if (password && password.trim().length < 6) {
       return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
     }
-    const clash = await mobileTakenMessage(mobileNumber);
-    if (clash) return res.status(400).json({ success: false, error: clash });
+    if (mobileNumber) {
+      const clash = await mobileTakenMessage(mobileNumber);
+      if (clash) return res.status(400).json({ success: false, error: clash });
+    }
 
     const photo = req.file ? await uploadToCloudinary(req.file.buffer, 'isdr/speakers') : '';
     const speaker = await Speaker.create({
@@ -78,7 +78,8 @@ const createSpeaker = async (req, res) => {
       name,
       photo,
       mobileNumber,
-      password,
+      ...(password ? { password } : {}),
+      askEnabled: false,
     });
     res.status(201).json({ success: true, speaker: toDto(speaker) });
   } catch (error) {
@@ -98,19 +99,17 @@ const updateSpeaker = async (req, res) => {
     const mobileNumber = normalizeMobile10(req.body.mobileNumber);
     const password = String(req.body.password || '');
     if (!name) return res.status(400).json({ success: false, error: 'Speaker name is required' });
-    if (!mobileNumber) {
-      return res.status(400).json({ success: false, error: 'Enter a valid 10-digit mobile number' });
-    }
     if (password && password.trim().length < 6) {
       return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
     }
-    if (mobileNumber !== speaker.mobileNumber) {
+    // A blank mobile keeps the number already stored (name-only edits).
+    if (mobileNumber && mobileNumber !== speaker.mobileNumber) {
       const clash = await mobileTakenMessage(mobileNumber, speaker._id);
       if (clash) return res.status(400).json({ success: false, error: clash });
+      speaker.mobileNumber = mobileNumber;
     }
 
     speaker.name = name;
-    speaker.mobileNumber = mobileNumber;
     if (password) speaker.password = password; // hashed by the model's pre-save hook
     if (req.file) speaker.photo = await uploadToCloudinary(req.file.buffer, 'isdr/speakers');
     else if (req.body.removePhoto === 'true') speaker.photo = '';
@@ -127,6 +126,23 @@ const updateSpeaker = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Speaker not found' });
     }
     console.error('updateSpeaker error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+// PATCH /api/speakers/:id  { askEnabled } — show or hide this speaker in Ask a Speaker.
+const setAskEnabled = async (req, res) => {
+  try {
+    const speaker = await Speaker.findOne({ _id: req.params.id, apartmentId: req.apartmentId });
+    if (!speaker) return res.status(404).json({ success: false, error: 'Speaker not found' });
+    speaker.askEnabled = req.body.askEnabled === true || req.body.askEnabled === 'true';
+    await speaker.save();
+    res.json({ success: true, speaker: toDto(speaker) });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({ success: false, error: 'Speaker not found' });
+    }
+    console.error('setAskEnabled error:', error);
     res.status(500).json({ success: false, error: error.message || 'Server error' });
   }
 };
@@ -154,4 +170,11 @@ const deleteSpeaker = async (req, res) => {
   }
 };
 
-module.exports = { listSpeakers, createSpeaker, updateSpeaker, deleteSpeaker, normalizeMobile10 };
+module.exports = {
+  listSpeakers,
+  createSpeaker,
+  updateSpeaker,
+  setAskEnabled,
+  deleteSpeaker,
+  normalizeMobile10,
+};

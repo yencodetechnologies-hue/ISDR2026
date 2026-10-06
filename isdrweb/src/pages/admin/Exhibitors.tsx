@@ -20,6 +20,7 @@ import { del, formData, get, post } from "@/lib/api";
 import { FilterSelect, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { idOf } from "@/lib/format";
+import { groupExhibitors, sortExhibitors, stallCode } from "@/lib/exhibitors";
 import { useAppLayout } from "@/lib/appLayout";
 import { ExhibitorsListApp } from "./ExhibitorsApp";
 
@@ -54,7 +55,7 @@ function ManageExhibitorsWeb() {
   const save = async () => {
     if (!shopName.trim()) return toast("Enter the shop name", "error");
     if (!category.trim()) return toast("Enter the category", "error");
-    if (!location.trim()) return toast("Enter the location", "error");
+    if (!location.trim()) return toast("Enter the stall, e.g. A1", "error");
     setSaving(true);
     const fd = formData({ shopName: shopName.trim(), category: category.trim(), location: location.trim() }, { photo });
     const res = await post("/exhibitors", fd);
@@ -78,10 +79,13 @@ function ManageExhibitorsWeb() {
     } else toast(res.error || "Could not remove", "error");
   };
 
-  const shownItems = (items ?? []).filter(
-    (e) =>
-      matches(e, search) && (!categoryFilter || String(e.category ?? "") === categoryFilter),
+  const shownItems = sortExhibitors(
+    (items ?? []).filter(
+      (e) =>
+        matches(e, search) && (!categoryFilter || String(e.category ?? "") === categoryFilter),
+    ),
   );
+  const groups = groupExhibitors(shownItems);
   const categories = [...new Set((items ?? []).map((e) => String(e.category ?? "").trim()).filter(Boolean))].sort();
 
   return (
@@ -94,6 +98,7 @@ function ManageExhibitorsWeb() {
             title="Exhibitors"
             rows={shownItems}
             columns={[
+              { header: "Stall", value: (e: any) => stallCode(e.location), width: 10 },
               { header: "Shop name", value: (e: any) => e.shopName, width: 30 },
               { header: "Category", value: (e: any) => e.category, width: 20 },
               { header: "Location", value: (e: any) => e.location, width: 20 },
@@ -138,26 +143,39 @@ function ManageExhibitorsWeb() {
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {shownItems.map((e) => (
-            <div key={idOf(e)} className="card group relative overflow-hidden">
-              <div className="flex h-32 items-center justify-center bg-field">
-                {e.photo ? (
-                  <img src={e.photo} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <Avatar name={e.shopName} size={56} />
-                )}
+        <div className="space-y-8">
+          {groups.map((group) => (
+            <section key={group.title}>
+              <div className="mb-3 flex items-center gap-3">
+                <h2 className="font-outfit text-lg font-semibold">{group.title}</h2>
+                <span className="rounded-full bg-field px-2 py-0.5 text-xs text-muted">{group.items.length}</span>
               </div>
-              <div className="flex items-center gap-2 p-4">
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">{e.shopName}</div>
-                  <div className="truncate text-xs text-muted">
-                    {[e.category, e.location].filter(Boolean).join(" · ")}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {group.items.map((e) => (
+                  <div key={idOf(e)} className="card group relative overflow-hidden">
+                    <div className="relative flex h-32 items-center justify-center bg-field">
+                      {e.photo ? (
+                        <img src={e.photo} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <Avatar name={e.shopName} size={56} />
+                      )}
+                      <span className="absolute left-2 top-2 rounded-md bg-black/70 px-2 py-0.5 text-xs font-bold tracking-wide text-white">
+                        {stallCode(e.location)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 p-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-semibold">{e.shopName}</div>
+                        <div className="truncate text-xs text-muted">
+                          {[e.category, e.location].filter(Boolean).join(" · ")}
+                        </div>
+                      </div>
+                      <IconButton icon="delete" outline color="#EF4444" title="Remove" onClick={() => remove(e)} />
+                    </div>
                   </div>
-                </div>
-                <IconButton icon="delete" outline color="#EF4444" title="Remove" onClick={() => remove(e)} />
+                ))}
               </div>
-            </div>
+            </section>
           ))}
         </div>
       )}
@@ -185,8 +203,8 @@ function ManageExhibitorsWeb() {
           <Field label="Category">
             <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Dental equipment" />
           </Field>
-          <Field label="Location">
-            <Input icon="location_on" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Hall B, Stall 12" />
+          <Field label="Stall">
+            <Input icon="location_on" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. A1 or B3" />
           </Field>
         </div>
       </Modal>

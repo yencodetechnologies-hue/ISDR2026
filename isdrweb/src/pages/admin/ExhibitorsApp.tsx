@@ -5,6 +5,7 @@ import { AppBar, Icon, Spinner, useConfirm, useToast } from "@/components/ui";
 import { AppFab, AppSpinner } from "@/components/app/AppControls";
 import { AppTextField } from "@/components/app/AppForm";
 import { del, formData, get, post } from "@/lib/api";
+import { groupExhibitors, stallCode } from "@/lib/exhibitors";
 import { idOf } from "@/lib/format";
 
 const dark = {
@@ -67,38 +68,46 @@ export function ExhibitorsListApp() {
             </div>
           </div>
         ) : (
-          items.map((e) => {
-            const photo = String(e.photo ?? e.photoUrl ?? "");
-            return (
-              <div
-                key={idOf(e)}
-                className="mb-2.5 flex items-center rounded-[14px] border border-line bg-card py-2.5 pl-3 pr-1"
-              >
-                <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-field">
-                  {photo ? (
-                    <img src={photo} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <Icon name="storefront" color="#60A5FA" />
-                  )}
-                </span>
-                <div className="ml-3 min-w-0 flex-1">
-                  <div className="font-outfit text-[15px] font-bold">{e.shopName ?? e.name ?? ""}</div>
-                  <div className="mt-0.5 text-xs text-[#60A5FA]">{e.category ?? ""}</div>
-                  <div className="mt-0.5 flex items-center gap-[3px] text-xs text-muted">
-                    <Icon name="location_on" outline size={13} color="#9CA3AF" />
-                    <span className="truncate">{e.location ?? e.stallNumber ?? ""}</span>
-                  </div>
-                </div>
-                <button
-                  title="Delete"
-                  onClick={() => remove(e)}
-                  className="flex h-12 w-12 items-center justify-center rounded-full active:bg-white/10"
-                >
-                  <Icon name="delete" outline color="#F87171" />
-                </button>
+          groupExhibitors(items).map((group) => (
+            <div key={group.title} className="mb-4">
+              <div className="mb-2 flex items-center gap-2">
+                <div className="font-outfit text-[13px] font-bold uppercase tracking-wide text-muted">{group.title}</div>
+                <span className="text-[11px] text-muted">{group.items.length}</span>
               </div>
-            );
-          })
+              {group.items.map((e) => {
+                const photo = String(e.photo ?? e.photoUrl ?? "");
+                return (
+                  <div
+                    key={idOf(e)}
+                    className="mb-2.5 flex items-center rounded-[14px] border border-line bg-card py-2.5 pl-3 pr-1"
+                  >
+                    <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-field">
+                      {photo ? (
+                        <img src={photo} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <Icon name="storefront" color="#60A5FA" />
+                      )}
+                    </span>
+                    <div className="ml-3 min-w-0 flex-1">
+                      <div className="font-outfit text-[15px] font-bold">{e.shopName ?? e.name ?? ""}</div>
+                      <div className="mt-0.5 text-xs text-[#60A5FA]">{e.category ?? ""}</div>
+                      <div className="mt-0.5 flex items-center gap-[3px] text-xs text-muted">
+                        <Icon name="location_on" outline size={13} color="#9CA3AF" />
+                        <span className="truncate">{stallCode(e.location ?? e.stallNumber)}</span>
+                      </div>
+                    </div>
+                    <button
+                      title="Delete"
+                      onClick={() => remove(e)}
+                      className="flex h-12 w-12 items-center justify-center rounded-full active:bg-white/10"
+                    >
+                      <Icon name="delete" outline color="#F87171" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ))
         )}
       </div>
       <AppFab icon="add_business" label="Add Exhibitor" onClick={() => navigate("/admin/exhibitors/new")} />
@@ -130,7 +139,7 @@ export function ExhibitorFormApp() {
     const e: Record<string, string> = {};
     if (!shopName.trim()) e.shopName = "Enter the shop name";
     if (!category.trim()) e.category = "Enter the category";
-    if (!location.trim()) e.location = "Enter the location";
+    if (!location.trim()) e.location = "Enter the stall, e.g. A1";
     setErrors(e);
     if (Object.keys(e).length) return;
     setSaving(true);
@@ -192,7 +201,7 @@ export function ExhibitorFormApp() {
           />
           <AppTextField
             {...dark}
-            label="Location"
+            label="Stall"
             icon="location_on"
             value={location}
             onChange={setLocation}

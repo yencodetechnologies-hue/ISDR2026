@@ -94,17 +94,46 @@ export function ParticipantQa() {
   return useAppLayout() ? <ParticipantQaApp /> : <ParticipantQaWeb />;
 }
 
+function PublicSpeakerQa({ items }: { items: any[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mb-8">
+      <h2 className="mb-3 text-lg font-semibold">Speaker Q&A</h2>
+      <div className="space-y-3">
+        {items.map((q) => (
+          <div key={idOf(q)} className="card p-5">
+            <div className="flex items-center gap-2.5">
+              <Avatar src={q.speakerPhoto} name={q.speakerName || "Speaker"} size={34} />
+              <div className="min-w-0 flex-1 truncate text-sm font-bold">{q.speakerName || "Speaker"}</div>
+            </div>
+            <div className="mt-3 whitespace-pre-wrap font-semibold">{q.question}</div>
+            <div className="mt-2.5 rounded-xl bg-[#22C55E]/10 p-3">
+              <div className="text-[10.5px] font-bold tracking-wider text-[#22C55E]">ANSWER</div>
+              <div className="mt-1 whitespace-pre-wrap text-sm">{q.answer}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ParticipantQaWeb() {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState<any[] | null>(null);
+  const [published, setPublished] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pendingOnly, setPendingOnly] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await get("/speaker-questions/session-questions");
+    const [res, pub] = await Promise.all([
+      get("/speaker-questions/session-questions"),
+      get("/speaker-questions/public"),
+    ]);
     if (!res.success) return setError(res.error || "Could not load questions");
     setError(null);
     setQuestions(res.questions ?? []);
+    setPublished(pub.success ? (pub.questions ?? []) : []);
   }, []);
   useEffect(() => {
     load();
@@ -121,6 +150,7 @@ function ParticipantQaWeb() {
     >
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div>
+          <PublicSpeakerQa items={published} />
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <h2 className="text-lg font-semibold">Questions for You</h2>
             {pending > 0 && <Pill color="#F59E0B">{pending} TO ANSWER</Pill>}
@@ -158,7 +188,9 @@ function ParticipantQaWeb() {
           <div className="rounded-xl border border-line bg-gradient-to-br from-[#1E3A8A] to-card p-5">
             <Icon name="record_voice_over" size={30} color="#93C5FD" />
             <div className="mt-3 font-semibold">Have a question for a speaker?</div>
-            <div className="mt-1 text-sm text-white/70">Only you and the speaker will see it.</div>
+            <div className="mt-1 text-sm text-white/70">
+              It goes to the admin, and everyone sees it only after it is published.
+            </div>
             <Button full icon="send" className="mt-4" onClick={() => navigate("/participant/qa/ask")}>
               Ask a Speaker
             </Button>
@@ -230,13 +262,13 @@ function AskSpeakerWeb() {
   };
 
   return (
-    <Page title="Ask a Speaker" subtitle="Choose a speaker to send a private question">
+    <Page title="Ask a Speaker" subtitle="Choose a speaker the admin has opened for questions">
       {error ? (
         <ErrorState message={error} />
       ) : !speakers ? (
         <Loading />
       ) : speakers.length === 0 ? (
-        <Empty icon="groups" title="No speakers yet" />
+        <Empty icon="groups" title="No speakers are open for questions" />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {speakers.map((s) => (
@@ -282,7 +314,9 @@ function AskSpeakerWeb() {
           placeholder="Type your question"
           autoFocus
         />
-        <div className="mt-2 text-xs text-muted">Only you and the speaker will see this question and the answer.</div>
+        <div className="mt-2 text-xs text-muted">
+          Your question goes to the admin. Everyone sees it in Q/A only after the admin publishes the answer.
+        </div>
       </Modal>
     </Page>
   );

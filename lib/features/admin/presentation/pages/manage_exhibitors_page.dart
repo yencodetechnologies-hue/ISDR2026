@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/utils/exhibitor_stalls.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
 
@@ -158,7 +159,33 @@ class _ManageExhibitorsPageState extends State<ManageExhibitorsPage> {
                 ),
               )
             else
-              for (final e in _exhibitors) _row(e),
+              for (final group in stallGroups(_exhibitors)) ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        group.title,
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                          color: DarkColors.muted,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${group.items.length}',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: DarkColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                for (final e in group.items) _row(e),
+              ],
           ],
         ),
       ),
@@ -221,7 +248,7 @@ class _ManageExhibitorsPageState extends State<ManageExhibitorsPage> {
                     const SizedBox(width: 3),
                     Expanded(
                       child: Text(
-                        e['location']?.toString() ?? '',
+                        stallCode(e['location']),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
@@ -403,10 +430,10 @@ class _AddExhibitorPageState extends State<AddExhibitorPage> {
               style: fieldStyle,
               textCapitalization: TextCapitalization.sentences,
               decoration: darkInputDecoration(
-                'Location',
+                'Stall',
                 Icons.location_on_outlined,
               ),
-              validator: (v) => _required(v, 'Enter the location'),
+              validator: (v) => _required(v, 'Enter the stall, e.g. A1'),
             ),
             const SizedBox(height: 20),
             SizedBox(

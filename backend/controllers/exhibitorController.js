@@ -10,10 +10,26 @@ const toDto = (e) => ({
   createdAt: e.createdAt,
 });
 
-// GET /api/exhibitors — the property's exhibitors, newest first (any login).
+/** A1, A2, … then B1, B2, … Locations that are not a stall code stay at the end. */
+function stallRank(location) {
+  const match = String(location || '').trim().toUpperCase().match(/^([A-Z])\s*(\d+)/);
+  if (!match) return { letter: 'ZZ', num: 9999 };
+  return { letter: match[1], num: Number(match[2]) };
+}
+
+function byStall(a, b) {
+  const left = stallRank(a.location);
+  const right = stallRank(b.location);
+  if (left.letter !== right.letter) return left.letter < right.letter ? -1 : 1;
+  if (left.num !== right.num) return left.num - right.num;
+  return String(a.shopName || '').localeCompare(String(b.shopName || ''));
+}
+
+// GET /api/exhibitors — the property's exhibitors, A stall then B stall (any login).
 const listExhibitors = async (req, res) => {
   try {
-    const list = await Exhibitor.find({ apartmentId: req.apartmentId }).sort({ createdAt: -1 });
+    const list = await Exhibitor.find({ apartmentId: req.apartmentId });
+    list.sort(byStall);
     res.json({ success: true, exhibitors: list.map(toDto) });
   } catch (error) {
     console.error('listExhibitors error:', error);

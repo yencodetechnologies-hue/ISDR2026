@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 /**
  * A question a participant asks a speaker directly (not tied to a session).
- * Private: only the asking participant and that speaker see it. The speaker
- * answers once; the answer is final.
+ * Admin answers it and can publish it. Until isPublic is on, only the asking
+ * participant and admin see it. The public Q/A shows the latest answer.
  */
 const speakerQuestionSchema = new mongoose.Schema(
   {
@@ -28,6 +28,8 @@ const speakerQuestionSchema = new mongoose.Schema(
     question: { type: String, required: true, trim: true },
     answer: { type: String, default: '', trim: true },
     answeredAt: { type: Date, default: null },
+    // When true, every participant sees this question and its current answer.
+    isPublic: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

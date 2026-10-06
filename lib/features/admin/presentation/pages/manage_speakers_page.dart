@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
@@ -58,6 +56,27 @@ class _ManageSpeakersPageState extends State<ManageSpeakersPage> {
       MaterialPageRoute(builder: (_) => AddSpeakerPage(speaker: speaker)),
     );
     if (saved == true) _load();
+  }
+
+  Future<void> _setAsk(Map<String, dynamic> speaker, bool enabled) async {
+    final id = speaker['id'].toString();
+    setState(() {
+      _speakers = _speakers
+          .map((s) => s['id'] == speaker['id'] ? {...s, 'askEnabled': enabled} : s)
+          .toList();
+    });
+    final res = await _api.setSpeakerAskEnabled(id, enabled);
+    if (!mounted) return;
+    if (res['success'] != true) {
+      setState(() {
+        _speakers = _speakers
+            .map((s) => s['id'] == speaker['id'] ? {...s, 'askEnabled': !enabled} : s)
+            .toList();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['error']?.toString() ?? 'Could not update')),
+      );
+    }
   }
 
   Future<void> _delete(Map<String, dynamic> speaker) async {
@@ -223,6 +242,21 @@ class _ManageSpeakersPageState extends State<ManageSpeakersPage> {
               ],
             ),
           ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Switch(
+                value: s['askEnabled'] == true,
+                activeThumbColor: Colors.white,
+                activeTrackColor: DarkColors.accent,
+                onChanged: (v) => _setAsk(s, v),
+              ),
+              Text(
+                s['askEnabled'] == true ? 'On' : 'Off',
+                style: GoogleFonts.inter(fontSize: 10, color: DarkColors.muted),
+              ),
+            ],
+          ),
           IconButton(
             tooltip: 'Edit',
             icon: const Icon(Icons.edit_outlined, color: Color(0xFF60A5FA)),
@@ -242,9 +276,7 @@ class _ManageSpeakersPageState extends State<ManageSpeakersPage> {
   }
 }
 
-/// Photo, name, mobile and password — the speaker logs in with mobile +
-/// password and sees every schedule they're picked for. Given [speaker], the
-/// page edits that speaker (the password is then optional).
+/// Name only. Turn the speaker on for questions from the speaker list.
 class AddSpeakerPage extends StatefulWidget {
   final Map<String, dynamic>? speaker;
 
@@ -257,40 +289,21 @@ class AddSpeakerPage extends StatefulWidget {
 class _AddSpeakerPageState extends State<AddSpeakerPage> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
-  final _mobile = TextEditingController();
-  final _password = TextEditingController();
-  File? _photo;
   bool _saving = false;
-  bool _showPassword = false;
 
   bool get _isEdit => widget.speaker != null;
-  String get _currentPhoto => widget.speaker?['photo']?.toString() ?? '';
 
   @override
   void initState() {
     super.initState();
     final sp = widget.speaker;
-    if (sp != null) {
-      _name.text = sp['name']?.toString() ?? '';
-      _mobile.text = sp['mobileNumber']?.toString() ?? '';
-    }
+    if (sp != null) _name.text = sp['name']?.toString() ?? '';
   }
 
   @override
   void dispose() {
     _name.dispose();
-    _mobile.dispose();
-    _password.dispose();
     super.dispose();
-  }
-
-  Future<void> _pickPhoto() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-      maxWidth: 1200,
-    );
-    if (picked != null) setState(() => _photo = File(picked.path));
   }
 
   Future<void> _save() async {
@@ -300,16 +313,8 @@ class _AddSpeakerPageState extends State<AddSpeakerPage> {
         ? await ApiService().updateSpeaker(
             id: widget.speaker!['id'].toString(),
             name: _name.text.trim(),
-            mobileNumber: _mobile.text.trim(),
-            password: _password.text,
-            photoPath: _photo?.path,
           )
-        : await ApiService().createSpeaker(
-            name: _name.text.trim(),
-            mobileNumber: _mobile.text.trim(),
-            password: _password.text,
-            photoPath: _photo?.path,
-          );
+        : await ApiService().createSpeaker(name: _name.text.trim());
     if (!mounted) return;
     setState(() => _saving = false);
     if (res['success'] == true) {
@@ -346,60 +351,11 @@ class _AddSpeakerPageState extends State<AddSpeakerPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Center(
-              child: GestureDetector(
-                onTap: _pickPhoto,
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 48,
-                      backgroundColor: DarkColors.field,
-                      backgroundImage: _photo != null
-                          ? FileImage(_photo!)
-                          : (_currentPhoto.isNotEmpty
-                                ? CachedNetworkImageProvider(_currentPhoto)
-                                    as ImageProvider
-                                : null),
-                      child: _photo == null && _currentPhoto.isEmpty
-                          ? const Icon(
-                              Icons.person_rounded,
-                              size: 44,
-                              color: DarkColors.accentLight,
-                            )
-                          : null,
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: const BoxDecoration(
-                          color: DarkColors.accent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt_rounded,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Center(
-              child: Text(
-                'Speaker photo',
-                style: TextStyle(fontSize: 12, color: DarkColors.muted),
-              ),
-            ),
-            const SizedBox(height: 16),
             TextFormField(
               controller: _name,
               style: fieldStyle,
               textCapitalization: TextCapitalization.words,
+              autofocus: true,
               decoration: darkInputDecoration(
                 'Name of the speaker',
                 Icons.person_outline,
@@ -408,49 +364,10 @@ class _AddSpeakerPageState extends State<AddSpeakerPage> {
                   ? 'Enter the speaker name'
                   : null,
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _mobile,
-              style: fieldStyle,
-              keyboardType: TextInputType.phone,
-              maxLength: 10,
-              decoration: darkInputDecoration(
-                'Mobile number (login)',
-                Icons.phone_outlined,
-              ).copyWith(counterText: ''),
-              validator: (v) => RegExp(r'^\d{10}$').hasMatch(v?.trim() ?? '')
-                  ? null
-                  : 'Enter a valid 10-digit mobile number',
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _password,
-              style: fieldStyle,
-              obscureText: !_showPassword,
-              decoration: darkInputDecoration(
-                _isEdit ? 'New password (leave blank to keep)' : 'Password',
-                Icons.lock_outline,
-              )
-                  .copyWith(
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _showPassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        size: 20,
-                        color: DarkColors.muted,
-                      ),
-                      onPressed: () =>
-                          setState(() => _showPassword = !_showPassword),
-                    ),
-                  ),
-              validator: (v) {
-                final value = v?.trim() ?? '';
-                if (_isEdit && value.isEmpty) return null;
-                return value.length < 6
-                    ? 'Password must be at least 6 characters'
-                    : null;
-              },
+            const SizedBox(height: 8),
+            Text(
+              'Turn this speaker on from the list when participants should be able to ask them a question.',
+              style: GoogleFonts.inter(fontSize: 12.5, color: DarkColors.muted),
             ),
             const SizedBox(height: 20),
             SizedBox(

@@ -14,6 +14,7 @@ export function ParticipantQaApp() {
   const navigate = useNavigate();
   const toast = useToast();
   const [questions, setQuestions] = useState<any[] | null>(null);
+  const [published, setPublished] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pendingOnly, setPendingOnly] = useState(false);
   const [answeringId, setAnsweringId] = useState<string | null>(null);
@@ -21,10 +22,14 @@ export function ParticipantQaApp() {
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await get("/speaker-questions/session-questions");
+    const [res, pub] = await Promise.all([
+      get("/speaker-questions/session-questions"),
+      get("/speaker-questions/public"),
+    ]);
     if (!res.success) return setError(res.error || "Could not load questions");
     setError(null);
     setQuestions(res.questions ?? []);
+    setPublished(pub.success ? (pub.questions ?? []) : []);
   }, []);
 
   useEffect(() => {
@@ -81,6 +86,25 @@ export function ParticipantQaApp() {
             <div className="text-[11px] text-white/70">View your answers</div>
           </div>
         </div>
+
+        {published.length > 0 && (
+          <div className="space-y-2.5">
+            <div className="font-outfit text-base font-bold text-white">Speaker Q&A</div>
+            {published.map((q) => (
+              <div key={idOf(q)} className="rounded-[16px] border border-white/[0.08] bg-[#14141F] p-4">
+                <div className="flex items-center gap-2.5">
+                  <Avatar src={q.speakerPhoto} name={q.speakerName || "Speaker"} size={34} />
+                  <div className="truncate font-outfit text-sm font-bold">{q.speakerName || "Speaker"}</div>
+                </div>
+                <div className="mt-3 whitespace-pre-wrap font-inter text-[13.5px] font-semibold">{q.question}</div>
+                <div className="mt-3 rounded-xl border border-green-500/20 bg-green-500/[0.08] p-3.5">
+                  <div className="font-inter text-[10px] font-extrabold tracking-wider text-[#22C55E]">ANSWER</div>
+                  <div className="mt-1 whitespace-pre-wrap font-inter text-xs">{q.answer}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Section Title & Filter Chips */}
         <div className="flex items-center justify-between pt-1">
@@ -273,7 +297,7 @@ export function AskSpeakerApp() {
       <AppBar title="Ask a Speaker" outfit titleClassName="!text-left font-outfit text-[18px] font-bold" />
       <div className="px-4 pb-12 pt-2">
         <div className="mb-3 text-xs text-muted">
-          Choose a speaker to send your question privately.
+          Choose a speaker the admin has opened for questions.
         </div>
 
         {!speakers && !error ? (
@@ -283,7 +307,7 @@ export function AskSpeakerApp() {
         ) : error || !speakers || speakers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-28 text-center">
             <Icon name="groups" size={44} color="#9CA3AF" />
-            <div className="mt-3 font-outfit text-base font-bold">{error || "No speakers available"}</div>
+            <div className="mt-3 font-outfit text-base font-bold">{error || "No speakers are open for questions"}</div>
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -322,7 +346,9 @@ export function AskSpeakerApp() {
                 <Avatar src={selectedSpeaker.photo} name={selectedSpeaker.name} size={36} />
                 <div>
                   <div className="font-outfit text-base font-bold text-white">Ask {selectedSpeaker.name}</div>
-                  <div className="font-inter text-xs text-muted">Your question will be sent directly</div>
+                  <div className="font-inter text-xs text-muted">
+                    It goes to the admin. Everyone sees it only after it is published.
+                  </div>
                 </div>
               </div>
               <button

@@ -110,6 +110,7 @@ const speakerQuestions = async (req, res) => {
           answer: q.answer || '',
           answered: !!q.answer,
           answeredAt: q.answeredAt,
+          isPublic: q.isPublic === true,
           createdAt: q.createdAt,
         };
       }),

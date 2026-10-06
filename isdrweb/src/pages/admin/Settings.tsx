@@ -343,6 +343,63 @@ const teamQr = (role: string): QrConfig<any> => ({
   fileName: (u) => `${teamPass(u, role)} - ${u.name || role}`,
 });
 
+function SpeakerAnswerCard({ item, onUpdated }: { item: any; onUpdated: (next: any) => void }) {
+  const toast = useToast();
+  const [answer, setAnswer] = useState(String(item.answer ?? ""));
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+
+  useEffect(() => {
+    setAnswer(String(item.answer ?? ""));
+  }, [item.answer]);
+
+  const save = async () => {
+    const t = answer.trim();
+    if (!t) return toast("Type an answer", "error");
+    setSaving(true);
+    const r = await put(`/speaker-questions/${idOf(item)}/answer`, { answer: t });
+    setSaving(false);
+    if (r.success) onUpdated(r.question ?? { ...item, answer: t, answered: true });
+    else toast(r.error || "Could not save the answer", "error");
+  };
+
+  const togglePublic = async (isPublic: boolean) => {
+    setPublishing(true);
+    const r = await put(`/speaker-questions/${idOf(item)}/public`, { isPublic });
+    setPublishing(false);
+    if (r.success) onUpdated(r.question ?? { ...item, isPublic });
+    else toast(r.error || "Could not update", "error");
+  };
+
+  return (
+    <div className="card flex flex-col p-5">
+      <div className="flex items-center gap-2">
+        <span className="flex-1 truncate text-xs text-muted">To: {item.speakerName ?? "Speaker"}</span>
+        <Pill color={item.answered ? "#22C55E" : "#F59E0B"}>{item.answered ? "Answered" : "Unanswered"}</Pill>
+      </div>
+      <div className="mt-1 text-xs text-muted">Asked by {item.participantName || "Participant"}</div>
+      <div className="mt-2 font-semibold">{item.question}</div>
+      <TextArea
+        className="mt-3"
+        rows={3}
+        maxLength={1000}
+        value={answer}
+        onChange={(e) => setAnswer(e.target.value)}
+        placeholder="Type the answer"
+      />
+      <div className="mt-2 flex justify-end">
+        <Button small loading={saving} disabled={!answer.trim()} onClick={save}>
+          {item.answered ? "Update answer" : "Save answer"}
+        </Button>
+      </div>
+      <div className="mt-3 flex items-center gap-2 border-t border-line pt-3">
+        <Switch checked={item.isPublic === true} disabled={publishing} onChange={togglePublic} />
+        <span className="text-xs text-muted">Show to all participants</span>
+      </div>
+    </div>
+  );
+}
+
 export function EngagementOverview() {
   // Phone width: the mobile app's screen.
   return useAppLayout() ? <EngagementApp /> : <EngagementOverviewWeb />;
@@ -486,6 +543,7 @@ function EngagementOverviewWeb() {
               { header: "Question", value: (q: any) => q.question, width: 32 },
               { header: "Answer", value: (q: any) => q.answer, width: 32 },
               { header: "Status", value: (q: any) => (q.answered ? "Answered" : "Unanswered"), width: 12 },
+              { header: "Public", value: (q: any) => (q.isPublic ? "Yes" : "No"), width: 10 },
               { header: "Asked on", value: (q: any) => when(q.createdAt), width: 18 },
             ]}
           />
@@ -609,14 +667,20 @@ function EngagementOverviewWeb() {
               ) : (
                 <div className="grid gap-3 md:grid-cols-2">
                   {match(data.speakerQs).map((q) => (
-                    <div key={idOf(q)} className="card p-5">
-                      <div className="flex items-center gap-2">
-                        <span className="flex-1 truncate text-xs text-muted">To: {q.speakerName ?? "Speaker"}</span>
-                        <Pill color={q.answered ? "#22C55E" : "#F59E0B"}>{q.answered ? "Answered" : "Unanswered"}</Pill>
-                      </div>
-                      <div className="mt-2 font-semibold">{q.question}</div>
-                      {q.answer && <div className="mt-2 rounded-lg bg-field p-2.5 text-sm">{q.answer}</div>}
-                    </div>
+                    <SpeakerAnswerCard
+                      key={idOf(q)}
+                      item={q}
+                      onUpdated={(next) =>
+                        setData((d) =>
+                          d
+                            ? {
+                                ...d,
+                                speakerQs: d.speakerQs.map((x) => (idOf(x) === idOf(next) ? { ...x, ...next } : x)),
+                              }
+                            : d,
+                        )
+                      }
+                    />
                   ))}
                 </div>
               ))}

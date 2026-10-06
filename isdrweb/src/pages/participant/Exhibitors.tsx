@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Empty, ErrorState, Icon, Loading, Page } from "@/components/ui";
 import { get } from "@/lib/api";
+import { groupExhibitors, stallCode } from "@/lib/exhibitors";
 import { idOf } from "@/lib/format";
 
 import { useAppLayout } from "@/lib/appLayout";
@@ -33,27 +34,40 @@ function ParticipantExhibitorsWeb() {
       ) : list.length === 0 ? (
         <Empty icon="storefront" title="No exhibitors yet" />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {list.map((e) => (
-            <div key={idOf(e)} className="card card-hover overflow-hidden">
-              <div className="flex h-36 items-center justify-center overflow-hidden bg-field">
-                {e.photo ? (
-                  <img src={e.photo} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <Icon name="storefront" size={40} color="#3B82F6" />
-                )}
+        <div className="space-y-8">
+          {groupExhibitors(list).map((group) => (
+            <section key={group.title}>
+              <div className="mb-3 flex items-center gap-3">
+                <h2 className="font-outfit text-lg font-semibold">{group.title}</h2>
+                <span className="rounded-full bg-field px-2 py-0.5 text-xs text-muted">{group.items.length}</span>
               </div>
-              <div className="min-w-0 p-4">
-                <div className="truncate font-semibold">{e.shopName}</div>
-                {e.category && <div className="text-sm text-[#60A5FA]">{e.category}</div>}
-                {e.location && (
-                  <div className="mt-0.5 flex items-center gap-1 text-xs text-muted">
-                    <Icon name="location_on" size={14} />
-                    {e.location}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {group.items.map((e) => (
+                  <div key={idOf(e)} className="card card-hover overflow-hidden">
+                    <div className="relative flex h-36 items-center justify-center overflow-hidden bg-field">
+                      {e.photo ? (
+                        <img src={e.photo} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <Icon name="storefront" size={40} color="#3B82F6" />
+                      )}
+                      <span className="absolute left-2 top-2 rounded-md bg-black/70 px-2 py-0.5 text-xs font-bold tracking-wide text-white">
+                        {stallCode(e.location)}
+                      </span>
+                    </div>
+                    <div className="min-w-0 p-4">
+                      <div className="truncate font-semibold">{e.shopName}</div>
+                      {e.category && <div className="text-sm text-[#60A5FA]">{e.category}</div>}
+                      {e.location && (
+                        <div className="mt-0.5 flex items-center gap-1 text-xs text-muted">
+                          <Icon name="location_on" size={14} />
+                          {stallCode(e.location)}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-            </div>
+            </section>
           ))}
         </div>
       )}

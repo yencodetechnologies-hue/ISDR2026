@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState } from "react";
-import { AppBar, Icon, Spinner, useConfirm, useToast } from "@/components/ui";
+import { AppBar, Icon, Spinner, Switch, useConfirm, useToast } from "@/components/ui";
 import { AppSpinner } from "@/components/app/AppControls";
 import { del, get, put } from "@/lib/api";
 import { idOf, parseDate } from "@/lib/format";
@@ -144,7 +144,13 @@ function Loader({ kind }: { kind: Kind }) {
           ) : kind === "polls" ? (
             <PollCard key={idOf(it)} item={it} onChanged={load} />
           ) : (
-            <SpeakerQuestionCard key={idOf(it)} item={it} />
+            <SpeakerQuestionCard
+              key={idOf(it)}
+              item={it}
+              onUpdated={(next) =>
+                setItems((list) => list.map((x) => (idOf(x) === idOf(next) ? { ...x, ...next } : x)))
+              }
+            />
           ),
         )
       )}
@@ -294,10 +300,37 @@ function PollCard({ item, onChanged }: { item: any; onChanged: () => void }) {
   );
 }
 
-function SpeakerQuestionCard({ item }: { item: any }) {
+function SpeakerQuestionCard({ item, onUpdated }: { item: any; onUpdated: (next: any) => void }) {
+  const toast = useToast();
   const answered = item.answered === true;
   const status = answered ? "#22C55E" : "#F59E0B";
   const participant = String(item.participantName ?? "").trim();
+  const [answer, setAnswer] = useState(String(item.answer ?? ""));
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+
+  useEffect(() => {
+    setAnswer(String(item.answer ?? ""));
+  }, [item.answer]);
+
+  const save = async () => {
+    const t = answer.trim();
+    if (!t) return toast("Type an answer");
+    setSaving(true);
+    const r = await put(`/speaker-questions/${idOf(item)}/answer`, { answer: t });
+    setSaving(false);
+    if (r.success) onUpdated(r.question ?? { ...item, answer: t, answered: true });
+    else toast(r.error || "Could not save the answer");
+  };
+
+  const togglePublic = async (isPublic: boolean) => {
+    setPublishing(true);
+    const r = await put(`/speaker-questions/${idOf(item)}/public`, { isPublic });
+    setPublishing(false);
+    if (r.success) onUpdated(r.question ?? { ...item, isPublic });
+    else toast(r.error || "Could not update");
+  };
+
   return (
     <div className="mb-3 rounded-[14px] border border-line bg-card p-3.5">
       <div className="flex items-center gap-2">
@@ -315,14 +348,26 @@ function SpeakerQuestionCard({ item }: { item: any }) {
       </div>
       <div className="mt-[3px] text-[11.5px] font-medium text-muted">Asked {when(item.createdAt)}</div>
       <QuestionText text={item.question} />
-      {answered && (
-        <div className="mt-2.5 rounded-xl bg-field p-3">
-          <div className="text-[10.5px] font-bold tracking-[0.5px]" style={{ color: status }}>
-            SPEAKER&apos;S ANSWER
-          </div>
-          <div className="mt-1 text-[13.5px] leading-[1.45]">{item.answer}</div>
-        </div>
-      )}
+      <textarea
+        value={answer}
+        rows={3}
+        maxLength={1000}
+        onChange={(e) => setAnswer(e.target.value)}
+        placeholder="Type the answer"
+        className="mt-2.5 w-full resize-none rounded-xl bg-field p-3 text-[13.5px] leading-[1.45] outline-none placeholder:text-muted"
+      />
+      <button
+        type="button"
+        disabled={saving || !answer.trim()}
+        onClick={save}
+        className="mt-2 flex h-10 w-full items-center justify-center rounded-xl bg-accent text-[13px] font-bold disabled:opacity-50"
+      >
+        {saving ? <Spinner size={18} color="#fff" /> : answered ? "Update answer" : "Save answer"}
+      </button>
+      <div className="mt-3 flex items-center gap-2">
+        <Switch checked={item.isPublic === true} disabled={publishing} onChange={togglePublic} />
+        <span className="text-[12px] text-muted">Show to all participants</span>
+      </div>
     </div>
   );
 }

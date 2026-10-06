@@ -6,19 +6,17 @@ import {
   Empty,
   ErrorState,
   Field,
-  Icon,
   IconButton,
   Input,
   Loading,
   Modal,
   Page,
-  PasswordInput,
-  PhotoInput,
   SearchBox,
+  Switch,
   useConfirm,
   useToast,
 } from "@/components/ui";
-import { del, formData, get, post, put } from "@/lib/api";
+import { del, get, patch, post, put } from "@/lib/api";
 import { matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { passCode } from "../common/Profile";
@@ -42,11 +40,8 @@ function ManageSpeakersWeb() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<any | null>(null); // {} = new
   const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [password, setPassword] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [toggling, setToggling] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await get("/speakers");
@@ -60,37 +55,28 @@ function ManageSpeakersWeb() {
   const openEdit = (s?: any) => {
     setEditing(s ?? {});
     setName(s?.name ?? "");
-    setMobile(s?.mobileNumber ?? "");
-    setPassword("");
-    setPhotoUrl(s?.photo || null);
-    setPhoto(null);
   };
 
   const save = async () => {
     const isNew = !idOf(editing);
     if (!name.trim()) return toast("Enter the speaker's name", "error");
-    if (!/^\d{10}$/.test(mobile.trim()))
-      return toast("Enter a valid 10-digit mobile number", "error");
-    if (isNew && password.trim().length < 6) return toast("Password must be at least 6 characters", "error");
-    if (!isNew && password && password.trim().length < 6)
-      return toast("Password must be at least 6 characters", "error");
     setSaving(true);
-    const fd = formData(
-      {
-        name: name.trim(),
-        mobileNumber: mobile.trim(),
-        password: password || undefined,
-        // Edit: the old photo was removed and no new one picked.
-        removePhoto: !isNew && !photo && !photoUrl && editing?.photo ? "true" : undefined,
-      },
-      { photo },
-    );
-    const res = isNew ? await post("/speakers", fd) : await put(`/speakers/${idOf(editing)}`, fd);
+    const body = { name: name.trim() };
+    const res = isNew ? await post("/speakers", body) : await put(`/speakers/${idOf(editing)}`, body);
     setSaving(false);
     if (!res.success) return toast(res.error || "Could not save", "error");
     toast(isNew ? "Speaker added" : "Speaker updated", "success");
     setEditing(null);
     load();
+  };
+
+  const toggleAsk = async (s: any, askEnabled: boolean) => {
+    const id = idOf(s);
+    setToggling(id);
+    const res = await patch(`/speakers/${id}`, { askEnabled });
+    setToggling(null);
+    if (!res.success) return toast(res.error || "Could not update", "error");
+    setSpeakers((list) => (list ?? []).map((x) => (idOf(x) === id ? { ...x, askEnabled } : x)));
   };
 
   const remove = async (s: any) => {
@@ -174,15 +160,14 @@ function ManageSpeakersWeb() {
                   <div className="truncate text-sm text-[#93C5FD]">{speakerPass(s)}</div>
                 </div>
               </div>
-              <div className="flex-1" />
               <div className="mt-4 flex items-center gap-2 border-t border-line pt-3">
-                <span className="flex flex-1 items-center gap-1.5 truncate text-xs text-muted">
-                  {s.mobileNumber && (
-                    <>
-                      <Icon name="call" size={14} outline />
-                      {s.mobileNumber}
-                    </>
-                  )}
+                <span className="flex flex-1 items-center gap-2 text-xs text-muted">
+                  <Switch
+                    checked={s.askEnabled === true}
+                    disabled={toggling === idOf(s)}
+                    onChange={(v) => toggleAsk(s, v)}
+                  />
+                  {s.askEnabled === true ? "Open for questions" : "Hidden from Ask a Speaker"}
                 </span>
                 <IconButton icon="edit" outline title="Edit" onClick={() => openEdit(s)} />
                 <IconButton icon="delete" outline color="#EF4444" title="Remove" onClick={() => remove(s)} />
@@ -208,40 +193,14 @@ function ManageSpeakersWeb() {
           </>
         }
       >
-        <div className="space-y-4">
-          <PhotoInput
-            file={photo}
-            url={photoUrl}
-            onFile={setPhoto}
-            onRemove={() => {
-              setPhoto(null);
-              setPhotoUrl(null);
-            }}
-            label="Photo"
-            round
+        <Field label="Name">
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Speaker name"
+            autoFocus
           />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name">
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Speaker name" />
-            </Field>
-            <Field label="Mobile">
-              <Input
-                value={mobile}
-                inputMode="numeric"
-                maxLength={10}
-                onChange={(e) => setMobile(e.target.value.replace(/D/g, ""))}
-                placeholder="10-digit mobile number"
-              />
-            </Field>
-          </div>
-          <Field label={idOf(editing) ? "New password (optional)" : "Password"}>
-            <PasswordInput
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={idOf(editing) ? "Leave blank to keep the current password" : "At least 6 characters"}
-            />
-          </Field>
-        </div>
+        </Field>
       </Modal>
     </Page>
   );

@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/utils/exhibitor_stalls.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
 
@@ -85,7 +86,34 @@ class _ParticipantExhibitorsPageState extends State<ParticipantExhibitorsPage> {
                       ),
                     )
                   else
-                    for (final e in _exhibitors) _card(e),
+                    for (final group in stallGroups(_exhibitors)) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Text(
+                              group.title,
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.6,
+                                color: DarkColors.muted,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${group.items.length}',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: DarkColors.muted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      for (final e in group.items) _card(e),
+                      const SizedBox(height: 8),
+                    ],
                 ],
               ),
       ),
@@ -95,7 +123,7 @@ class _ParticipantExhibitorsPageState extends State<ParticipantExhibitorsPage> {
   Widget _card(Map<String, dynamic> e) {
     const accent = Color(0xFF10B981);
     final photo = e['photo']?.toString() ?? '';
-    final location = e['location']?.toString() ?? '';
+    final location = stallCode(e['location']);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),

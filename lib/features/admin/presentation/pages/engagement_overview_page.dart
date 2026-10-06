@@ -191,7 +191,7 @@ class _LoaderState extends State<_Loader> with AutomaticKeepAliveClientMixin {
   Widget _card(Map<String, dynamic> item) => switch (widget.kind) {
     _Kind.questions => _SessionQuestionCard(item: item, onChanged: _load),
     _Kind.polls => _PollCard(item: item, onChanged: _load),
-    _Kind.speakerQuestions => _SpeakerQuestionCard(item: item),
+    _Kind.speakerQuestions => _SpeakerQuestionCard(item: item, onChanged: _load),
   };
 
   @override
@@ -443,14 +443,82 @@ class _PollCard extends StatelessWidget {
   }
 }
 
-/// A participant's question to a speaker and the speaker's answer.
-class _SpeakerQuestionCard extends StatelessWidget {
+/// A participant's question. Admin writes the answer and can publish it.
+class _SpeakerQuestionCard extends StatefulWidget {
   final Map<String, dynamic> item;
+  final VoidCallback onChanged;
 
-  const _SpeakerQuestionCard({required this.item});
+  const _SpeakerQuestionCard({required this.item, required this.onChanged});
+
+  @override
+  State<_SpeakerQuestionCard> createState() => _SpeakerQuestionCardState();
+}
+
+class _SpeakerQuestionCardState extends State<_SpeakerQuestionCard> {
+  late final TextEditingController _answer;
+  bool _saving = false;
+  bool _publishing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _answer = TextEditingController(text: widget.item['answer']?.toString() ?? '');
+  }
+
+  @override
+  void didUpdateWidget(covariant _SpeakerQuestionCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.item['answer']?.toString() ?? '';
+    if (next != oldWidget.item['answer']?.toString() && next != _answer.text) {
+      _answer.text = next;
+    }
+  }
+
+  @override
+  void dispose() {
+    _answer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final text = _answer.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _saving = true);
+    final res = await ApiService().answerSpeakerQuestionAsAdmin(
+      widget.item['id'].toString(),
+      text,
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (res['success'] == true) {
+      widget.onChanged();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['error']?.toString() ?? 'Could not save the answer')),
+      );
+    }
+  }
+
+  Future<void> _setPublic(bool isPublic) async {
+    setState(() => _publishing = true);
+    final res = await ApiService().setSpeakerQuestionPublic(
+      widget.item['id'].toString(),
+      isPublic,
+    );
+    if (!mounted) return;
+    setState(() => _publishing = false);
+    if (res['success'] == true) {
+      widget.onChanged();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['error']?.toString() ?? 'Could not update')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final item = widget.item;
     final answered = item['answered'] == true;
     final participant = (item['participantName']?.toString() ?? '').trim();
     final status = answered ? const Color(0xFF22C55E) : const Color(0xFFF59E0B);
@@ -504,40 +572,61 @@ class _SpeakerQuestionCard extends StatelessWidget {
             ),
           ),
           _questionText(item['question']?.toString() ?? ''),
-          if (answered) ...[
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: DarkColors.field,
+          const SizedBox(height: 10),
+          TextField(
+            controller: _answer,
+            minLines: 2,
+            maxLines: 5,
+            maxLength: 1000,
+            style: GoogleFonts.inter(fontSize: 13.5, color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Type the answer',
+              hintStyle: const TextStyle(color: DarkColors.muted),
+              filled: true,
+              fillColor: DarkColors.field,
+              counterText: '',
+              border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "SPEAKER'S ANSWER",
-                    style: GoogleFonts.inter(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: .5,
-                      color: status,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item['answer']?.toString() ?? '',
-                    style: GoogleFonts.inter(
-                      fontSize: 13.5,
-                      color: Colors.white,
-                      height: 1.45,
-                    ),
-                  ),
-                ],
+                borderSide: BorderSide.none,
               ),
             ),
-          ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            height: 40,
+            child: FilledButton(
+              onPressed: _saving ? null : _save,
+              style: FilledButton.styleFrom(
+                backgroundColor: DarkColors.accent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(answered ? 'Update answer' : 'Save answer'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Switch(
+                value: item['isPublic'] == true,
+                activeThumbColor: Colors.white,
+                activeTrackColor: DarkColors.accent,
+                onChanged: _publishing ? null : _setPublic,
+              ),
+              Expanded(
+                child: Text(
+                  'Show to all participants',
+                  style: _small(DarkColors.muted),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

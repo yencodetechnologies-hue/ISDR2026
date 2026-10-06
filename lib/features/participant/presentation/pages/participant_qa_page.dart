@@ -102,6 +102,7 @@ class _ParticipantQaPageState extends State<ParticipantQaPage> {
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _questions = [];
+  List<Map<String, dynamic>> _published = [];
   bool _pendingOnly = false;
 
   @override
@@ -111,13 +112,19 @@ class _ParticipantQaPageState extends State<ParticipantQaPage> {
   }
 
   Future<void> _load() async {
-    final res = await _api.getAllSessionQuestions();
+    final results = await Future.wait([
+      _api.getAllSessionQuestions(),
+      _api.getPublicSpeakerQuestions(),
+    ]);
     if (!mounted) return;
+    final res = results[0];
+    final pub = results[1];
     setState(() {
       _loading = false;
       if (res['success'] == true) {
         _error = null;
         _questions = _list(res['questions']);
+        _published = pub['success'] == true ? _list(pub['questions']) : [];
       } else {
         _error = res['error']?.toString() ?? 'Could not load questions';
       }
@@ -185,6 +192,19 @@ class _ParticipantQaPageState extends State<ParticipantQaPage> {
                   ],
                 ),
               ),
+              if (_published.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                Text(
+                  'Speaker Q&A',
+                  style: GoogleFonts.outfit(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                for (final q in _published) _PublicQaCard(question: q),
+              ],
               const SizedBox(height: 18),
               Row(
                 children: [
@@ -1058,7 +1078,7 @@ class _AskSpeakerPageState extends State<AskSpeakerPage> {
           : _error != null
           ? _emptyState(Icons.error_outline_rounded, _error!)
           : _speakers.isEmpty
-          ? _emptyState(Icons.groups_outlined, 'No speakers yet')
+          ? _emptyState(Icons.groups_outlined, 'No speakers are open for questions')
           : ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: _speakers.length,
@@ -1192,7 +1212,7 @@ class _AskSheetState extends State<_AskSheet> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Only you and the speaker will see this question and the answer.',
+            'Your question goes to the admin. Everyone sees it in Q/A only after the admin publishes the answer.',
             style: GoogleFonts.inter(fontSize: 11, color: DarkColors.muted),
           ),
           const SizedBox(height: 14),
@@ -1207,6 +1227,82 @@ class _AskSheetState extends State<_AskSheet> {
                 ),
               ),
               child: _spinnerOr(_sending, 'Send question'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A published speaker question and the current answer, shown to every participant.
+class _PublicQaCard extends StatelessWidget {
+  final Map<String, dynamic> question;
+
+  const _PublicQaCard({required this.question});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = question['speakerName']?.toString() ?? 'Speaker';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: darkCardDecoration(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _avatar(name, question['speakerPhoto']?.toString() ?? '', size: 34),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  name,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            question['question']?.toString() ?? '',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF22C55E).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ANSWER',
+                  style: GoogleFonts.inter(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .6,
+                    color: const Color(0xFF22C55E),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  question['answer']?.toString() ?? '',
+                  style: GoogleFonts.inter(fontSize: 13.5, color: Colors.white, height: 1.4),
+                ),
+              ],
             ),
           ),
         ],
