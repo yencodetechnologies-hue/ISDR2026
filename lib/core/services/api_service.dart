@@ -2264,7 +2264,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> createEventSchedule({
     required String eventId,
-    required String speakerId, // picked from the Speakers list
+    required String speakerName,
     // Event package ids whose participants see this schedule.
     required List<String> packageIds,
     required String scheduleName,
@@ -2275,7 +2275,7 @@ class ApiService {
   }) async {
     try {
       final formData = FormData.fromMap({
-        'speakerId': speakerId,
+        'speakerName': speakerName,
         'packageIds': jsonEncode(packageIds),
         'scheduleName': scheduleName,
         'hall': hall,
@@ -2304,7 +2304,7 @@ class ApiService {
   Future<Map<String, dynamic>> updateEventSchedule({
     required String eventId,
     required String scheduleId,
-    required String speakerId,
+    required String speakerName,
     required List<String> packageIds,
     required String scheduleName,
     String hall = '',
@@ -2315,7 +2315,7 @@ class ApiService {
       final response = await _dio.put(
         '${ApiConfig.managedEventSchedules(eventId)}/$scheduleId',
         data: {
-          'speakerId': speakerId,
+          'speakerName': speakerName,
           'packageIds': packageIds,
           'scheduleName': scheduleName,
           'hall': hall,

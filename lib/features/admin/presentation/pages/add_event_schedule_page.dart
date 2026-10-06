@@ -1,15 +1,12 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
 import '../widgets/event_package_sheet.dart' show eventDays;
-import 'manage_speakers_page.dart';
 
-/// Form to add a schedule (speaker session) to an event. It's shown only to
-/// participants of the picked packages; the speaker is picked from the
-/// Speakers list (added on the Speakers page).
+/// Form to add a schedule to an event. It's shown only to participants of the
+/// picked packages. The speaker is a name typed on the schedule.
 class AddEventSchedulePage extends StatefulWidget {
   final Map<String, dynamic> event;
 
@@ -24,13 +21,10 @@ class AddEventSchedulePage extends StatefulWidget {
 
 class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   final _formKey = GlobalKey<FormState>();
+  final _speaker = TextEditingController();
   final _name = TextEditingController();
   final _hall = TextEditingController();
   final _description = TextEditingController();
-
-  List<Map<String, dynamic>> _speakers = [];
-  bool _loadingSpeakers = true;
-  String? _speakerId;
 
   final Set<String> _packageIds = {}; // packages whose participants see it
   final Set<String> _dates = {}; // picked event days (yyyy-MM-dd)
@@ -78,12 +72,6 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
   /// Packages the schedule was saved with that no longer exist on the event.
   int _removedPackages = 0;
 
-  /// Old schedules saved before speakers were linked: just a name, no id.
-  String get _legacySpeakerName =>
-      _isEdit && (widget.schedule!['speakerId']?.toString() ?? '').isEmpty
-      ? widget.schedule!['speakerName']?.toString() ?? ''
-      : '';
-
   /// Old schedules saved before packages existed (shown to everyone).
   bool get _hadNoPackages =>
       _isEdit && ((widget.schedule!['packageIds'] as List?) ?? const []).isEmpty;
@@ -93,10 +81,10 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
     super.initState();
     final s = widget.schedule;
     if (s != null) {
+      _speaker.text = s['speakerName']?.toString() ?? '';
       _name.text = s['scheduleName']?.toString() ?? '';
       _hall.text = s['hall']?.toString() ?? '';
       _description.text = s['description']?.toString() ?? '';
-      _speakerId = s['speakerId']?.toString();
       // Keep selectable packages the event still has. Spot register is hidden
       // from this form, so a saved id for it is dropped and not counted as deleted.
       final saved = ((s['packageIds'] as List?) ?? const [])
@@ -123,38 +111,15 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
       _from = time(s['fromTime']);
       _to = time(s['toTime']);
     }
-    _loadSpeakers();
   }
 
   @override
   void dispose() {
+    _speaker.dispose();
     _name.dispose();
     _hall.dispose();
     _description.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadSpeakers() async {
-    final res = await ApiService().listSpeakers();
-    if (!mounted) return;
-    setState(() {
-      _loadingSpeakers = false;
-      if (res['success'] == true) {
-        _speakers = ((res['speakers'] as List?) ?? [])
-            .map((s) => Map<String, dynamic>.from(s as Map))
-            .toList();
-        if (_speakers.every((s) => s['id'] != _speakerId)) _speakerId = null;
-      }
-    });
-  }
-
-  Future<void> _openSpeakers() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ManageSpeakersPage()),
-    );
-    // Speakers may have been added there.
-    _loadSpeakers();
   }
 
   /// Shown to the user: 12-hour with AM/PM.
@@ -198,9 +163,6 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
     if (_packageIds.isEmpty && !_hadNoPackages) {
       return _toast('Select at least one package');
     }
-    if (_speakerId == null && _legacySpeakerName.isEmpty) {
-      return _toast('Select a speaker');
-    }
     if (_dates.isEmpty) return _toast('Select at least one event day');
     final slots = <Map<String, String>>[];
     for (final day in _pickedDays) {
@@ -224,7 +186,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
         ? await ApiService().updateEventSchedule(
             eventId: _eventId,
             scheduleId: widget.schedule!['id'].toString(),
-            speakerId: _speakerId ?? '',
+            speakerName: _speaker.text.trim(),
             packageIds: _packageIds.toList(),
             scheduleName: _name.text.trim(),
             hall: _hall.text.trim(),
@@ -233,7 +195,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
           )
         : await ApiService().createEventSchedule(
             eventId: _eventId,
-            speakerId: _speakerId!,
+            speakerName: _speaker.text.trim(),
             packageIds: _packageIds.toList(),
             scheduleName: _name.text.trim(),
             hall: _hall.text.trim(),
@@ -301,85 +263,6 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
     );
   }
 
-  /// The speaker dropdown (speakers come from the Speakers page).
-  Widget _speakerField() {
-    if (_loadingSpeakers) {
-      return InputDecorator(
-        decoration: darkInputDecoration('Speaker', Icons.person_outline),
-        child: const Text(
-          'Loading speakers…',
-          style: TextStyle(color: DarkColors.muted),
-        ),
-      );
-    }
-    if (_speakers.isEmpty) {
-      return InkWell(
-        onTap: _openSpeakers,
-        borderRadius: BorderRadius.circular(14),
-        child: InputDecorator(
-          decoration: darkInputDecoration('Speaker', Icons.person_outline),
-          child: const Text(
-            'No speakers yet — tap to add them on the Speakers page',
-            style: TextStyle(color: DarkColors.accentLight),
-          ),
-        ),
-      );
-    }
-    return DropdownButtonFormField<String>(
-      initialValue: _speakerId,
-      isExpanded: true,
-      dropdownColor: DarkColors.field,
-      style: const TextStyle(color: Colors.white, fontSize: 15),
-      iconEnabledColor: DarkColors.muted,
-      decoration: darkInputDecoration('Speaker', Icons.person_outline),
-      hint: Text(
-        _legacySpeakerName.isNotEmpty ? _legacySpeakerName : 'Select speaker',
-        style: TextStyle(
-          color: _legacySpeakerName.isNotEmpty
-              ? Colors.white
-              : DarkColors.muted,
-        ),
-      ),
-      items: [
-        for (final s in _speakers)
-          DropdownMenuItem(
-            value: s['id'].toString(),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 13,
-                  backgroundColor: const Color(0xFF1E3A8A),
-                  backgroundImage: (s['photo']?.toString() ?? '').isNotEmpty
-                      ? CachedNetworkImageProvider(s['photo'].toString())
-                      : null,
-                  child: (s['photo']?.toString() ?? '').isEmpty
-                      ? Text(
-                          (s['name']?.toString() ?? '?').trim().isEmpty
-                              ? '?'
-                              : s['name'].toString().trim()[0].toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.white,
-                          ),
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    s['name']?.toString() ?? '',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-      onChanged: (v) => setState(() => _speakerId = v),
-      validator: (v) => v == null ? 'Select a speaker' : null,
-    );
-  }
-
   /// Which packages' participants see this schedule (one or more).
   Widget _packageChips() {
     final packages = _packages;
@@ -423,7 +306,7 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
     );
   }
 
-  /// The event's own days — the speaker can be on any number of these.
+  /// The event's own days — a session can be on any number of these.
   Widget _dayChips() {
     final days = eventDays(widget.event);
     return InputDecorator(
@@ -517,7 +400,18 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
                 ),
               ),
             const SizedBox(height: 12),
-            _speakerField(),
+            TextFormField(
+              controller: _speaker,
+              style: fieldStyle,
+              textCapitalization: TextCapitalization.words,
+              decoration: darkInputDecoration(
+                'Speaker',
+                Icons.person_outline,
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Enter a speaker name'
+                  : null,
+            ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _name,

@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 /**
- * A session on an event's schedule (speaker + time slot). Each schedule also
- * carries its speaker's own login (mobile + password).
+ * A session on an event's schedule (speaker name + time slot). The speaker is
+ * typed on the schedule; speakerId is only set on older rows linked to an account.
  */
 const eventScheduleSchema = new mongoose.Schema(
   {
@@ -19,8 +19,7 @@ const eventScheduleSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    // The speaker picked from the Speakers list. Their name/photo are copied
-    // below so every screen that reads a schedule keeps working.
+    // Older schedules linked a speaker account. New ones store only the typed name.
     speakerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Speaker', default: null, index: true },
     speakerName: { type: String, required: true, trim: true },
     speakerPhoto: { type: String, default: '' },

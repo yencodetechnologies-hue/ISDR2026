@@ -14,14 +14,12 @@ import {
   Loading,
   Page,
   Panel,
-  PhotoInput,
   SearchBox,
-  Select,
   TextArea,
   useConfirm,
   useToast,
 } from "@/components/ui";
-import { del, formData, get, post, put } from "@/lib/api";
+import { del, get, post, put } from "@/lib/api";
 import { FilterSelect, distinct, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
 import { fmtDate, fmtDayDate, fmtTimeStr, idOf, parseDate } from "@/lib/format";
@@ -367,8 +365,7 @@ function ScheduleEditorWeb() {
 
   const [event, setEvent] = useState<any>(null);
   const [existing, setExisting] = useState<any>(null);
-  const [speakers, setSpeakers] = useState<any[]>([]);
-  const [speakerId, setSpeakerId] = useState("");
+  const [speakerName, setSpeakerName] = useState("");
   const [packageIds, setPackageIds] = useState<string[]>([]);
   const [scheduleName, setScheduleName] = useState("");
   const [hall, setHall] = useState("");
@@ -376,18 +373,16 @@ function ScheduleEditorWeb() {
   const [fromTime, setFromTime] = useState("");
   const [toTime, setToTime] = useState("");
   const [description, setDescription] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    get("/speakers").then((r) => r.success && setSpeakers(r.speakers ?? []));
     get(`/managed-events/${eventId}`).then((r) => r.success && setEvent(r.event));
     if (!scheduleId) return;
     get(`/managed-events/${eventId}/schedules`).then((r) => {
       const s = (r.schedules ?? []).find((x: any) => idOf(x) === scheduleId);
       if (!s) return toast("Schedule not found", "error");
       setExisting(s);
-      setSpeakerId(String(s.speakerId ?? ""));
+      setSpeakerName(String(s.speakerName ?? ""));
       setPackageIds((s.packageIds ?? []).map(String));
       setScheduleName(s.scheduleName ?? "");
       setHall(s.hall ?? "");
@@ -415,8 +410,6 @@ function ScheduleEditorWeb() {
   }, [event, existing]);
 
   const packages: any[] = ((event?.packages ?? []) as any[]).filter((p) => !isSpotRegisterName(p?.name));
-  // Old schedules may only have a speaker name (no linked speaker account).
-  const legacySpeaker = editing && existing && !existing.speakerId ? String(existing.speakerName ?? "") : "";
 
   const save = async () => {
     const spotIds = new Set(
@@ -425,7 +418,7 @@ function ScheduleEditorWeb() {
         .map((p) => String(p.id)),
     );
     const audienceIds = packageIds.filter((id) => !spotIds.has(id));
-    if (!speakerId && !legacySpeaker) return toast("Select a speaker", "error");
+    if (!speakerName.trim()) return toast("Enter a speaker name", "error");
     if (!audienceIds.length && !(editing && existing && !(existing.packageIds ?? []).length))
       return toast("Select at least one package", "error");
     if (!scheduleName.trim()) return toast("Enter schedule name", "error");
@@ -435,7 +428,7 @@ function ScheduleEditorWeb() {
     setSaving(true);
     const fields = {
       scheduleName: scheduleName.trim(),
-      speakerId,
+      speakerName: speakerName.trim(),
       packageIds: audienceIds,
       hall: hall.trim(),
       date,
@@ -445,7 +438,7 @@ function ScheduleEditorWeb() {
     };
     const res = editing
       ? await put(`/managed-events/${eventId}/schedules/${scheduleId}`, fields)
-      : await post(`/managed-events/${eventId}/schedules`, formData(fields, { photo }));
+      : await post(`/managed-events/${eventId}/schedules`, fields);
     setSaving(false);
     if (!res.success)
       return toast(res.error || (editing ? "Could not update schedule" : "Could not create schedule"), "error");
@@ -475,12 +468,11 @@ function ScheduleEditorWeb() {
               />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Speaker *" hint={legacySpeaker && !speakerId ? `Currently: ${legacySpeaker}` : undefined}>
-                <Select
-                  value={speakerId}
-                  onChange={setSpeakerId}
-                  placeholder={legacySpeaker ? `Keep "${legacySpeaker}"` : "Select speaker"}
-                  options={speakers.map((s) => ({ value: idOf(s), label: s.name }))}
+              <Field label="Speaker *">
+                <Input
+                  value={speakerName}
+                  onChange={(e) => setSpeakerName(e.target.value)}
+                  placeholder="e.g. Dr. Anita Rao"
                 />
               </Field>
               <Field label="Hall / Room">
@@ -528,11 +520,6 @@ function ScheduleEditorWeb() {
               </div>
             )}
           </Panel>
-          {!editing && (
-            <Panel title="Speaker Photo" icon="account_circle" iconColor="#A855F7">
-              <PhotoInput file={photo} url={null} onFile={setPhoto} label="Speaker Photo" round />
-            </Panel>
-          )}
           <Button full icon="check" loading={saving} onClick={save}>
             {editing ? "Save Changes" : "Create Schedule"}
           </Button>

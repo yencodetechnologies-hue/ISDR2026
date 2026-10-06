@@ -1,7 +1,6 @@
 const ManagedEvent = require('../models/ManagedEvent');
 const EventSchedule = require('../models/EventSchedule');
 const EventRegistration = require('../models/EventRegistration');
-const Speaker = require('../models/Speaker');
 const ScheduleReminder = require('../models/ScheduleReminder');
 const { scheduleStartAt } = require('../utils/reminderScheduler');
 const {
@@ -98,25 +97,19 @@ function readSlots(body) {
 
 /**
  * Validates a schedule form (create or edit). Returns { error } or the clean
- * { speaker, scheduleName, hall, description, packageIds, slots }.
+ * { speakerName, scheduleName, hall, description, packageIds, slots }.
+ * The speaker is a typed name, not a speaker account.
  */
-async function readScheduleForm(event, body, existing = null) {
-  const speakerId = String(body.speakerId || '').trim();
+function readScheduleForm(event, body, existing = null) {
+  const speakerName = String(body.speakerName || '').trim();
   const scheduleName = String(body.scheduleName || '').trim();
   const hall = String(body.hall || '').trim();
   const description = String(body.description || '').trim();
   const rawSlots = readSlots(body);
   const packageIds = readPackageIds(body);
 
-  // Editing an old schedule that only has a speaker name (no linked speaker) or
-  // no packages may keep them as they are.
-  const keepSpeaker = !speakerId && existing && !existing.speakerId && existing.speakerName;
-  let speaker = null;
-  if (!keepSpeaker) {
-    if (!speakerId) return { error: 'Select a speaker' };
-    speaker = await Speaker.findOne({ _id: speakerId, apartmentId: event.apartmentId }).catch(() => null);
-    if (!speaker) return { error: 'Speaker not found' };
-  }
+  if (!speakerName) return { error: 'Enter a speaker name' };
+  // Editing an old schedule that has no packages may keep it shown to everyone.
   const keepNoPackages = existing && (existing.packageIds || []).length === 0;
   if (packageIds.length === 0 && !keepNoPackages) return { error: 'Select at least one package' };
   const eventPackageIds = new Set((event.packages || []).map((p) => String(p.id)));
@@ -145,25 +138,25 @@ async function readScheduleForm(event, body, existing = null) {
     if (toTime <= fromTime) return { error: 'To time must be after from time' };
     slots.push({ date, fromTime, toTime });
   }
-  return { speaker, scheduleName, hall, description, packageIds, slots };
+  return { speakerName, scheduleName, hall, description, packageIds, slots };
 }
 
-// POST /api/managed-events/:id/schedules  { speakerId, packageIds, scheduleName, hall, slots, description }
+// POST /api/managed-events/:id/schedules  { speakerName, packageIds, scheduleName, hall, slots, description }
 const createSchedule = async (req, res) => {
   try {
     const event = await loadOwnedEvent(req, res);
     if (!event) return;
-    const form = await readScheduleForm(event, req.body);
+    const form = readScheduleForm(event, req.body);
     if (form.error) return res.status(400).json({ success: false, error: form.error });
 
-    // One row per date, all linked to the speaker (whose login covers them all).
+    // One row per date. The speaker is a typed name, not a speaker account.
     const created = await EventSchedule.create(
       form.slots.map((slot) => ({
         eventId: event._id,
         apartmentId: event.apartmentId,
-        speakerId: form.speaker._id,
-        speakerName: form.speaker.name,
-        speakerPhoto: form.speaker.photo || '',
+        speakerId: null,
+        speakerName: form.speakerName,
+        speakerPhoto: '',
         scheduleName: form.scheduleName,
         packageIds: form.packageIds,
         hall: form.hall,
@@ -184,7 +177,7 @@ const createSchedule = async (req, res) => {
   }
 };
 
-// PUT /api/managed-events/:id/schedules/:scheduleId  { speakerId, packageIds, scheduleName, hall, date, fromTime, toTime, description }
+// PUT /api/managed-events/:id/schedules/:scheduleId  { speakerName, packageIds, scheduleName, hall, date, fromTime, toTime, description }
 // Admin edits one schedule row (a single date).
 const updateSchedule = async (req, res) => {
   try {
@@ -194,20 +187,16 @@ const updateSchedule = async (req, res) => {
       () => null
     );
     if (!schedule) return res.status(404).json({ success: false, error: 'Schedule not found' });
-    const form = await readScheduleForm(event, req.body, schedule);
+    const form = readScheduleForm(event, req.body, schedule);
     if (form.error) return res.status(400).json({ success: false, error: form.error });
     if (form.slots.length !== 1) {
       return res.status(400).json({ success: false, error: 'A schedule has exactly one date' });
     }
     const [slot] = form.slots;
-    if (form.speaker) {
-      Object.assign(schedule, {
-        speakerId: form.speaker._id,
-        speakerName: form.speaker.name,
-        speakerPhoto: form.speaker.photo || '',
-      });
-    }
     Object.assign(schedule, {
+      speakerId: null,
+      speakerName: form.speakerName,
+      speakerPhoto: '',
       scheduleName: form.scheduleName,
       packageIds: form.packageIds,
       hall: form.hall,

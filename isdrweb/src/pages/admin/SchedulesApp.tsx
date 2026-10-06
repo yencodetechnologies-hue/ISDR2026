@@ -4,7 +4,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppBar, Icon, Spinner, useConfirm, useToast } from "@/components/ui";
 import { AppSpinner, AppSwitch } from "@/components/app/AppControls";
 import { AppChip, AppDecorator } from "@/components/app/AppForm";
-import { formData, get, post, put } from "@/lib/api";
+import { get, post, put } from "@/lib/api";
 import { fmtTimeStr, idOf, parseDate } from "@/lib/format";
 import { del } from "@/lib/api";
 import { eventDays } from "./EventManage";
@@ -454,8 +454,7 @@ export function ScheduleFormApp() {
   const isEdit = !!scheduleId;
   const [event, setEvent] = useState<any>(null);
   const [existing, setExisting] = useState<any>(null);
-  const [speakers, setSpeakers] = useState<any[] | null>(null);
-  const [speakerId, setSpeakerId] = useState("");
+  const [speakerName, setSpeakerName] = useState("");
   const [packageIds, setPackageIds] = useState<string[]>([]);
   const [removedPackages, setRemovedPackages] = useState(0);
   const [name, setName] = useState("");
@@ -472,24 +471,20 @@ export function ScheduleFormApp() {
 
   useEffect(() => {
     (async () => {
-      const [ev, sp, sch] = await Promise.all([
+      const [ev, sch] = await Promise.all([
         get(`/managed-events/${eventId}`),
-        get("/speakers"),
         isEdit ? get(`/managed-events/${eventId}/schedules`) : Promise.resolve({ success: false } as any),
       ]);
       const e = ev.success ? ev.event : null;
       setEvent(e);
-      const list: any[] = sp.success ? (sp.speakers ?? []) : [];
-      setSpeakers(list);
       if (isEdit && sch.success) {
         const s = (sch.schedules ?? []).find((x: any) => idOf(x) === scheduleId);
         if (s) {
           setExisting(s);
+          setSpeakerName(String(s.speakerName ?? ""));
           setName(s.scheduleName ?? "");
           setHall(s.hall ?? "");
           setDescription(s.description ?? "");
-          const sid = String(s.speakerId ?? "");
-          setSpeakerId(list.some((x) => idOf(x) === sid) ? sid : "");
           const allPackages = (e?.packages ?? []) as any[];
           const onEvent = new Set(allPackages.map((p) => String(p.id)));
           const spotIds = new Set(
@@ -517,19 +512,16 @@ export function ScheduleFormApp() {
   const days = event ? eventDays(event) : [];
   const pickedDays = days.filter((d) => dates.includes(d.iso));
   const perDate = !sameTime && dates.length > 1;
-  const legacySpeakerName =
-    isEdit && existing && !String(existing.speakerId ?? "") ? String(existing.speakerName ?? "") : "";
   const hadNoPackages = isEdit && existing && !(existing.packageIds ?? []).length;
 
   const save = async () => {
     const e: Record<string, string> = {};
+    if (!speakerName.trim()) e.speaker = "Enter a speaker name";
     if (!name.trim()) e.name = "Enter the schedule name";
     if (!hall.trim()) e.hall = "Enter the hall";
-    if (speakers && speakers.length && !speakerId && !legacySpeakerName) e.speaker = "Select a speaker";
     setErrors(e);
     if (Object.keys(e).length) return;
     if (!packageIds.length && !hadNoPackages) return toast("Select at least one package");
-    if (!speakerId && !legacySpeakerName) return toast("Select a speaker");
     if (!dates.length) return toast("Select at least one event day");
     const slots: { date: string; fromTime: string; toTime: string }[] = [];
     for (const day of pickedDays) {
@@ -543,24 +535,21 @@ export function ScheduleFormApp() {
     setSaving(true);
     const r = isEdit
       ? await put(`/managed-events/${eventId}/schedules/${scheduleId}`, {
-          speakerId,
+          speakerName: speakerName.trim(),
           packageIds,
           scheduleName: name.trim(),
           hall: hall.trim(),
           ...slots[0],
           description: description.trim(),
         })
-      : await post(
-          `/managed-events/${eventId}/schedules`,
-          formData({
-            speakerId,
-            packageIds,
-            scheduleName: name.trim(),
-            hall: hall.trim(),
-            slots,
-            description: description.trim(),
-          }),
-        );
+      : await post(`/managed-events/${eventId}/schedules`, {
+          speakerName: speakerName.trim(),
+          packageIds,
+          scheduleName: name.trim(),
+          hall: hall.trim(),
+          slots,
+          description: description.trim(),
+        });
     setSaving(false);
     if (r.success) {
       if (eventId) {
@@ -583,7 +572,7 @@ export function ScheduleFormApp() {
   return (
     <div className="min-h-screen bg-bg">
       <AppBar title={isEdit ? "Edit Schedule" : "Add Schedule"} outfit />
-      {!event || speakers === null ? (
+      {!event ? (
         <AppSpinner />
       ) : (
         <div className="space-y-3 p-4 pt-5">
@@ -612,60 +601,13 @@ export function ScheduleFormApp() {
                 : `${removedPackages} packages this schedule was saved with have been deleted from the event. Select its packages again.`}
             </div>
           )}
-          {speakers.length === 0 ? (
-            <AppDecorator label="Speaker" icon="person" onClick={() => navigate("/admin/speakers")}>
-              <span className="text-[#60A5FA]">No speakers yet — tap to add them on the Speakers page</span>
-            </AppDecorator>
-          ) : (
-            <div>
-              <div
-                className="relative rounded-[14px] bg-field"
-                style={{ boxShadow: `inset 0 0 0 1px ${errors.speaker ? "#EF4444" : "rgba(255,255,255,0.08)"}` }}
-              >
-                <span
-                  className="pointer-events-none absolute left-3 top-[-8px] px-1 text-xs leading-4"
-                  style={{
-                    color: errors.speaker ? "#EF4444" : "#9CA3AF",
-                    background: "linear-gradient(to bottom, #0A0A12 50%, #1E1E2A 50%)",
-                  }}
-                >
-                  Speaker
-                </span>
-                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2">
-                  <Icon name="person" outline size={20} color="#60A5FA" />
-                </span>
-                <select
-                  value={speakerId}
-                  onChange={(e) => setSpeakerId(e.target.value)}
-                  className={`w-full appearance-none bg-transparent py-4 pl-12 pr-10 text-[15px] outline-none ${
-                    speakerId || legacySpeakerName ? "text-white" : "text-muted"
-                  }`}
-                >
-                  <option value="" disabled hidden>
-                    {legacySpeakerName || "Select speaker"}
-                  </option>
-                  {speakers.map((s) => (
-                    <option key={idOf(s)} value={idOf(s)} className="text-white">
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-                {!speakerId && (
-                  <span
-                    className={`pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 text-[15px] ${
-                      legacySpeakerName ? "text-white" : "text-muted"
-                    }`}
-                  >
-                    {legacySpeakerName || "Select speaker"}
-                  </span>
-                )}
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
-                  <Icon name="arrow_drop_down" size={24} color="#9CA3AF" />
-                </span>
-              </div>
-              {errors.speaker && <div className="ml-3 mt-1.5 text-xs text-[#EF4444]">{errors.speaker}</div>}
-            </div>
-          )}
+          <TextArea
+            label="Speaker"
+            icon="person"
+            value={speakerName}
+            onChange={setSpeakerName}
+            error={errors.speaker}
+          />
           <TextArea
             label="Name of the schedule"
             icon="event_note"
