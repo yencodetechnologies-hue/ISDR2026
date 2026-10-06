@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Avatar,
@@ -87,18 +87,81 @@ export function mergeScheduleOrder(list: any[] | null, updated: any[]) {
   return list.map((s) => (byId.has(String(idOf(s))) ? { ...s, sortOrder: byId.get(String(idOf(s))) } : s));
 }
 
+/** Hall text participants use as the schedule heading. Saved from the admin table. */
+function HallCell({ schedule, onSaved }: { schedule: any; onSaved: (updated: any) => void }) {
+  const toast = useToast();
+  const skipSave = useRef(false);
+  const [value, setValue] = useState(String(schedule.hall ?? ""));
+  const [saving, setSaving] = useState(false);
+  useEffect(() => setValue(String(schedule.hall ?? "")), [schedule.hall]);
+
+  const save = async () => {
+    if (skipSave.current) {
+      skipSave.current = false;
+      return;
+    }
+    const next = value.trim();
+    if (next === String(schedule.hall ?? "").trim()) return;
+    const date = schedule.date ? String(schedule.date).slice(0, 10) : "";
+    setSaving(true);
+    const res = await put(`/managed-events/${schedule.eventId}/schedules/${idOf(schedule)}`, {
+      scheduleName: schedule.scheduleName,
+      speakerName: schedule.speakerName ?? "",
+      packageIds: schedule.packageIds ?? [],
+      hall: next,
+      date,
+      fromTime: schedule.fromTime ?? "",
+      toTime: schedule.toTime ?? "",
+      hideDate: !!schedule.hideDate,
+      hideFromTime: !!schedule.hideFromTime,
+      hideToTime: !!schedule.hideToTime,
+      description: schedule.description ?? "",
+    });
+    setSaving(false);
+    if (!res.success) {
+      setValue(String(schedule.hall ?? ""));
+      toast(res.error || "Could not update hall", "error");
+      return;
+    }
+    onSaved(res.schedule ?? { ...schedule, hall: next });
+  };
+
+  return (
+    <input
+      value={value}
+      disabled={saving}
+      aria-label="Hall heading"
+      title="Participants see this as the schedule heading"
+      placeholder="Hall heading"
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => void save()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        if (e.key === "Escape") {
+          skipSave.current = true;
+          setValue(String(schedule.hall ?? ""));
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      className="w-full min-w-[12rem] rounded-md border border-transparent bg-transparent px-2 py-1 text-white/80 outline-none hover:border-white/15 focus:border-accent focus:bg-field"
+    />
+  );
+}
+
 export function ScheduleTable({
   schedules,
   onAdd,
   onDelete,
   onEdit,
   onOrdered,
+  onSaved,
 }: {
   schedules: any[] | null;
   onAdd: () => void;
   onDelete: (id: string) => void;
   onEdit?: (id: string) => void;
   onOrdered: (updated: any[]) => void;
+  onSaved: (updated: any) => void;
 }) {
   const toast = useToast();
   const [search, setSearch] = useState("");
@@ -292,7 +355,9 @@ export function ScheduleTable({
                         "—"
                       )}
                     </td>
-                    <td className="text-white/75">{s.hall || "—"}</td>
+                    <td className="min-w-[200px]">
+                      <HallCell schedule={s} onSaved={onSaved} />
+                    </td>
                     <td className="whitespace-nowrap text-right align-middle">
                       <span className="inline-flex items-center justify-end">
                         {onEdit && <IconButton icon="edit" outline title="Edit" onClick={() => onEdit(idOf(s))} />}
@@ -432,6 +497,9 @@ function EventSchedulesWeb() {
           onDelete={remove}
           onEdit={(sId) => navigate(`/admin/schedules/new?event=${eventId}&schedule=${sId}`)}
           onOrdered={(updated) => setSchedules((list) => mergeScheduleOrder(list, updated))}
+          onSaved={(updated) =>
+            setSchedules((list) => (list ?? []).map((s) => (idOf(s) === idOf(updated) ? { ...s, ...updated } : s)))
+          }
         />
       )}
     </Page>
@@ -598,7 +666,14 @@ function ScheduleEditorWeb() {
               </div>
             </Field>
             <Field label="Hall / Room">
-              <Input value={hall} onChange={(e) => setHall(e.target.value)} placeholder="e.g. Main Hall" />
+              <Input
+                value={hall}
+                onChange={(e) => setHall(e.target.value)}
+                placeholder="e.g. SBDCH Auditorium Halls 1–7"
+              />
+              <p className="mt-1.5 text-xs text-muted">
+                Participants see this as the schedule heading. Leave it blank and the heading shows as Other.
+              </p>
             </Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">

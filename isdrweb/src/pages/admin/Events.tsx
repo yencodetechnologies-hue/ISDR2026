@@ -1117,6 +1117,9 @@ function EventDetailWeb() {
             onDelete={(sId) => deleteSchedule(sId)}
             onEdit={(sId) => navigate(`/admin/schedules/new?event=${id}&schedule=${sId}`)}
             onOrdered={(updated) => setSchedules((list) => mergeScheduleOrder(list, updated))}
+            onSaved={(updated) =>
+              setSchedules((list) => (list ?? []).map((s) => (idOf(s) === idOf(updated) ? { ...s, ...updated } : s)))
+            }
           />
         )}
       </div>

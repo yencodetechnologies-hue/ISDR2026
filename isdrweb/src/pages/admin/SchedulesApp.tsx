@@ -785,6 +785,9 @@ export function ScheduleFormApp() {
             error={errors.name}
           />
           <TextArea label="Hall / venue" icon="meeting_room" value={hall} onChange={setHall} error={errors.hall} />
+          <p className="-mt-1 px-1 text-xs text-muted">
+            Participants see this as the schedule heading. Leave it blank and the heading shows as Other.
+          </p>
           <AppDecorator label="Date (event days)" icon="calendar_month">
             {days.length === 0 ? (
               <span className="text-muted">This event has no dates</span>
