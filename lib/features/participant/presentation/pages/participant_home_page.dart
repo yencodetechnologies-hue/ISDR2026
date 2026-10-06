@@ -33,6 +33,7 @@ import '../../../../core/widgets/get_live_photo_button.dart';
 import 'speakers_page.dart';
 import 'program_schedule_page.dart';
 import 'ug_paper_page.dart';
+import 'hall_arrangement_page.dart';
 import 'participant_qa_page.dart';
 import 'participant_polls_page.dart';
 import 'participant_exhibitors_page.dart';
@@ -720,6 +721,15 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const UgPaperPage()),
+      ),
+    ),
+    _ParticipantModuleItem(
+      label: 'Hall Arrangement',
+      icon: Icons.meeting_room_rounded,
+      color: const Color(0xFF14B8A6),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const HallArrangementPage()),
       ),
     ),
   ];

@@ -118,6 +118,34 @@ function windowOf(s: any) {
   };
 }
 
+/** Day, then start time, then end time. A later update comes after a shared slot. */
+function compareSchedules(a: any, b: any) {
+  const da = windowOf(a)?.day.getTime() ?? 0;
+  const db = windowOf(b)?.day.getTime() ?? 0;
+  if (da !== db) return da - db;
+  const from = String(a.fromTime ?? "").localeCompare(String(b.fromTime ?? ""));
+  if (from) return from;
+  const to = String(a.toTime ?? "").localeCompare(String(b.toTime ?? ""));
+  if (to) return to;
+  const updated = (s: any) => {
+    const t = new Date(s.updatedAt ?? 0).getTime();
+    return Number.isNaN(t) ? 0 : t;
+  };
+  return updated(a) - updated(b);
+}
+
+/** Per-day serial numbers, restarting at 1 each calendar day. */
+function numberedSchedules(schedules: any[]) {
+  const counts = new Map<string, number>();
+  return [...schedules].sort(compareSchedules).map((s) => {
+    const w = windowOf(s);
+    const dayKey = w ? String(w.day.getTime()) : "";
+    const serial = (counts.get(dayKey) ?? 0) + 1;
+    counts.set(dayKey, serial);
+    return { s, serial, dayKey, dayLabel: w ? dayText(w.day) : "No date" };
+  });
+}
+
 /** LIVE / Upcoming / Tomorrow / "3 Oct" — null once over. */
 function bannerOf(s: any, now: Date): { label: string; live: boolean } | null {
   const w = windowOf(s);
@@ -164,11 +192,10 @@ export function EventScheduleListApp() {
     else toast(r.error || "Delete failed");
   };
 
-  // Live schedules first, the rest keep their date/time order.
-  const ordered = [
-    ...schedules.filter((s) => bannerOf(s, now)?.live),
-    ...schedules.filter((s) => !bannerOf(s, now)?.live),
-  ];
+  // Serial numbers follow day and time. Live sessions stay pinned above the day groups.
+  const numbered = numberedSchedules(schedules);
+  const live = numbered.filter((row) => bannerOf(row.s, now)?.live);
+  const rest = numbered.filter((row) => !bannerOf(row.s, now)?.live);
 
   return (
     <div className="flex min-h-screen flex-col bg-bg">
@@ -198,73 +225,115 @@ export function EventScheduleListApp() {
         <div className="pt-[120px] text-center text-muted">No schedules added yet</div>
       ) : (
         <div className="space-y-2.5 px-4 pb-6 pt-2">
-          {ordered.map((s) => {
-            const w = windowOf(s);
-            const banner = bannerOf(s, now);
-            return (
-              <div key={idOf(s)} className="flex items-start rounded-2xl border border-white/10 bg-card p-3.5">
-                <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/[0.09]">
-                  {s.speakerPhoto ? (
-                    <img src={s.speakerPhoto} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <Icon name="person" color="#3B82F6" />
-                  )}
-                </span>
-                <div className="ml-3 min-w-0 flex-1">
-                  <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1 text-[15.5px] font-extrabold">{s.scheduleName}</div>
-                    {banner && (
-                      <span
-                        className="inline-flex shrink-0 items-center gap-[3px] rounded-full px-[9px] py-[3px] text-[11px] font-extrabold"
-                        style={
-                          banner.live
-                            ? { background: "rgba(34,197,94,0.15)", color: "#86EFAC", letterSpacing: 0.8 }
-                            : { background: "rgba(59,130,246,0.09)", color: "#3B82F6", letterSpacing: 0.2 }
-                        }
-                      >
-                        {banner.live && (
-                          <span className="relative flex h-3.5 w-3.5 items-center justify-center">
-                            <span className="absolute h-3.5 w-3.5 animate-ping rounded-full bg-[#22C55E]/50" />
-                            <span className="h-[7px] w-[7px] rounded-full bg-[#22C55E]" />
-                          </span>
-                        )}
-                        {banner.label}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-0.5 text-[13px] font-semibold text-accent">{s.speakerName}</div>
-                  <div className="mt-1 text-[12.5px] text-muted">
-                    {w ? dayText(w.day) : ""} · {fmtTimeStr(s.fromTime)} - {fmtTimeStr(s.toTime)}
-                  </div>
-                  {s.hall && (
-                    <div className="mt-0.5 flex items-center gap-1 text-[12.5px] text-muted">
-                      <Icon name="meeting_room" outline size={13} color="#9CA3AF" />
-                      {s.hall}
-                    </div>
-                  )}
-                  {s.description && <div className="mt-1.5 text-[12.5px]">{s.description}</div>}
+          {live.length > 0 && (
+            <div className="px-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-muted">Live now</div>
+          )}
+          {live.map((row) => (
+            <ScheduleListCard
+              key={idOf(row.s)}
+              row={row}
+              now={now}
+              onEdit={() => navigate(`/admin/schedules/new?event=${eventId}&schedule=${idOf(row.s)}`)}
+              onDelete={() => remove(row.s)}
+            />
+          ))}
+          {rest.map((row, i) => (
+            <div key={idOf(row.s)} className="space-y-2.5">
+              {(i === 0 || row.dayKey !== rest[i - 1].dayKey) && (
+                <div className="px-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  {row.dayLabel}
                 </div>
-                <div className="ml-1 flex flex-col">
-                  <button
-                    onClick={() => navigate(`/admin/schedules/new?event=${eventId}&schedule=${idOf(s)}`)}
-                    className="flex h-10 w-10 items-center justify-center rounded-full active:bg-white/10"
-                    title="Edit"
-                  >
-                    <Icon name="edit" outline size={20} color="#60A5FA" />
-                  </button>
-                  <button
-                    onClick={() => remove(s)}
-                    className="flex h-10 w-10 items-center justify-center rounded-full active:bg-white/10"
-                    title="Delete"
-                  >
-                    <Icon name="delete" outline size={20} color="#EF4444" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+              )}
+              <ScheduleListCard
+                row={row}
+                now={now}
+                onEdit={() => navigate(`/admin/schedules/new?event=${eventId}&schedule=${idOf(row.s)}`)}
+                onDelete={() => remove(row.s)}
+              />
+            </div>
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function ScheduleListCard({
+  row,
+  now,
+  onEdit,
+  onDelete,
+}: {
+  row: { s: any; serial: number };
+  now: Date;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const s = row.s;
+  const w = windowOf(s);
+  const banner = bannerOf(s, now);
+  return (
+    <div className="flex items-start rounded-2xl border border-white/10 bg-card p-3.5">
+      <span className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/5 text-[12px] font-extrabold tabular-nums text-white/80">
+        {row.serial}
+      </span>
+      <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/[0.09]">
+        {s.speakerPhoto ? (
+          <img src={s.speakerPhoto} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <Icon name="person" color="#3B82F6" />
+        )}
+      </span>
+      <div className="ml-3 min-w-0 flex-1">
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1 text-[15.5px] font-extrabold">{s.scheduleName}</div>
+          {banner && (
+            <span
+              className="inline-flex shrink-0 items-center gap-[3px] rounded-full px-[9px] py-[3px] text-[11px] font-extrabold"
+              style={
+                banner.live
+                  ? { background: "rgba(34,197,94,0.15)", color: "#86EFAC", letterSpacing: 0.8 }
+                  : { background: "rgba(59,130,246,0.09)", color: "#3B82F6", letterSpacing: 0.2 }
+              }
+            >
+              {banner.live && (
+                <span className="relative flex h-3.5 w-3.5 items-center justify-center">
+                  <span className="absolute h-3.5 w-3.5 animate-ping rounded-full bg-[#22C55E]/50" />
+                  <span className="h-[7px] w-[7px] rounded-full bg-[#22C55E]" />
+                </span>
+              )}
+              {banner.label}
+            </span>
+          )}
+        </div>
+        <div className="mt-0.5 text-[13px] font-semibold text-accent">{s.speakerName}</div>
+        <div className="mt-1 text-[12.5px] text-muted">
+          {w ? dayText(w.day) : ""} · {fmtTimeStr(s.fromTime)} - {fmtTimeStr(s.toTime)}
+        </div>
+        {s.hall && (
+          <div className="mt-0.5 flex items-center gap-1 text-[12.5px] text-muted">
+            <Icon name="meeting_room" outline size={13} color="#9CA3AF" />
+            {s.hall}
+          </div>
+        )}
+        {s.description && <div className="mt-1.5 text-[12.5px]">{s.description}</div>}
+      </div>
+      <div className="ml-1 flex flex-col">
+        <button
+          onClick={onEdit}
+          className="flex h-10 w-10 items-center justify-center rounded-full active:bg-white/10"
+          title="Edit"
+        >
+          <Icon name="edit" outline size={20} color="#60A5FA" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="flex h-10 w-10 items-center justify-center rounded-full active:bg-white/10"
+          title="Delete"
+        >
+          <Icon name="delete" outline size={20} color="#EF4444" />
+        </button>
+      </div>
     </div>
   );
 }

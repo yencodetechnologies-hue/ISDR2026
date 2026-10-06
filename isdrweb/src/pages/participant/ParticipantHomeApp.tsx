@@ -41,6 +41,7 @@ export const PARTICIPANT_APP_MODULES: AppModule[] = [
   { label: "Awards", icon: "emoji_events", color: "#F59E0B", to: "/participant/awards" },
   { label: "About", icon: "menu_book", color: "#6366F1", to: "/participant/about" },
   { label: "UG Paper", icon: "picture_as_pdf", color: "#F59E0B", to: "/participant/ug-paper" },
+  { label: "Hall Arrangement", icon: "meeting_room", color: "#14B8A6", to: "/participant/hall-arrangement" },
 ];
 
 const SOCIAL_LINKS = [

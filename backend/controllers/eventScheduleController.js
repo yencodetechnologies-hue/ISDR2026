@@ -27,6 +27,7 @@ const toDto = (s) => ({
   fromTime: s.fromTime,
   toTime: s.toTime,
   description: s.description || '',
+  updatedAt: s.updatedAt || null,
 });
 
 /** Loads the event and checks it belongs to the logged-in property. */

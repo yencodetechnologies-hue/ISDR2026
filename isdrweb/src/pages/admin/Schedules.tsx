@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Avatar,
@@ -24,13 +24,46 @@ import {
 import { del, formData, get, post, put } from "@/lib/api";
 import { FilterSelect, distinct, matches } from "@/components/ListFilters";
 import ExportMenu from "@/components/ExportMenu";
-import { fmtDate, fmtTimeStr, idOf, parseDate } from "@/lib/format";
+import { fmtDate, fmtDayDate, fmtTimeStr, idOf, parseDate } from "@/lib/format";
 import { useAppLayout } from "@/lib/appLayout";
 import { EventScheduleListApp, EventSchedulesApp, ScheduleFormApp } from "./SchedulesApp";
 
 /* =========================================================================
    SCHEDULE TABLE (shared with Event detail)
 ========================================================================= */
+
+/** Calendar day a schedule is stored on (UTC date, shown as a local heading). */
+function scheduleCalendarDay(s: any): Date | null {
+  const d = parseDate(s?.date);
+  if (!d) return null;
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+/** Day, then start time, then end time. A later update comes after a shared slot. */
+function compareSchedules(a: any, b: any) {
+  const da = scheduleCalendarDay(a)?.getTime() ?? 0;
+  const db = scheduleCalendarDay(b)?.getTime() ?? 0;
+  if (da !== db) return da - db;
+  const from = String(a.fromTime ?? "").localeCompare(String(b.fromTime ?? ""));
+  if (from) return from;
+  const to = String(a.toTime ?? "").localeCompare(String(b.toTime ?? ""));
+  if (to) return to;
+  return (parseDate(a.updatedAt)?.getTime() ?? 0) - (parseDate(b.updatedAt)?.getTime() ?? 0);
+}
+
+type OrderedSchedule = { s: any; serial: number; dayKey: string; dayLabel: string };
+
+/** Per-day serial numbers, restarting at 1 each calendar day. */
+function orderSchedules(schedules: any[]): OrderedSchedule[] {
+  const counts = new Map<string, number>();
+  return [...schedules].sort(compareSchedules).map((s) => {
+    const day = scheduleCalendarDay(s);
+    const dayKey = day ? String(day.getTime()) : "";
+    const serial = (counts.get(dayKey) ?? 0) + 1;
+    counts.set(dayKey, serial);
+    return { s, serial, dayKey, dayLabel: day ? fmtDayDate(day) : "No date" };
+  });
+}
 
 export function ScheduleTable({
   schedules,
@@ -48,9 +81,13 @@ export function ScheduleTable({
   const [hallFilter, setHallFilter] = useState("");
   const [speakerFilter, setSpeakerFilter] = useState("");
   if (!schedules) return <Loading />;
-  const dayOf = (s: any) => fmtDate(parseDate(s.date));
-  const shown = schedules.filter(
-    (s) =>
+  const ordered = orderSchedules(schedules);
+  const dayOf = (s: any) => {
+    const day = scheduleCalendarDay(s);
+    return day ? fmtDate(day) : "";
+  };
+  const shown = ordered.filter(
+    ({ s }) =>
       matches(s, search) &&
       (!dateFilter || dayOf(s) === dateFilter) &&
       (!hallFilter || (s.hall ?? "") === hallFilter) &&
@@ -77,11 +114,12 @@ export function ScheduleTable({
         <ExportMenu
           small
           title="Schedules"
-          rows={shown}
+          rows={shown.map((row) => ({ ...row.s, serial: row.serial }))}
           columns={[
+            { header: "S.No", value: (s: any) => s.serial, width: 8 },
             { header: "Session", value: (s: any) => s.scheduleName, width: 30 },
             { header: "Speaker", value: (s: any) => s.speakerName, width: 20 },
-            { header: "Date", value: (s: any) => fmtDate(parseDate(s.date)), width: 14 },
+            { header: "Date", value: (s: any) => dayOf(s), width: 14 },
             { header: "From", value: (s: any) => fmtTimeStr(s.fromTime), width: 10 },
             { header: "To", value: (s: any) => fmtTimeStr(s.toTime), width: 10 },
             { header: "Hall", value: (s: any) => s.hall, width: 14 },
@@ -99,7 +137,7 @@ export function ScheduleTable({
           label="dates"
           value={dateFilter}
           onChange={setDateFilter}
-          options={[...new Set(schedules.map(dayOf).filter(Boolean))]}
+          options={[...new Set(ordered.map((row) => dayOf(row.s)).filter(Boolean))]}
         />
         <FilterSelect
           label="halls"
@@ -121,39 +159,62 @@ export function ScheduleTable({
         <table className="data-table">
           <thead>
             <tr>
+              <th className="w-14">S.No</th>
               <th>Session</th>
               <th>Speaker</th>
               <th>Date</th>
               <th>Time</th>
               <th>Hall</th>
-              <th className="w-14 text-right" />
+              <th className="w-24 text-right" />
             </tr>
           </thead>
           <tbody>
-            {shown.map((s) => (
-              <tr key={idOf(s)}>
-                <td className="font-medium">{s.scheduleName}</td>
-                <td>
-                  <div className="flex items-center gap-2.5">
-                    {s.speakerPhoto ? (
-                      <img src={s.speakerPhoto} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
-                    ) : (
-                      <Avatar name={s.speakerName} size={32} />
-                    )}
-                    <span className="text-white/80">{s.speakerName || "—"}</span>
-                  </div>
-                </td>
-                <td className="whitespace-nowrap text-white/75">{fmtDate(parseDate(s.date))}</td>
-                <td className="whitespace-nowrap text-white/75">
-                  {fmtTimeStr(s.fromTime)} – {fmtTimeStr(s.toTime)}
-                </td>
-                <td className="text-white/75">{s.hall || "—"}</td>
-                <td className="text-right">
-                  {onEdit && <IconButton icon="edit" outline title="Edit" onClick={() => onEdit(idOf(s))} />}
-                  <IconButton icon="delete" outline color="#EF4444" title="Delete" onClick={() => onDelete(idOf(s))} />
-                </td>
-              </tr>
-            ))}
+            {shown.map((row, i) => {
+              const s = row.s;
+              const showDay = i === 0 || row.dayKey !== shown[i - 1].dayKey;
+              return (
+                <Fragment key={idOf(s)}>
+                  {showDay && (
+                    <tr className="bg-white/[0.03] hover:bg-white/[0.03]">
+                      <td colSpan={7} className="py-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                        {row.dayLabel}
+                      </td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td className="tabular-nums text-muted">{row.serial}</td>
+                    <td className="font-medium">{s.scheduleName}</td>
+                    <td>
+                      <div className="flex items-center gap-2.5">
+                        {s.speakerPhoto ? (
+                          <img src={s.speakerPhoto} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                        ) : (
+                          <Avatar name={s.speakerName} size={32} />
+                        )}
+                        <span className="text-white/80">{s.speakerName || "—"}</span>
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap text-white/75">{dayOf(s)}</td>
+                    <td className="whitespace-nowrap text-white/75">
+                      {fmtTimeStr(s.fromTime)} – {fmtTimeStr(s.toTime)}
+                    </td>
+                    <td className="text-white/75">{s.hall || "—"}</td>
+                    <td className="whitespace-nowrap text-right align-middle">
+                      <span className="inline-flex items-center justify-end">
+                        {onEdit && <IconButton icon="edit" outline title="Edit" onClick={() => onEdit(idOf(s))} />}
+                        <IconButton
+                          icon="delete"
+                          outline
+                          color="#EF4444"
+                          title="Delete"
+                          onClick={() => onDelete(idOf(s))}
+                        />
+                      </span>
+                    </td>
+                  </tr>
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -275,6 +336,7 @@ function EventSchedulesWeb() {
           schedules={schedules}
           onAdd={() => navigate(`/admin/schedules/new?event=${eventId}`)}
           onDelete={remove}
+          onEdit={(sId) => navigate(`/admin/schedules/new?event=${eventId}&schedule=${sId}`)}
         />
       )}
     </Page>

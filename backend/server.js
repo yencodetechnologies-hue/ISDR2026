@@ -26,6 +26,7 @@ const awardRoutes = require('./routes/awardRoutes');
 const preconferenceRoutes = require('./routes/preconferenceRoutes');
 const schedulePdfRoutes = require('./routes/schedulePdfRoutes');
 const ugPaperPdfRoutes = require('./routes/ugPaperPdfRoutes');
+const hallArrangementPdfRoutes = require('./routes/hallArrangementPdfRoutes');
 const { startReminderScheduler } = require('./utils/reminderScheduler');
 
 if (!process.env.JWT_SECRET) {
@@ -68,6 +69,7 @@ app.use('/api/awards', awardRoutes);
 app.use('/api/preconference', preconferenceRoutes);
 app.use('/api/schedule-pdf', schedulePdfRoutes);
 app.use('/api/ug-paper-pdf', ugPaperPdfRoutes);
+app.use('/api/hall-arrangement-pdf', hallArrangementPdfRoutes);
 
 // 404
 app.use((req, res) => {

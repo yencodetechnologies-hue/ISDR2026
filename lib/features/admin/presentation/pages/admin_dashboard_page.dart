@@ -41,6 +41,7 @@ import 'my_profile_page.dart';
 import 'event_schedules_page.dart';
 import 'manage_schedule_pdf_page.dart';
 import 'manage_ug_paper_pdf_page.dart';
+import 'manage_hall_arrangement_pdf_page.dart';
 import 'send_notification_page.dart';
 import '../../../participant/presentation/pages/accommodation_page.dart';
 
@@ -464,6 +465,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       );
       return;
     }
+    if (label.trim().toLowerCase() == 'hall arrangement') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ManageHallArrangementPdfPage()),
+      );
+      return;
+    }
     if (label.trim().toLowerCase() == 'qr pass') {
       Navigator.push(
         context,
@@ -734,6 +742,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       'Feed',
       'Support Tickets',
       'Preconference',
+      'Hall Arrangement',
     ];
     final isHostel = false;
     final totalRooms = totalRoomCountForProperty(blocks: state.blocks);

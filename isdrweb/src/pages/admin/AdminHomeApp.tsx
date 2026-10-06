@@ -38,6 +38,7 @@ export const ADMIN_APP_MODULES: AppModule[] = [
   { label: "Feed", icon: "photo_library", color: "#EC4899", to: "/feed" },
   { label: "Support Tickets", icon: "support_agent", color: "#EF4444", to: "/support" },
   { label: "Preconference", icon: "school", color: "#6366F1", to: "/admin/preconference" },
+  { label: "Hall Arrangement", icon: "meeting_room", color: "#14B8A6", to: "/admin/hall-arrangement" },
 ];
 
 /** Admin home at phone width — the app's management home. */

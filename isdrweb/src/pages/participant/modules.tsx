@@ -42,4 +42,5 @@ export const PARTICIPANT_MODULES: ModuleItem[] = [
   { label: "Accommodation", sub: "Stay & services", icon: "hotel", color: "#0EA5E9", to: "/participant/accommodation" },
   { label: "Awards", sub: "Conference awards", icon: "emoji_events", color: "#F59E0B", to: "/participant/awards" },
   { label: "About", sub: "About ISDR", icon: "menu_book", color: "#6366F1", to: "/participant/about" },
+  { label: "Hall Arrangement", sub: "Venue hall layout", icon: "meeting_room", color: "#14B8A6", to: "/participant/hall-arrangement" },
 ];

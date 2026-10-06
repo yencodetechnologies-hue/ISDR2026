@@ -1352,6 +1352,7 @@ export function AdminMore() {
     { label: "Schedule PDF", icon: "picture_as_pdf", color: "#F97316", to: "/admin/schedule-pdf" },
     { label: "UG Paper PDF", icon: "picture_as_pdf", color: "#F59E0B", to: "/admin/ug-paper-pdf" },
     { label: "Preconference", icon: "school", color: "#6366F1", to: "/admin/preconference" },
+    { label: "Hall Arrangement", icon: "meeting_room", color: "#14B8A6", to: "/admin/hall-arrangement" },
     { label: "Change Password", icon: "lock", color: "#9CA3AF", to: "/change-password" },
   ];
   return (

@@ -2013,6 +2013,42 @@ class ApiService {
             }),
           ));
 
+  /// The hall arrangement PDF on Cloudinary. url is '' until an admin uploads one.
+  Future<Map<String, dynamic>> getHallArrangementPdf() =>
+      _sessionContentCall(() => _dio.get(ApiConfig.hallArrangementPdf));
+
+  /// Downloads the hall arrangement PDF from its Cloudinary URL.
+  Future<Uint8List> downloadHallArrangementPdf() async {
+    final meta = await getHallArrangementPdf();
+    if (meta['success'] != true) {
+      throw Exception(meta['error']?.toString() ?? 'Could not load the hall arrangement');
+    }
+    final url = meta['url']?.toString() ?? '';
+    if (url.isEmpty) {
+      throw Exception('No hall arrangement PDF has been uploaded yet');
+    }
+    final response = await _dio.get(
+      url,
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final data = response.data;
+    if (data is Uint8List) return data;
+    if (data is List<int>) return Uint8List.fromList(data);
+    throw Exception('Hall arrangement PDF is empty');
+  }
+
+  /// Admin replaces the hall arrangement PDF participants open from More.
+  Future<Map<String, dynamic>> uploadHallArrangementPdf(String filePath) =>
+      _sessionContentCall(() async => _dio.post(
+            ApiConfig.hallArrangementPdf,
+            data: FormData.fromMap({
+              'pdf': await MultipartFile.fromFile(
+                filePath,
+                filename: filePath.split(Platform.pathSeparator).last,
+              ),
+            }),
+          ));
+
   /// The admin's YouTube live link: {url} ('' when none is set).
   Future<Map<String, dynamic>> getYoutubeLive() =>
       _sessionContentCall(() => _dio.get(ApiConfig.youtubeLive));

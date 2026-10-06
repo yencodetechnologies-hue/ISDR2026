@@ -33,5 +33,6 @@ export const ADMIN_MODULES: ModuleItem[] = [
   { label: "Brochure", sub: "Conference brochure", icon: "menu_book", color: "#84CC16", to: "/brochure" },
   { label: "Awards", sub: "Pick winners", icon: "emoji_events", color: "#F59E0B", to: "/awards" },
   { label: "Preconference", sub: "Add, edit, delete courses", icon: "school", color: "#6366F1", to: "/admin/preconference" },
+  { label: "Hall Arrangement", sub: "Upload hall layout PDF", icon: "meeting_room", color: "#14B8A6", to: "/admin/hall-arrangement" },
   { label: "Profile", sub: "Your account", icon: "person", color: "#9CA3AF", to: "/admin/profile" },
 ];
