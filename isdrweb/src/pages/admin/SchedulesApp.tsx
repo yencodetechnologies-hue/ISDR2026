@@ -126,16 +126,119 @@ function timeRank(s: any) {
   return `${from}\0${to}`;
 }
 
-/** Day, then clock. A session with no date sits after the dated days. */
+function savedOrder(s: any): number | null {
+  const n = Number(s?.sortOrder);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+/** Day, then saved S.No, then clock. A session with no date sits after the dated days. */
 function compareSchedules(a: any, b: any) {
   const da = windowOf(a)?.day.getTime() ?? Number.MAX_SAFE_INTEGER;
   const db = windowOf(b)?.day.getTime() ?? Number.MAX_SAFE_INTEGER;
   if (da !== db) return da - db;
+  const ao = savedOrder(a);
+  const bo = savedOrder(b);
+  if (ao != null && bo != null && ao !== bo) return ao - bo;
+  if (ao != null && bo == null) return -1;
+  if (ao == null && bo != null) return 1;
   const time = timeRank(a).localeCompare(timeRank(b));
   if (time) return time;
   const name = String(a.scheduleName ?? "").localeCompare(String(b.scheduleName ?? ""));
   if (name) return name;
   return String(idOf(a)).localeCompare(String(idOf(b)));
+}
+
+/** Drag a session onto another row of the same day. */
+export function useScheduleDrag(canDrag: boolean, onMove: (fromId: string, toId: string) => void) {
+  const drag = useRef<{ id: string; dayKey: string } | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+
+  const targetAt = (e: { clientX: number; clientY: number }) => {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const row = el?.closest("[data-schedule-id]") as HTMLElement | null;
+    if (!row || !drag.current || row.dataset.dayKey !== drag.current.dayKey) return null;
+    const id = row.dataset.scheduleId || "";
+    if (!id || id === drag.current.id) return null;
+    return id;
+  };
+
+  const finish = (e: React.PointerEvent) => {
+    const from = drag.current;
+    const to = from ? targetAt(e) : null;
+    drag.current = null;
+    setOverId(null);
+    if (from && to) onMove(from.id, to);
+  };
+
+  const handleProps = (id: string, dayKey: string) => ({
+    onPointerDown: (e: React.PointerEvent<HTMLButtonElement>) => {
+      if (!canDrag || e.button !== 0) return;
+      drag.current = { id, dayKey };
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    onPointerMove: (e: React.PointerEvent<HTMLButtonElement>) => {
+      if (!drag.current) return;
+      const next = targetAt(e);
+      setOverId((prev) => (prev === next ? prev : next));
+    },
+    onPointerUp: finish,
+    onPointerCancel: () => {
+      drag.current = null;
+      setOverId(null);
+    },
+  });
+
+  return { overId, handleProps };
+}
+
+/** S.No field. Commits on Enter or when focus leaves, and only when the number changed. */
+export function SerialField({
+  value,
+  max,
+  disabled,
+  onCommit,
+  variant,
+}: {
+  value: number;
+  max: number;
+  disabled?: boolean;
+  onCommit: (serial: number) => Promise<boolean>;
+  variant: "table" | "card";
+}) {
+  const toast = useToast();
+  const [text, setText] = useState(String(value));
+  useEffect(() => setText(String(value)), [value]);
+  const commit = async () => {
+    const n = Number(text);
+    if (!Number.isInteger(n) || n < 1 || n > max || n === value) {
+      if (text !== String(value) && text !== "") toast(`Enter a S.No from 1 to ${max}`, "error");
+      setText(String(value));
+      return;
+    }
+    const ok = await onCommit(n);
+    if (!ok) setText(String(value));
+  };
+  return (
+    <input
+      aria-label="S.No"
+      inputMode="numeric"
+      value={text}
+      disabled={disabled}
+      onChange={(e) => setText(e.target.value.replace(/[^\d]/g, ""))}
+      onBlur={() => {
+        void commit();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+      }}
+      onPointerDown={(e) => e.stopPropagation()}
+      className={
+        variant === "card"
+          ? "h-7 w-10 rounded-full bg-white/5 text-center text-[12px] font-extrabold tabular-nums text-white/80 outline-none focus:bg-white/10 disabled:opacity-40"
+          : "h-8 w-12 rounded-md border border-white/10 bg-transparent text-center text-sm tabular-nums text-white/80 outline-none focus:border-accent disabled:opacity-40"
+      }
+    />
+  );
 }
 
 /** Per-day serial numbers, restarting at 1 each calendar day. */
@@ -173,6 +276,7 @@ export function EventScheduleListApp() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [savingOrder, setSavingOrder] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -196,10 +300,30 @@ export function EventScheduleListApp() {
     else toast(r.error || "Delete failed");
   };
 
-  // Serial numbers follow day and time. Live sessions stay pinned above the day groups.
+  // Serial numbers follow the saved day order, then clock time. Live sessions stay pinned above the day groups.
   const numbered = numberedSchedules(schedules);
+  const dayCount = new Map<string, number>();
+  for (const row of numbered) dayCount.set(row.dayKey, (dayCount.get(row.dayKey) ?? 0) + 1);
   const live = numbered.filter((row) => bannerOf(row.s, now)?.live);
   const rest = numbered.filter((row) => !bannerOf(row.s, now)?.live);
+
+  const reorder = async (scheduleId: string, serial: number) => {
+    if (savingOrder) return false;
+    setSavingOrder(true);
+    const r = await put(`/managed-events/${eventId}/schedules/${scheduleId}/order`, { serial });
+    setSavingOrder(false);
+    if (!r.success) {
+      toast(r.error || "Could not reorder");
+      return false;
+    }
+    const byId = new Map((r.schedules ?? []).map((s: any) => [String(idOf(s)), s.sortOrder]));
+    setSchedules((list) => list.map((s) => (byId.has(String(idOf(s))) ? { ...s, sortOrder: byId.get(String(idOf(s))) } : s)));
+    return true;
+  };
+  const { overId, handleProps } = useScheduleDrag(true, (fromId, toId) => {
+    const target = numbered.find((row) => idOf(row.s) === toId);
+    if (target) void reorder(fromId, target.serial);
+  });
 
   return (
     <div className="flex min-h-screen flex-col bg-bg">
@@ -237,6 +361,11 @@ export function EventScheduleListApp() {
               key={idOf(row.s)}
               row={row}
               now={now}
+              max={dayCount.get(row.dayKey) ?? row.serial}
+              over={overId === idOf(row.s)}
+              saving={savingOrder}
+              onCommit={(serial) => reorder(idOf(row.s), serial)}
+              handleProps={handleProps(idOf(row.s), row.dayKey)}
               onEdit={() => navigate(`/admin/schedules/new?event=${eventId}&schedule=${idOf(row.s)}`)}
               onDelete={() => remove(row.s)}
             />
@@ -251,6 +380,11 @@ export function EventScheduleListApp() {
               <ScheduleListCard
                 row={row}
                 now={now}
+                max={dayCount.get(row.dayKey) ?? row.serial}
+                over={overId === idOf(row.s)}
+                saving={savingOrder}
+                onCommit={(serial) => reorder(idOf(row.s), serial)}
+                handleProps={handleProps(idOf(row.s), row.dayKey)}
                 onEdit={() => navigate(`/admin/schedules/new?event=${eventId}&schedule=${idOf(row.s)}`)}
                 onDelete={() => remove(row.s)}
               />
@@ -265,11 +399,21 @@ export function EventScheduleListApp() {
 function ScheduleListCard({
   row,
   now,
+  max,
+  over,
+  saving,
+  onCommit,
+  handleProps,
   onEdit,
   onDelete,
 }: {
-  row: { s: any; serial: number };
+  row: { s: any; serial: number; dayKey: string };
   now: Date;
+  max: number;
+  over: boolean;
+  saving: boolean;
+  onCommit: (serial: number) => Promise<boolean>;
+  handleProps: React.HTMLAttributes<HTMLButtonElement>;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -277,9 +421,21 @@ function ScheduleListCard({
   const w = windowOf(s);
   const banner = bannerOf(s, now);
   return (
-    <div className="flex items-start rounded-2xl border border-white/10 bg-card p-3.5">
-      <span className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/5 text-[12px] font-extrabold tabular-nums text-white/80">
-        {row.serial}
+    <div
+      data-schedule-id={idOf(s)}
+      data-day-key={row.dayKey}
+      className={`flex items-start rounded-2xl border bg-card p-3.5 ${over ? "border-accent" : "border-white/10"}`}
+    >
+      <button
+        type="button"
+        title="Drag to reorder"
+        className="mr-1 mt-0.5 flex h-7 w-5 shrink-0 cursor-grab items-center justify-center touch-none text-white/40 active:cursor-grabbing"
+        {...handleProps}
+      >
+        <Icon name="drag_indicator" size={16} color="#9CA3AF" />
+      </button>
+      <span className="mr-2">
+        <SerialField variant="card" value={row.serial} max={max} disabled={saving} onCommit={onCommit} />
       </span>
       <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/[0.09]">
         {s.speakerPhoto ? (

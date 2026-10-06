@@ -205,10 +205,6 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
           ),
         );
       }
-      var serial = 1;
-      for (final item in byDay[day]!) {
-        item['serial'] = serial++;
-      }
       final halls = <String, List<Map<String, dynamic>>>{};
       for (final item in byDay[day]!) {
         final schedule = Map<String, dynamic>.from(item['schedule'] as Map);
@@ -249,10 +245,6 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
       }
     }
     if (undated.isNotEmpty && _day == null) {
-      var serial = 1;
-      for (final item in undated) {
-        item['serial'] = serial++;
-      }
       final halls = <String, List<Map<String, dynamic>>>{};
       for (final item in undated) {
         final schedule = Map<String, dynamic>.from(item['schedule'] as Map);
@@ -529,7 +521,6 @@ class _SessionCard extends StatelessWidget {
         toRaw.isNotEmpty &&
         start is DateTime &&
         end is DateTime;
-    final serial = item['serial'];
     final now = DateTime.now();
     final live = hasTime && !now.isBefore(start) && now.isBefore(end);
     final done = hasTime && !now.isBefore(end);
@@ -622,18 +613,6 @@ class _SessionCard extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (serial is int)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Text(
-                                  '$serial',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF93C5FD),
-                                  ),
-                                ),
-                              ),
                             Expanded(
                               child: Text(
                                 s['scheduleName']?.toString() ?? '',

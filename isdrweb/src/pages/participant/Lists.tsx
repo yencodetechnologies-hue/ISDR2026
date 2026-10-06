@@ -20,6 +20,7 @@ import {
   displaySpeaker,
   groupByHall,
   loadAllSchedules,
+  compareScheduleItems,
   openAsItem,
   scheduleHref,
   splitSpeakerNames,
@@ -132,7 +133,7 @@ function AllSessionsWeb() {
   const placed = [
     ...(items ?? []),
     ...open.map(openAsItem).filter((it): it is ScheduleItem => !!it),
-  ];
+  ].sort(compareScheduleItems);
   const undated = open.filter((o) => !o.day);
   const list = placed.filter((i) => !day || sameDay(i.start, day));
   const showUndated = !day && undated.length > 0;

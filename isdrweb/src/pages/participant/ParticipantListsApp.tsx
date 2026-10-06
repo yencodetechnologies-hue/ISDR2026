@@ -9,6 +9,7 @@ import {
   displaySpeaker,
   groupByHall,
   loadAllSchedules,
+  compareScheduleItems,
   participantTimeLabel,
   openAsItem,
   scheduleHref,
@@ -174,7 +175,7 @@ export function AllSessionsApp() {
   const undated = open.filter((o) => !o.day);
   const list = placed
     .filter((i) => !activeDay || sameDay(i.start, activeDay))
-    .sort((a, b) => a.start.getTime() - b.start.getTime());
+    .sort(compareScheduleItems);
   const showUndated = !activeDay && undated.length > 0;
   const dayGroups: { day: Date; list: ScheduleItem[] }[] = [];
   for (const it of list) {
@@ -278,7 +279,6 @@ export function AllSessionsApp() {
                       const s = it.schedule ?? {};
                       const clock = participantTimeLabel(s);
                       const hasTime = !!(String(s.fromTime ?? "").trim() && String(s.toTime ?? "").trim());
-                      const serial = group.list.findIndex((row) => idOf(row.schedule) === idOf(s)) + 1;
                       const isLive = hasTime && now >= it.start && now < it.end;
                       const isDone = hasTime && now >= it.end;
                       const speakerPhoto = String(s.speakerPhoto ?? "");
@@ -293,7 +293,6 @@ export function AllSessionsApp() {
                         >
                           <div className="flex items-center justify-between">
                             <div className="font-inter text-[11.5px] font-semibold text-[#60A5FA]">
-                              {serial > 0 ? `${serial}. ` : ""}
                               {clock}
                             </div>
                             {hasTime && (

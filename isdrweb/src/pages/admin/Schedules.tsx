@@ -24,7 +24,7 @@ import ExportMenu from "@/components/ExportMenu";
 import { fmtDate, fmtDayDate, fmtTimeStr, idOf, parseDate } from "@/lib/format";
 import { useAppLayout } from "@/lib/appLayout";
 import { splitSpeakerNames } from "@/lib/schedules";
-import { EventScheduleListApp, EventSchedulesApp, ScheduleFormApp } from "./SchedulesApp";
+import { EventScheduleListApp, EventSchedulesApp, ScheduleFormApp, SerialField, useScheduleDrag } from "./SchedulesApp";
 
 /* =========================================================================
    SCHEDULE TABLE (shared with Event detail)
@@ -45,11 +45,21 @@ function timeRank(s: any) {
   return `${from}\0${to}`;
 }
 
-/** Day, then clock. A session with no date sits after the dated days. */
+function savedOrder(s: any): number | null {
+  const n = Number(s?.sortOrder);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+/** Day, then saved S.No, then clock. A session with no date sits after the dated days. */
 function compareSchedules(a: any, b: any) {
   const da = scheduleCalendarDay(a)?.getTime() ?? Number.MAX_SAFE_INTEGER;
   const db = scheduleCalendarDay(b)?.getTime() ?? Number.MAX_SAFE_INTEGER;
   if (da !== db) return da - db;
+  const ao = savedOrder(a);
+  const bo = savedOrder(b);
+  if (ao != null && bo != null && ao !== bo) return ao - bo;
+  if (ao != null && bo == null) return -1;
+  if (ao == null && bo != null) return 1;
   const time = timeRank(a).localeCompare(timeRank(b));
   if (time) return time;
   const name = String(a.scheduleName ?? "").localeCompare(String(b.scheduleName ?? ""));
@@ -71,23 +81,54 @@ function orderSchedules(schedules: any[]): OrderedSchedule[] {
   });
 }
 
+export function mergeScheduleOrder(list: any[] | null, updated: any[]) {
+  if (!list) return list;
+  const byId = new Map(updated.map((s) => [String(idOf(s)), s.sortOrder]));
+  return list.map((s) => (byId.has(String(idOf(s))) ? { ...s, sortOrder: byId.get(String(idOf(s))) } : s));
+}
+
 export function ScheduleTable({
   schedules,
   onAdd,
   onDelete,
   onEdit,
+  onOrdered,
 }: {
   schedules: any[] | null;
   onAdd: () => void;
   onDelete: (id: string) => void;
   onEdit?: (id: string) => void;
+  onOrdered: (updated: any[]) => void;
 }) {
+  const toast = useToast();
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [hallFilter, setHallFilter] = useState("");
   const [speakerFilter, setSpeakerFilter] = useState("");
+  const [savingOrder, setSavingOrder] = useState(false);
+  const filtering = !!(search || dateFilter || hallFilter || speakerFilter);
+  const ordered = schedules ? orderSchedules(schedules) : [];
+  const reorder = async (scheduleId: string, serial: number) => {
+    if (savingOrder || !schedules) return false;
+    const eventId = String(schedules.find((s) => idOf(s) === scheduleId)?.eventId ?? "");
+    if (!eventId) return false;
+    setSavingOrder(true);
+    const r = await put(`/managed-events/${eventId}/schedules/${scheduleId}/order`, { serial });
+    setSavingOrder(false);
+    if (!r.success) {
+      toast(r.error || "Could not reorder", "error");
+      return false;
+    }
+    onOrdered(r.schedules ?? []);
+    return true;
+  };
+  const { overId, handleProps } = useScheduleDrag(!filtering, (fromId, toId) => {
+    const target = ordered.find((row) => idOf(row.s) === toId);
+    if (target) void reorder(fromId, target.serial);
+  });
   if (!schedules) return <Loading />;
-  const ordered = orderSchedules(schedules);
+  const dayCount = new Map<string, number>();
+  for (const row of ordered) dayCount.set(row.dayKey, (dayCount.get(row.dayKey) ?? 0) + 1);
   const dayOf = (s: any) => {
     const day = scheduleCalendarDay(s);
     return day ? fmtDate(day) : "";
@@ -165,7 +206,7 @@ export function ScheduleTable({
         <table className="data-table">
           <thead>
             <tr>
-              <th className="w-14">S.No</th>
+              <th className="w-28">S.No</th>
               <th>Session</th>
               <th>Speaker</th>
               <th>Date</th>
@@ -188,8 +229,32 @@ export function ScheduleTable({
                       </td>
                     </tr>
                   )}
-                  <tr>
-                    <td className="tabular-nums text-muted">{row.serial}</td>
+                  <tr
+                    data-schedule-id={idOf(s)}
+                    data-day-key={row.dayKey}
+                    className={overId === idOf(s) ? "bg-accent/10" : undefined}
+                  >
+                    <td className="tabular-nums text-muted">
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          title={filtering ? "Clear filters to drag" : "Drag to reorder"}
+                          className={`flex h-8 w-5 items-center justify-center touch-none ${
+                            filtering ? "cursor-default opacity-30" : "cursor-grab active:cursor-grabbing"
+                          }`}
+                          {...handleProps(idOf(s), row.dayKey)}
+                        >
+                          <Icon name="drag_indicator" size={16} color="#9CA3AF" />
+                        </button>
+                        <SerialField
+                          variant="table"
+                          value={row.serial}
+                          max={dayCount.get(row.dayKey) ?? row.serial}
+                          disabled={savingOrder}
+                          onCommit={(serial) => reorder(idOf(s), serial)}
+                        />
+                      </div>
+                    </td>
                     <td className="font-medium">{s.scheduleName}</td>
                     <td>
                       <div className="flex items-start gap-2.5">
@@ -366,6 +431,7 @@ function EventSchedulesWeb() {
           onAdd={() => navigate(`/admin/schedules/new?event=${eventId}`)}
           onDelete={remove}
           onEdit={(sId) => navigate(`/admin/schedules/new?event=${eventId}&schedule=${sId}`)}
+          onOrdered={(updated) => setSchedules((list) => mergeScheduleOrder(list, updated))}
         />
       )}
     </Page>

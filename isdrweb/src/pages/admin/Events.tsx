@@ -32,7 +32,7 @@ import ExportMenu from "@/components/ExportMenu";
 import { fmtDate, idOf, parseDate, cap } from "@/lib/format";
 import { BadgeModal, ClaimsModal, displayName, PackageCard, PackageModal, ParticipantModal } from "./EventManage";
 import { ImportParticipantsModal } from "./ImportParticipants";
-import { ScheduleTable } from "./Schedules";
+import { ScheduleTable, mergeScheduleOrder } from "./Schedules";
 import EventFormApp from "./EventFormApp";
 import EventAnalytics from "./EventAnalytics";
 
@@ -1116,6 +1116,7 @@ function EventDetailWeb() {
             onAdd={() => navigate(`/admin/schedules/new?event=${id}`)}
             onDelete={(sId) => deleteSchedule(sId)}
             onEdit={(sId) => navigate(`/admin/schedules/new?event=${id}&schedule=${sId}`)}
+            onOrdered={(updated) => setSchedules((list) => mergeScheduleOrder(list, updated))}
           />
         )}
       </div>

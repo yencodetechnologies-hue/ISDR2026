@@ -2021,7 +2021,6 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       child: _scheduleListRow(
         items[i],
         _scheduleAccents[i % _scheduleAccents.length],
-        serial: i + 1,
       ),
     );
   }
@@ -2195,7 +2194,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     );
   }
 
-  Widget _scheduleListRow(Map<String, dynamic> item, Color accent, {int? serial}) {
+  Widget _scheduleListRow(Map<String, dynamic> item, Color accent) {
     final schedule = item['schedule'] as Map<String, dynamic>;
     final event = item['event'] as Map<String, dynamic>;
     final start = item['start'] as DateTime;
@@ -2260,20 +2259,11 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Center(
-                                child: serial == null
-                                    ? Icon(
-                                        Icons.calendar_today_rounded,
-                                        size: 16,
-                                        color: rowAccent,
-                                      )
-                                    : Text(
-                                        '$serial',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w800,
-                                          color: rowAccent,
-                                        ),
-                                      ),
+                                child: Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 16,
+                                  color: rowAccent,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 10),

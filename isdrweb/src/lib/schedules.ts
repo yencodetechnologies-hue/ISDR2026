@@ -55,7 +55,7 @@ export async function loadAllSchedules(onlyEventId?: string | null): Promise<{
       else open.push({ schedule: s, event: r.event, day: scheduleDay(s) });
     }
   }
-  items.sort((a, b) => a.start.getTime() - b.start.getTime());
+  items.sort(compareScheduleItems);
   const days = [...dayKeys.values()].sort((a, b) => a.getTime() - b.getTime());
   return { events, items, open, days };
 }
@@ -102,7 +102,27 @@ const hallRank = (hall: string) => {
   return i === -1 ? PROGRAMME_HALLS.length : i;
 };
 
-/** Keep time order inside each hall. Halls follow the programme order. */
+function savedOrder(schedule: any): number | null {
+  const n = Number(schedule?.sortOrder);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+/** Same calendar day: saved S.No, then clock. Other days stay in date order. */
+export function compareScheduleItems(a: ScheduleItem, b: ScheduleItem): number {
+  const ad = startOfDay(a.start).getTime();
+  const bd = startOfDay(b.start).getTime();
+  if (ad !== bd) return ad - bd;
+  const ao = savedOrder(a.schedule);
+  const bo = savedOrder(b.schedule);
+  if (ao != null && bo != null && ao !== bo) return ao - bo;
+  if (ao != null && bo == null) return -1;
+  if (ao == null && bo != null) return 1;
+  const time = a.start.getTime() - b.start.getTime();
+  if (time) return time;
+  return String(idOf(a.schedule)).localeCompare(String(idOf(b.schedule)));
+}
+
+/** Keep the incoming order inside each hall. Halls follow the programme order. */
 export function groupByHall<T>(items: T[], hallOf: (item: T) => string): { hall: string; list: T[] }[] {
   const groups = new Map<string, T[]>();
   for (const item of items) {

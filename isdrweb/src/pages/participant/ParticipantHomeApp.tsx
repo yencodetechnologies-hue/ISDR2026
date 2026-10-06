@@ -19,6 +19,7 @@ import { sameDay } from "@/lib/format";
 import {
   loadAllSchedules,
   loadFavorites,
+  compareScheduleItems,
   participantTimeLabel,
   openAsItem,
   scheduleHref,
@@ -214,7 +215,7 @@ export default function ParticipantHomeApp() {
     ? [
         ...items.filter((it) => sameDay(it.start, selectedDay)),
         ...open.map(openAsItem).filter((it): it is ScheduleItem => !!it && sameDay(it.start, selectedDay)),
-      ].sort((a, b) => a.start.getTime() - b.start.getTime())
+      ].sort(compareScheduleItems)
     : [];
 
   const DAY_SESSIONS_SHOWN = 3;

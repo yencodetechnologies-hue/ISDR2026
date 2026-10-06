@@ -15,7 +15,7 @@ import {
 import { get } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDMon, sameDay, startOfDay } from "@/lib/format";
-import { loadAllSchedules, openAsItem, type OpenSession, type ScheduleItem } from "@/lib/schedules";
+import { loadAllSchedules, openAsItem, compareScheduleItems, type OpenSession, type ScheduleItem } from "@/lib/schedules";
 import { PARTICIPANT_MODULES } from "./modules";
 
 import { useAppLayout } from "@/lib/appLayout";
@@ -102,7 +102,7 @@ function ParticipantHomeWeb() {
     ? [
         ...items.filter((it) => sameDay(it.start, selected)),
         ...open.map(openAsItem).filter((it): it is ScheduleItem => !!it && sameDay(it.start, selected)),
-      ]
+      ].sort(compareScheduleItems)
     : [];
   const h = now.getHours();
   const dayPart = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
