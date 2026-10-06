@@ -68,8 +68,16 @@ const uploadToCloudinary = (fileBuffer, folder = 'isdr') =>
       .end(fileBuffer);
   });
 
-// Upload a PDF buffer to Cloudinary as a raw file and resolve with its URL.
-const uploadPdfToCloudinary = (fileBuffer, { folder = 'isdr/schedule', publicId } = {}) =>
+function cloudinaryErrorMessage(error) {
+  if (!error) return 'Cloudinary upload failed';
+  if (typeof error === 'string') return error;
+  return error.message || error.error?.message || 'Cloudinary upload failed';
+}
+
+// Upload a PDF buffer to Cloudinary and resolve with its URL.
+// resourceType "image" stores the PDF the way Cloudinary stores images (a public link).
+// "raw" is kept for the programme schedule upload.
+const uploadPdfToCloudinary = (fileBuffer, { folder = 'isdr/schedule', publicId, resourceType = 'raw' } = {}) =>
   new Promise((resolve, reject) => {
     if (!fileBuffer) {
       reject(new Error('No file buffer provided'));
@@ -84,22 +92,27 @@ const uploadPdfToCloudinary = (fileBuffer, { folder = 'isdr/schedule', publicId 
       reject(new Error('Cloudinary credentials are not configured'));
       return;
     }
+    const asImage = resourceType === 'image' || resourceType === 'auto';
     cloudinary.uploader
       .upload_stream(
         {
           folder,
           public_id: publicId,
-          resource_type: 'raw',
+          resource_type: asImage ? 'image' : 'raw',
           format: 'pdf',
           overwrite: true,
           invalidate: true,
           unique_filename: false,
           use_filename: false,
         },
-        (error, result) =>
-          error
-            ? reject(error)
-            : resolve({ url: result.secure_url, publicId: result.public_id })
+        (error, result) => {
+          if (error) {
+            reject(new Error(cloudinaryErrorMessage(error)));
+            return;
+          }
+          const url = String(result.secure_url || '');
+          resolve({ url, publicId: result.public_id });
+        }
       )
       .end(fileBuffer);
   });

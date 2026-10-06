@@ -65,16 +65,23 @@ function UgPaperPdfAdminApp() {
         <div className="space-y-4 p-4">
           <div className="flex items-center gap-3 rounded-[14px] border border-white/10 bg-card p-3.5">
             <Icon name="picture_as_pdf" size={22} color="#F59E0B" />
-            <div className="min-w-0">
-              <div className="truncate text-[13.5px] font-semibold">
-                {error || meta?.fileName || "No PDF uploaded yet"}
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13.5px] font-semibold">
+                  {error || meta?.fileName || "No PDF uploaded yet"}
+                </div>
+                {meta?.url ? (
+                  <a
+                    href={meta.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 block break-all text-xs font-medium text-[#93C5FD] underline"
+                  >
+                    {meta.url}
+                  </a>
+                ) : (
+                  <div className="text-xs text-muted">Upload a PDF to show it on the participant home</div>
+                )}
               </div>
-              <div className="text-xs text-muted">
-                {meta?.url
-                  ? "Showing the Cloudinary PDF on the participant home"
-                  : "Upload a PDF to show it on the participant home"}
-              </div>
-            </div>
           </div>
           <p className="text-[13px] leading-relaxed text-muted">
             Participants open this file from UG Paper and E-Poster Presentation. Choose a PDF to replace it. The
@@ -145,15 +152,24 @@ function ManageUgPaperPdfWeb() {
               Ghostscript is available.
             </span>
           </div>
-          <Field label="Current file">
-            <div className="flex h-11 items-center rounded-lg border border-line bg-white/[0.03] px-3 text-sm">
-              {error || meta?.fileName || "No PDF uploaded yet"}
-            </div>
+          <Field label="Cloudinary link">
+            {meta?.url ? (
+              <a
+                href={meta.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex min-h-11 items-center break-all rounded-lg border border-line bg-white/[0.03] px-3 py-2 text-sm text-[#93C5FD] underline"
+              >
+                {meta.url}
+              </a>
+            ) : (
+              <div className="flex h-11 items-center rounded-lg border border-line bg-white/[0.03] px-3 text-sm text-muted">
+                {error || "The link appears here after you upload a PDF"}
+              </div>
+            )}
           </Field>
           <div className="mt-2 text-xs text-muted">
-            {meta?.url
-              ? "Loaded from Cloudinary. Uploading again replaces this file."
-              : "Participants see an empty state until a PDF is uploaded."}
+            {meta?.fileName ? `Current file: ${meta.fileName}` : "Participants see an empty state until a PDF is uploaded."}
           </div>
         </Panel>
       )}

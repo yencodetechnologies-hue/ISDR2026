@@ -107,16 +107,24 @@ class _ManageUgPaperPdfPageState extends State<ManageUgPaperPdfPage> {
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _url.isEmpty
-                                  ? 'Upload a PDF to show it on the participant home'
-                                  : 'Showing the Cloudinary PDF on the participant home',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: DarkColors.muted,
+                            const SizedBox(height: 6),
+                            if (_url.isNotEmpty)
+                              SelectableText(
+                                _url,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: const Color(0xFF93C5FD),
+                                  decoration: TextDecoration.underline,
+                                ),
+                              )
+                            else
+                              Text(
+                                'The Cloudinary link appears here after you upload a PDF',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: DarkColors.muted,
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),
