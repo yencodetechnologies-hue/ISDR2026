@@ -343,11 +343,21 @@ const teamQr = (role: string): QrConfig<any> => ({
   fileName: (u) => `${teamPass(u, role)} - ${u.name || role}`,
 });
 
-function SpeakerAnswerCard({ item, onUpdated }: { item: any; onUpdated: (next: any) => void }) {
+function SpeakerAnswerCard({
+  item,
+  onUpdated,
+  onDeleted,
+}: {
+  item: any;
+  onUpdated: (next: any) => void;
+  onDeleted: (id: string) => void;
+}) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [answer, setAnswer] = useState(String(item.answer ?? ""));
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setAnswer(String(item.answer ?? ""));
@@ -371,11 +381,38 @@ function SpeakerAnswerCard({ item, onUpdated }: { item: any; onUpdated: (next: a
     else toast(r.error || "Could not update", "error");
   };
 
+  const remove = async () => {
+    if (
+      !(await confirm({
+        title: "Delete question?",
+        message: "The question and its answer will be removed for participants.",
+        confirm: "Delete",
+        danger: true,
+      }))
+    )
+      return;
+    setDeleting(true);
+    const r = await del(`/speaker-questions/${idOf(item)}`);
+    setDeleting(false);
+    if (r.success) {
+      toast("Question deleted", "success");
+      onDeleted(idOf(item));
+    } else toast(r.error || "Could not delete", "error");
+  };
+
   return (
     <div className="card flex flex-col p-5">
       <div className="flex items-center gap-2">
         <span className="flex-1 truncate text-xs text-muted">To: {item.speakerName ?? "Speaker"}</span>
         <Pill color={item.answered ? "#22C55E" : "#F59E0B"}>{item.answered ? "Answered" : "Unanswered"}</Pill>
+        <IconButton
+          icon="delete"
+          outline
+          color="#EF4444"
+          title="Delete question"
+          disabled={deleting}
+          onClick={remove}
+        />
       </div>
       <div className="mt-1 text-xs text-muted">Asked by {item.participantName || "Participant"}</div>
       <div className="mt-2 font-semibold">{item.question}</div>
@@ -678,6 +715,11 @@ function EngagementOverviewWeb() {
                                 speakerQs: d.speakerQs.map((x) => (idOf(x) === idOf(next) ? { ...x, ...next } : x)),
                               }
                             : d,
+                        )
+                      }
+                      onDeleted={(id) =>
+                        setData((d) =>
+                          d ? { ...d, speakerQs: d.speakerQs.filter((x) => idOf(x) !== id) } : d,
                         )
                       }
                     />

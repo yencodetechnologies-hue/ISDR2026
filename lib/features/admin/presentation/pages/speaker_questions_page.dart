@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/app_theme.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
@@ -141,6 +142,7 @@ class _QuestionCardState extends State<_QuestionCard> {
   late final TextEditingController _answer;
   bool _saving = false;
   bool _publishing = false;
+  bool _deleting = false;
 
   @override
   void initState() {
@@ -175,6 +177,40 @@ class _QuestionCardState extends State<_QuestionCard> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res['error']?.toString() ?? 'Could not save the answer')),
+      );
+    }
+  }
+
+  Future<void> _delete() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete question?'),
+        content: const Text('The question and its answer will be removed for participants.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.errorColor),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _deleting = true);
+    final res = await ApiService().deleteSpeakerQuestion(widget.item['id'].toString());
+    if (!mounted) return;
+    setState(() => _deleting = false);
+    if (res['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Question deleted')));
+      widget.onChanged();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['error']?.toString() ?? 'Could not delete')),
       );
     }
   }
@@ -262,6 +298,15 @@ class _QuestionCardState extends State<_QuestionCard> {
                 ),
               ),
             ],
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _deleting ? null : _delete,
+              icon: const Icon(Icons.delete_outline, size: 16),
+              label: const Text('Delete'),
+              style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
+            ),
           ),
         ],
       ),

@@ -7,6 +7,7 @@ const {
   myQuestions,
   publicQuestions,
   adminAnswer,
+  deleteQuestion,
   setPublic,
   speakerInbox,
   answerQuestion,
@@ -24,6 +25,7 @@ router.get('/inbox', protect, speakerInbox);
 router.post('/', protect, askQuestion);
 router.put('/:id/answer', protect, requireManagement, adminAnswer);
 router.put('/:id/public', protect, requireManagement, setPublic);
+router.delete('/:id', protect, requireManagement, deleteQuestion);
 router.post('/:id/answer', protect, answerQuestion);
 
 module.exports = router;

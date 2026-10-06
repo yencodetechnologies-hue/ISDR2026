@@ -187,6 +187,20 @@ const adminAnswer = async (req, res) => {
   }
 };
 
+// DELETE /api/speaker-questions/:id — management removes the question and its answer.
+const deleteQuestion = async (req, res) => {
+  try {
+    const existing = await SpeakerQuestion.findOneAndDelete({
+      _id: req.params.id,
+      apartmentId: req.apartmentId,
+    });
+    if (!existing) return res.status(404).json({ success: false, error: 'Question not found' });
+    res.json({ success: true });
+  } catch (error) {
+    handleError(res, 'deleteQuestion', error);
+  }
+};
+
 // PUT /api/speaker-questions/:id/public  { isPublic }
 const setPublic = async (req, res) => {
   try {
@@ -321,6 +335,7 @@ module.exports = {
   myQuestions,
   publicQuestions,
   adminAnswer,
+  deleteQuestion,
   setPublic,
   speakerInbox,
   answerQuestion,

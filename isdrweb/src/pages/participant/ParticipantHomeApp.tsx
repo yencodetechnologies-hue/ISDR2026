@@ -329,56 +329,64 @@ export default function ParticipantHomeApp() {
                     >
                       <div className="flex items-stretch">
                         <span className="w-1 shrink-0" style={{ background: rowAccent }} />
-                        <div className="flex flex-1 items-center p-3">
+                        <div className="flex min-w-0 flex-1 items-start gap-2.5 p-3 pr-1.5">
                           <div
                             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]"
                             style={{ background: `${rowAccent}26` }}
                           >
                             <Icon name="calendar_today" size={16} color={rowAccent} />
                           </div>
-                          <div className="ml-2.5 min-w-0 flex-1">
-                            {fromTime && toTime && (
-                              <div className="text-[11px] font-semibold text-white/50">
-                                {fmtTimeStr(fromTime)} - {fmtTimeStr(toTime)}
-                              </div>
-                            )}
-                            <div className="truncate font-outfit text-sm font-bold text-white group-hover:text-[#60A5FA]">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              {fromTime && toTime ? (
+                                <div className="min-w-0 flex-1 truncate text-[11px] font-semibold text-white/50">
+                                  {fmtTimeStr(fromTime)} - {fmtTimeStr(toTime)}
+                                </div>
+                              ) : (
+                                <span className="flex-1" />
+                              )}
+                              <span
+                                className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold"
+                                style={{ background: `${rowAccent}2e`, color: rowAccent }}
+                              >
+                                {isLive ? "Live" : isDone ? "Completed" : "Upcoming"}
+                              </span>
+                            </div>
+                            <div className="mt-0.5 line-clamp-2 font-outfit text-sm font-bold leading-snug text-white group-hover:text-[#60A5FA]">
                               {s.scheduleName}
                             </div>
-                            {s.hall && (
-                              <div className="mt-0.5 flex items-center gap-1 text-[11px] text-white/45">
-                                <Icon name="location_on" size={12} />
-                                <span className="truncate">{s.hall}</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex shrink-0 items-center gap-1 pl-1">
-                            <span
-                              className="rounded-full px-2 py-0.5 text-[10px] font-extrabold"
-                              style={{ background: `${rowAccent}2e`, color: rowAccent }}
-                            >
-                              {isLive ? "Live" : isDone ? "Completed" : "Upcoming"}
-                            </span>
-                            {!isLive && !isDone && (
+                            <div className="mt-0.5 flex items-center">
+                              {s.hall ? (
+                                <div className="flex min-w-0 flex-1 items-center gap-1 text-[11px] text-white/45">
+                                  <span className="shrink-0">
+                                    <Icon name="location_on" size={12} />
+                                  </span>
+                                  <span className="min-w-0 truncate">{s.hall}</span>
+                                </div>
+                              ) : (
+                                <span className="flex-1" />
+                              )}
+                              {!isLive && !isDone && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReminderItem({ id: scheduleId, name: String(s.scheduleName ?? ""), start: it.start });
+                                  }}
+                                  aria-label="Remind me"
+                                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/45 hover:text-white"
+                                >
+                                  <Icon name="notifications_none" size={20} />
+                                </button>
+                              )}
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setReminderItem({ id: scheduleId, name: String(s.scheduleName ?? ""), start: it.start });
-                                }}
-                                aria-label="Remind me"
-                                className="flex h-8 w-8 items-center justify-center rounded-full text-white/45 hover:text-white"
+                                onClick={(e) => onToggleFav(e, scheduleId)}
+                                aria-label="Favorite"
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                                style={{ color: isFav ? "#EF4444" : "rgba(255,255,255,0.45)" }}
                               >
-                                <Icon name="notifications_none" size={20} />
+                                <Icon name={isFav ? "favorite" : "favorite_border"} size={20} />
                               </button>
-                            )}
-                            <button
-                              onClick={(e) => onToggleFav(e, scheduleId)}
-                              aria-label="Favorite"
-                              className="flex h-8 w-8 items-center justify-center rounded-full"
-                              style={{ color: isFav ? "#EF4444" : "rgba(255,255,255,0.45)" }}
-                            >
-                              <Icon name={isFav ? "favorite" : "favorite_border"} size={20} />
-                            </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -405,18 +413,18 @@ export default function ParticipantHomeApp() {
             {/* CE / CME Credits Banner */}
             <div
               onClick={() => navigate("/participant/certificate")}
-              className="mt-3.5 flex cursor-pointer items-center justify-between rounded-2xl border border-[#2DD4BF]/30 bg-gradient-to-br from-[#0F3D3A] to-[#115E59] p-3 shadow-lg active:scale-[0.99]"
+              className="mt-3.5 flex cursor-pointer items-center gap-2 rounded-2xl border border-[#2DD4BF]/30 bg-gradient-to-br from-[#0F3D3A] to-[#115E59] p-3 shadow-lg active:scale-[0.99]"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
                   <Icon name="workspace_premium" size={20} color="#5EEAD4" />
                 </div>
-                <div>
-                  <div className="font-outfit text-[14.5px] font-extrabold text-white">CE/CME Credits</div>
-                  <div className="text-[11px] text-white/70">Earn credits by attending sessions</div>
+                <div className="min-w-0">
+                  <div className="truncate font-outfit text-[14.5px] font-extrabold text-white">CE/CME Credits</div>
+                  <div className="truncate text-[11px] text-white/70">Earn credits by attending sessions</div>
                 </div>
               </div>
-              <span className="flex items-center gap-1 rounded-full bg-white px-3 py-1.5 font-inter text-[11.5px] font-bold text-[#115E59]">
+              <span className="flex shrink-0 items-center gap-1 rounded-full bg-white px-3 py-1.5 font-inter text-[11.5px] font-bold text-[#115E59]">
                 View Progress
                 <Icon name="arrow_forward" size={13} />
               </span>
@@ -445,22 +453,22 @@ export default function ParticipantHomeApp() {
 
           <div
             onClick={() => navigate("/participant/accommodation")}
-            className="mt-2.5 flex h-[72px] cursor-pointer items-center justify-between overflow-hidden rounded-[18px] bg-gradient-to-br from-[#2563EB] to-[#0F2B66] px-3.5 shadow-[0_4px_12px_rgba(30,58,138,0.25)] active:scale-[0.99]"
+            className="mt-2.5 flex h-[72px] cursor-pointer items-center gap-2 overflow-hidden rounded-[18px] bg-gradient-to-br from-[#2563EB] to-[#0F2B66] px-3.5 shadow-[0_4px_12px_rgba(30,58,138,0.25)] active:scale-[0.99]"
           >
-            <div className="flex items-center gap-3.5">
-              <div className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-white/20">
+            <div className="flex min-w-0 flex-1 items-center gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-white/20">
                 <Icon name="hotel" size={22} color="#ffffff" />
               </div>
-              <div>
-                <div className="font-outfit text-[15.5px] font-extrabold leading-tight text-white">
+              <div className="min-w-0">
+                <div className="truncate font-outfit text-[15.5px] font-extrabold leading-tight text-white">
                   Accommodation
                 </div>
-                <div className="text-[11px] font-medium text-white/85">
+                <div className="truncate text-[11px] font-medium text-white/85">
                   Book your stay &amp; explore services
                 </div>
               </div>
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#2563EB]">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#2563EB]">
               <Icon name="arrow_forward" size={16} />
             </div>
           </div>

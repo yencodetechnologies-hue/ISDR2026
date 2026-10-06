@@ -1791,6 +1791,12 @@ class ApiService {
             data: {'isPublic': isPublic},
           ));
 
+  /// Management removes a participant's question to a speaker, and its answer.
+  Future<Map<String, dynamic>> deleteSpeakerQuestion(String questionId) =>
+      _sessionContentCall(
+        () => _dio.delete('${ApiConfig.speakerQuestions}/$questionId'),
+      );
+
   /// Every speaker's session question, with this participant's own answer.
   Future<Map<String, dynamic>> getAllSessionQuestions() => _sessionContentCall(
         () => _dio.get('${ApiConfig.speakerQuestions}/session-questions'),

@@ -150,6 +150,7 @@ function Loader({ kind }: { kind: Kind }) {
               onUpdated={(next) =>
                 setItems((list) => list.map((x) => (idOf(x) === idOf(next) ? { ...x, ...next } : x)))
               }
+              onDeleted={(id) => setItems((list) => list.filter((x) => idOf(x) !== id))}
             />
           ),
         )
@@ -300,14 +301,24 @@ function PollCard({ item, onChanged }: { item: any; onChanged: () => void }) {
   );
 }
 
-function SpeakerQuestionCard({ item, onUpdated }: { item: any; onUpdated: (next: any) => void }) {
+function SpeakerQuestionCard({
+  item,
+  onUpdated,
+  onDeleted,
+}: {
+  item: any;
+  onUpdated: (next: any) => void;
+  onDeleted: (id: string) => void;
+}) {
   const toast = useToast();
+  const confirm = useConfirm();
   const answered = item.answered === true;
   const status = answered ? "#22C55E" : "#F59E0B";
   const participant = String(item.participantName ?? "").trim();
   const [answer, setAnswer] = useState(String(item.answer ?? ""));
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setAnswer(String(item.answer ?? ""));
@@ -329,6 +340,25 @@ function SpeakerQuestionCard({ item, onUpdated }: { item: any; onUpdated: (next:
     setPublishing(false);
     if (r.success) onUpdated(r.question ?? { ...item, isPublic });
     else toast(r.error || "Could not update");
+  };
+
+  const remove = async () => {
+    if (
+      !(await confirm({
+        title: "Delete question?",
+        message: "The question and its answer will be removed for participants.",
+        confirm: "Delete",
+        danger: true,
+      }))
+    )
+      return;
+    setDeleting(true);
+    const r = await del(`/speaker-questions/${idOf(item)}`);
+    setDeleting(false);
+    if (r.success) {
+      toast("Question deleted");
+      onDeleted(idOf(item));
+    } else toast(r.error || "Could not delete");
   };
 
   return (
@@ -366,7 +396,16 @@ function SpeakerQuestionCard({ item, onUpdated }: { item: any; onUpdated: (next:
       </button>
       <div className="mt-3 flex items-center gap-2">
         <Switch checked={item.isPublic === true} disabled={publishing} onChange={togglePublic} />
-        <span className="text-[12px] text-muted">Show to all participants</span>
+        <span className="flex-1 text-[12px] text-muted">Show to all participants</span>
+        <button
+          type="button"
+          disabled={deleting}
+          onClick={remove}
+          className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-medium text-[#EF4444] disabled:opacity-50"
+        >
+          <Icon name="delete" outline size={16} />
+          Delete
+        </button>
       </div>
     </div>
   );

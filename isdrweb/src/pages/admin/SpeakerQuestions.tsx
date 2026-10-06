@@ -5,15 +5,17 @@ import {
   Button,
   Empty,
   ErrorState,
+  IconButton,
   Loading,
   Page,
   Pill,
   SearchBox,
   Switch,
   TextArea,
+  useConfirm,
   useToast,
 } from "@/components/ui";
-import { get, put } from "@/lib/api";
+import { del, get, put } from "@/lib/api";
 import { idOf } from "@/lib/format";
 
 /** Questions participants asked one speaker. Search by participant or question, then answer and publish. */
@@ -57,6 +59,10 @@ export default function SpeakerQuestions() {
     setItems((list) => (list ?? []).map((x) => (idOf(x) === idOf(next) ? { ...x, ...next } : x)));
   };
 
+  const removeOne = (id: string) => {
+    setItems((list) => (list ?? []).filter((x) => idOf(x) !== id));
+  };
+
   return (
     <Page title={speakerName} subtitle="Questions from participants">
       {error ? (
@@ -79,7 +85,7 @@ export default function SpeakerQuestions() {
                   <div className="mb-2 text-sm font-semibold">{name}</div>
                   <div className="grid gap-3 md:grid-cols-2">
                     {questions.map((q) => (
-                      <QuestionCard key={idOf(q)} item={q} onUpdated={updateOne} />
+                      <QuestionCard key={idOf(q)} item={q} onUpdated={updateOne} onDeleted={removeOne} />
                     ))}
                   </div>
                 </section>
@@ -92,11 +98,21 @@ export default function SpeakerQuestions() {
   );
 }
 
-function QuestionCard({ item, onUpdated }: { item: any; onUpdated: (next: any) => void }) {
+function QuestionCard({
+  item,
+  onUpdated,
+  onDeleted,
+}: {
+  item: any;
+  onUpdated: (next: any) => void;
+  onDeleted: (id: string) => void;
+}) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [answer, setAnswer] = useState(String(item.answer ?? ""));
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setAnswer(String(item.answer ?? ""));
@@ -120,11 +136,38 @@ function QuestionCard({ item, onUpdated }: { item: any; onUpdated: (next: any) =
     else toast(r.error || "Could not update", "error");
   };
 
+  const remove = async () => {
+    if (
+      !(await confirm({
+        title: "Delete question?",
+        message: "The question and its answer will be removed for participants.",
+        confirm: "Delete",
+        danger: true,
+      }))
+    )
+      return;
+    setDeleting(true);
+    const r = await del(`/speaker-questions/${idOf(item)}`);
+    setDeleting(false);
+    if (r.success) {
+      toast("Question deleted", "success");
+      onDeleted(idOf(item));
+    } else toast(r.error || "Could not delete", "error");
+  };
+
   return (
     <div className="card flex flex-col p-5">
       <div className="flex items-center gap-2">
         <span className="flex-1 truncate text-xs text-muted">Question</span>
         <Pill color={item.answered ? "#22C55E" : "#F59E0B"}>{item.answered ? "Answered" : "Unanswered"}</Pill>
+        <IconButton
+          icon="delete"
+          outline
+          color="#EF4444"
+          title="Delete question"
+          disabled={deleting}
+          onClick={remove}
+        />
       </div>
       <div className="mt-2 whitespace-pre-wrap font-semibold">{item.question}</div>
       <TextArea

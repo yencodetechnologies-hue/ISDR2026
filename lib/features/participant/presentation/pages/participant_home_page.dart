@@ -2145,6 +2145,23 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     );
   }
 
+  /// Compact tap target so reminder and favorite stay inside the card.
+  Widget _scheduleAction({
+    required String tooltip,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return IconButton(
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+      onPressed: onTap,
+      icon: Icon(icon, size: 20, color: color),
+    );
+  }
+
   Widget _scheduleListRow(Map<String, dynamic> item, Color accent) {
     final schedule = item['schedule'] as Map<String, dynamic>;
     final event = item['event'] as Map<String, dynamic>;
@@ -2195,8 +2212,9 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                         );
                       },
                       child: Padding(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.fromLTRB(12, 10, 6, 8),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
                               width: 36,
@@ -2216,127 +2234,148 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (fromTime.isNotEmpty && toTime.isNotEmpty)
-                                    Text(
-                                      '${_fmtTimeStr(fromTime)} - ${_fmtTimeStr(toTime)}',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 11,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.5,
+                                  Row(
+                                    children: [
+                                      if (fromTime.isNotEmpty &&
+                                          toTime.isNotEmpty)
+                                        Expanded(
+                                          child: Text(
+                                            '${_fmtTimeStr(fromTime)} - ${_fmtTimeStr(toTime)}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 11,
+                                              color: Colors.white.withValues(
+                                                alpha: 0.5,
+                                              ),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        const Spacer(),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
                                         ),
-                                        fontWeight: FontWeight.w600,
+                                        decoration: BoxDecoration(
+                                          color: rowAccent.withValues(
+                                            alpha: 0.18,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          isLive
+                                              ? 'Live'
+                                              : isDone
+                                              ? 'Completed'
+                                              : 'Upcoming',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: rowAccent,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  const SizedBox(height: 2),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
                                   Text(
                                     scheduleName,
-                                    maxLines: 1,
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.outfit(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
+                                      height: 1.25,
                                       color: Colors.white,
                                     ),
                                   ),
-                                  if (hall.isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.location_on_rounded,
-                                          size: 12,
-                                          color: Colors.white.withValues(
-                                            alpha: 0.45,
+                                  Row(
+                                    children: [
+                                      if (hall.isNotEmpty)
+                                        Expanded(
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.location_on_rounded,
+                                                size: 12,
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.45,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 3),
+                                              Expanded(
+                                                child: Text(
+                                                  hall,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: 11,
+                                                    color: Colors.white
+                                                        .withValues(
+                                                          alpha: 0.45,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      else
+                                        const Spacer(),
+                                      if (scheduleId.isNotEmpty &&
+                                          !isLive &&
+                                          !isDone)
+                                        _scheduleAction(
+                                          tooltip:
+                                              _reminders.containsKey(scheduleId)
+                                              ? 'Reminder: ${_reminderLabel(_reminders[scheduleId]!)}'
+                                              : 'Remind me',
+                                          icon:
+                                              _reminders.containsKey(scheduleId)
+                                              ? Icons
+                                                    .notifications_active_rounded
+                                              : Icons
+                                                    .notifications_none_rounded,
+                                          color:
+                                              _reminders.containsKey(scheduleId)
+                                              ? const Color(0xFFFBBF24)
+                                              : Colors.white.withValues(
+                                                  alpha: 0.45,
+                                                ),
+                                          onTap: () => _pickReminder(
+                                            scheduleId,
+                                            scheduleName,
+                                            start,
                                           ),
                                         ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          hall,
-                                          style: GoogleFonts.inter(
-                                            fontSize: 11,
-                                            color: Colors.white.withValues(
-                                              alpha: 0.45,
-                                            ),
-                                          ),
+                                      if (scheduleId.isNotEmpty)
+                                        _scheduleAction(
+                                          tooltip: isFavorite
+                                              ? 'Remove from favorites'
+                                              : 'Add to favorites',
+                                          icon: isFavorite
+                                              ? Icons.favorite_rounded
+                                              : Icons.favorite_border_rounded,
+                                          color: isFavorite
+                                              ? const Color(0xFFEF4444)
+                                              : Colors.white.withValues(
+                                                  alpha: 0.45,
+                                                ),
+                                          onTap: () =>
+                                              _toggleFavorite(scheduleId),
                                         ),
-                                      ],
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: rowAccent.withValues(alpha: 0.18),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                isLive
-                                    ? 'Live'
-                                    : isDone
-                                    ? 'Completed'
-                                    : 'Upcoming',
-                                style: GoogleFonts.inter(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: rowAccent,
-                                ),
-                              ),
-                            ),
-                            // Remind me when it starts (upcoming sessions only).
-                            if (scheduleId.isNotEmpty && !isLive && !isDone)
-                              IconButton(
-                                tooltip: _reminders.containsKey(scheduleId)
-                                    ? 'Reminder: ${_reminderLabel(_reminders[scheduleId]!)}'
-                                    : 'Remind me',
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.only(left: 6),
-                                constraints: const BoxConstraints(
-                                  minWidth: 34,
-                                  minHeight: 34,
-                                ),
-                                onPressed: () => _pickReminder(
-                                  scheduleId,
-                                  scheduleName,
-                                  start,
-                                ),
-                                icon: Icon(
-                                  _reminders.containsKey(scheduleId)
-                                      ? Icons.notifications_active_rounded
-                                      : Icons.notifications_none_rounded,
-                                  size: 22,
-                                  color: _reminders.containsKey(scheduleId)
-                                      ? const Color(0xFFFBBF24)
-                                      : Colors.white.withValues(alpha: 0.45),
-                                ),
-                              ),
-                            if (scheduleId.isNotEmpty)
-                              IconButton(
-                                tooltip: isFavorite
-                                    ? 'Remove from favorites'
-                                    : 'Add to favorites',
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.only(left: 6),
-                                constraints: const BoxConstraints(
-                                  minWidth: 34,
-                                  minHeight: 34,
-                                ),
-                                onPressed: () => _toggleFavorite(scheduleId),
-                                icon: Icon(
-                                  isFavorite
-                                      ? Icons.favorite_rounded
-                                      : Icons.favorite_border_rounded,
-                                  size: 22,
-                                  color: isFavorite
-                                      ? const Color(0xFFEF4444)
-                                      : Colors.white.withValues(alpha: 0.45),
-                                ),
-                              ),
                           ],
                         ),
                       ),
