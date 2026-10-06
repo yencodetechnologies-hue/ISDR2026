@@ -42,18 +42,14 @@ function Hero({ count }: { count?: number }) {
           <br />
           Courses
         </h2>
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold text-white/80">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1">
-            <Icon name="event" size={15} color="#93C5FD" />
-            08.10.26
-          </span>
-          {count != null && (
+        {count != null && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold text-white/80">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1">
               <Icon name="school" size={15} color="#C7D2FE" />
               {count} {count === 1 ? "course" : "courses"}
             </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

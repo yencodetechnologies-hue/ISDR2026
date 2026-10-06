@@ -192,21 +192,6 @@ class _Hero extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Icon(Icons.event_rounded, size: 15, color: Color(0xFF93C5FD)),
-                    const SizedBox(width: 6),
-                    Text(
-                      '08.10.26',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -267,17 +252,6 @@ class _CourseCard extends StatelessWidget {
                               letterSpacing: 0.4,
                               color: _accentSoft,
                             ),
-                          ),
-                        ),
-                        const Spacer(),
-                        const Icon(Icons.calendar_today_rounded, size: 13, color: Color(0xFF93C5FD)),
-                        const SizedBox(width: 5),
-                        Text(
-                          '${row['date'] ?? ''}',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF93C5FD),
                           ),
                         ),
                       ],
