@@ -408,8 +408,6 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
                 'Hall / venue',
                 Icons.meeting_room_outlined,
               ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Enter the hall' : null,
             ),
             const SizedBox(height: 12),
             _dayChips(),

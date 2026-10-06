@@ -112,7 +112,7 @@ export function compareScheduleItems(a: ScheduleItem, b: ScheduleItem): number {
 export function groupByHall<T>(items: T[], hallOf: (item: T) => string): { hall: string; list: T[] }[] {
   const groups: { hall: string; list: T[] }[] = [];
   for (const item of items) {
-    const hall = hallOf(item).trim() || "Other";
+    const hall = hallOf(item).trim();
     const last = groups[groups.length - 1];
     if (last && last.hall === hall) last.list.push(item);
     else groups.push({ hall, list: [item] });

@@ -45,9 +45,8 @@ int compareParticipantItems(Map<String, dynamic> a, Map<String, dynamic> b) {
 
 String sessionHall(Map<String, dynamic> item) {
   final schedule = item['schedule'];
-  if (schedule is! Map) return 'Other';
-  final hall = schedule['hall']?.toString().trim() ?? '';
-  return hall.isEmpty ? 'Other' : hall;
+  if (schedule is! Map) return '';
+  return schedule['hall']?.toString().trim() ?? '';
 }
 
 bool isPlaceholderSpeaker(String name) {

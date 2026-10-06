@@ -71,7 +71,7 @@ function SessionsByHall({
     <div className="space-y-5">
       {halls.map((g, i) => (
         <div key={`${g.hall}-${i}`}>
-          <HallHeading hall={g.hall} count={g.list.length} />
+          {g.hall ? <HallHeading hall={g.hall} count={g.list.length} /> : null}
           <div className="space-y-2.5">
             {g.list.map((it) => (
               <ScheduleRow key={idOf(it.schedule)} item={it} actions={actions} showDate={showDate} />

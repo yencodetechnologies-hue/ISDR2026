@@ -80,10 +80,12 @@ export function UpcomingSchedulesApp() {
                 <div className="space-y-4">
                   {groupByHall(group.list, (it) => String(it.schedule.hall ?? "")).map((hallGroup, hallIndex) => (
                     <div key={`${hallGroup.hall}-${hallIndex}`}>
-                      <div className="mb-2 flex items-center gap-1.5 font-inter text-[12px] font-bold text-[#93C5FD]">
-                        <Icon name="location_on" size={14} />
-                        {hallGroup.hall}
-                      </div>
+                      {hallGroup.hall ? (
+                        <div className="mb-2 flex items-center gap-1.5 font-inter text-[12px] font-bold text-[#93C5FD]">
+                          <Icon name="location_on" size={14} />
+                          {hallGroup.hall}
+                        </div>
+                      ) : null}
                       <div className="space-y-2.5">
                   {hallGroup.list.map((it) => {
                     const s = it.schedule ?? {};
@@ -270,10 +272,12 @@ export function AllSessionsApp() {
               )}
               {groupByHall(group.list, (it) => String(it.schedule.hall ?? "")).map((hallGroup, hallIndex) => (
                 <div key={`${hallGroup.hall}-${hallIndex}`} className="mb-4">
-                  <div className="mb-2 flex items-center gap-1.5 font-inter text-[12px] font-bold text-[#93C5FD]">
-                    <Icon name="location_on" size={14} />
-                    {hallGroup.hall}
-                  </div>
+                  {hallGroup.hall ? (
+                    <div className="mb-2 flex items-center gap-1.5 font-inter text-[12px] font-bold text-[#93C5FD]">
+                      <Icon name="location_on" size={14} />
+                      {hallGroup.hall}
+                    </div>
+                  ) : null}
                   <div className="space-y-3">
                     {hallGroup.list.map((it) => {
                       const s = it.schedule ?? {};
@@ -331,10 +335,12 @@ export function AllSessionsApp() {
           {showUndated &&
             groupByHall(undated, (o) => String(o.schedule.hall ?? "")).map((hallGroup, hallIndex) => (
               <div key={`open-${hallGroup.hall}-${hallIndex}`} className="mb-4">
-                <div className="mb-2 flex items-center gap-1.5 font-inter text-[12px] font-bold text-[#93C5FD]">
-                  <Icon name="location_on" size={14} />
-                  {hallGroup.hall}
-                </div>
+                {hallGroup.hall ? (
+                  <div className="mb-2 flex items-center gap-1.5 font-inter text-[12px] font-bold text-[#93C5FD]">
+                    <Icon name="location_on" size={14} />
+                    {hallGroup.hall}
+                  </div>
+                ) : null}
                 <div className="space-y-3">
                   {hallGroup.list.map((o) => {
                     const s = o.schedule ?? {};

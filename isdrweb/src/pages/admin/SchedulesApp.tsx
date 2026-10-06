@@ -676,7 +676,6 @@ export function ScheduleFormApp() {
       .join(" · ");
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = "Enter the schedule name";
-    if (!hall.trim()) e.hall = "Enter the hall";
     setErrors(e);
     if (Object.keys(e).length) return;
     const slots: { date: string; fromTime: string; toTime: string }[] = [];
@@ -786,7 +785,7 @@ export function ScheduleFormApp() {
           />
           <TextArea label="Hall / venue" icon="meeting_room" value={hall} onChange={setHall} error={errors.hall} />
           <p className="-mt-1 px-1 text-xs text-muted">
-            Participants see this as the schedule heading. Leave it blank and the heading shows as Other.
+            Participants see this as the schedule heading. Leave it blank and no hall heading is shown.
           </p>
           <AppDecorator label="Date (event days)" icon="calendar_month">
             {days.length === 0 ? (

@@ -672,7 +672,7 @@ function ScheduleEditorWeb() {
                 placeholder="e.g. SBDCH Auditorium Halls 1–7"
               />
               <p className="mt-1.5 text-xs text-muted">
-                Participants see this as the schedule heading. Leave it blank and the heading shows as Other.
+                Participants see this as the schedule heading. Leave it blank and no hall heading is shown.
               </p>
             </Field>
           </div>

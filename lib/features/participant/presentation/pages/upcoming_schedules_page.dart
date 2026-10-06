@@ -203,9 +203,12 @@ class _UpcomingSchedulesPageState extends State<UpcomingSchedulesPage> {
       String? lastHall;
       for (final item in byDay[day]!) {
         final hall = item.schedule['hall']?.toString().trim() ?? '';
-        final label = hall.isEmpty ? 'Other' : hall;
-        if (label != lastHall) {
-          lastHall = label;
+        if (hall != lastHall) {
+          lastHall = hall;
+          if (hall.isEmpty) {
+            widgets.add(_row(item, now));
+            continue;
+          }
           widgets.add(
             Padding(
               padding: const EdgeInsets.only(top: 4, bottom: 8),
@@ -219,7 +222,7 @@ class _UpcomingSchedulesPageState extends State<UpcomingSchedulesPage> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      label,
+                      hall,
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,

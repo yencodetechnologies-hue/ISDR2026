@@ -207,6 +207,10 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
       final hall = sessionHall(item);
       if (hall != lastHall) {
         lastHall = hall;
+        if (hall.isEmpty) {
+          widgets.add(_SessionCard(item: item));
+          continue;
+        }
         widgets.add(
           Padding(
             padding: const EdgeInsets.only(top: 2, bottom: 8),
