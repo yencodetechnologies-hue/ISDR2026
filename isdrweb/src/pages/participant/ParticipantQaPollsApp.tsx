@@ -398,7 +398,7 @@ export function MyQuestionsApp() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    get("/speaker-questions/my-questions").then((r) => {
+    get("/speaker-questions/mine").then((r) => {
       if (r.success) setQuestions(r.questions ?? []);
       else setError(r.error || "Could not load questions");
     });
