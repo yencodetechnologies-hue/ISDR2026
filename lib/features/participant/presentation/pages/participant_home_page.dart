@@ -87,6 +87,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
   // Every schedule (past ones too) and the event's own days, for the fixed
   // Day 1, Day 2, ... tabs — those never shift as days pass.
   final List<Map<String, dynamic>> _allItems = [];
+  final List<Map<String, dynamic>> _undatedItems = [];
   final List<DateTime> _eventDayList = [];
 
   // The day's list shows 3 sessions; "More" rolls down the rest.
@@ -473,6 +474,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
       final todayList = <Map<String, dynamic>>[];
       final upcomingList = <Map<String, dynamic>>[];
       final allList = <Map<String, dynamic>>[];
+      final undatedList = <Map<String, dynamic>>[];
       final eventDays = <DateTime>{};
 
       for (final event in events) {
@@ -490,24 +492,38 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
         );
 
         for (final s in schedules) {
+          final fromRaw = s['fromTime']?.toString().trim() ?? '';
+          final toRaw = s['toTime']?.toString().trim() ?? '';
+          final hasTime = fromRaw.isNotEmpty && toRaw.isNotEmpty;
           final d = DateTime.tryParse(s['date']?.toString() ?? '')?.toUtc();
-          if (d == null) continue;
-          final fromParts = s['fromTime'].toString().split(':');
-          final toParts = s['toTime'].toString().split(':');
+          if (d == null) {
+            undatedList.add({
+              'schedule': s,
+              'event': event,
+              'hasTime': false,
+            });
+            continue;
+          }
+          final fromParts = fromRaw.split(':');
+          final toParts = toRaw.split(':');
           final start = DateTime(
             d.year,
             d.month,
             d.day,
-            int.tryParse(fromParts[0]) ?? 0,
-            fromParts.length > 1 ? int.tryParse(fromParts[1]) ?? 0 : 0,
+            hasTime ? int.tryParse(fromParts[0]) ?? 0 : 0,
+            hasTime && fromParts.length > 1
+                ? int.tryParse(fromParts[1]) ?? 0
+                : 0,
           );
-          final end = DateTime(
-            d.year,
-            d.month,
-            d.day,
-            int.tryParse(toParts[0]) ?? 0,
-            toParts.length > 1 ? int.tryParse(toParts[1]) ?? 0 : 0,
-          );
+          final end = hasTime
+              ? DateTime(
+                  d.year,
+                  d.month,
+                  d.day,
+                  int.tryParse(toParts[0]) ?? 0,
+                  toParts.length > 1 ? int.tryParse(toParts[1]) ?? 0 : 0,
+                )
+              : start;
 
           final isToday =
               d.year == now.year && d.month == now.month && d.day == now.day;
@@ -517,7 +533,10 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
             'event': event,
             'start': start,
             'end': end,
+            'hasTime': hasTime,
           });
+
+          if (!hasTime) continue;
 
           // Check if currently LIVE
           if (!now.isBefore(start) && now.isBefore(end)) {
@@ -581,6 +600,9 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
           _allItems
             ..clear()
             ..addAll(allList);
+          _undatedItems
+            ..clear()
+            ..addAll(undatedList);
           _eventDayList
             ..clear()
             ..addAll(eventDays.toList()..sort());
@@ -1824,7 +1846,7 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => AllSessionsPage(
-                    items: List.of(_allItems),
+                    items: [..._allItems, ..._undatedItems],
                     days: _scheduleDates,
                     initialDay: _selectedScheduleDate,
                   ),
@@ -2168,11 +2190,12 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
     final start = item['start'] as DateTime;
     final end = item['end'] as DateTime;
     final now = DateTime.now();
-    final isLive = !now.isBefore(start) && now.isBefore(end);
-    final isDone = !now.isBefore(end);
     final scheduleName = schedule['scheduleName']?.toString() ?? '';
-    final fromTime = schedule['fromTime']?.toString() ?? '';
-    final toTime = schedule['toTime']?.toString() ?? '';
+    final fromTime = schedule['fromTime']?.toString().trim() ?? '';
+    final toTime = schedule['toTime']?.toString().trim() ?? '';
+    final hasTime = fromTime.isNotEmpty && toTime.isNotEmpty;
+    final isLive = hasTime && !now.isBefore(start) && now.isBefore(end);
+    final isDone = hasTime && !now.isBefore(end);
     final hall = schedule['hall']?.toString() ?? '';
     final rowAccent = isLive
         ? const Color(0xFF22C55E)
@@ -2254,33 +2277,35 @@ class _ParticipantHomePageState extends State<ParticipantHomePage> {
                                         )
                                       else
                                         const Spacer(),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: rowAccent.withValues(
-                                            alpha: 0.18,
+                                      if (hasTime) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
                                           ),
-                                          borderRadius: BorderRadius.circular(
-                                            20,
+                                          decoration: BoxDecoration(
+                                            color: rowAccent.withValues(
+                                              alpha: 0.18,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            isLive
+                                                ? 'Live'
+                                                : isDone
+                                                ? 'Completed'
+                                                : 'Upcoming',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w800,
+                                              color: rowAccent,
+                                            ),
                                           ),
                                         ),
-                                        child: Text(
-                                          isLive
-                                              ? 'Live'
-                                              : isDone
-                                              ? 'Completed'
-                                              : 'Upcoming',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w800,
-                                            color: rowAccent,
-                                          ),
-                                        ),
-                                      ),
+                                      ],
                                     ],
                                   ),
                                   const SizedBox(height: 3),

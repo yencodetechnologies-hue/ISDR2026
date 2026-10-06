@@ -133,24 +133,30 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
   Future<void> _save() async {
-    if (_speakerName.isEmpty) return _toast('Enter a speaker name');
     if (!_formKey.currentState!.validate()) return;
-    if (_dates.isEmpty) return _toast('Select at least one event day');
     final slots = <Map<String, String>>[];
+    if (_dates.isEmpty) {
+      if (_from != null || _to != null) {
+        return _toast('Select a date when setting a time');
+      }
+      slots.add({'date': '', 'fromTime': '', 'toTime': ''});
+    }
     for (final day in _pickedDays) {
       final from = _perDate ? _fromByDate[day.iso] : _from;
       final to = _perDate ? _toByDate[day.iso] : _to;
       final forDay = _perDate ? ' for ${day.label}' : '';
-      if (from == null || to == null) {
-        return _toast('Select from and to time$forDay');
+      if ((from == null) != (to == null)) {
+        return _toast('Set both from and to time, or leave both empty$forDay');
       }
-      if (_hhmm(to).compareTo(_hhmm(from)) <= 0) {
+      if (from != null &&
+          to != null &&
+          _hhmm(to).compareTo(_hhmm(from)) <= 0) {
         return _toast('To time must be after from time$forDay');
       }
       slots.add({
         'date': day.iso,
-        'fromTime': _hhmm(from),
-        'toTime': _hhmm(to),
+        'fromTime': from == null ? '' : _hhmm(from),
+        'toTime': to == null ? '' : _hhmm(to),
       });
     }
     setState(() => _saving = true);
@@ -265,12 +271,12 @@ class _AddEventSchedulePageState extends State<AddEventSchedulePage> {
                     fontWeight: FontWeight.w600,
                   ),
                   onSelected: (_) => setState(() {
-                    if (_isEdit) {
+                    if (selected) {
+                      _dates.remove(d.iso);
+                    } else if (_isEdit) {
                       _dates
                         ..clear()
                         ..add(d.iso);
-                    } else if (selected) {
-                      _dates.remove(d.iso);
                     } else {
                       _dates.add(d.iso);
                     }

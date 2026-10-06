@@ -94,24 +94,30 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  ({DateTime start, DateTime end})? _window() {
+  DateTime? _calendarDay() {
     final d = DateTime.tryParse(_s['date']?.toString() ?? '')?.toUtc();
     if (d == null) return null;
+    return DateTime(d.year, d.month, d.day);
+  }
+
+  ({DateTime start, DateTime end})? _window() {
+    final day = _calendarDay();
+    if (day == null) return null;
+    final from = _s['fromTime']?.toString().trim() ?? '';
+    final to = _s['toTime']?.toString().trim() ?? '';
+    if (from.isEmpty || to.isEmpty) return null;
     DateTime at(String hhmm) {
       final p = hhmm.split(':');
       return DateTime(
-        d.year,
-        d.month,
-        d.day,
+        day.year,
+        day.month,
+        day.day,
         int.tryParse(p[0]) ?? 0,
         p.length > 1 ? int.tryParse(p[1]) ?? 0 : 0,
       );
     }
 
-    return (
-      start: at(_s['fromTime']?.toString() ?? '0:0'),
-      end: at(_s['toTime']?.toString() ?? '0:0'),
-    );
+    return (start: at(from), end: at(to));
   }
 
   @override
@@ -132,13 +138,14 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
         now.isBefore(window.end);
     final isPast = window != null && now.isAfter(window.end);
 
-    final dateTile = window == null
+    final calendarDay = _calendarDay();
+    final dateTile = calendarDay == null
         ? null
         : _InfoTile(
             icon: Icons.calendar_month_rounded,
             color: const Color(0xFF3B82F6),
             label: 'DATE',
-            value: DateFormat('EEEE,\nd MMM yyyy').format(window.start),
+            value: DateFormat('EEEE,\nd MMM yyyy').format(calendarDay),
           );
     final timeTile = window == null
         ? null
@@ -222,7 +229,8 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 14),
         children: [
-          _speakerHeader(speakers, speakerPhoto, isLive, isPast),
+          if (speakers.isNotEmpty)
+            _speakerHeader(speakers, speakerPhoto, isLive, isPast, window != null),
           const SizedBox(height: 10),
           _titlePanel(scheduleName, eventTitle),
           pair(dateTile, timeTile),
@@ -246,6 +254,7 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
     String photo,
     bool isLive,
     bool isPast,
+    bool showStatus,
   ) {
     final name = names.isEmpty ? '' : names.first;
     final initials = name
@@ -364,42 +373,44 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
                     color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
-                const SizedBox(height: 7),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: statusColor.withValues(alpha: 0.6),
+                if (showStatus) ...[
+                  const SizedBox(height: 7),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isLive
-                            ? Icons.sensors_rounded
-                            : Icons.person_outline_rounded,
-                        size: 13,
-                        color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.6),
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        statusLabel,
-                        style: GoogleFonts.inter(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isLive
+                              ? Icons.sensors_rounded
+                              : Icons.person_outline_rounded,
+                          size: 13,
                           color: Colors.white,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 5),
+                        Text(
+                          statusLabel,
+                          style: GoogleFonts.inter(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

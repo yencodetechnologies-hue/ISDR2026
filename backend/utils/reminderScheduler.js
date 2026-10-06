@@ -13,7 +13,9 @@ const MAX_LATE_MS = 15 * 60 * 1000;
  * read the same way the app does) at `fromTime` in IST.
  */
 function scheduleStartAt(schedule) {
+  if (!schedule || !schedule.date || !String(schedule.fromTime || '').trim()) return null;
   const d = new Date(schedule.date);
+  if (Number.isNaN(d.getTime())) return null;
   const [h, m] = String(schedule.fromTime || '0:0').split(':').map((n) => parseInt(n, 10) || 0);
   return new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m) -

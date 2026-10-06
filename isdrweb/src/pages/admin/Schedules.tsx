@@ -203,7 +203,7 @@ export function ScheduleTable({
                     </td>
                     <td className="whitespace-nowrap text-white/75">{dayOf(s)}</td>
                     <td className="whitespace-nowrap text-white/75">
-                      {fmtTimeStr(s.fromTime)} – {fmtTimeStr(s.toTime)}
+                      {s.fromTime && s.toTime ? `${fmtTimeStr(s.fromTime)} – ${fmtTimeStr(s.toTime)}` : "—"}
                     </td>
                     <td className="text-white/75">{s.hall || "—"}</td>
                     <td className="whitespace-nowrap text-right align-middle">
@@ -402,11 +402,11 @@ function ScheduleEditorWeb() {
       .map((name) => name.trim())
       .filter(Boolean)
       .join(" · ");
-    if (!speakerName) return toast("Enter a speaker name", "error");
     if (!scheduleName.trim()) return toast("Enter schedule name", "error");
-    if (!date) return toast("Select a date", "error");
-    if (!fromTime || !toTime) return toast("Set from/to time", "error");
-    if (toTime <= fromTime) return toast("To time must be after from time", "error");
+    if ((fromTime && !toTime) || (!fromTime && toTime))
+      return toast("Set both from and to time, or leave both empty", "error");
+    if (fromTime && toTime && toTime <= fromTime) return toast("To time must be after from time", "error");
+    if ((fromTime || toTime) && !date) return toast("Select a date when setting a time", "error");
     setSaving(true);
     const fields = {
       scheduleName: scheduleName.trim(),
@@ -449,7 +449,7 @@ function ScheduleEditorWeb() {
             />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Speaker *">
+            <Field label="Speaker">
               <div className="space-y-2">
                 {speakers.map((name, i) => (
                   <div key={i} className="flex items-center gap-2">
@@ -483,13 +483,13 @@ function ScheduleEditorWeb() {
             </Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Date *">
+            <Field label="Date">
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </Field>
-            <Field label="From Time *">
+            <Field label="From Time">
               <Input type="time" value={fromTime} onChange={(e) => setFromTime(e.target.value)} />
             </Field>
-            <Field label="To Time *">
+            <Field label="To Time">
               <Input type="time" value={toTime} onChange={(e) => setToTime(e.target.value)} />
             </Field>
           </div>

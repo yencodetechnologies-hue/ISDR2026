@@ -108,12 +108,12 @@ function readScheduleForm(event, body) {
   const rawSlots = readSlots(body);
   const packageIds = readPackageIds(body);
 
-  if (!speakerName) return { error: 'Enter a speaker name' };
   // An empty list means every package can see the session.
   const eventPackageIds = new Set((event.packages || []).map((p) => String(p.id)));
   if (packageIds.some((id) => !eventPackageIds.has(id))) return { error: 'Package not found on this event' };
   if (!scheduleName) return { error: 'Schedule name is required' };
-  if (rawSlots.length === 0) return { error: 'Select at least one date' };
+  // No date is allowed: one undated row. Speaker and times are optional too.
+  const slotInput = rawSlots.length ? rawSlots : [{ date: '', fromTime: '', toTime: '' }];
 
   // Each date is a calendar day (sent as yyyy-MM-dd, parsed as UTC midnight); the event
   // times are stored in UTC, so allow one day of slack for the device's time zone.
@@ -123,18 +123,28 @@ function readScheduleForm(event, body) {
   const evEnd = utcDay(new Date(event.eventEndDate || event.eventDate)) + DAY;
   const seenDays = new Set();
   const slots = [];
-  for (const raw of rawSlots) {
-    const date = new Date(raw && raw.date);
+  for (const raw of slotInput) {
+    const dateRaw = String((raw && raw.date) || '').trim();
     const fromTime = String((raw && raw.fromTime) || '').trim();
     const toTime = String((raw && raw.toTime) || '').trim();
+    const hasFrom = !!fromTime;
+    const hasTo = !!toTime;
+    if (hasFrom !== hasTo || (hasFrom && (!TIME_REGEX.test(fromTime) || !TIME_REGEX.test(toTime)))) {
+      return { error: 'Set both from and to time, or leave both empty' };
+    }
+    if (hasFrom && toTime <= fromTime) return { error: 'To time must be after from time' };
+    if ((hasFrom || hasTo) && !dateRaw) return { error: 'Select a date when setting a time' };
+    if (!dateRaw) {
+      slots.push({ date: null, fromTime: '', toTime: '' });
+      continue;
+    }
+    const date = new Date(dateRaw);
     if (Number.isNaN(date.getTime())) return { error: 'A valid date is required' };
     const picked = utcDay(date);
     if (picked < evStart || picked > evEnd) return { error: 'Schedule date must fall within the event dates' };
     if (seenDays.has(picked)) return { error: 'The same date was selected twice' };
     seenDays.add(picked);
-    if (!TIME_REGEX.test(fromTime) || !TIME_REGEX.test(toTime)) return { error: 'From and to time are required' };
-    if (toTime <= fromTime) return { error: 'To time must be after from time' };
-    slots.push({ date, fromTime, toTime });
+    slots.push({ date, fromTime: hasFrom ? fromTime : '', toTime: hasTo ? toTime : '' });
   }
   return { speakerName, scheduleName, hall, description, packageIds, slots };
 }
@@ -188,7 +198,7 @@ const updateSchedule = async (req, res) => {
     const form = readScheduleForm(event, req.body);
     if (form.error) return res.status(400).json({ success: false, error: form.error });
     if (form.slots.length !== 1) {
-      return res.status(400).json({ success: false, error: 'A schedule has exactly one date' });
+      return res.status(400).json({ success: false, error: 'Edit one session at a time' });
     }
     const [slot] = form.slots;
     Object.assign(schedule, {
@@ -375,6 +385,9 @@ const toggleReminder = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Choose when to be reminded' });
     }
     const startAt = scheduleStartAt(schedule);
+    if (!startAt) {
+      return res.status(400).json({ success: false, error: 'This session has no start time' });
+    }
     const remindAt = new Date(startAt.getTime() - minutesBefore * 60 * 1000);
     if (startAt <= new Date()) {
       return res.status(400).json({ success: false, error: 'This session has already started' });

@@ -307,14 +307,20 @@ function ScheduleListCard({
             </span>
           )}
         </div>
-        <div className="mt-0.5 text-[13px] font-semibold leading-snug text-accent">
-          {splitSpeakerNames(s.speakerName).map((name, n) => (
-            <div key={n}>{name}</div>
-          ))}
-        </div>
-        <div className="mt-1 text-[12.5px] text-muted">
-          {w ? dayText(w.day) : ""} · {fmtTimeStr(s.fromTime)} - {fmtTimeStr(s.toTime)}
-        </div>
+        {splitSpeakerNames(s.speakerName).length > 0 && (
+          <div className="mt-0.5 text-[13px] font-semibold leading-snug text-accent">
+            {splitSpeakerNames(s.speakerName).map((name, n) => (
+              <div key={n}>{name}</div>
+            ))}
+          </div>
+        )}
+        {(w || (s.fromTime && s.toTime)) && (
+          <div className="mt-1 text-[12.5px] text-muted">
+            {[w ? dayText(w.day) : "", s.fromTime && s.toTime ? `${fmtTimeStr(s.fromTime)} - ${fmtTimeStr(s.toTime)}` : ""]
+              .filter(Boolean)
+              .join(" · ")}
+          </div>
+        )}
         {s.hall && (
           <div className="mt-0.5 flex items-center gap-1 text-[12.5px] text-muted">
             <Icon name="meeting_room" outline size={13} color="#9CA3AF" />
@@ -504,19 +510,21 @@ export function ScheduleFormApp() {
       .filter(Boolean)
       .join(" · ");
     const e: Record<string, string> = {};
-    if (!speakerName) e.speaker = "Enter a speaker name";
     if (!name.trim()) e.name = "Enter the schedule name";
     if (!hall.trim()) e.hall = "Enter the hall";
     setErrors(e);
     if (Object.keys(e).length) return;
-    if (!dates.length) return toast("Select at least one event day");
     const slots: { date: string; fromTime: string; toTime: string }[] = [];
+    if (!dates.length) {
+      if (from || to) return toast("Select a date when setting a time");
+      slots.push({ date: "", fromTime: "", toTime: "" });
+    }
     for (const day of pickedDays) {
-      const f = perDate ? fromByDate[day.iso] : from;
-      const t = perDate ? toByDate[day.iso] : to;
+      const f = perDate ? (fromByDate[day.iso] ?? "") : from;
+      const t = perDate ? (toByDate[day.iso] ?? "") : to;
       const forDay = perDate ? ` for ${day.label}` : "";
-      if (!f || !t) return toast(`Select from and to time${forDay}`);
-      if (t <= f) return toast(`To time must be after from time${forDay}`);
+      if ((f && !t) || (!f && t)) return toast(`Set both from and to time, or leave both empty${forDay}`);
+      if (f && t && t <= f) return toast(`To time must be after from time${forDay}`);
       slots.push({ date: day.iso, fromTime: f, toTime: t });
     }
     setSaving(true);

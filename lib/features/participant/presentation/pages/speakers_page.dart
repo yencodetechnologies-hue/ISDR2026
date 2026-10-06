@@ -19,8 +19,8 @@ class _Colors {
 class _Session {
   final Map<String, dynamic> schedule;
   final Map<String, dynamic> event;
-  final DateTime start;
-  final DateTime end;
+  final DateTime? start;
+  final DateTime? end;
 
   const _Session(this.schedule, this.event, this.start, this.end);
 }
@@ -92,14 +92,20 @@ class _SpeakersPageState extends State<SpeakersPage> {
         final s = Map<String, dynamic>.from(raw as Map);
         // Stored as UTC midnight of the calendar day; times are local "HH:mm".
         final d = DateTime.tryParse(s['date']?.toString() ?? '')?.toUtc();
-        if (d == null) continue;
-        final start = _at(d, s['fromTime']?.toString());
-        final end = _at(d, s['toTime']?.toString());
-        if (start == null || end == null) continue;
+        final start = d == null
+            ? null
+            : _at(d, s['fromTime']?.toString()) ??
+                  DateTime(d.year, d.month, d.day);
+        final end = d == null ? null : _at(d, s['toTime']?.toString());
         sessions.add(_Session(s, event, start, end));
       }
     }
-    sessions.sort((a, b) => a.start.compareTo(b.start));
+    sessions.sort((a, b) {
+      if (a.start == null && b.start == null) return 0;
+      if (a.start == null) return 1;
+      if (b.start == null) return -1;
+      return a.start!.compareTo(b.start!);
+    });
 
     // Group by speaker name; insertion order = order of their first session.
     // A panel stored as "A · B" is listed once for each person.
@@ -278,12 +284,16 @@ class _SpeakersPageState extends State<SpeakersPage> {
   }
 
   Widget _sessionRow(_Session s) {
-    final hall = s.schedule['hall']?.toString() ?? '';
-    final when =
-        '${DateFormat('EEE, d MMM').format(s.start)}  ·  '
-        '${DateFormat('h:mm a').format(s.start)} - '
-        '${DateFormat('h:mm a').format(s.end)}'
-        '${hall.isEmpty ? '' : '  ·  $hall'}';
+    final hall = s.schedule['hall']?.toString().trim() ?? '';
+    final from = s.schedule['fromTime']?.toString().trim() ?? '';
+    final to = s.schedule['toTime']?.toString().trim() ?? '';
+    final parts = <String>[
+      if (s.start != null) DateFormat('EEE, d MMM').format(s.start!),
+      if (s.start != null && s.end != null && from.isNotEmpty && to.isNotEmpty)
+        '${DateFormat('h:mm a').format(s.start!)} - ${DateFormat('h:mm a').format(s.end!)}',
+      if (hall.isNotEmpty) hall,
+    ];
+    final when = parts.join('  ·  ');
     return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: () => Navigator.push(
@@ -316,14 +326,16 @@ class _SpeakersPageState extends State<SpeakersPage> {
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    when,
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: _Colors.accent,
+                  if (when.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      when,
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: _Colors.accent,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),

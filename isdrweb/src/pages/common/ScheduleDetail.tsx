@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { SessionContent } from "@/components/SessionContent";
 import { Avatar, Button, ErrorState, Icon, Loading, Page, Pill, useToast } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
-import { fmtTime, monthShort, scheduleTimes, weekdayLong } from "@/lib/format";
+import { fmtTime, monthShort, scheduleDay, scheduleTimes, weekdayLong } from "@/lib/format";
 import { loadFavorites, loadSchedule, splitSpeakerNames, toggleFavorite } from "@/lib/schedules";
 import { useAppLayout } from "@/lib/appLayout";
 import ScheduleDetailApp from "./ScheduleDetailApp";
@@ -58,11 +58,12 @@ function ScheduleDetailWeb() {
   const s = data.schedule;
   const speakers = splitSpeakerNames(s.speakerName);
   const venue = String(data.event?.venue ?? "");
+  const day = scheduleDay(s);
   const w = scheduleTimes(s);
   const now = new Date();
   const isLive = !!w && now >= w.start && now < w.end;
   const isPast = !!w && now >= w.end;
-  const status = isLive ? "LIVE NOW" : isPast ? "ENDED" : "UPCOMING";
+  const status = !w ? "" : isLive ? "LIVE NOW" : isPast ? "ENDED" : "UPCOMING";
   const isKeynote = String(s.scheduleName ?? "")
     .toLowerCase()
     .includes("keynote");
@@ -112,7 +113,7 @@ function ScheduleDetailWeb() {
         <div className="space-y-5 lg:col-span-2">
           <div className="card p-6">
             <div className="flex flex-wrap items-center gap-2">
-              <Pill color={isLive ? "#EF4444" : isPast ? "#9CA3AF" : "#3B82F6"}>{status}</Pill>
+              {status && <Pill color={isLive ? "#EF4444" : isPast ? "#9CA3AF" : "#3B82F6"}>{status}</Pill>}
               <Pill color="#8B5CF6">{isKeynote ? "KEYNOTE" : "SESSION"}</Pill>
             </div>
             {speakers.length > 0 && (
@@ -144,12 +145,12 @@ function ScheduleDetailWeb() {
         </div>
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="card divide-y divide-line overflow-hidden">
-            {w &&
+            {day &&
               row(
                 "calendar_month",
                 "#3B82F6",
                 "Date",
-                `${weekdayLong(w.start)}, ${w.start.getDate()} ${monthShort(w.start)} ${w.start.getFullYear()}`,
+                `${weekdayLong(day)}, ${day.getDate()} ${monthShort(day)} ${day.getFullYear()}`,
               )}
             {w && row("schedule", "#14B8A6", "Time", `${fmtTime(w.start)} - ${fmtTime(w.end)}`)}
             {s.hall && row("apartment", "#8B5CF6", "Hall", s.hall)}

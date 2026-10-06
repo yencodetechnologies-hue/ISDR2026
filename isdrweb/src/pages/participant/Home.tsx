@@ -15,7 +15,7 @@ import {
 import { get } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDMon, sameDay, startOfDay } from "@/lib/format";
-import { loadAllSchedules, type ScheduleItem } from "@/lib/schedules";
+import { loadAllSchedules, openAsItem, type OpenSession, type ScheduleItem } from "@/lib/schedules";
 import { PARTICIPANT_MODULES } from "./modules";
 
 import { useAppLayout } from "@/lib/appLayout";
@@ -58,6 +58,7 @@ function ParticipantHomeWeb() {
   const actions = useScheduleActions();
   const banner = useHomeBanner();
   const [items, setItems] = useState<ScheduleItem[]>([]);
+  const [open, setOpen] = useState<OpenSession[]>([]);
   const [eventDays, setEventDays] = useState<Date[]>([]);
   const [now, setNow] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -73,6 +74,7 @@ function ParticipantHomeWeb() {
     const r = await loadAllSchedules(myEventId.current);
     if (r.error) return;
     setItems(r.items);
+    setOpen(r.open);
     setEventDays(r.days);
   }, []);
 
@@ -96,7 +98,12 @@ function ParticipantHomeWeb() {
     selectedDay && dates.some((d) => sameDay(d, selectedDay))
       ? selectedDay
       : (dates.find((d) => sameDay(d, now)) ?? null);
-  const dayItems = selected ? items.filter((it) => sameDay(it.start, selected)) : [];
+  const dayItems = selected
+    ? [
+        ...items.filter((it) => sameDay(it.start, selected)),
+        ...open.map(openAsItem).filter((it): it is ScheduleItem => !!it && sameDay(it.start, selected)),
+      ]
+    : [];
   const h = now.getHours();
   const dayPart = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
 

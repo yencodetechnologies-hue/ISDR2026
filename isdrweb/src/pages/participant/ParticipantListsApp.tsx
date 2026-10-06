@@ -9,9 +9,11 @@ import {
   displaySpeaker,
   groupByHall,
   loadAllSchedules,
+  openAsItem,
   scheduleHref,
   splitSpeakerNames,
   toggleFavorite,
+  type OpenSession,
   type ScheduleItem,
 } from "@/lib/schedules";
 
@@ -141,6 +143,7 @@ export function AllSessionsApp() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [items, setItems] = useState<ScheduleItem[] | null>(null);
+  const [open, setOpen] = useState<OpenSession[]>([]);
   const [days, setDays] = useState<Date[]>([]);
   const [eventTitle, setEventTitle] = useState("ISDR 2026 Conference");
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +155,7 @@ export function AllSessionsApp() {
     loadAllSchedules().then((r) => {
       if (r.error) return setError(r.error);
       setItems(r.items);
+      setOpen(r.open);
       const evDays = r.days.length
         ? r.days
         : [...new Set(r.items.map((i) => new Date(i.start.getFullYear(), i.start.getMonth(), i.start.getDate()).getTime()))]
@@ -164,9 +168,15 @@ export function AllSessionsApp() {
     });
   }, []);
 
-  const list = (items ?? [])
+  const placed = [
+    ...(items ?? []),
+    ...open.map(openAsItem).filter((it): it is ScheduleItem => !!it),
+  ];
+  const undated = open.filter((o) => !o.day);
+  const list = placed
     .filter((i) => !activeDay || sameDay(i.start, activeDay))
     .sort((a, b) => a.start.getTime() - b.start.getTime());
+  const showUndated = !activeDay && undated.length > 0;
   const dayGroups: { day: Date; list: ScheduleItem[] }[] = [];
   for (const it of list) {
     const d = new Date(it.start.getFullYear(), it.start.getMonth(), it.start.getDate());
@@ -242,7 +252,7 @@ export function AllSessionsApp() {
           <div className="py-24">
             <AppSpinner />
           </div>
-        ) : error || list.length === 0 ? (
+        ) : error || (list.length === 0 && !showUndated) ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <Icon name="event_busy" size={44} color="#9CA3AF" />
             <div className="mt-3 font-outfit text-base font-bold">
@@ -250,7 +260,8 @@ export function AllSessionsApp() {
             </div>
           </div>
         ) : (
-          dayGroups.map((group) => (
+          <>
+          {dayGroups.map((group) => (
             <div key={group.day.getTime()} className="mb-6">
               {!activeDay && (
                 <div className="mb-2 font-inter text-[12.5px] font-bold text-muted">
@@ -266,10 +277,11 @@ export function AllSessionsApp() {
                   <div className="space-y-3">
                     {hallGroup.list.map((it) => {
                       const s = it.schedule ?? {};
-                      const isLive = now >= it.start && now < it.end;
-                      const isDone = now >= it.end;
                       const fromTime = String(s.fromTime ?? "");
                       const toTime = String(s.toTime ?? "");
+                      const hasTime = !!(fromTime && toTime);
+                      const isLive = hasTime && now >= it.start && now < it.end;
+                      const isDone = hasTime && now >= it.end;
                       const speakerPhoto = String(s.speakerPhoto ?? "");
                       const speakerName = displaySpeaker(s.speakerName);
                       const avatarName = splitSpeakerNames(s.speakerName)[0] ?? "";
@@ -284,19 +296,21 @@ export function AllSessionsApp() {
                             <div className="font-inter text-[11.5px] font-semibold text-[#60A5FA]">
                               {fromTime && toTime ? `${fmtTimeStr(fromTime)} - ${fmtTimeStr(toTime)}` : ""}
                             </div>
-                            <span
-                              className="rounded-full px-2 py-0.5 font-inter text-[10px] font-extrabold"
-                              style={{
-                                background: isLive
-                                  ? "rgba(34,197,94,0.18)"
-                                  : isDone
-                                    ? "rgba(100,116,139,0.2)"
-                                    : "rgba(59,130,246,0.18)",
-                                color: isLive ? "#22C55E" : isDone ? "#94A3B8" : "#60A5FA",
-                              }}
-                            >
-                              {isLive ? "Live" : isDone ? "Completed" : "Upcoming"}
-                            </span>
+                            {hasTime && (
+                              <span
+                                className="rounded-full px-2 py-0.5 font-inter text-[10px] font-extrabold"
+                                style={{
+                                  background: isLive
+                                    ? "rgba(34,197,94,0.18)"
+                                    : isDone
+                                      ? "rgba(100,116,139,0.2)"
+                                      : "rgba(59,130,246,0.18)",
+                                  color: isLive ? "#22C55E" : isDone ? "#94A3B8" : "#60A5FA",
+                                }}
+                              >
+                                {isLive ? "Live" : isDone ? "Completed" : "Upcoming"}
+                              </span>
+                            )}
                           </div>
                           <div className="mt-1.5 font-outfit text-[15px] font-bold text-white group-hover:text-[#60A5FA]">
                             {s.scheduleName}
@@ -314,7 +328,37 @@ export function AllSessionsApp() {
                 </div>
               ))}
             </div>
-          ))
+          ))}
+          {showUndated &&
+            groupByHall(undated, (o) => String(o.schedule.hall ?? "")).map((hallGroup) => (
+              <div key={`open-${hallGroup.hall}`} className="mb-4">
+                <div className="mb-2 flex items-center gap-1.5 font-inter text-[12px] font-bold text-[#93C5FD]">
+                  <Icon name="location_on" size={14} />
+                  {hallGroup.hall}
+                </div>
+                <div className="space-y-3">
+                  {hallGroup.list.map((o) => {
+                    const s = o.schedule ?? {};
+                    const speakerName = displaySpeaker(s.speakerName);
+                    return (
+                      <div
+                        key={idOf(s)}
+                        onClick={() => navigate(scheduleHref(o))}
+                        className="group cursor-pointer rounded-[16px] border border-white/[0.08] bg-[#14141F] p-4 transition hover:bg-white/[0.03] active:scale-[0.99]"
+                      >
+                        <div className="font-outfit text-[15px] font-bold text-white group-hover:text-[#60A5FA]">
+                          {s.scheduleName}
+                        </div>
+                        {speakerName && (
+                          <div className="mt-2.5 truncate font-inter text-xs font-semibold text-white/80">{speakerName}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </>
         )}
       </div>
     </div>
@@ -452,7 +496,14 @@ export function SpeakersApp() {
     loadAllSchedules().then((r) => {
       if (r.error) return setError(r.error || "Could not load speakers");
       const map = new Map<string, { name: string; photo: string; sessions: ScheduleItem[] }>();
-      for (const it of r.items) {
+      const sessions = [
+        ...r.items,
+        ...r.open.map((o) => openAsItem(o)).filter((it): it is ScheduleItem => !!it),
+        ...r.open
+          .filter((o) => !o.day)
+          .map((o) => ({ schedule: o.schedule, event: o.event, start: new Date(0), end: new Date(0) })),
+      ];
+      for (const it of sessions) {
         const photo = String(it.schedule.speakerPhoto ?? "");
         for (const name of splitSpeakerNames(it.schedule.speakerName)) {
           const key = name.toLowerCase();
@@ -516,9 +567,13 @@ export function SpeakersApp() {
                             {s.scheduleName}
                           </div>
                           <div className="mt-0.5 font-inter text-[11px] text-[#60A5FA]">
-                            {weekday(it.start)}, {it.start.getDate()} {monthShort(it.start)}
-                            {fromTime && toTime ? ` · ${fmtTimeStr(fromTime)} - ${fmtTimeStr(toTime)}` : ""}
-                            {hall ? ` · ${hall}` : ""}
+                            {[
+                              s.date ? `${weekday(it.start)}, ${it.start.getDate()} ${monthShort(it.start)}` : "",
+                              fromTime && toTime ? `${fmtTimeStr(fromTime)} - ${fmtTimeStr(toTime)}` : "",
+                              hall,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
                           </div>
                         </div>
                         <Icon name="chevron_right" size={18} color="#9CA3AF" />

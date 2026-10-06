@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { get, post } from "./api";
-import { idOf, parseDate, scheduleTimes, startOfDay } from "./format";
+import { idOf, parseDate, scheduleDay, scheduleTimes, startOfDay } from "./format";
 
 export type ScheduleItem = { schedule: any; event: any; start: Date; end: Date };
+
+/** A session saved without a clock. `day` is null when the admin left the date empty. */
+export type OpenSession = { schedule: any; event: any; day: Date | null };
 
 /** Each calendar day from an event's start date to its end date. */
 export function daysOfEvent(event: any): Date[] {
@@ -24,14 +27,16 @@ export function daysOfEvent(event: any): Date[] {
 export async function loadAllSchedules(onlyEventId?: string | null): Promise<{
   events: any[];
   items: ScheduleItem[];
+  open: OpenSession[];
   days: Date[];
   error?: string;
 }> {
   const ev = await get("/managed-events");
-  if (!ev.success) return { events: [], items: [], days: [], error: ev.error };
+  if (!ev.success) return { events: [], items: [], open: [], days: [], error: ev.error };
   const all: any[] = ev.events ?? [];
   const events = onlyEventId ? all.filter((e) => idOf(e) === onlyEventId) : all;
   const items: ScheduleItem[] = [];
+  const open: OpenSession[] = [];
   const dayKeys = new Map<number, Date>();
   const results = await Promise.all(
     events.map(async (event) => {
@@ -47,11 +52,23 @@ export async function loadAllSchedules(onlyEventId?: string | null): Promise<{
     for (const s of r.schedules) {
       const w = scheduleTimes(s);
       if (w) items.push({ schedule: s, event: r.event, start: w.start, end: w.end });
+      else open.push({ schedule: s, event: r.event, day: scheduleDay(s) });
     }
   }
   items.sort((a, b) => a.start.getTime() - b.start.getTime());
   const days = [...dayKeys.values()].sort((a, b) => a.getTime() - b.getTime());
-  return { events, items, days };
+  return { events, items, open, days };
+}
+
+/** Place a dateless/timeless session on its calendar day so day lists can show it. */
+export function openAsItem(session: OpenSession): ScheduleItem | null {
+  if (!session.day) return null;
+  return {
+    schedule: session.schedule,
+    event: session.event,
+    start: session.day,
+    end: new Date(session.day.getTime() + 60 * 1000),
+  };
 }
 
 /** One event + one of its schedules (for the schedule detail page). */

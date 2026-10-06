@@ -5,7 +5,7 @@ import { SessionContent } from "@/components/SessionContent";
 import { Icon, Spinner, useToast } from "@/components/ui";
 import { asset } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { scheduleTimes } from "@/lib/format";
+import { scheduleDay, scheduleTimes } from "@/lib/format";
 import { loadFavorites, loadSchedule, splitSpeakerNames, toggleFavorite } from "@/lib/schedules";
 
 const DAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -112,6 +112,7 @@ export default function ScheduleDetailApp() {
   };
 
   const s = data?.schedule;
+  const day = s ? scheduleDay(s) : null;
   const w = s ? scheduleTimes(s) : null;
   const now = new Date();
   const isLive = !!w && now >= w.start && now < w.end;
@@ -161,7 +162,8 @@ export default function ScheduleDetailApp() {
         <div className="pt-40 text-center text-muted">{data.error || "Session not found"}</div>
       ) : (
         <div className={`flex-1 px-3 pt-1 ${showSave ? "pb-24" : "pb-3.5"}`}>
-          {/* Speaker header */}
+          {/* Speaker header — hidden when the admin left the speaker empty */}
+          {speakers.length > 0 && (
           <div
             className="flex items-center rounded-[26px] py-3 pl-3 pr-2.5"
             style={{
@@ -190,13 +192,15 @@ export default function ScheduleDetailApp() {
                   : hall || "Programme"}
               </div>
               <div className="mt-1 text-[10px] font-medium text-white/80">Inspiring Minds&nbsp; |&nbsp; Building Futures</div>
-              <span
-                className="mt-[7px] inline-flex items-center gap-[5px] rounded-full border px-2.5 py-1 text-[10.5px] font-extrabold tracking-[0.5px]"
-                style={{ background: `${statusColor}2e`, borderColor: `${statusColor}99` }}
-              >
-                <Icon name={isLive ? "sensors" : "person"} outline={!isLive} size={13} />
-                {statusLabel}
-              </span>
+              {w && (
+                <span
+                  className="mt-[7px] inline-flex items-center gap-[5px] rounded-full border px-2.5 py-1 text-[10.5px] font-extrabold tracking-[0.5px]"
+                  style={{ background: `${statusColor}2e`, borderColor: `${statusColor}99` }}
+                >
+                  <Icon name={isLive ? "sensors" : "person"} outline={!isLive} size={13} />
+                  {statusLabel}
+                </span>
+              )}
             </div>
             <div className="ml-1.5 flex w-[60px] shrink-0 flex-col items-end">
               <Icon name="lightbulb" outline size={24} color="#38BDF8" />
@@ -205,6 +209,7 @@ export default function ScheduleDetailApp() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Title panel */}
           <div
@@ -242,16 +247,17 @@ export default function ScheduleDetailApp() {
             />
           </div>
 
-          {w &&
-            tiles(
+          {tiles(
+            day ? (
               <InfoTile
                 icon="calendar_month"
                 color="#3B82F6"
                 label="DATE"
-                value={`${DAY[w.start.getDay()]},\n${w.start.getDate()} ${MON[w.start.getMonth()]} ${w.start.getFullYear()}`}
-              />,
-              <InfoTile icon="schedule" color="#14B8A6" label="TIME" value={`${hm(w.start)} -\n${hm(w.end)}`} />,
-            )}
+                value={`${DAY[day.getDay()]},\n${day.getDate()} ${MON[day.getMonth()]} ${day.getFullYear()}`}
+              />
+            ) : null,
+            w ? <InfoTile icon="schedule" color="#14B8A6" label="TIME" value={`${hm(w.start)} -\n${hm(w.end)}`} /> : null,
+          )}
           {tiles(
             hall ? <InfoTile icon="apartment" color="#8B5CF6" label="HALL" value={hall} /> : null,
             venue ? (

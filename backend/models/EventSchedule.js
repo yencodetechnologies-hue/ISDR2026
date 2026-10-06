@@ -21,7 +21,7 @@ const eventScheduleSchema = new mongoose.Schema(
     },
     // Older schedules linked a speaker account. New ones store only the typed name.
     speakerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Speaker', default: null, index: true },
-    speakerName: { type: String, required: true, trim: true },
+    speakerName: { type: String, default: '', trim: true },
     speakerPhoto: { type: String, default: '' },
     // Legacy: older schedules carried their speaker's own login.
     speakerMobile: { type: String, default: '', trim: true, index: true },
@@ -31,9 +31,10 @@ const eventScheduleSchema = new mongoose.Schema(
     // Event package ids whose participants see this schedule; empty = everyone.
     packageIds: { type: [String], default: [] },
     hall: { type: String, default: '', trim: true },
-    date: { type: Date, required: true },
-    fromTime: { type: String, required: true, trim: true }, // "HH:mm"
-    toTime: { type: String, required: true, trim: true }, // "HH:mm"
+    // Optional. Empty date/times are hidden on the participant schedule.
+    date: { type: Date, default: null },
+    fromTime: { type: String, default: '', trim: true }, // "HH:mm" or ""
+    toTime: { type: String, default: '', trim: true }, // "HH:mm" or ""
     description: { type: String, default: '', trim: true },
   },
   { timestamps: true }

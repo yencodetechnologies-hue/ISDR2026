@@ -20,8 +20,10 @@ import {
   displaySpeaker,
   groupByHall,
   loadAllSchedules,
+  openAsItem,
   scheduleHref,
   splitSpeakerNames,
+  type OpenSession,
   toggleFavorite,
   type ScheduleItem,
 } from "@/lib/schedules";
@@ -106,6 +108,7 @@ function AllSessionsWeb() {
   const [params, setParams] = useSearchParams();
   const actions = useScheduleActions();
   const [items, setItems] = useState<ScheduleItem[] | null>(null);
+  const [open, setOpen] = useState<OpenSession[]>([]);
   const [days, setDays] = useState<Date[]>([]);
   const [error, setError] = useState<string | null>(null);
   const dayParam = params.get("day");
@@ -115,6 +118,7 @@ function AllSessionsWeb() {
     loadAllSchedules().then((r) => {
       if (r.error) return setError(r.error);
       setItems(r.items);
+      setOpen(r.open);
       setDays(
         r.days.length
           ? r.days
@@ -125,7 +129,13 @@ function AllSessionsWeb() {
     });
   }, []);
 
-  const list = (items ?? []).filter((i) => !day || sameDay(i.start, day));
+  const placed = [
+    ...(items ?? []),
+    ...open.map(openAsItem).filter((it): it is ScheduleItem => !!it),
+  ];
+  const undated = open.filter((o) => !o.day);
+  const list = placed.filter((i) => !day || sameDay(i.start, day));
+  const showUndated = !day && undated.length > 0;
   const tab = (label: string, sub: string | null, d: Date | null) => {
     const active = (!d && !day) || (d && day && sameDay(d, day));
     return (
@@ -147,7 +157,13 @@ function AllSessionsWeb() {
   return (
     <Page
       title={day ? `Day ${days.findIndex((d) => sameDay(d, day)) + 1}` : "All Sessions"}
-      subtitle={items ? `${list.length} ${list.length === 1 ? "session" : "sessions"}` : undefined}
+      subtitle={
+        items
+          ? `${list.length + (showUndated ? undated.length : 0)} ${
+              list.length + (showUndated ? undated.length : 0) === 1 ? "session" : "sessions"
+            }`
+          : undefined
+      }
       width={1000}
     >
       <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
@@ -158,17 +174,30 @@ function AllSessionsWeb() {
         <ErrorState message={error} />
       ) : !items ? (
         <Loading />
-      ) : list.length === 0 ? (
+      ) : list.length === 0 && !showUndated ? (
         <Empty icon="event_busy" title="No sessions on this day" />
       ) : day ? (
         <SessionsByHall list={list} actions={actions} />
       ) : (
-        byDay(list, (i) => startOfDay(i.start)).map((g) => (
-          <div key={g.day?.getTime() ?? "none"} className="mb-8">
-            {g.day && <DayHeading label={dayHeader(g.day)} count={g.list.length} />}
-            <SessionsByHall list={g.list} actions={actions} />
-          </div>
-        ))
+        <>
+          {byDay(list, (i) => startOfDay(i.start)).map((g) => (
+            <div key={g.day?.getTime() ?? "none"} className="mb-8">
+              {g.day && <DayHeading label={dayHeader(g.day)} count={g.list.length} />}
+              <SessionsByHall list={g.list} actions={actions} />
+            </div>
+          ))}
+          {showUndated && (
+            <SessionsByHall
+              list={undated.map((o) => ({
+                schedule: o.schedule,
+                event: o.event,
+                start: new Date(0),
+                end: new Date(0),
+              }))}
+              actions={actions}
+            />
+          )}
+        </>
       )}
       {actions.sheet}
     </Page>
@@ -274,7 +303,14 @@ function SpeakersWeb() {
     loadAllSchedules().then((r) => {
       if (r.error) return setError(r.error || "Could not load speakers");
       const map = new Map<string, { name: string; photo: string; sessions: ScheduleItem[] }>();
-      for (const it of r.items) {
+      const sessions = [
+        ...r.items,
+        ...r.open.map((o) => openAsItem(o)).filter((it): it is ScheduleItem => !!it),
+        ...r.open
+          .filter((o) => !o.day)
+          .map((o) => ({ schedule: o.schedule, event: o.event, start: new Date(0), end: new Date(0) })),
+      ];
+      for (const it of sessions) {
         const photo = String(it.schedule.speakerPhoto ?? "");
         for (const name of splitSpeakerNames(it.schedule.speakerName)) {
           const key = name.toLowerCase();
@@ -326,8 +362,15 @@ function SpeakersWeb() {
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-semibold">{s.schedule.scheduleName}</div>
                       <div className="text-[11.5px] text-muted">
-                        {weekday(s.start)}, {s.start.getDate()} {monthShort(s.start)} · {fmtTime(s.start)}
-                        {s.schedule.hall ? ` · ${s.schedule.hall}` : ""}
+                        {[
+                          s.schedule.date
+                            ? `${weekday(s.start)}, ${s.start.getDate()} ${monthShort(s.start)}`
+                            : "",
+                          s.schedule.fromTime && s.schedule.toTime ? fmtTime(s.start) : "",
+                          s.schedule.hall || "",
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </div>
                     </div>
                     <Icon name="chevron_right" size={18} color="#9CA3AF" />

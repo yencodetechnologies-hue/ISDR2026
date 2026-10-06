@@ -93,29 +93,44 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
           );
 
           for (final s in schedules) {
+            final fromRaw = s['fromTime']?.toString().trim() ?? '';
+            final toRaw = s['toTime']?.toString().trim() ?? '';
+            final hasTime = fromRaw.isNotEmpty && toRaw.isNotEmpty;
             final d = DateTime.tryParse(s['date']?.toString() ?? '')?.toUtc();
-            if (d == null) continue;
-            final fromParts = s['fromTime'].toString().split(':');
-            final toParts = s['toTime'].toString().split(':');
+            if (d == null) {
+              allList.add({
+                'schedule': s,
+                'event': event,
+                'hasTime': false,
+              });
+              continue;
+            }
+            final fromParts = fromRaw.split(':');
+            final toParts = toRaw.split(':');
             final start = DateTime(
               d.year,
               d.month,
               d.day,
-              int.tryParse(fromParts[0]) ?? 0,
-              fromParts.length > 1 ? int.tryParse(fromParts[1]) ?? 0 : 0,
+              hasTime ? int.tryParse(fromParts[0]) ?? 0 : 0,
+              hasTime && fromParts.length > 1
+                  ? int.tryParse(fromParts[1]) ?? 0
+                  : 0,
             );
-            final end = DateTime(
-              d.year,
-              d.month,
-              d.day,
-              int.tryParse(toParts[0]) ?? 0,
-              toParts.length > 1 ? int.tryParse(toParts[1]) ?? 0 : 0,
-            );
+            final end = hasTime
+                ? DateTime(
+                    d.year,
+                    d.month,
+                    d.day,
+                    int.tryParse(toParts[0]) ?? 0,
+                    toParts.length > 1 ? int.tryParse(toParts[1]) ?? 0 : 0,
+                  )
+                : start;
             allList.add({
               'schedule': s,
               'event': event,
               'start': start,
               'end': end,
+              'hasTime': hasTime,
             });
             eventDays.add(DateTime(d.year, d.month, d.day));
           }
@@ -137,27 +152,33 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
   static bool _sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  int _dayNumber(DateTime start) {
-    final days = _days.isNotEmpty ? _days : widget.days;
-    final i = days.indexWhere((d) => _sameDay(d, start));
-    return i < 0 ? 0 : i + 1;
-  }
-
   List<Map<String, dynamic>> get _shown {
     final source = _items.isNotEmpty ? _items : widget.items;
-    final list = source
-        .where((i) => _day == null || _sameDay(i['start'] as DateTime, _day!))
-        .toList();
-    list.sort(
-      (a, b) => (a['start'] as DateTime).compareTo(b['start'] as DateTime),
-    );
+    final list = source.where((i) {
+      final start = i['start'];
+      if (_day == null) return true;
+      return start is DateTime && _sameDay(start, _day!);
+    }).toList();
+    list.sort((a, b) {
+      final as = a['start'];
+      final bs = b['start'];
+      if (as is! DateTime && bs is! DateTime) return 0;
+      if (as is! DateTime) return 1;
+      if (bs is! DateTime) return -1;
+      return as.compareTo(bs);
+    });
     return list;
   }
 
   List<Widget> _sectioned(List<Map<String, dynamic>> shown) {
     final byDay = <DateTime, List<Map<String, dynamic>>>{};
+    final undated = <Map<String, dynamic>>[];
     for (final item in shown) {
-      final start = item['start'] as DateTime;
+      final start = item['start'];
+      if (start is! DateTime) {
+        undated.add(item);
+        continue;
+      }
       final day = DateTime(start.year, start.month, start.day);
       byDay.putIfAbsent(day, () => []).add(item);
     }
@@ -213,12 +234,47 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
           ),
         );
         for (final item in halls[hall]!) {
-          widgets.add(
-            _SessionCard(
-              item: item,
-              dayNumber: _day == null ? 0 : _dayNumber(item['start'] as DateTime),
+          widgets.add(_SessionCard(item: item));
+        }
+      }
+    }
+    if (undated.isNotEmpty && _day == null) {
+      final halls = <String, List<Map<String, dynamic>>>{};
+      for (final item in undated) {
+        final schedule = Map<String, dynamic>.from(item['schedule'] as Map);
+        final hall = schedule['hall']?.toString().trim() ?? '';
+        halls.putIfAbsent(hall.isEmpty ? 'Other' : hall, () => []).add(item);
+      }
+      final hallNames = halls.keys.toList()
+        ..sort((a, b) => programmeHallRank(a).compareTo(programmeHallRank(b)));
+      for (final hall in hallNames) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 2, bottom: 8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.location_on_rounded,
+                  size: 14,
+                  color: Color(0xFF93C5FD),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    hall,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF93C5FD),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          );
+          ),
+        );
+        for (final item in halls[hall]!) {
+          widgets.add(_SessionCard(item: item));
         }
       }
     }
@@ -232,6 +288,12 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
       if (t.isNotEmpty) return t;
     }
     return 'All Sessions';
+  }
+
+  /// The event is named "ISDR 2026", which the header already shows.
+  bool get _titleRepeatsBrand {
+    final n = _eventTitle.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+    return n == 'isdr 2026' || n == 'isdr2026';
   }
 
   Widget _header() {
@@ -284,17 +346,18 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
                     ),
                   ),
                 ),
-                Text(
-                  _eventTitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.outfit(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 1.15,
+                if (!_titleRepeatsBrand)
+                  Text(
+                    _eventTitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1.15,
+                    ),
                   ),
-                ),
                 const SizedBox(height: 3),
                 Text(
                   'Innovate  •  Collaborate  •  Build the Future',
@@ -427,9 +490,8 @@ class _AllSessionsPageState extends State<AllSessionsPage> {
 
 class _SessionCard extends StatelessWidget {
   final Map<String, dynamic> item;
-  final int dayNumber;
 
-  const _SessionCard({required this.item, required this.dayNumber});
+  const _SessionCard({required this.item});
 
   static const _ringColors = [
     [Color(0xFF3B82F6), Color(0xFFA855F7)],
@@ -442,15 +504,25 @@ class _SessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = Map<String, dynamic>.from(item['schedule'] as Map);
     final event = Map<String, dynamic>.from(item['event'] as Map);
-    final start = item['start'] as DateTime;
-    final end = item['end'] as DateTime;
+    final start = item['start'];
+    final end = item['end'];
+    final fromRaw = s['fromTime']?.toString().trim() ?? '';
+    final toRaw = s['toTime']?.toString().trim() ?? '';
+    final hasTime =
+        fromRaw.isNotEmpty &&
+        toRaw.isNotEmpty &&
+        start is DateTime &&
+        end is DateTime;
     final now = DateTime.now();
-    final live = !now.isBefore(start) && now.isBefore(end);
-    final done = !now.isBefore(end);
-    final name = displaySpeaker(s['speakerName']?.toString());
+    final live = hasTime && !now.isBefore(start) && now.isBefore(end);
+    final done = hasTime && !now.isBefore(end);
+    final speakers = splitSpeakerNames(s['speakerName']?.toString());
     final photo = s['speakerPhoto']?.toString() ?? '';
     final hall = s['hall']?.toString() ?? '';
-    final ring = _ringColors[name.hashCode.abs() % _ringColors.length];
+    final ringKey = speakers.isEmpty
+        ? (s['scheduleName']?.toString() ?? '')
+        : speakers.first;
+    final ring = _ringColors[ringKey.hashCode.abs() % _ringColors.length];
     final muted = Colors.white.withValues(alpha: 0.8);
 
     Widget meta(IconData icon, String text) => Row(
@@ -502,112 +574,81 @@ class _SessionCard extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(10, 10, 6, 10),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 74,
-                    height: 74,
-                    padding: const EdgeInsets.all(2.5),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      gradient: LinearGradient(colors: ring),
+                  if (speakers.isNotEmpty || photo.isNotEmpty) ...[
+                    Container(
+                      width: 74,
+                      height: 74,
+                      padding: const EdgeInsets.all(2.5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        gradient: LinearGradient(colors: ring),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15.5),
+                        child: photo.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: photo,
+                                fit: BoxFit.cover,
+                                errorWidget: (_, _, _) => _placeholder(),
+                              )
+                            : _placeholder(),
+                      ),
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(15.5),
-                      child: photo.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: photo,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, _, _) => _placeholder(),
-                            )
-                          : _placeholder(),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
+                    const SizedBox(width: 12),
+                  ],
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (dayNumber > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF7C3AED),
-                                      Color(0xFF6366F1),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.calendar_today_rounded,
-                                      size: 11,
-                                      color: Colors.white,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Day $dayNumber',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
+                            Expanded(
+                              child: Text(
+                                s['scheduleName']?.toString() ?? '',
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  height: 1.15,
                                 ),
                               ),
-                            const Spacer(),
-                            if (live)
+                            ),
+                            if (hasTime && live)
                               _status('LIVE', const Color(0xFF22C55E))
-                            else if (done)
+                            else if (hasTime && done)
                               _status('ENDED', const Color(0xFF94A3B8)),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          s['scheduleName']?.toString() ?? '',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.outfit(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            height: 1.15,
-                          ),
-                        ),
-                        if (name.isNotEmpty)
-                          Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF60A5FA),
+                        for (final speaker in speakers)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Text(
+                              speaker,
+                              style: GoogleFonts.inter(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF60A5FA),
+                                height: 1.25,
+                              ),
                             ),
                           ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 6),
                         Wrap(
-                          spacing: 10,
-                          runSpacing: 3,
+                          spacing: 12,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            meta(
-                              Icons.calendar_month_rounded,
-                              DateFormat('EEE, d MMM yyyy').format(start),
-                            ),
-                            meta(
-                              Icons.schedule_rounded,
-                              '${DateFormat('h:mm a').format(start)} - '
-                              '${DateFormat('h:mm a').format(end)}',
-                            ),
+                            if (hasTime)
+                              meta(
+                                Icons.access_time_rounded,
+                                '${DateFormat('h:mm a').format(start)} - '
+                                '${DateFormat('h:mm a').format(end)}',
+                              ),
                             if (hall.isNotEmpty)
                               meta(Icons.location_on_rounded, hall),
                           ],

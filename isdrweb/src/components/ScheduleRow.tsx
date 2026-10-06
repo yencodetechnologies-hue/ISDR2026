@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fmtTime, idOf } from "@/lib/format";
+import { fmtTimeStr, idOf } from "@/lib/format";
 import {
   loadFavorites,
   loadReminders,
@@ -110,8 +110,11 @@ export function ScheduleRow({
   const s = item.schedule;
   const id = idOf(s);
   const now = new Date();
-  const isLive = now >= item.start && now < item.end;
-  const isDone = now >= item.end;
+  const fromTime = String(s.fromTime ?? "").trim();
+  const toTime = String(s.toTime ?? "").trim();
+  const hasTime = !!(fromTime && toTime && item.start && item.end);
+  const isLive = hasTime && now >= item.start && now < item.end;
+  const isDone = hasTime && now >= item.end;
   const color = isLive ? "#EF4444" : isDone ? "#9CA3AF" : "#3B82F6";
   const fav = actions?.favorites.has(id) ?? false;
   const rem = actions?.reminders.get(id);
@@ -122,19 +125,21 @@ export function ScheduleRow({
       onClick={() => navigate(scheduleHref(item))}
       className="card card-hover group flex cursor-pointer items-stretch overflow-hidden"
     >
-      <div className="flex w-[92px] shrink-0 flex-col justify-center border-r border-line bg-white/[0.02] px-3 py-3 text-center sm:w-[108px]">
-        {showDate && (
-          <div className="text-[10.5px] font-semibold text-muted">
-            {item.start.getDate()}/{item.start.getMonth() + 1}
+      {hasTime && (
+        <div className="flex w-[92px] shrink-0 flex-col justify-center border-r border-line bg-white/[0.02] px-3 py-3 text-center sm:w-[108px]">
+          {showDate && item.start && (
+            <div className="text-[10.5px] font-semibold text-muted">
+              {item.start.getDate()}/{item.start.getMonth() + 1}
+            </div>
+          )}
+          <div className="text-[13px] font-bold" style={{ color }}>
+            {fmtTimeStr(fromTime)}
           </div>
-        )}
-        <div className="text-[13px] font-bold" style={{ color }}>
-          {fmtTime(item.start)}
+          <div className="text-[11px] text-muted">{fmtTimeStr(toTime)}</div>
         </div>
-        <div className="text-[11px] text-muted">{fmtTime(item.end)}</div>
-      </div>
+      )}
       <div className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3">
-        <Avatar src={s.speakerPhoto} name={avatarName || s.scheduleName} size={40} />
+        {speaker.length > 0 && <Avatar src={s.speakerPhoto} name={avatarName} size={40} />}
         <div className="min-w-0 flex-1">
           <div className="truncate text-[15px] font-semibold group-hover:text-[#93C5FD]">{s.scheduleName}</div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
@@ -157,16 +162,18 @@ export function ScheduleRow({
             )}
           </div>
         </div>
-        <span
-          className="hidden items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-bold sm:inline-flex"
-          style={{ background: `${color}22`, color }}
-        >
-          {isLive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />}
-          {isLive ? "Live" : isDone ? "Completed" : "Upcoming"}
-        </span>
+        {hasTime && (
+          <span
+            className="hidden items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-bold sm:inline-flex"
+            style={{ background: `${color}22`, color }}
+          >
+            {isLive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />}
+            {isLive ? "Live" : isDone ? "Completed" : "Upcoming"}
+          </span>
+        )}
         {actions && (
           <span className="flex" onClick={(e) => e.stopPropagation()}>
-            {!isLive && !isDone && (
+            {hasTime && !isLive && !isDone && (
               <IconButton
                 icon={rem !== undefined ? "notifications_active" : "notifications"}
                 outline={rem === undefined}

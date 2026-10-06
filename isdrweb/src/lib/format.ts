@@ -107,11 +107,12 @@ export function parseHm(s: any): [number, number] | null {
 export function scheduleTimes(s: any): { start: Date; end: Date } | null {
   const d = parseDate(s?.date);
   if (!d) return null;
+  const f = parseHm(s?.fromTime);
+  const t = parseHm(s?.toTime);
+  if (!f || !t) return null;
   const y = d.getUTCFullYear();
   const mo = d.getUTCMonth();
   const day = d.getUTCDate();
-  const f = parseHm(s?.fromTime) ?? [0, 0];
-  const t = parseHm(s?.toTime) ?? f;
   const start = new Date(y, mo, day, f[0], f[1]);
   let end = new Date(y, mo, day, t[0], t[1]);
   if (end <= start) end = new Date(start.getTime() + 60 * 60000);

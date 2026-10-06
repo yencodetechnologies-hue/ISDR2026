@@ -19,8 +19,10 @@ import { fmtTimeStr, sameDay } from "@/lib/format";
 import {
   loadAllSchedules,
   loadFavorites,
+  openAsItem,
   scheduleHref,
   toggleFavorite,
+  type OpenSession,
   type ScheduleItem,
 } from "@/lib/schedules";
 
@@ -164,6 +166,7 @@ export default function ParticipantHomeApp() {
   const navigate = useNavigate();
   const bannerUrls = useHomeBanner();
   const [items, setItems] = useState<ScheduleItem[]>([]);
+  const [open, setOpen] = useState<OpenSession[]>([]);
   const [eventDays, setEventDays] = useState<Date[]>([]);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [showAllDaySessions, setShowAllDaySessions] = useState(false);
@@ -174,6 +177,7 @@ export default function ParticipantHomeApp() {
     const res = await loadAllSchedules();
     if (!res.error) {
       setItems(res.items);
+      setOpen(res.open);
       const days = res.days.length
         ? res.days
         : [...new Set(res.items.map((i) => new Date(i.start.getFullYear(), i.start.getMonth(), i.start.getDate()).getTime()))]
@@ -206,7 +210,10 @@ export default function ParticipantHomeApp() {
   };
 
   const dayItems = selectedDay
-    ? items.filter((it) => sameDay(it.start, selectedDay)).sort((a, b) => a.start.getTime() - b.start.getTime())
+    ? [
+        ...items.filter((it) => sameDay(it.start, selectedDay)),
+        ...open.map(openAsItem).filter((it): it is ScheduleItem => !!it && sameDay(it.start, selectedDay)),
+      ].sort((a, b) => a.start.getTime() - b.start.getTime())
     : [];
 
   const DAY_SESSIONS_SHOWN = 3;
@@ -309,16 +316,17 @@ export default function ParticipantHomeApp() {
                 visibleDayItems.map((it, idx) => {
                   const s = it.schedule ?? {};
                   const scheduleId = String(s.id ?? s._id ?? "");
-                  const isLive = now >= it.start && now < it.end;
-                  const isDone = now >= it.end;
+                  const fromTime = String(s.fromTime ?? "");
+                  const toTime = String(s.toTime ?? "");
+                  const hasTime = !!(fromTime && toTime);
+                  const isLive = hasTime && now >= it.start && now < it.end;
+                  const isDone = hasTime && now >= it.end;
                   const rowAccent = isLive
                     ? "#22C55E"
                     : isDone
                       ? "#64748B"
                       : SCHEDULE_ACCENTS[idx % SCHEDULE_ACCENTS.length];
                   const isFav = favIds.has(scheduleId);
-                  const fromTime = String(s.fromTime ?? "");
-                  const toTime = String(s.toTime ?? "");
 
                   return (
                     <div
@@ -345,12 +353,14 @@ export default function ParticipantHomeApp() {
                               ) : (
                                 <span className="flex-1" />
                               )}
-                              <span
-                                className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold"
-                                style={{ background: `${rowAccent}2e`, color: rowAccent }}
-                              >
-                                {isLive ? "Live" : isDone ? "Completed" : "Upcoming"}
-                              </span>
+                              {hasTime && (
+                                <span
+                                  className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold"
+                                  style={{ background: `${rowAccent}2e`, color: rowAccent }}
+                                >
+                                  {isLive ? "Live" : isDone ? "Completed" : "Upcoming"}
+                                </span>
+                              )}
                             </div>
                             <div className="mt-0.5 line-clamp-2 font-outfit text-sm font-bold leading-snug text-white group-hover:text-[#60A5FA]">
                               {s.scheduleName}
@@ -366,7 +376,7 @@ export default function ParticipantHomeApp() {
                               ) : (
                                 <span className="flex-1" />
                               )}
-                              {!isLive && !isDone && (
+                              {hasTime && !isLive && !isDone && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
