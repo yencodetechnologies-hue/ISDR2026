@@ -465,7 +465,7 @@ function ScannerApp({
             <div className="absolute inset-0 overflow-hidden bg-black">
               <div
                 id={regionId}
-                className="absolute inset-0 [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
+                className="absolute inset-0"
               />
               {/* Dark overlay with a 300×300 cut-out, corner markers and a moving scan line */}
               <div className="pointer-events-none absolute left-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-[20px] shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]">

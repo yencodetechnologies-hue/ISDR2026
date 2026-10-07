@@ -187,7 +187,7 @@ export function ScannerModal({
           {mode === "qr" ? (
             <div>
               <div className="relative mx-auto aspect-square w-full max-w-[360px] overflow-hidden rounded-xl bg-black">
-                <div id={regionId} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover" />
+                <div id={regionId} className="h-full w-full" />
                 {busy && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/60">
                     <Spinner />

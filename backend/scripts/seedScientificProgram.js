@@ -7,6 +7,9 @@
  * each name again, in the same order, with that person's details underneath.
  * Rows with no speaker use "—".
  *
+ * Only 9–11 October are removed. The 7–8 October student conference is left
+ * in place.
+ *
  * Usage: node scripts/seedScientificProgram.js
  */
 const path = require('path');
@@ -25,6 +28,9 @@ const BOARD = 'Conference Board Room';
 const D1 = '2026-10-09';
 const D2 = '2026-10-10';
 const D3 = '2026-10-11';
+// 9 Oct 00:00 IST through 12 Oct 00:00 IST. 7–8 October stay untouched.
+const REPLACE_FROM = new Date('2026-10-08T18:30:00.000Z');
+const REPLACE_TO = new Date('2026-10-11T18:30:00.000Z');
 
 const NONE = '—';
 
@@ -738,8 +744,11 @@ const PROGRAMME = [
   const event = chosen[0];
   console.log(`Event: ${event.title} (${event._id})`);
 
-  const removed = await EventSchedule.deleteMany({ eventId: event._id });
-  console.log(`Removed ${removed.deletedCount} existing schedule(s).`);
+  const removed = await EventSchedule.deleteMany({
+    eventId: event._id,
+    date: { $gte: REPLACE_FROM, $lt: REPLACE_TO },
+  });
+  console.log(`Removed ${removed.deletedCount} schedule(s) on 9–11 October.`);
 
   const orderByDate = {};
   const docs = PROGRAMME.map(([date, fromTime, toTime, hall, scheduleName, speakerName, description, hideToTime]) => {

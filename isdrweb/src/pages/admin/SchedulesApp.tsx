@@ -148,43 +148,71 @@ function compareSchedules(a: any, b: any) {
   return String(idOf(a)).localeCompare(String(idOf(b)));
 }
 
-/** Drag a session onto another row of the same day. */
+/**
+ * Drag a session onto another row of the same day.
+ * The handle keeps the pointer, so a single elementFromPoint call lands on the
+ * handle itself and the drop is thrown away. Walk the stack under the cursor
+ * and skip the row that was grabbed.
+ */
 export function useScheduleDrag(canDrag: boolean, onMove: (fromId: string, toId: string) => void) {
-  const drag = useRef<{ id: string; dayKey: string } | null>(null);
+  const drag = useRef<{ id: string; dayKey: string; pointerId: number } | null>(null);
+  const onMoveRef = useRef(onMove);
+  onMoveRef.current = onMove;
+  const canDragRef = useRef(canDrag);
+  canDragRef.current = canDrag;
   const [overId, setOverId] = useState<string | null>(null);
 
-  const targetAt = (e: { clientX: number; clientY: number }) => {
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    const row = el?.closest("[data-schedule-id]") as HTMLElement | null;
-    if (!row || !drag.current || row.dataset.dayKey !== drag.current.dayKey) return null;
-    const id = row.dataset.scheduleId || "";
-    if (!id || id === drag.current.id) return null;
-    return id;
-  };
-
-  const finish = (e: React.PointerEvent) => {
-    const from = drag.current;
-    const to = from ? targetAt(e) : null;
-    drag.current = null;
-    setOverId(null);
-    if (from && to) onMove(from.id, to);
-  };
+  useEffect(() => {
+    const rowAt = (e: PointerEvent) => {
+      const current = drag.current;
+      if (!current) return null;
+      // The grabbed row holds the pointer, so hide it while asking what is underneath.
+      const held = [
+        ...document.querySelectorAll(`[data-schedule-id="${CSS.escape(current.id)}"]`),
+      ].filter((node): node is HTMLElement => node instanceof HTMLElement);
+      for (const node of held) node.style.pointerEvents = "none";
+      const stack = document.elementsFromPoint(e.clientX, e.clientY);
+      for (const node of held) node.style.pointerEvents = "";
+      for (const node of stack) {
+        if (!(node instanceof Element)) continue;
+        const row = node.closest("[data-schedule-id]");
+        if (!(row instanceof HTMLElement)) continue;
+        if (row.getAttribute("data-day-key") !== current.dayKey) return null;
+        const id = row.getAttribute("data-schedule-id") || "";
+        if (!id || id === current.id) continue;
+        return id;
+      }
+      return null;
+    };
+    const move = (e: PointerEvent) => {
+      if (!drag.current || e.pointerId !== drag.current.pointerId) return;
+      const next = rowAt(e);
+      setOverId((prev) => (prev === next ? prev : next));
+    };
+    const up = (e: PointerEvent) => {
+      const from = drag.current;
+      if (!from || e.pointerId !== from.pointerId) return;
+      const to = rowAt(e);
+      drag.current = null;
+      setOverId(null);
+      if (to) onMoveRef.current(from.id, to);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+    };
+  }, []);
 
   const handleProps = (id: string, dayKey: string) => ({
     onPointerDown: (e: React.PointerEvent<HTMLButtonElement>) => {
-      if (!canDrag || e.button !== 0) return;
-      drag.current = { id, dayKey };
+      if (!canDragRef.current || e.button !== 0) return;
+      e.preventDefault();
+      drag.current = { id, dayKey, pointerId: e.pointerId };
       e.currentTarget.setPointerCapture(e.pointerId);
-    },
-    onPointerMove: (e: React.PointerEvent<HTMLButtonElement>) => {
-      if (!drag.current) return;
-      const next = targetAt(e);
-      setOverId((prev) => (prev === next ? prev : next));
-    },
-    onPointerUp: finish,
-    onPointerCancel: () => {
-      drag.current = null;
-      setOverId(null);
     },
   });
 
