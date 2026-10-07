@@ -384,6 +384,11 @@ export default function EventDetailApp() {
             {end && <div className="mt-0.5 font-semibold">to {whenText(end)}</div>}
             <div className="mt-1.5 text-muted">{event.bookedCount ?? 0} registered</div>
             {event.description && <div className="mt-3 whitespace-pre-wrap">{event.description}</div>}
+            <div className="mt-4">
+              <OutlinedBtn icon="summarize" onClick={() => navigate(`/admin/events/${id}/report`)}>
+                Report
+              </OutlinedBtn>
+            </div>
           </div>
         </div>
 

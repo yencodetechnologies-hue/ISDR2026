@@ -1712,7 +1712,7 @@ class ApiService {
             data: {'question': question, if (options != null) 'options': options},
           ));
 
-  /// Speaker edits a question (allowed until someone answers it).
+  /// Speaker or admin edits a session question. Existing answers stay attached.
   Future<Map<String, dynamic>> updateSessionQuestion(
     String scheduleId,
     String questionId,
@@ -1789,6 +1789,16 @@ class ApiService {
       _sessionContentCall(() => _dio.put(
             '${ApiConfig.speakerQuestions}/$questionId/public',
             data: {'isPublic': isPublic},
+          ));
+
+  /// Management edits the text of a participant's question to a speaker.
+  Future<Map<String, dynamic>> updateSpeakerQuestion(
+    String questionId,
+    String question,
+  ) =>
+      _sessionContentCall(() => _dio.put(
+            '${ApiConfig.speakerQuestions}/$questionId',
+            data: {'question': question},
           ));
 
   /// Management removes a participant's question to a speaker, and its answer.

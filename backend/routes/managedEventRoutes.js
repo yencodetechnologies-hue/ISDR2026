@@ -30,6 +30,7 @@ const {
   claimInclusion,
   reclaimInclusion,
   getMyRegistration,
+  scanReport,
 } = require('../controllers/managedEventController');
 
 // Events - GET list and GET by id are readable by any authenticated user/participant/management
@@ -50,6 +51,7 @@ router.put('/:id', protect, requireManagement, uploadSingleImage('photo'), updat
 router.delete('/:id', protect, requireManagement, deleteEvent);
 
 // Registrations (participants) - readable by event staff / management
+router.get('/:id/scan-report', protect, requireManagement, scanReport);
 router.get('/:id/registrations', protect, listRegistrations);
 router.post(
   '/:id/registrations/spot',

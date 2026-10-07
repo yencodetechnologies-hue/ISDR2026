@@ -343,6 +343,88 @@ const teamQr = (role: string): QrConfig<any> => ({
   fileName: (u) => `${teamPass(u, role)} - ${u.name || role}`,
 });
 
+/** Edit a session question, or a poll (options lock once someone has voted). */
+function ContentEditModal({
+  item,
+  isPoll,
+  onClose,
+  onSaved,
+}: {
+  item: any;
+  isPoll: boolean;
+  onClose: () => void;
+  onSaved: (next: any) => void;
+}) {
+  const toast = useToast();
+  const [question, setQuestion] = useState(String(item.question ?? ""));
+  const [options, setOptions] = useState<string[]>((item.options ?? []).map(String));
+  const [saving, setSaving] = useState(false);
+  const locked = (Number(item.totalVotes) || 0) > 0;
+
+  const save = async () => {
+    if (!question.trim()) return toast(isPoll ? "Enter the poll question" : "Enter the question", "error");
+    let opts: string[] | undefined;
+    if (isPoll && !locked) {
+      opts = options.map((o) => o.trim()).filter(Boolean);
+      if (opts.length < 2) return toast("A poll needs at least 2 options", "error");
+    }
+    setSaving(true);
+    const r = await put(
+      `/session-content/${item.scheduleId}/${isPoll ? "polls" : "questions"}/${idOf(item)}`,
+      isPoll ? { question: question.trim(), ...(opts ? { options: opts } : {}) } : { question: question.trim() },
+    );
+    setSaving(false);
+    if (r.success) {
+      toast(isPoll ? "Poll updated" : "Question updated", "success");
+      onSaved(isPoll ? (r.poll ?? { question: question.trim(), ...(opts ? { options: opts } : {}) }) : (r.question ?? { question: question.trim() }));
+    } else toast(r.error || "Could not save", "error");
+  };
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={isPoll ? "Edit poll" : "Edit question"}
+      width={480}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button loading={saving} onClick={save}>
+            Save
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Field label="Question">
+          <TextArea rows={3} value={question} onChange={(e) => setQuestion(e.target.value)} />
+        </Field>
+        {isPoll && (
+          <div className="space-y-3">
+            {locked && <div className="text-xs text-muted">Options can&apos;t be changed after people have voted.</div>}
+            {options.map((o, i) => (
+              <Field key={i} label={`Option ${i + 1}`}>
+                <Input
+                  value={o}
+                  disabled={locked}
+                  onChange={(e) => setOptions((list) => list.map((x, j) => (j === i ? e.target.value : x)))}
+                />
+              </Field>
+            ))}
+            {!locked && (
+              <Button variant="outline" small icon="add" onClick={() => setOptions((list) => [...list, ""])}>
+                Add option
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 function SpeakerAnswerCard({
   item,
   onUpdated,
@@ -358,10 +440,30 @@ function SpeakerAnswerCard({
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [question, setQuestion] = useState(String(item.question ?? ""));
+  const [savingQuestion, setSavingQuestion] = useState(false);
 
   useEffect(() => {
     setAnswer(String(item.answer ?? ""));
   }, [item.answer]);
+
+  useEffect(() => {
+    setQuestion(String(item.question ?? ""));
+  }, [item.question]);
+
+  const saveQuestion = async () => {
+    const t = question.trim();
+    if (!t) return toast("Type the question", "error");
+    setSavingQuestion(true);
+    const r = await put(`/speaker-questions/${idOf(item)}`, { question: t });
+    setSavingQuestion(false);
+    if (r.success) {
+      toast("Question updated", "success");
+      onUpdated(r.question ?? { ...item, question: t });
+      setEditing(false);
+    } else toast(r.error || "Could not update", "error");
+  };
 
   const save = async () => {
     const t = answer.trim();
@@ -405,6 +507,7 @@ function SpeakerAnswerCard({
       <div className="flex items-center gap-2">
         <span className="flex-1 truncate text-xs text-muted">To: {item.speakerName ?? "Speaker"}</span>
         <Pill color={item.answered ? "#22C55E" : "#F59E0B"}>{item.answered ? "Answered" : "Unanswered"}</Pill>
+        <IconButton icon="edit" outline title="Edit question" onClick={() => setEditing(true)} />
         <IconButton
           icon="delete"
           outline
@@ -416,6 +519,26 @@ function SpeakerAnswerCard({
       </div>
       <div className="mt-1 text-xs text-muted">Asked by {item.participantName || "Participant"}</div>
       <div className="mt-2 font-semibold">{item.question}</div>
+      <Modal
+        open={editing}
+        onClose={() => setEditing(false)}
+        title="Edit question"
+        width={480}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+            <Button loading={savingQuestion} onClick={saveQuestion}>
+              Save
+            </Button>
+          </>
+        }
+      >
+        <Field label="Question">
+          <TextArea rows={4} maxLength={1000} value={question} onChange={(e) => setQuestion(e.target.value)} />
+        </Field>
+      </Modal>
       <TextArea
         className="mt-3"
         rows={3}
@@ -452,6 +575,7 @@ function EngagementOverviewWeb() {
   const [sessionFilter, setSessionFilter] = useState("");
   const [speakerFilter, setSpeakerFilter] = useState("");
   const [answerFilter, setAnswerFilter] = useState("");
+  const [editing, setEditing] = useState<{ item: any; isPoll: boolean } | null>(null);
 
   const term = query.trim().toLowerCase();
   // Every text in the item (question, session, speaker, participant, answer, options, answers).
@@ -513,15 +637,23 @@ function EngagementOverviewWeb() {
       );
     } else toast(r.error || "Could not delete", "error");
   };
-  const deleteButton = (item: any, isPoll: boolean) =>
+  const itemActions = (item: any, isPoll: boolean) =>
     item.scheduleId ? (
-      <IconButton
-        icon="delete"
-        outline
-        color="#EF4444"
-        title={isPoll ? "Delete poll" : "Delete question"}
-        onClick={() => remove(item, isPoll)}
-      />
+      <div className="flex shrink-0 items-center">
+        <IconButton
+          icon="edit"
+          outline
+          title={isPoll ? "Edit poll" : "Edit question"}
+          onClick={() => setEditing({ item, isPoll })}
+        />
+        <IconButton
+          icon="delete"
+          outline
+          color="#EF4444"
+          title={isPoll ? "Delete poll" : "Delete question"}
+          onClick={() => remove(item, isPoll)}
+        />
+      </div>
     ) : null;
 
   return (
@@ -649,7 +781,7 @@ function EngagementOverviewWeb() {
                       <div className="flex items-center gap-2 text-xs text-muted">
                         <Icon name="event_note" size={15} outline />
                         <span className="flex-1 truncate">{q.sessionName ?? "Session"}</span>
-                        {deleteButton(q, false)}
+                        {itemActions(q, false)}
                       </div>
                       <div className="mt-2 font-semibold">{q.question}</div>
                       <div className="mt-3">
@@ -668,7 +800,7 @@ function EngagementOverviewWeb() {
                     <div key={idOf(p)} className="card p-5">
                       <div className="flex items-start gap-2">
                         <div className="flex-1 font-semibold">{p.question}</div>
-                        {deleteButton(p, true)}
+                        {itemActions(p, true)}
                       </div>
                       <div className="mt-1 text-xs text-muted">
                         {p.sessionName ?? "Session"} · {p.totalVotes ?? 0} votes
@@ -729,6 +861,24 @@ function EngagementOverviewWeb() {
           </>
         )}
       </div>
+      {editing && (
+        <ContentEditModal
+          item={editing.item}
+          isPoll={editing.isPoll}
+          onClose={() => setEditing(null)}
+          onSaved={(next) => {
+            const id = idOf(editing.item);
+            setData((d) =>
+              d
+                ? editing.isPoll
+                  ? { ...d, polls: d.polls.map((x) => (idOf(x) === id ? { ...x, ...next } : x)) }
+                  : { ...d, questions: d.questions.map((x) => (idOf(x) === id ? { ...x, ...next } : x)) }
+                : d,
+            );
+            setEditing(null);
+          }}
+        />
+      )}
     </Page>
   );
 }

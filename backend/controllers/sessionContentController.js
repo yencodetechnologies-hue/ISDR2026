@@ -297,7 +297,7 @@ const deleteQuestion = async (req, res) => {
 };
 
 // PUT /api/session-content/:scheduleId/questions/:questionId  { question }
-// Editable only until the first participant answers.
+// The wording can always be edited. Existing participant answers stay attached.
 const updateQuestion = async (req, res) => {
   try {
     const ctx = await loadSession(req, res);
@@ -306,22 +306,11 @@ const updateQuestion = async (req, res) => {
     const question = String(req.body.question || '').trim();
     if (!question) return res.status(400).json({ success: false, error: 'Enter the question' });
     const updated = await SessionQuestion.findOneAndUpdate(
-      { _id: req.params.questionId, scheduleId: ctx.schedule._id, answers: { $size: 0 } },
+      { _id: req.params.questionId, scheduleId: ctx.schedule._id },
       { question },
       { new: true }
     );
-    if (!updated) {
-      const exists = await SessionQuestion.exists({
-        _id: req.params.questionId,
-        scheduleId: ctx.schedule._id,
-      });
-      return exists
-        ? res.status(400).json({
-            success: false,
-            error: "This question can't be edited because participants have answered it",
-          })
-        : res.status(404).json({ success: false, error: 'Question not found' });
-    }
+    if (!updated) return res.status(404).json({ success: false, error: 'Question not found' });
     res.json({ success: true, question: questionDto(updated, true, null) });
   } catch (error) {
     handleError(res, 'updateQuestion', error);

@@ -1353,6 +1353,142 @@ const getMyRegistration = async (req, res) => {
   }
 };
 
+// India has no DST, so a fixed +5:30 offset matches Asia/Kolkata calendar dates.
+const SCAN_IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+function scanIstDay(d) {
+  const t = d instanceof Date ? d.getTime() : new Date(d).getTime();
+  if (!Number.isFinite(t)) return '';
+  return new Date(t + SCAN_IST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+function scanEventDays(event) {
+  if (!event?.eventDate) return [];
+  const out = [];
+  let d = new Date(`${scanIstDay(event.eventDate)}T00:00:00Z`);
+  const end = new Date(`${scanIstDay(event.eventEndDate || event.eventDate)}T00:00:00Z`);
+  while (d <= end && out.length < 60) {
+    out.push(d.toISOString().slice(0, 10));
+    d = new Date(d.getTime() + 86400000);
+  }
+  return out;
+}
+
+function scanPackageOf(event, reg) {
+  const packages = event.packages || [];
+  return (
+    packages.find((p) => reg.packageId && p.id === reg.packageId) ||
+    packages.find(
+      (p) => reg.packageName && String(p.name).toLowerCase() === String(reg.packageName).toLowerCase()
+    ) ||
+    null
+  );
+}
+
+function scanReportName(reg) {
+  const composed = [capsName(reg.firstName), capsName(reg.middleName), capsName(reg.lastName)]
+    .filter(Boolean)
+    .join(' ');
+  const base = composed || capsName(reg.name);
+  const title = String(reg.title || '').trim();
+  return [title, base].filter(Boolean).join(' ');
+}
+
+function scanReportType(reg) {
+  if (/^spot register$/i.test(reg.packageName || '')) return '';
+  return reg.participantType || 'Delegate';
+}
+
+function scanAllAccess(reg) {
+  return ['Admin', 'Speaker', 'Event Staff'].includes(reg.participantType) || reg.packageId === 'vip-all-access';
+}
+
+// GET /api/managed-events/:id/scan-report
+// Day-wise entry, exit, and inclusion facts for the admin report. No pass codes or form answers.
+const scanReport = async (req, res) => {
+  try {
+    const apartmentId = resolveApartmentId(req);
+    const event = await ManagedEvent.findById(req.params.id)
+      .select('apartmentId title eventDate eventEndDate packages')
+      .lean();
+    if (!event) {
+      return res.status(404).json({ success: false, error: 'Event not found' });
+    }
+    if (apartmentId && String(event.apartmentId) !== apartmentId) {
+      return res.status(403).json({ success: false, error: 'Not authorized for this event' });
+    }
+
+    const days = scanEventDays(event);
+    const inclusions = [];
+    const seenInc = new Set();
+    (event.packages || []).forEach((pk) => {
+      normalizeInclusions(pk.inclusions).forEach((inc) => {
+        const key = inc.name.toLowerCase();
+        if (seenInc.has(key)) return;
+        seenInc.add(key);
+        inclusions.push(inc.name);
+      });
+    });
+
+    const regs = await EventRegistration.find({ eventId: event._id, status: { $ne: 'cancelled' } })
+      .select('name title firstName middleName lastName participantType packageId packageName idNumber attendance claimedInclusions')
+      .lean();
+
+    const rows = regs.map((reg) => {
+      const pkg = scanPackageOf(event, reg);
+      const allowed =
+        pkg && Array.isArray(pkg.entryExitDates) && pkg.entryExitDates.length
+          ? pkg.entryExitDates.map(String)
+          : days;
+      const access = scanAllAccess(reg);
+      const attByDay = new Map((reg.attendance || []).map((a) => [a.day, a]));
+      const pkgIncs = new Map(
+        (pkg ? normalizeInclusions(pkg.inclusions) : []).map((inc) => [inc.name.toLowerCase(), inc])
+      );
+      const claimAt = new Map();
+      (reg.claimedInclusions || []).forEach((c) => {
+        const key = `${String(c.inclusionName || '').trim().toLowerCase()}|${scanIstDay(c.claimedAt)}`;
+        const prev = claimAt.get(key);
+        const at = c.claimedAt ? new Date(c.claimedAt).toISOString() : null;
+        if (!prev || (at && at < prev)) claimAt.set(key, at);
+      });
+      return {
+        id: String(reg._id),
+        idNumber: reg.idNumber || '',
+        name: scanReportName(reg),
+        packageName: reg.packageName || (pkg ? pkg.name : ''),
+        participantType: scanReportType(reg),
+        days: days.map((day) => {
+          const att = attByDay.get(day) || {};
+          const entryEligible = access || allowed.includes(day);
+          return {
+            day,
+            entryEligible,
+            entryAt: entryEligible && att.entryAt ? new Date(att.entryAt).toISOString() : null,
+            exitEligible: entryEligible,
+            exitAt: entryEligible && att.exitAt ? new Date(att.exitAt).toISOString() : null,
+            inclusions: inclusions.map((name) => {
+              const inc = pkgIncs.get(name.toLowerCase());
+              const eligible = !!(inc && Array.isArray(inc.dates) && inc.dates.map(String).includes(day));
+              return {
+                name,
+                eligible,
+                claimedAt: eligible ? claimAt.get(`${name.toLowerCase()}|${day}`) || null : null,
+              };
+            }),
+          };
+        }),
+      };
+    });
+
+    rows.sort((a, b) => String(a.idNumber).localeCompare(String(b.idNumber)) || String(a.name).localeCompare(String(b.name)));
+
+    res.json({ success: true, report: { title: event.title || 'Event', days, inclusions, rows } });
+  } catch (error) {
+    console.error('scanReport error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
 module.exports = {
   normalizeInclusions,
   createParticipantRegistration,
@@ -1369,4 +1505,5 @@ module.exports = {
   claimInclusion,
   reclaimInclusion,
   getMyRegistration,
+  scanReport,
 };

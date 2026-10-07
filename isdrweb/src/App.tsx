@@ -37,6 +37,7 @@ import { StaffAddApp, StaffEditApp } from "./pages/admin/StaffApp";
 import { SpeakerFormApp } from "./pages/admin/SpeakersApp";
 import { ExhibitorFormApp } from "./pages/admin/ExhibitorsApp";
 import { EventList, EventEditor, EventDetail } from "./pages/admin/Events";
+import EventReportPage from "./pages/admin/EventReport";
 import { ScheduleList, EventSchedules, ScheduleEditor } from "./pages/admin/Schedules";
 import ManageSpeakers from "./pages/admin/Speakers";
 import SpeakerQuestions from "./pages/admin/SpeakerQuestions";
@@ -152,6 +153,7 @@ export default function App() {
             <Route path="/admin" element={<AdminHome />} />
             <Route path="/admin/events" element={<EventList />} />
             <Route path="/admin/events/new" element={<EventEditor />} />
+            <Route path="/admin/events/:id/report" element={<EventReportPage />} />
             <Route path="/admin/events/:id" element={<EventDetail />} />
             <Route path="/admin/schedules" element={<ScheduleList />} />
             <Route path="/admin/schedule-pdf" element={<ManageSchedulePdf />} />

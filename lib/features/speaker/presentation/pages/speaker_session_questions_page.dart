@@ -65,7 +65,7 @@ class _SpeakerSessionQuestionsPageState
     }
   }
 
-  /// Only while nobody has answered it (the server checks this too).
+  /// Speaker edits the wording. Existing answers stay attached.
   Future<void> _edit(Map<String, dynamic> q) async {
     final text = await showDialog<String>(
       context: context,

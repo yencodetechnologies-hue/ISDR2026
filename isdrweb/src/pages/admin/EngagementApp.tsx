@@ -319,10 +319,30 @@ function SpeakerQuestionCard({
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [question, setQuestion] = useState(String(item.question ?? ""));
+  const [savingQuestion, setSavingQuestion] = useState(false);
 
   useEffect(() => {
     setAnswer(String(item.answer ?? ""));
   }, [item.answer]);
+
+  useEffect(() => {
+    setQuestion(String(item.question ?? ""));
+  }, [item.question]);
+
+  const saveQuestion = async () => {
+    const t = question.trim();
+    if (!t) return toast("Type the question");
+    setSavingQuestion(true);
+    const r = await put(`/speaker-questions/${idOf(item)}`, { question: t });
+    setSavingQuestion(false);
+    if (r.success) {
+      toast("Question updated");
+      onUpdated(r.question ?? { ...item, question: t });
+      setEditing(false);
+    } else toast(r.error || "Could not update");
+  };
 
   const save = async () => {
     const t = answer.trim();
@@ -399,6 +419,14 @@ function SpeakerQuestionCard({
         <span className="flex-1 text-[12px] text-muted">Show to all participants</span>
         <button
           type="button"
+          onClick={() => setEditing(true)}
+          className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-medium text-[#60A5FA]"
+        >
+          <Icon name="edit" outline size={16} />
+          Edit
+        </button>
+        <button
+          type="button"
           disabled={deleting}
           onClick={remove}
           className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-medium text-[#EF4444] disabled:opacity-50"
@@ -407,6 +435,38 @@ function SpeakerQuestionCard({
           Delete
         </button>
       </div>
+      {editing && (
+        <div
+          className="animate-fade fixed inset-0 z-[95] flex items-center justify-center bg-black/55 px-6"
+          onClick={() => setEditing(false)}
+        >
+          <div
+            className="w-full max-w-[400px] rounded-[28px] bg-[#1E1E2A] p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-2xl">Edit question</div>
+            <div className="mt-4 text-xs text-muted">Question</div>
+            <textarea
+              value={question}
+              rows={3}
+              maxLength={1000}
+              onChange={(e) => setQuestion(e.target.value)}
+              className="mt-1 w-full resize-none border-b border-white/40 bg-transparent py-2 text-base outline-none focus:border-b-2 focus:border-accent"
+            />
+            <div className="mt-6 flex justify-end gap-2">
+              <button onClick={() => setEditing(false)} className="h-10 rounded-full px-3 text-sm font-medium text-accent">
+                Cancel
+              </button>
+              <button
+                onClick={savingQuestion ? undefined : saveQuestion}
+                className="flex h-10 min-w-[72px] items-center justify-center rounded-full bg-accent px-5 text-sm font-medium"
+              >
+                {savingQuestion ? <Spinner size={16} color="#fff" /> : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

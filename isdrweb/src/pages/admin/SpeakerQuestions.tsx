@@ -5,8 +5,10 @@ import {
   Button,
   Empty,
   ErrorState,
+  Field,
   IconButton,
   Loading,
+  Modal,
   Page,
   Pill,
   SearchBox,
@@ -113,10 +115,30 @@ function QuestionCard({
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [question, setQuestion] = useState(String(item.question ?? ""));
+  const [savingQuestion, setSavingQuestion] = useState(false);
 
   useEffect(() => {
     setAnswer(String(item.answer ?? ""));
   }, [item.answer]);
+
+  useEffect(() => {
+    setQuestion(String(item.question ?? ""));
+  }, [item.question]);
+
+  const saveQuestion = async () => {
+    const t = question.trim();
+    if (!t) return toast("Type the question", "error");
+    setSavingQuestion(true);
+    const r = await put(`/speaker-questions/${idOf(item)}`, { question: t });
+    setSavingQuestion(false);
+    if (r.success) {
+      toast("Question updated", "success");
+      onUpdated(r.question ?? { ...item, question: t });
+      setEditing(false);
+    } else toast(r.error || "Could not update", "error");
+  };
 
   const save = async () => {
     const t = answer.trim();
@@ -160,6 +182,7 @@ function QuestionCard({
       <div className="flex items-center gap-2">
         <span className="flex-1 truncate text-xs text-muted">Question</span>
         <Pill color={item.answered ? "#22C55E" : "#F59E0B"}>{item.answered ? "Answered" : "Unanswered"}</Pill>
+        <IconButton icon="edit" outline title="Edit question" onClick={() => setEditing(true)} />
         <IconButton
           icon="delete"
           outline
@@ -170,6 +193,26 @@ function QuestionCard({
         />
       </div>
       <div className="mt-2 whitespace-pre-wrap font-semibold">{item.question}</div>
+      <Modal
+        open={editing}
+        onClose={() => setEditing(false)}
+        title="Edit question"
+        width={480}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+            <Button loading={savingQuestion} onClick={saveQuestion}>
+              Save
+            </Button>
+          </>
+        }
+      >
+        <Field label="Question">
+          <TextArea rows={4} maxLength={1000} value={question} onChange={(e) => setQuestion(e.target.value)} />
+        </Field>
+      </Modal>
       <TextArea
         className="mt-3"
         rows={3}

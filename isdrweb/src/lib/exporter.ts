@@ -116,6 +116,43 @@ export async function exportExcel<T>(title: string, columns: ExportColumn<T>[], 
   );
 }
 
+/** Several sheets in one workbook. Sheet names are trimmed to Excel's 31-character limit. */
+export async function exportWorkbook(title: string, sheets: { name: string; columns: ExportColumn<any>[]; rows: any[] }[]) {
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  const used = new Set<string>();
+  const uniqueName = (name: string) => {
+    const clean = name.replace(/[\\/*?:[\]]/g, " ").replace(/\s+/g, " ").trim() || "Sheet";
+    let base = clean.slice(0, 31);
+    let n = base;
+    let i = 2;
+    while (used.has(n.toLowerCase())) {
+      const suffix = ` ${i++}`;
+      n = `${base.slice(0, 31 - suffix.length)}${suffix}`;
+    }
+    used.add(n.toLowerCase());
+    return n;
+  };
+  for (const sheet of sheets) {
+    const ws = wb.addWorksheet(uniqueName(sheet.name));
+    ws.columns = sheet.columns.map((c) => ({ width: c.width ?? Math.max(12, c.header.length + 4) }));
+    const head = ws.addRow(sheet.columns.map((c) => c.header));
+    head.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    head.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E3A8A" } };
+    head.alignment = { vertical: "middle" };
+    ws.views = [{ state: "frozen", ySplit: 1 }];
+    for (const row of sheet.rows) {
+      const added = ws.addRow(sheet.columns.map((c) => text(c.value(row))));
+      added.alignment = { vertical: "middle", wrapText: true };
+    }
+  }
+  const buf = await wb.xlsx.writeBuffer();
+  saveBlob(
+    new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+    `${safeName(title)}_${stamp()}.xlsx`,
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* PDF                                                                 */
 /* ------------------------------------------------------------------ */

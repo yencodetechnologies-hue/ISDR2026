@@ -452,7 +452,7 @@ function PollCard({ p, number, onVoted }: { p: any; number: number; onVoted: (po
   );
 }
 
-/** Polls: every speaker poll on the participant's sessions. */
+/** Polls: today's speaker polls on the participant's sessions. */
 export function ParticipantPolls() {
   return useAppLayout() ? <ParticipantPollsApp /> : <ParticipantPollsWeb />;
 }

@@ -500,6 +500,14 @@ class _SpeakerQuestionCardState extends State<_SpeakerQuestionCard> {
     }
   }
 
+  Future<void> _edit() async {
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) => _SpeakerQuestionEditDialog(item: widget.item),
+    );
+    if (saved == true && mounted) widget.onChanged();
+  }
+
   Future<void> _delete() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -662,17 +670,98 @@ class _SpeakerQuestionCardState extends State<_SpeakerQuestionCard> {
               ),
             ],
           ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _deleting ? null : _delete,
-              icon: const Icon(Icons.delete_outline, size: 16),
-              label: const Text('Delete'),
-              style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: () => _edit(),
+                icon: const Icon(Icons.edit_outlined, size: 16),
+                label: const Text('Edit'),
+                style: TextButton.styleFrom(foregroundColor: const Color(0xFF60A5FA)),
+              ),
+              TextButton.icon(
+                onPressed: _deleting ? null : _delete,
+                icon: const Icon(Icons.delete_outline, size: 16),
+                label: const Text('Delete'),
+                style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Admin edits the text of a participant's question to a speaker.
+class _SpeakerQuestionEditDialog extends StatefulWidget {
+  final Map<String, dynamic> item;
+
+  const _SpeakerQuestionEditDialog({required this.item});
+
+  @override
+  State<_SpeakerQuestionEditDialog> createState() => _SpeakerQuestionEditDialogState();
+}
+
+class _SpeakerQuestionEditDialogState extends State<_SpeakerQuestionEditDialog> {
+  late final TextEditingController _question = TextEditingController(
+    text: widget.item['question']?.toString() ?? '',
+  );
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _question.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final question = _question.text.trim();
+    if (question.isEmpty) return;
+    setState(() => _saving = true);
+    final res = await ApiService().updateSpeakerQuestion(
+      widget.item['id'].toString(),
+      question,
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (res['success'] == true) {
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['error']?.toString() ?? 'Could not save')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit question'),
+      content: TextField(
+        controller: _question,
+        minLines: 1,
+        maxLines: 4,
+        maxLength: 1000,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: const InputDecoration(labelText: 'Question'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Save'),
+        ),
+      ],
     );
   }
 }

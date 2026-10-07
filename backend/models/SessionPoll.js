@@ -29,8 +29,17 @@ const sessionPollSchema = new mongoose.Schema(
     question: { type: String, required: true, trim: true },
     options: { type: [String], required: true },
     votes: { type: [voteSchema], default: [] },
+    // Set on the ISDR session-feedback polls so a re-seed updates the same
+    // poll. Speaker-created polls leave this unset.
+    templateKey: { type: String, trim: true },
   },
   { timestamps: true }
+);
+
+// Speaker polls have no templateKey, so they stay out of this index.
+sessionPollSchema.index(
+  { scheduleId: 1, templateKey: 1 },
+  { unique: true, partialFilterExpression: { templateKey: { $type: 'string' } } }
 );
 
 module.exports = mongoose.model('SessionPoll', sessionPollSchema);

@@ -8,6 +8,9 @@ const { participantPackageId, visibleScheduleFilter } = require('../utils/schedu
 
 const MAX_LENGTH = 1000;
 
+/** Calendar day in India, where the conference runs. */
+const istDay = (d) => new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+
 function participantOnly(req, res) {
   if (req.userType === 'participant') return true;
   res.status(403).json({ success: false, error: 'Only participants can do this' });
@@ -187,6 +190,30 @@ const adminAnswer = async (req, res) => {
   }
 };
 
+// PUT /api/speaker-questions/:id  { question } — management edits the question text.
+const updateQuestionText = async (req, res) => {
+  try {
+    const question = String(req.body.question || '').trim();
+    if (!question) return res.status(400).json({ success: false, error: 'Type the question' });
+    if (question.length > MAX_LENGTH) {
+      return res
+        .status(400)
+        .json({ success: false, error: `Question must be under ${MAX_LENGTH} characters` });
+    }
+    const existing = await SpeakerQuestion.findOne({
+      _id: req.params.id,
+      apartmentId: req.apartmentId,
+    });
+    if (!existing) return res.status(404).json({ success: false, error: 'Question not found' });
+    existing.question = question;
+    await existing.save();
+    const speaker = await Speaker.findById(existing.speakerId).select('name photo');
+    res.json({ success: true, question: adminQuestionDto(existing, speaker) });
+  } catch (error) {
+    handleError(res, 'updateQuestionText', error);
+  }
+};
+
 // DELETE /api/speaker-questions/:id — management removes the question and its answer.
 const deleteQuestion = async (req, res) => {
   try {
@@ -288,18 +315,21 @@ const sessionQuestionsForParticipant = async (req, res) => {
   }
 };
 
-// GET /api/speaker-questions/session-polls — every poll speakers put on their
-// sessions, for the participant to vote in one place (own vote only, no counts).
+// GET /api/speaker-questions/session-polls — today's session polls only.
+// Other days stay on their session screens. Own vote only, no counts.
 const sessionPollsForParticipant = async (req, res) => {
   try {
     if (!participantOnly(req, res)) return;
+    const today = istDay(new Date());
     const polls = await SessionPoll.find({ apartmentId: req.apartmentId }).sort({ createdAt: -1 });
     const scheduleIds = [...new Set(polls.map((p) => String(p.scheduleId)))];
     const schedules = await EventSchedule.find({
       _id: { $in: scheduleIds },
       ...visibleScheduleFilter(await participantPackageId(req)),
     }).select('scheduleName speakerName date fromTime');
-    const byId = new Map(schedules.map((s) => [String(s._id), s]));
+    const byId = new Map(
+      schedules.filter((s) => s.date && istDay(s.date) === today).map((s) => [String(s._id), s])
+    );
     const me = String(req.userId);
     res.json({
       success: true,
@@ -335,6 +365,7 @@ module.exports = {
   myQuestions,
   publicQuestions,
   adminAnswer,
+  updateQuestionText,
   deleteQuestion,
   setPublic,
   speakerInbox,

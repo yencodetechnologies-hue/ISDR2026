@@ -18,8 +18,8 @@ const _arts = [
   Icons.biotech_rounded,
 ];
 
-/// Every poll speakers added to their sessions, in one list. A participant
-/// votes once per poll; results are shown to the speaker only.
+/// Today's session polls, in one list. A participant votes once per poll;
+/// results are shown to the speaker only.
 class ParticipantPollsPage extends StatefulWidget {
   const ParticipantPollsPage({super.key});
 

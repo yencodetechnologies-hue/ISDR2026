@@ -19,6 +19,7 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 const connectDB = require('../config/database');
 const ManagedEvent = require('../models/ManagedEvent');
 const EventSchedule = require('../models/EventSchedule');
+const { applySessionFeedbackPolls } = require('./lib/sessionFeedbackPolls');
 
 const KANNAPPAN = 'Dr J G Kannappan Hall';
 const RAHMATULLAH = 'Dr M Rahmatullah Hall';
@@ -779,6 +780,8 @@ const PROGRAMME = [
   for (const [hall, count] of Object.entries(byHall)) {
     console.log(`  ${hall}: ${count}`);
   }
+
+  await applySessionFeedbackPolls(event);
   process.exit(0);
 })().catch((err) => {
   console.error('Seed failed:', err);

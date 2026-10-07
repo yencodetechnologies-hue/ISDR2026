@@ -25,6 +25,7 @@ import {
 import { del, formData, get, post, put, qs } from "@/lib/api";
 import { PARTICIPANT_EXPORT_COLUMNS, PARTICIPANT_QR, shownParticipantType } from "./participantExport";
 import EventDetailApp from "./EventDetailApp";
+import { EventReport } from "./EventReport";
 import { useAppLayout } from "@/lib/appLayout";
 import EventsApp from "./EventsApp";
 import { FilterSelect, distinct, matches } from "@/components/ListFilters";
@@ -410,7 +411,7 @@ function EventDetailWeb() {
   const [registrations, setRegistrations] = useState<any[] | null>(null);
   const [schedules, setSchedules] = useState<any[] | null>(() => savedSchedulesFrom(location.state));
   const [incStats, setIncStats] = useState<Record<string, any>>({});
-  const [tab, setTab] = useState<"info" | "packages" | "regs" | "schedules" | "analytics">("info");
+  const [tab, setTab] = useState<"info" | "packages" | "regs" | "schedules" | "analytics" | "report">("info");
   const [search, setSearch] = useState("");
   const [pkgFilter, setPkgFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -724,6 +725,7 @@ function EventDetailWeb() {
           { value: "packages", label: "Packages", count: packages.length },
           { value: "regs", label: "Participants", count: registrations ? listMeta.totalAll : undefined },
           { value: "schedules", label: "Schedules", count: schedules?.length },
+          { value: "report", label: "Report" },
           { value: "analytics", label: "Analytics" },
         ]}
       />
@@ -1105,6 +1107,8 @@ function EventDetailWeb() {
             )}
           </div>
         )}
+
+        {tab === "report" && <EventReport eventId={id} />}
 
         {tab === "analytics" && (
           <EventAnalytics event={event} registrations={analyticsRegs} onRefresh={loadAnalytics} />
