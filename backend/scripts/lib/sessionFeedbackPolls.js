@@ -1,7 +1,10 @@
 /**
- * The eight session-feedback polls on every ISDR 2026 schedule row.
- * Re-running updates these questions in place. Other poll records on the
- * event are removed. Sessions, questions, and ratings are left as they are.
+ * The eight session-feedback polls on ISDR 2026 speaker sessions from 8 October
+ * onward. 7 October, paper and e-poster blocks, and refreshment, lunch, and
+ * dinner breaks get no polls. Any polls already stored on a skipped session
+ * are removed. Re-running updates these questions in place. Other poll
+ * records on the event are removed. Sessions, questions, and ratings are
+ * left as they are.
  */
 const EventSchedule = require('../../models/EventSchedule');
 const SessionPoll = require('../../models/SessionPoll');
@@ -62,6 +65,36 @@ const TEMPLATES = [
 
 const TEMPLATE_KEYS = TEMPLATES.map((template) => template.key);
 
+/** Student-conference day. These sessions do not get feedback polls. */
+const SKIP_DAY = '2026-10-07';
+
+function istDay(date) {
+  return new Date(date).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+}
+
+function isSkippedDay(schedule) {
+  return Boolean(schedule.date) && istDay(schedule.date) === SKIP_DAY;
+}
+
+/** Delegate paper, free-paper, e-paper, and e-poster blocks do not get feedback polls. */
+function isPaperOrEposterSession(schedule) {
+  const name = String(schedule.scheduleName || '');
+  return /paper\s*presentation/i.test(name)
+    || /free\s*papers?/i.test(name)
+    || /scientific\s*papers?/i.test(name)
+    || /e-?posters?/i.test(name)
+    || /e-?papers?/i.test(name);
+}
+
+function isMealBreak(schedule) {
+  const name = String(schedule.scheduleName || '');
+  return /\blunch\b/i.test(name) || /\bdinner\b/i.test(name) || /refreshment/i.test(name);
+}
+
+function isSkipped(schedule) {
+  return isSkippedDay(schedule) || isPaperOrEposterSession(schedule) || isMealBreak(schedule);
+}
+
 /** Panel names stay as stored. A blank or em-dash speaker becomes "the speaker". */
 function speakerLabel(name) {
   const text = String(name || '').trim();
@@ -70,15 +103,23 @@ function speakerLabel(name) {
 }
 
 /**
- * Keep only the eight feedback polls on this event.
- * Polls that are not one of these eight are deleted. The eight themselves
- * are updated in place, so a matching vote stays on the same choice.
- * Sessions, questions, and ratings are not touched.
+ * Keep only the eight feedback polls on this event, except 7 October, paper
+ * or e-poster presentation sessions, and refreshment, lunch, and dinner
+ * breaks. Every poll on a skipped session is deleted and none are created.
+ * On the remaining sessions, polls that are not one of these eight are
+ * deleted. The eight themselves are updated in place, so a matching vote
+ * stays on the same choice. Sessions, questions, and ratings are not touched.
  */
 async function applySessionFeedbackPolls(event) {
-  const schedules = await EventSchedule.find({ eventId: event._id });
+  const all = await EventSchedule.find({ eventId: event._id });
+  const skipped = all.filter(isSkipped);
+  const schedules = all.filter((row) => !isSkipped(row));
   const scheduleIds = schedules.map((row) => row._id);
+  const skippedIds = skipped.map((row) => row._id);
 
+  const cleared = skippedIds.length
+    ? await SessionPoll.deleteMany({ scheduleId: { $in: skippedIds } })
+    : { deletedCount: 0 };
   const stray = await SessionPoll.deleteMany({
     scheduleId: { $in: scheduleIds },
     templateKey: { $nin: TEMPLATE_KEYS },
@@ -88,7 +129,8 @@ async function applySessionFeedbackPolls(event) {
     templateKey: { $in: TEMPLATE_KEYS },
     scheduleId: { $nin: scheduleIds },
   });
-  const removed = (stray.deletedCount || 0) + (orphans.deletedCount || 0);
+  const removed =
+    (cleared.deletedCount || 0) + (stray.deletedCount || 0) + (orphans.deletedCount || 0);
 
   const existing = await SessionPoll.find({
     scheduleId: { $in: scheduleIds },
@@ -135,7 +177,7 @@ async function applySessionFeedbackPolls(event) {
   if (ops.length) await SessionPoll.bulkWrite(ops);
 
   console.log(
-    `Feedback polls: ${schedules.length} session(s), ${removed} other poll(s) removed, ${updated} updated, ${created} created. Sessions were not removed.`
+    `Feedback polls: ${schedules.length} session(s), ${skipped.length} skipped (7 October, paper, e-poster, meals), ${removed} poll(s) removed, ${updated} updated, ${created} created. Sessions were not removed.`
   );
   return {
     schedules: schedules.length,

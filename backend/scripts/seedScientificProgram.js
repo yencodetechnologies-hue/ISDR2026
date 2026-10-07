@@ -8,7 +8,9 @@
  * Rows with no speaker use "—".
  *
  * Only 9–11 October are removed. The 7–8 October student conference is left
- * in place.
+ * in place. Feedback polls are not placed on 7 October, on paper and e-poster
+ * presentation sessions, or on refreshment, lunch, and dinner breaks. Any
+ * already there are removed.
  *
  * Usage: node scripts/seedScientificProgram.js
  */

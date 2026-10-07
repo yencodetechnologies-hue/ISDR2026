@@ -61,7 +61,7 @@ function scanTime(iso: string | null) {
   });
 }
 
-function linesOf(report: ScanReport, section: string, scope: string): Line[] {
+function linesOf(report: ScanReport, section: string, scope: string, scannedOnly = false): Line[] {
   const out: Line[] = [];
   for (const row of report.rows) {
     for (const day of row.days) {
@@ -87,14 +87,15 @@ function linesOf(report: ScanReport, section: string, scope: string): Line[] {
       }
     }
   }
-  out.sort(
+  const rows = scannedOnly ? out.filter((line) => line.scanned) : out;
+  rows.sort(
     (a, b) =>
       a.day.localeCompare(b.day) ||
       Number(b.scanned) - Number(a.scanned) ||
       String(a.idNumber).localeCompare(String(b.idNumber)) ||
       a.name.localeCompare(b.name),
   );
-  return out;
+  return rows;
 }
 
 function tally(report: ScanReport, section: string, scope: string) {
@@ -172,11 +173,11 @@ async function downloadReport(report: ScanReport) {
   const exit = sectionMeta("exit");
   await exportWorkbook(`${report.title} - Report`, [
     { name: "Summary", columns: summaryCols, rows: summary },
-    { name: "Entry", columns: personCols(entry.done, entry.time), rows: linesOf(report, "entry", "all") },
-    { name: "Exit", columns: personCols(exit.done, exit.time), rows: linesOf(report, "exit", "all") },
+    { name: "Entry", columns: personCols(entry.done, entry.time), rows: linesOf(report, "entry", "all", true) },
+    { name: "Exit", columns: personCols(exit.done, exit.time), rows: linesOf(report, "exit", "all", true) },
     ...report.inclusions.map((name) => {
       const meta = sectionMeta(name);
-      return { name, columns: personCols(meta.done, meta.time), rows: linesOf(report, name, "all") };
+      return { name, columns: personCols(meta.done, meta.time), rows: linesOf(report, name, "all", true) };
     }),
   ]);
 }
@@ -268,7 +269,7 @@ export function EventReport({ eventId }: { eventId: string }) {
     if (!sections.includes(section)) setSection("entry");
   }, [sections, section]);
 
-  const lines = useMemo(() => (report ? linesOf(report, section, scope) : []), [report, section, scope]);
+  const lines = useMemo(() => (report ? linesOf(report, section, scope, true) : []), [report, section, scope]);
   const cardStats = useMemo(() => {
     if (!report) return null;
     return {
@@ -403,13 +404,13 @@ export function EventReport({ eventId }: { eventId: string }) {
             {meta.title} · {scopeLabel}
           </div>
           <span className="text-sm text-muted">
-            {counts?.scanned ?? 0} scanned · {counts?.eligible ?? 0} eligible · {counts?.notScanned ?? 0} not scanned
+            {lines.length} {meta.done.toLowerCase()}
           </span>
         </div>
         {report.days.length === 0 ? (
           <div className="py-8 text-center text-sm text-muted">Event dates are not set</div>
         ) : lines.length === 0 ? (
-          <div className="py-8 text-center text-sm text-muted">No one is eligible for this report on {scopeLabel}</div>
+          <div className="py-8 text-center text-sm text-muted">No {meta.done.toLowerCase()} records for {scopeLabel}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -445,7 +446,7 @@ export function EventReport({ eventId }: { eventId: string }) {
         <div className="flex flex-wrap items-center gap-3 border-t border-line px-5 py-3 text-sm">
           <span className="font-semibold">{meta.total}</span>
           <span className="text-muted">
-            {counts?.scanned ?? 0} scanned · {counts?.eligible ?? 0} eligible · {counts?.notScanned ?? 0} not scanned
+            {lines.length} {meta.done.toLowerCase()}
             {scope === "all" && counts && counts.people !== counts.scanned ? ` · ${counts.people} people` : ""}
           </span>
           <span className="flex-1" />
