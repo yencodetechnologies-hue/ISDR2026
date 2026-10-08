@@ -173,6 +173,11 @@ function normalizeInclusions(raw) {
   return Array.isArray(raw) ? raw.map(normalizeInclusion).filter(Boolean) : [];
 }
 
+/** Welcome Kit is once for the whole event. "Welcome Kit", "Welcomekit", and "Welcome-Kit" all match. */
+function isWelcomeKit(name) {
+  return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes('welcomekit');
+}
+
 function normalizePackages(raw) {
   if (raw == null) return [];
   if (typeof raw === 'string') {
@@ -1268,13 +1273,20 @@ const claimInclusion = async (req, res) => {
     const claimedList = reg.claimedInclusions || [];
     const sameInclusion = (c) =>
       String(c.inclusionName).trim().toLowerCase() === String(inclusionName).trim().toLowerCase();
-    const alreadyClaimed = claimedList.some((c) => sameInclusion(c) && istDay(c.claimedAt || new Date()) === today);
+    // Welcome Kit is once for the event. Any earlier kit claim blocks another, even on a later day.
+    // Every other inclusion stays once per calendar day (India time).
+    const welcomeKit = isWelcomeKit(inclusionName);
+    const alreadyClaimed = welcomeKit
+      ? claimedList.some((c) => isWelcomeKit(c.inclusionName))
+      : claimedList.some((c) => sameInclusion(c) && istDay(c.claimedAt || new Date()) === today);
 
     if (alreadyClaimed) {
       return res.json({
         success: false,
         alreadyClaimed: true,
-        error: 'This entitlement has already been redeemed for today.',
+        error: welcomeKit
+          ? 'Welcome Kit has already been claimed.'
+          : 'This entitlement has already been redeemed for today.',
         registration: registrationDto(reg, event),
       });
     }
