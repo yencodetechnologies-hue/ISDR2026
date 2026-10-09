@@ -60,14 +60,28 @@ function hidesCardIdentity(type: string) {
   return /^event\s+organizers?$/i.test(type) || /^trade$/i.test(type);
 }
 
+/** Blank passes keep "DELEGATE <id>" on the record. That line is not printed on the card. */
+function isScanPlaceholder(name: string) {
+  return /^DELEGATE\s+\S+$/i.test(name);
+}
+
 function fallbackColor(type: string) {
   if (/^student\s+delegate$/i.test(type)) return DEFAULT_TYPE_COLOR;
   if (/^(invited\s+)?speakers?$/i.test(type)) return SPEAKER_COLOR;
   if (/^delegate$/i.test(type)) return DELEGATE_ORANGE;
-  if (hidesCardIdentity(type)) return ORGANIZER_BLUE;
-  if (/^(organis(?:ing|zing)\s+committee|executive council members|isdr office bearers|iadr office bearer|invited dignitary)$/i.test(type))
+  if (hidesCardIdentity(type) || /^administrative\s+officers?$/i.test(type)) return ORGANIZER_BLUE;
+  if (/^(patron|special\s+invitee|organis(?:ing|zing)\s+committee|executive council members|isdr office bearers|iadr office bearer|invited dignitary)$/i.test(type))
     return COMMITTEE_MAROON;
   return DEFAULT_TYPE_COLOR;
+}
+
+function printedLines(data: BadgeData) {
+  const hide = hidesCardIdentity(v(data.participantType)) || isScanPlaceholder(v(data.name));
+  return {
+    name: hide ? "" : [v(data.title), v(data.name).toUpperCase()].filter(Boolean).join(" "),
+    designation: hide ? "" : v(data.designation),
+    institution: hide ? "" : v(data.institution),
+  };
 }
 
 function typeOf(data: BadgeData) {
@@ -127,10 +141,7 @@ export default function DelegateBadge({ data, innerRef }: { data: BadgeData; inn
     return () => ro.disconnect();
   }, []);
 
-  const organizer = hidesCardIdentity(v(data.participantType));
-  const displayName = organizer ? "" : [v(data.title), v(data.name).toUpperCase()].filter(Boolean).join(" ");
-  const designation = organizer ? "" : v(data.designation);
-  const institution = organizer ? "" : v(data.institution);
+  const { name: displayName, designation, institution } = printedLines(data);
   const { label: typeLabel, color: typeColor } = typeOf(data);
   const qr = v(data.qrCode);
 
@@ -245,10 +256,7 @@ export async function renderBadgeBlob(data: BadgeData, container: HTMLElement | 
     ctx.restore();
   };
 
-  const organizer = hidesCardIdentity(v(data.participantType));
-  const name = organizer ? "" : [v(data.title), v(data.name).toUpperCase()].filter(Boolean).join(" ");
-  const designation = organizer ? "" : v(data.designation);
-  const institution = organizer ? "" : v(data.institution);
+  const { name, designation, institution } = printedLines(data);
   const type = typeOf(data);
   if (type.color) {
     ctx.fillStyle = type.color;

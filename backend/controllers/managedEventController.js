@@ -1050,7 +1050,10 @@ const updateRegistration = async (req, res) => {
       reg.middleName = capsName(reg.middleName);
       reg.lastName = capsName(reg.lastName);
       const composed = composeParticipantName(reg);
-      if (composed) reg.name = composed;
+      if (reg.name !== composed) {
+        reg.name = composed;
+        reg.qrCode = buildQrPayload(reg, event);
+      }
     }
     if (name != null && profile.firstName === undefined) {
       const trimmedName = String(name).trim().toUpperCase();
