@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Avatar,
@@ -39,6 +39,9 @@ import { LinkSettingApp, TickerApp } from "./BroadcastApp";
 import SendNotificationApp from "./SendNotificationApp";
 import EngagementApp from "./EngagementApp";
 import CertificatesApp from "./CertificatesApp";
+import { FeedbackAnswers, type FeedbackQuestion } from "../participant/conferenceFeedback";
+import { FeedbackQuestionManager } from "../participant/feedbackQuestionAdmin";
+import { certificateReportColumns } from "./certificateReport";
 import { MyProfileApp } from "../common/ProfileApp";
 
 /* =========================================================================
@@ -896,12 +899,19 @@ function ManageCertificatesWeb() {
   const toast = useToast();
   const confirm = useConfirm();
   const [certs, setCerts] = useState<any[] | null>(null);
+  const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
+  const [viewing, setViewing] = useState<any | null>(null);
+  const [showQuestions, setShowQuestions] = useState(false);
   const [search, setSearch] = useState("");
   const [certFilter, setCertFilter] = useState("");
+  const [showReport, setShowReport] = useState(false);
 
   const load = useCallback(async () => {
     const r = await get("/certificates");
-    if (r.success) setCerts(r.participants ?? []);
+    if (r.success) {
+      setCerts(r.participants ?? []);
+      setQuestions(r.questions ?? []);
+    }
   }, []);
   useEffect(() => {
     load();
@@ -917,13 +927,14 @@ function ManageCertificatesWeb() {
       }))
     )
       return;
-    const r = await post(`/certificates/${action}`, { participantIds: ids });
+    const r = await post(`/certificates/${action}`, { registrationIds: ids });
     if (r.success) {
       toast(`${cap(action)} done`, "success");
       load();
     } else toast(r.error || "Failed", "error");
   };
 
+  const reportColumns = useMemo(() => certificateReportColumns(questions), [questions]);
   const certStatus = (c: any) =>
     (c.revoked ?? c.certificateRevoked) ? "revoked" : (c.unlocked ?? c.certificateUnlocked) ? "unlocked" : "locked";
   const filtered = (certs ?? []).filter((c) => {
@@ -938,11 +949,27 @@ function ManageCertificatesWeb() {
   });
 
   return (
-    <Page title="Certificates" subtitle="Unlock or revoke participants' certificates">
+    <Page title="Certificates" subtitle="Unlock certificates and manage the feedback questions">
       {!certs ? (
         <Loading />
       ) : (
-        <div className="card overflow-hidden">
+        <div className="space-y-4">
+          <div className="card px-5 py-4">
+            <button
+              onClick={() => setShowQuestions((v) => !v)}
+              className="flex w-full items-center gap-2 text-left"
+            >
+              <Icon name="quiz" color="#3B82F6" />
+              <span className="flex-1 font-semibold">Feedback questions ({questions.length})</span>
+              <Icon name={showQuestions ? "expand_less" : "expand_more"} />
+            </button>
+            {showQuestions && (
+              <div className="mt-4 border-t border-line pt-4">
+                <FeedbackQuestionManager onChanged={load} />
+              </div>
+            )}
+          </div>
+          <div className="card overflow-hidden">
           <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
             <div className="flex-1 text-sm text-muted">
               {filtered.length} of {certs.length} participants
@@ -960,34 +987,47 @@ function ManageCertificatesWeb() {
                 { value: "revoked", label: "Revoked" },
               ]}
             />
-            <ExportMenu
-              title="Certificates"
-              rows={filtered}
-              columns={[
-                { header: "Participant", value: (c: any) => fullName(c) || c.name, width: 24 },
-                { header: "ID no.", value: (c: any) => c.idNumber, width: 11 },
-                { header: "Mobile", value: (c: any) => c.mobileNumber, width: 14 },
-                {
-                  header: "Days scanned",
-                  value: (c: any) => (c.totalDays != null ? `${c.daysScanned ?? 0} / ${c.totalDays}` : ""),
-                  width: 12,
-                },
-                {
-                  header: "Status",
-                  value: (c: any) =>
-                    (c.revoked ?? c.certificateRevoked)
-                      ? "Revoked"
-                      : (c.unlocked ?? c.certificateUnlocked)
-                        ? "Unlocked"
-                        : "Locked",
-                  width: 11,
-                },
-              ]}
-            />
+            <Button
+              small
+              variant={showReport ? "primary" : "outline"}
+              icon="table_chart"
+              onClick={() => setShowReport((v) => !v)}
+            >
+              {showReport ? "Certificate list" : "Report"}
+            </Button>
+            <ExportMenu title="Certificate report" rows={filtered} columns={reportColumns} />
           </div>
           {filtered.length === 0 ? (
             <div className="p-5">
               <Empty icon="workspace_premium" title="No participants" />
+            </div>
+          ) : showReport ? (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    {reportColumns.map((col) => (
+                      <th key={col.header} className="whitespace-nowrap">
+                        {col.header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((c) => (
+                    <tr key={idOf(c)}>
+                      {reportColumns.map((col) => {
+                        const text = String(col.value(c) ?? "");
+                        return (
+                          <td key={col.header} className="max-w-xs whitespace-normal align-top text-white/80">
+                            {text || "—"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -997,14 +1037,15 @@ function ManageCertificatesWeb() {
                     <th>Participant</th>
                     <th>Mobile</th>
                     <th>Status</th>
+                    <th>Feedback</th>
                     <th className="text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((c) => {
                     const name = fullName(c) || c.name || "Participant";
-                    const unlocked = c.certificateUnlocked === true;
-                    const revoked = c.certificateRevoked === true;
+                    const unlocked = c.unlocked === true || c.certificateUnlocked === true;
+                    const revoked = c.revoked === true || c.certificateRevoked === true;
                     return (
                       <tr key={idOf(c)}>
                         <td>
@@ -1018,6 +1059,15 @@ function ManageCertificatesWeb() {
                           {unlocked && <Pill color="#22C55E">Unlocked</Pill>}
                           {revoked && <Pill color="#EF4444">Revoked</Pill>}
                           {!unlocked && !revoked && <Pill color="#F59E0B">Locked</Pill>}
+                        </td>
+                        <td>
+                          {c.feedbackSubmitted ? (
+                            <Button small variant="ghost" icon="rate_review" onClick={() => setViewing(c)}>
+                              View
+                            </Button>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
                         </td>
                         <td className="text-right">
                           {!unlocked && !revoked && (
@@ -1039,7 +1089,13 @@ function ManageCertificatesWeb() {
             </div>
           )}
         </div>
+        </div>
       )}
+      <Modal open={viewing != null} onClose={() => setViewing(null)} title={viewing?.name || "Feedback"} width={640}>
+        <div className="max-h-[70vh] overflow-y-auto pr-1">
+          <FeedbackAnswers questions={questions} answers={viewing?.feedback} />
+        </div>
+      </Modal>
     </Page>
   );
 }

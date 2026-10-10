@@ -1,8 +1,15 @@
+import 'dart:io';
+
+import 'package:excel/excel.dart' hide Border;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
+import 'feedback_questions_page.dart';
 
 /// Admin: which participants have their certificate and which do not, with
 /// the option to unlock the certificates of selected participants.
@@ -18,10 +25,12 @@ class _AdminCertificatesPageState extends State<AdminCertificatesPage> {
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _all = [];
+  List<Map<String, dynamic>> _questions = [];
   bool _showUnlocked = false; // tab: false = not yet, true = got certificate
   String _query = '';
   final Set<String> _selected = {};
   bool _unlocking = false;
+  bool _exporting = false;
 
   @override
   void initState() {
@@ -38,6 +47,10 @@ class _AdminCertificatesPageState extends State<AdminCertificatesPage> {
         _all = (res['participants'] as List? ?? [])
             .whereType<Map>()
             .map((p) => Map<String, dynamic>.from(p))
+            .toList();
+        _questions = (res['questions'] as List? ?? [])
+            .whereType<Map>()
+            .map((q) => Map<String, dynamic>.from(q))
             .toList();
         _error = null;
       } else {
@@ -97,6 +110,56 @@ class _AdminCertificatesPageState extends State<AdminCertificatesPage> {
     }
   }
 
+  void _showFeedback(Map<String, dynamic> p) {
+    final answers = p['feedback'] is Map
+        ? Map<String, dynamic>.from(p['feedback'] as Map)
+        : const <String, dynamic>{};
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(p['name']?.toString() ?? 'Feedback'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final q in _questions) ...[
+                  Text(
+                    '${q['number']}. ${q['prompt']}',
+                    style: GoogleFonts.inter(fontSize: 12, color: DarkColors.muted),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    answers[q['id']?.toString()]?.toString().trim().isNotEmpty == true
+                        ? answers[q['id']?.toString()].toString()
+                        : '—',
+                    style: GoogleFonts.inter(fontSize: 14),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                for (final entry in answers.entries)
+                  if (!_questions.any((q) => q['id']?.toString() == entry.key) &&
+                      entry.value.toString().trim().isNotEmpty) ...[
+                    Text(
+                      'Removed question',
+                      style: GoogleFonts.inter(fontSize: 12, color: DarkColors.muted),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(entry.value.toString(), style: GoogleFonts.inter(fontSize: 14)),
+                    const SizedBox(height: 12),
+                  ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
   /// Locks one participant's certificate again.
   Future<void> _revert(Map<String, dynamic> p) async {
     final earned = p['earned'] == true;
@@ -137,6 +200,142 @@ class _AdminCertificatesPageState extends State<AdminCertificatesPage> {
       ),
     );
     if (res['success'] == true) _load();
+  }
+
+  Future<void> _downloadExcel() async {
+    if (_all.isEmpty || _exporting) {
+      if (_all.isEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nothing to download')),
+        );
+      }
+      return;
+    }
+    setState(() => _exporting = true);
+    try {
+      final columns = _reportColumns();
+      final excel = Excel.createExcel();
+      final sheet = excel['Certificate report'];
+      excel.delete('Sheet1');
+      sheet.appendRow(columns.map((c) => TextCellValue(c.$1)).toList());
+      for (var i = 0; i < columns.length; i++) {
+        final cell = sheet.cell(
+          CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0),
+        );
+        cell.cellStyle = CellStyle(
+          bold: true,
+          fontColorHex: ExcelColor.fromHexString('#FFFFFF'),
+          backgroundColorHex: ExcelColor.fromHexString('#1E3A8A'),
+        );
+        sheet.setColumnWidth(i, columns[i].$3.toDouble());
+      }
+      for (final p in _all) {
+        sheet.appendRow(
+          columns.map((c) => TextCellValue(c.$2(p))).toList(),
+        );
+      }
+      final bytes = excel.save();
+      if (bytes == null) throw Exception('Could not create the file');
+      final dir = await getTemporaryDirectory();
+      final stamp = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final file = File('${dir.path}/Certificate_report_$stamp.xlsx');
+      await file.writeAsBytes(bytes, flush: true);
+      await Share.shareXFiles([
+        XFile(
+          file.path,
+          mimeType:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          name: 'Certificate_report_$stamp.xlsx',
+        ),
+      ]);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not create the file: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  List<(String, String Function(Map<String, dynamic>), num)>
+  _reportColumns() {
+    String text(dynamic v) => (v ?? '').toString();
+    String cap(String s) =>
+        s.isEmpty ? '' : '${s[0].toUpperCase()}${s.substring(1)}';
+    String fullName(Map<String, dynamic> r) {
+      final parts = [r['firstName'], r['middleName'], r['lastName']]
+          .map((x) => text(x).trim().toUpperCase())
+          .where((x) => x.isNotEmpty)
+          .toList();
+      final title = text(r['title']).trim();
+      if (parts.isNotEmpty) {
+        return [title, ...parts].where((x) => x.isNotEmpty).join(' ');
+      }
+      return text(r['name']).trim().toUpperCase();
+    }
+
+    String participantType(Map<String, dynamic> r) {
+      if (RegExp(
+        r'^spot register$',
+        caseSensitive: false,
+      ).hasMatch(text(r['packageName']))) {
+        return '';
+      }
+      return text(r['participantType']);
+    }
+
+    String status(Map<String, dynamic> r) {
+      if (r['revoked'] == true) return 'Revoked';
+      if (r['unlocked'] == true) return 'Unlocked';
+      return 'Locked';
+    }
+
+    String feedbackTime(Map<String, dynamic> r) {
+      final d = DateTime.tryParse(text(r['conferenceFeedbackAt']));
+      if (d == null) return '';
+      final ist = d.toUtc().add(const Duration(hours: 5, minutes: 30));
+      return DateFormat('d MMM y, h:mm a').format(ist);
+    }
+
+    String answer(Map<String, dynamic> r, String id) {
+      final feedback = r['feedback'];
+      if (feedback is! Map) return '';
+      return text(feedback[id]);
+    }
+
+    return [
+      ('ID no.', (r) => text(r['idNumber']), 12),
+      ('Name', fullName, 26),
+      ('Participant type', participantType, 16),
+      ('Package', (r) => text(r['packageName']), 18),
+      ('Gender', (r) => cap(text(r['gender'])), 10),
+      ('Designation', (r) => text(r['designation']), 16),
+      ('Organization', (r) => text(r['institution']), 24),
+      ('Mobile no.', (r) => text(r['mobileNumber']), 14),
+      ('Email', (r) => text(r['email']), 26),
+      ('Food preference', (r) => text(r['foodPreference']), 14),
+      ('Address', (r) => text(r['address']), 28),
+      (
+        'Days scanned',
+        (r) => '${r['daysScanned'] ?? 0} / ${r['totalDays'] ?? 0}',
+        14,
+      ),
+      ('Certificate status', status, 16),
+      (
+        'Feedback submitted',
+        (r) => r['feedbackSubmitted'] == true ? 'Yes' : 'No',
+        16,
+      ),
+      ('Feedback submitted at', feedbackTime, 22),
+      for (final q in _questions)
+        (
+          '${q['number']}. ${q['prompt']}',
+          (Map<String, dynamic> r) => answer(r, text(q['id'])),
+          text(q['type']) == 'text' ? 36.0 : 22.0,
+        ),
+    ];
   }
 
   Widget _tab(String label, bool value, int count) {
@@ -358,26 +557,56 @@ class _AdminCertificatesPageState extends State<AdminCertificatesPage> {
                   const SizedBox(height: 10),
                   Divider(height: 1, color: Colors.white.withValues(alpha: 0.06)),
                   const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (p['feedbackSubmitted'] == true)
+                        TextButton.icon(
+                          onPressed: () => _showFeedback(p),
+                          style: TextButton.styleFrom(
+                            foregroundColor: DarkColors.accent,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          icon: const Icon(Icons.rate_review_outlined, size: 16),
+                          label: Text(
+                            'View feedback',
+                            style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      TextButton.icon(
+                        onPressed: () => _revert(p),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFFF87171),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        icon: const Icon(Icons.undo_rounded, size: 16),
+                        label: Text(
+                          'Revert certificate',
+                          style: GoogleFonts.inter(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else if (p['feedbackSubmitted'] == true)
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
-                      onPressed: () => _revert(p),
+                      onPressed: () => _showFeedback(p),
                       style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFFF87171),
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        foregroundColor: DarkColors.accent,
                         visualDensity: VisualDensity.compact,
                       ),
-                      icon: const Icon(Icons.undo_rounded, size: 16),
+                      icon: const Icon(Icons.rate_review_outlined, size: 16),
                       label: Text(
-                        'Revert certificate',
-                        style: GoogleFonts.inter(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        'View feedback',
+                        style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
-                ],
               ],
             ),
           ),
@@ -401,6 +630,30 @@ class _AdminCertificatesPageState extends State<AdminCertificatesPage> {
             color: Colors.white,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Download Excel',
+            onPressed: _exporting ? null : _downloadExcel,
+            icon: _exporting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.table_view_rounded),
+          ),
+          IconButton(
+            tooltip: 'Feedback questions',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FeedbackQuestionsPage()),
+              );
+              if (mounted) _load();
+            },
+            icon: const Icon(Icons.quiz_outlined),
+          ),
+        ],
       ),
       bottomNavigationBar: _showUnlocked || _selected.isEmpty
           ? null

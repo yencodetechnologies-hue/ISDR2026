@@ -3,6 +3,10 @@ import { useCallback, useEffect, useState } from "react";
 import { AppBar, Icon, Spinner, useConfirm, useToast } from "@/components/ui";
 import { AppSpinner } from "@/components/app/AppControls";
 import { get, post } from "@/lib/api";
+import { exportExcel } from "@/lib/exporter";
+import { FeedbackAnswers, type FeedbackQuestion } from "../participant/conferenceFeedback";
+import { FeedbackQuestionManager } from "../participant/feedbackQuestionAdmin";
+import { certificateReportColumns } from "./certificateReport";
 
 /** Certificate at phone width — the app's AdminCertificatesPage. */
 export default function CertificatesApp() {
@@ -15,12 +19,17 @@ export default function CertificatesApp() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [unlocking, setUnlocking] = useState(false);
+  const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
+  const [viewing, setViewing] = useState<any | null>(null);
+  const [showQuestions, setShowQuestions] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
     const r = await get("/certificates");
     setLoading(false);
     if (r.success) {
       setAll(r.participants ?? []);
+      setQuestions(r.questions ?? []);
       setError(null);
     } else setError(r.error || "Could not load participants");
   }, []);
@@ -73,6 +82,17 @@ export default function CertificatesApp() {
     if (r.success) load();
   };
 
+  const download = async () => {
+    if (!visible.length) return toast("Nothing to download");
+    setExporting(true);
+    try {
+      await exportExcel("Certificate report", certificateReportColumns(questions), visible);
+    } catch (e) {
+      toast(`Could not create the file: ${(e as Error)?.message ?? e}`);
+    }
+    setExporting(false);
+  };
+
   const toggle = (id: string) =>
     setSelected((s) => {
       const n = new Set(s);
@@ -99,8 +119,32 @@ export default function CertificatesApp() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <AppBar title="Certificate" outfit />
-      {loading ? (
+      <AppBar
+        title={showQuestions ? "Feedback questions" : "Certificate"}
+        outfit
+        back
+        onBack={showQuestions ? () => setShowQuestions(false) : undefined}
+        actions={
+          showQuestions ? null : (
+            <div className="flex items-center">
+              <button
+                onClick={exporting ? undefined : download}
+                className="px-2 text-sm font-semibold text-accent"
+              >
+                {exporting ? "…" : "Excel"}
+              </button>
+              <button onClick={() => setShowQuestions(true)} className="px-2 text-sm font-semibold text-accent">
+                Questions
+              </button>
+            </div>
+          )
+        }
+      />
+      {showQuestions ? (
+        <div className="px-4 pb-8 pt-4">
+          <FeedbackQuestionManager onChanged={load} />
+        </div>
+      ) : loading ? (
         <AppSpinner />
       ) : error ? (
         <div className="pt-40 text-center text-muted">{error}</div>
@@ -220,7 +264,16 @@ export default function CertificatesApp() {
                   {unlocked && (
                     <>
                       <div className="mt-2.5 h-px bg-white/[0.06]" />
-                      <div className="mt-1 flex justify-end">
+                      <div className="mt-1 flex items-center justify-end gap-1">
+                        {p.feedbackSubmitted === true && (
+                          <button
+                            onClick={() => setViewing(p)}
+                            className="inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-[12.5px] font-bold text-accent"
+                          >
+                            <Icon name="rate_review" size={16} color="#3B82F6" />
+                            View feedback
+                          </button>
+                        )}
                         <button
                           onClick={() => revert(p)}
                           className="inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-[12.5px] font-bold text-[#F87171]"
@@ -230,6 +283,20 @@ export default function CertificatesApp() {
                         </button>
                       </div>
                     </>
+                  )}
+                  {!unlocked && p.feedbackSubmitted === true && (
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewing(p);
+                        }}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-[12.5px] font-bold text-accent"
+                      >
+                        <Icon name="rate_review" size={16} color="#3B82F6" />
+                        View feedback
+                      </button>
+                    </div>
                   )}
                 </div>
               );
@@ -246,6 +313,25 @@ export default function CertificatesApp() {
             {unlocking ? <Spinner size={20} color="#fff" /> : <Icon name="lock_open" />}
             Unlock certificate ({selected.size})
           </button>
+        </div>
+      )}
+      {viewing && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60" onClick={() => setViewing(null)}>
+          <div
+            className="max-h-[85vh] w-full overflow-y-auto rounded-t-2xl bg-card px-4 pb-6 pt-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-base font-bold">{viewing.name}</div>
+                <div className="text-xs text-muted">Conference feedback</div>
+              </div>
+              <button onClick={() => setViewing(null)} className="rounded-full p-1 text-muted">
+                <Icon name="close" />
+              </button>
+            </div>
+            <FeedbackAnswers questions={questions} answers={viewing.feedback} />
+          </div>
         </div>
       )}
     </div>

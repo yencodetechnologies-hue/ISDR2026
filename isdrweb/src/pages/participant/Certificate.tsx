@@ -1,21 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-refresh/only-export-components */
 import { useEffect, useState } from "react";
 import { Button, Icon, Loading, Page, Spinner, useToast } from "@/components/ui";
-import { get } from "@/lib/api";
+import { get, post } from "@/lib/api";
 import { fmtDMon, parseDate } from "@/lib/format";
 import { useAppLayout } from "@/lib/appLayout";
 import ParticipantCertificateApp from "./ParticipantCertificateApp";
+import { ConferenceFeedbackForm, type FeedbackQuestion } from "./conferenceFeedback";
 
 import {
-  CERT_IMG,
-  NAME_BOX,
-  CERTIFICATES,
   CertificateImage,
   downloadCertificatePdf,
+  resolveCertificates,
   type Cert,
 } from "./certificateShared";
 
-export { CERT_IMG, NAME_BOX, CertificateImage, downloadCertificatePdf };
+export { CertificateImage, downloadCertificatePdf };
 
 /** Participant: day-by-day entry/exit progress and the certificate (locked until done). */
 export default function ParticipantCertificate() {
@@ -28,18 +27,33 @@ function ParticipantCertificateWeb() {
   const [error, setError] = useState<string | null>(null);
   // fileName of the certificate whose PDF is being built, if any.
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
     get("/certificates/me").then((r) => {
       if (r.success) setData(r);
       else setError(r.error || "Could not load the certificate");
     });
+  };
+  useEffect(() => {
+    load();
   }, []);
 
   const days: any[] = data?.days ?? [];
   const unlocked = data?.unlocked === true;
+  const feedbackDone = data?.feedbackSubmitted === true;
   const name = String(data?.name ?? "");
+  const certificates = resolveCertificates(data);
+  const questions: FeedbackQuestion[] = data?.questions ?? [];
   const done = (d: any) => d?.entryAt != null && d?.exitAt != null;
+
+  const submitFeedback = async (answers: Record<string, string>) => {
+    setSubmitting(true);
+    const r = await post("/certificates/feedback", { answers });
+    setSubmitting(false);
+    if (r.success) load();
+    else toast(r.error || "Could not submit feedback", "error");
+  };
 
   const download = async (cert: Cert) => {
     setDownloading(cert.fileName);
@@ -62,9 +76,11 @@ function ParticipantCertificateWeb() {
     <Page
       title="Certificate"
       subtitle={
-        unlocked
+        unlocked && feedbackDone
           ? "Your certificates are ready to download"
-          : "Get your entry and exit scanned on all event days to unlock your certificates."
+          : unlocked
+            ? "Share your feedback to download your certificate."
+            : "Get your entry and exit scanned on all event days to unlock your certificates."
       }
       back={false}
       width={960}
@@ -133,7 +149,11 @@ function ParticipantCertificateWeb() {
               </div>
             )}
           </div>
-          {CERTIFICATES.map((cert) => (
+          {unlocked && !feedbackDone && (
+            <ConferenceFeedbackForm questions={questions} submitting={submitting} onSubmit={submitFeedback} />
+          )}
+          {(feedbackDone || !unlocked) &&
+            certificates.map((cert) => (
             <div key={cert.fileName} className="mt-6">
               <div className="mb-2 flex items-center gap-3">
                 <div className="eyebrow flex-1 pl-1">{cert.label}</div>
@@ -151,7 +171,7 @@ function ParticipantCertificateWeb() {
                 )}
               </div>
               <div className="relative overflow-hidden rounded-xl border border-line shadow-2xl shadow-black/40">
-                {unlocked ? (
+                {unlocked && feedbackDone ? (
                   <>
                     <CertificateImage name={name} img={cert.img} box={cert.box} />
                     <button

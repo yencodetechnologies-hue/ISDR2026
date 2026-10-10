@@ -1939,7 +1939,33 @@ class ApiService {
   Future<Map<String, dynamic>> getMyCertificate() =>
       _sessionContentCall(() => _dio.get('${ApiConfig.certificates}/me'));
 
-  /// Admin: every participant with their certificate status.
+  /// Participant: conference feedback, required before the certificate downloads.
+  Future<Map<String, dynamic>> submitConferenceFeedback(
+    Map<String, String> answers,
+  ) =>
+      _sessionContentCall(() => _dio.post(
+            '${ApiConfig.certificates}/feedback',
+            data: {'answers': answers},
+          ));
+
+  /// Admin: conference feedback questions, in display order.
+  Future<Map<String, dynamic>> listFeedbackQuestions() =>
+      _sessionContentCall(() => _dio.get('${ApiConfig.certificates}/questions'));
+
+  Future<Map<String, dynamic>> createFeedbackQuestion(Map<String, dynamic> body) =>
+      _sessionContentCall(() => _dio.post('${ApiConfig.certificates}/questions', data: body));
+
+  Future<Map<String, dynamic>> updateFeedbackQuestion(String id, Map<String, dynamic> body) =>
+      _sessionContentCall(() => _dio.put('${ApiConfig.certificates}/questions/$id', data: body));
+
+  Future<Map<String, dynamic>> deleteFeedbackQuestion(String id) =>
+      _sessionContentCall(() => _dio.delete('${ApiConfig.certificates}/questions/$id'));
+
+  Future<Map<String, dynamic>> reorderFeedbackQuestions(List<String> questionIds) =>
+      _sessionContentCall(() => _dio.put(
+            '${ApiConfig.certificates}/questions/reorder',
+            data: {'questionIds': questionIds},
+          ));
   Future<Map<String, dynamic>> listCertificates() =>
       _sessionContentCall(() => _dio.get(ApiConfig.certificates));
 

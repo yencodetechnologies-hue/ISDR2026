@@ -2,6 +2,15 @@ const mongoose = require('mongoose');
 const ManagedEvent = require('../models/ManagedEvent');
 const EventRegistration = require('../models/EventRegistration');
 const { resolveRegistrationForCode } = require('../utils/passCodeResolver');
+const {
+  certificatesFor,
+  parseFeedbackAnswers,
+  questionsFor,
+  cleanQuestion,
+  compactOrder,
+  newQuestionKey,
+  ConferenceFeedbackQuestion,
+} = require('../utils/conferenceFeedback');
 
 // A certificate opens when entry and exit are both scanned on each of the
 // event's last REQUIRED_DAYS days, or when the admin unlocks it.
@@ -146,11 +155,15 @@ const myCertificate = async (req, res) => {
     const reg = await EventRegistration.findById(req.userId);
     if (!reg) return res.status(404).json({ success: false, error: 'Registration not found' });
     const event = await ManagedEvent.findById(reg.eventId);
+    const questions = await questionsFor(reg.apartmentId);
     res.json({
       success: true,
       name: [reg.title, reg.name].filter(Boolean).join('. '),
       eventTitle: event ? event.title : '',
       ...certificateStatus(reg, event),
+      feedbackSubmitted: Boolean(reg.conferenceFeedbackAt),
+      questions,
+      certificates: certificatesFor(reg, event),
     });
   } catch (error) {
     console.error('myCertificate error:', error);
@@ -167,25 +180,43 @@ const listCertificates = async (req, res) => {
       eventId: { $in: events.map((e) => e._id) },
       status: { $ne: 'cancelled' },
     })
-      .select('name idNumber mobileNumber eventId packageId packageName attendance certificateUnlocked certificateRevoked')
+      .select(
+        'name title firstName middleName lastName idNumber participantType packageId packageName gender designation institution mobileNumber email foodPreference address eventId attendance certificateUnlocked certificateRevoked conferenceFeedback conferenceFeedbackAt'
+      )
       .sort({ name: 1 })
       .lean();
     const participants = regs.map((r) => {
       const status = certificateStatus(r, byId.get(String(r.eventId)));
       return {
         id: String(r._id),
-        name: r.name,
+        name: r.name || '',
+        title: r.title || '',
+        firstName: r.firstName || '',
+        middleName: r.middleName || '',
+        lastName: r.lastName || '',
         idNumber: r.idNumber || '',
+        participantType: r.participantType || '',
+        packageName: r.packageName || '',
+        gender: r.gender || '',
+        designation: r.designation || '',
+        institution: r.institution || '',
         mobileNumber: r.mobileNumber || '',
+        email: r.email || '',
+        foodPreference: r.foodPreference || '',
+        address: r.address || '',
         daysScanned: status.days.filter((d) => d.entryAt && d.exitAt).length,
         totalDays: status.days.length,
         earned: status.earned,
         adminUnlocked: status.adminUnlocked,
         revoked: status.revoked,
         unlocked: status.unlocked,
+        feedbackSubmitted: Boolean(r.conferenceFeedbackAt),
+        conferenceFeedbackAt: r.conferenceFeedbackAt || null,
+        feedback: r.conferenceFeedbackAt ? r.conferenceFeedback : null,
       };
     });
-    res.json({ success: true, participants });
+    const questions = await questionsFor(req.apartmentId);
+    res.json({ success: true, participants, questions });
   } catch (error) {
     console.error('listCertificates error:', error);
     res.status(500).json({ success: false, error: error.message || 'Server error' });
@@ -231,4 +262,138 @@ const revertCertificates = async (req, res) => {
   }
 };
 
-module.exports = { scanAttendance, myCertificate, listCertificates, unlockCertificates, revertCertificates };
+// POST /api/certificates/feedback { answers } — once, after the certificate is enabled.
+const submitFeedback = async (req, res) => {
+  try {
+    if (req.userType !== 'participant') {
+      return res.status(403).json({ success: false, error: 'Only participants can submit this feedback' });
+    }
+    const reg = await EventRegistration.findById(req.userId);
+    if (!reg) return res.status(404).json({ success: false, error: 'Registration not found' });
+    if (reg.conferenceFeedbackAt) {
+      return res.status(409).json({ success: false, error: 'Feedback has already been submitted' });
+    }
+    const event = await ManagedEvent.findById(reg.eventId);
+    if (!certificateStatus(reg, event).unlocked) {
+      return res.status(403).json({ success: false, error: 'Your certificate is not enabled yet' });
+    }
+    const questions = await questionsFor(reg.apartmentId);
+    const parsed = parseFeedbackAnswers(req.body, questions);
+    if (parsed.error) return res.status(400).json({ success: false, error: parsed.error });
+    reg.conferenceFeedback = parsed.answers;
+    reg.conferenceFeedbackAt = new Date();
+    reg.markModified('conferenceFeedback');
+    await reg.save();
+    res.json({ success: true, feedbackSubmitted: true });
+  } catch (error) {
+    console.error('submitFeedback error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+async function ownedQuestion(req, id) {
+  if (!mongoose.Types.ObjectId.isValid(id)) return null;
+  return ConferenceFeedbackQuestion.findOne({
+    _id: id,
+    apartmentId: new mongoose.Types.ObjectId(String(req.apartmentId)),
+  });
+}
+
+// GET /api/certificates/questions — admin list, seeding the original form once.
+const listFeedbackQuestions = async (req, res) => {
+  try {
+    const questions = await questionsFor(req.apartmentId);
+    res.json({ success: true, questions });
+  } catch (error) {
+    console.error('listFeedbackQuestions error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+// POST /api/certificates/questions
+const createFeedbackQuestion = async (req, res) => {
+  try {
+    const parsed = cleanQuestion(req.body);
+    if (parsed.error) return res.status(400).json({ success: false, error: parsed.error });
+    const apartmentId = new mongoose.Types.ObjectId(String(req.apartmentId));
+    await questionsFor(req.apartmentId);
+    const count = await ConferenceFeedbackQuestion.countDocuments({ apartmentId });
+    await ConferenceFeedbackQuestion.create({
+      apartmentId,
+      key: newQuestionKey(),
+      order: count,
+      ...parsed.value,
+    });
+    res.json({ success: true, questions: await questionsFor(req.apartmentId) });
+  } catch (error) {
+    console.error('createFeedbackQuestion error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+// PUT /api/certificates/questions/:id
+const updateFeedbackQuestion = async (req, res) => {
+  try {
+    const row = await ownedQuestion(req, req.params.id);
+    if (!row) return res.status(404).json({ success: false, error: 'Question not found' });
+    const parsed = cleanQuestion(req.body);
+    if (parsed.error) return res.status(400).json({ success: false, error: parsed.error });
+    Object.assign(row, parsed.value);
+    await row.save();
+    res.json({ success: true, questions: await questionsFor(req.apartmentId) });
+  } catch (error) {
+    console.error('updateFeedbackQuestion error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+// DELETE /api/certificates/questions/:id
+const deleteFeedbackQuestion = async (req, res) => {
+  try {
+    const row = await ownedQuestion(req, req.params.id);
+    if (!row) return res.status(404).json({ success: false, error: 'Question not found' });
+    await row.deleteOne();
+    await compactOrder(row.apartmentId);
+    res.json({ success: true, questions: await questionsFor(req.apartmentId) });
+  } catch (error) {
+    console.error('deleteFeedbackQuestion error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+// PUT /api/certificates/questions/reorder { questionIds }
+const reorderFeedbackQuestions = async (req, res) => {
+  try {
+    const ids = (Array.isArray(req.body.questionIds) ? req.body.questionIds : []).filter((id) =>
+      mongoose.Types.ObjectId.isValid(id)
+    );
+    const apartmentId = new mongoose.Types.ObjectId(String(req.apartmentId));
+    const rows = await ConferenceFeedbackQuestion.find({ apartmentId });
+    if (!ids.length || ids.length !== rows.length) {
+      return res.status(400).json({ success: false, error: 'Send every question in the new order' });
+    }
+    const byId = new Map(rows.map((row) => [String(row._id), row]));
+    if (ids.some((id) => !byId.has(id))) {
+      return res.status(400).json({ success: false, error: 'Question not found' });
+    }
+    await Promise.all(ids.map((id, order) => byId.get(id).updateOne({ order })));
+    res.json({ success: true, questions: await questionsFor(req.apartmentId) });
+  } catch (error) {
+    console.error('reorderFeedbackQuestions error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+};
+
+module.exports = {
+  scanAttendance,
+  myCertificate,
+  listCertificates,
+  unlockCertificates,
+  revertCertificates,
+  submitFeedback,
+  listFeedbackQuestions,
+  createFeedbackQuestion,
+  updateFeedbackQuestion,
+  deleteFeedbackQuestion,
+  reorderFeedbackQuestions,
+};

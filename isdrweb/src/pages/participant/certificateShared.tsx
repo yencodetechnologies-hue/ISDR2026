@@ -1,37 +1,54 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { asset } from "@/lib/api";
 
-export const CERT_IMG = asset("certificate_page-0001.jpg");
-// Where the name goes on the certificate image, as fractions of its size.
-export const NAME_BOX = { left: 0.39, top: 0.395, width: 0.48, height: 0.07 };
+export type Box = { left: number; top: number; width: number; height: number };
+export type Cert = { key: string; label: string; img: string; box: Box; fileName: string };
 
 /** Name height as a share of the name box's height (the rest is breathing room). */
 export const NAME_FILL = 0.72;
 
-export type Box = typeof NAME_BOX;
-export type Cert = { label: string; img: string; box: Box; fileName: string };
+// Name sits on the blank line under "This is to Certify that", just above the underline.
+const STUDENT_BOX: Box = { left: 0.26, top: 0.508, width: 0.48, height: 0.055 };
+const DELEGATE_BOX: Box = { left: 0.252, top: 0.51, width: 0.49, height: 0.055 };
 
-/** Both certificates share the same eligibility (all days scanned, or admin unlock). */
-export const CERTIFICATES: Cert[] = [
-  { label: "Certificate of Attendance", img: CERT_IMG, box: NAME_BOX, fileName: "ISDR2026_Certificate.pdf" },
-  // Name on the blank line under "This is to Certify that".
-  {
-    label: "CE / CME Certificate",
-    img: asset("ce,cme.png"),
-    box: { left: 0.43, top: 0.41, width: 0.435, height: 0.06 },
-    fileName: "ISDR2026_CE_CME_Certificate.pdf",
+/** Artwork for the two certificates. The API decides which keys a participant receives. */
+export const CERTIFICATE_ART: Record<string, Cert> = {
+  student: {
+    key: "student",
+    label: "Student Conference Certificate",
+    img: asset("student_conference_certificate.jpg"),
+    box: STUDENT_BOX,
+    fileName: "ISDR2026_Student_Conference_Certificate.pdf",
   },
-];
+  delegate: {
+    key: "delegate",
+    label: "Delegate Certificate",
+    img: asset("delegate_certificate.jpg"),
+    box: DELEGATE_BOX,
+    fileName: "ISDR2026_Delegate_Certificate.pdf",
+  },
+};
+
+/** Certificates for this participant, in API order. Missing list falls back to both. */
+export function resolveCertificates(data: { certificates?: { key?: string; label?: string; fileName?: string }[] } | null): Cert[] {
+  const list = data?.certificates;
+  if (!Array.isArray(list)) return Object.values(CERTIFICATE_ART);
+  return list.flatMap((c) => {
+    const art = c?.key ? CERTIFICATE_ART[c.key] : undefined;
+    if (!art) return [];
+    return [{ ...art, label: c.label || art.label, fileName: c.fileName || art.fileName }];
+  });
+}
 
 /** The certificate image with the name written in. */
 export function CertificateImage({
   name,
-  img = CERT_IMG,
-  box: nameBox = NAME_BOX,
+  img,
+  box: nameBox,
 }: {
   name: string;
-  img?: string;
-  box?: Box;
+  img: string;
+  box: Box;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const text = useRef<HTMLSpanElement>(null);
@@ -46,9 +63,7 @@ export function CertificateImage({
     return () => ro.disconnect();
   }, []);
 
-  // The name fills most of the name box's height (so it never overflows it) ...
   const fontSize = size.h * nameBox.height * NAME_FILL;
-  // ... and long names are shrunk to fit the box's width.
   useLayoutEffect(() => {
     const t = text.current;
     const boxW = size.w * nameBox.width;
@@ -82,24 +97,21 @@ export function CertificateImage({
 }
 
 /** Builds the certificate PDF (842pt wide page, image + name) and saves it. */
-export async function downloadCertificatePdf(
-  name: string,
-  { img: src = CERT_IMG, box = NAME_BOX, fileName = "ISDR2026_Certificate.pdf" }: Partial<Cert> = {},
-) {
+export async function downloadCertificatePdf(name: string, cert: Cert) {
   const { jsPDF } = await import("jspdf");
   const img = await new Promise<HTMLImageElement>((res, rej) => {
     const i = new Image();
     i.onload = () => res(i);
     i.onerror = rej;
-    i.src = src;
+    i.src = cert.img;
   });
   const w = 842;
   const h = (w * img.naturalHeight) / img.naturalWidth;
   const doc = new jsPDF({ orientation: w > h ? "landscape" : "portrait", unit: "pt", format: [w, h] });
-  doc.addImage(img, /\.png$/i.test(src) ? "PNG" : "JPEG", 0, 0, w, h);
+  doc.addImage(img, /\.png$/i.test(cert.img) ? "PNG" : "JPEG", 0, 0, w, h);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0x1e, 0x3a, 0x8a);
-  // Same sizing as on screen: most of the name box's height, shrunk to its width.
+  const box = cert.box;
   let size = Math.round(h * box.height * NAME_FILL);
   doc.setFontSize(size);
   const maxW = w * box.width;
@@ -108,5 +120,5 @@ export async function downloadCertificatePdf(
     align: "center",
     baseline: "middle",
   });
-  doc.save(fileName);
+  doc.save(cert.fileName);
 }

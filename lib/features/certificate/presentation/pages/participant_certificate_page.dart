@@ -12,13 +12,12 @@ import 'package:pdf/widgets.dart' as pw;
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
-
-const String kCertificateAsset = 'assets/certificate_page-0001.jpg';
-const String kCmeCertificateAsset = 'assets/ce,cme.png';
+import 'conference_feedback_form.dart';
 
 /// One certificate image and where the participant's name goes on it
 /// (fractions of the image size).
 class _Cert {
+  final String key;
   final String label;
   final String asset;
   final String fileName;
@@ -28,6 +27,7 @@ class _Cert {
   final double nameHeight;
 
   const _Cert({
+    required this.key,
     required this.label,
     required this.asset,
     required this.fileName,
@@ -36,30 +36,42 @@ class _Cert {
     required this.nameWidth,
     required this.nameHeight,
   });
+
+  _Cert copyWithLabel(String label, String fileName) => _Cert(
+        key: key,
+        label: label,
+        asset: asset,
+        fileName: fileName,
+        nameLeft: nameLeft,
+        nameTop: nameTop,
+        nameWidth: nameWidth,
+        nameHeight: nameHeight,
+      );
 }
 
-/// Both certificates share the same eligibility (all days scanned, or admin unlock).
-const _certificates = [
-  _Cert(
-    label: 'CERTIFICATE OF ATTENDANCE',
-    asset: kCertificateAsset,
-    fileName: 'ISDR2026_Certificate.pdf',
-    nameLeft: 0.39,
-    nameTop: 0.395,
+// Name sits on the blank line under "This is to Certify that".
+const _certificateArt = {
+  'student': _Cert(
+    key: 'student',
+    label: 'STUDENT CONFERENCE CERTIFICATE',
+    asset: 'assets/student_conference_certificate.jpg',
+    fileName: 'ISDR2026_Student_Conference_Certificate.pdf',
+    nameLeft: 0.26,
+    nameTop: 0.508,
     nameWidth: 0.48,
-    nameHeight: 0.07,
+    nameHeight: 0.055,
   ),
-  // Name on the blank line under "This is to Certify that".
-  _Cert(
-    label: 'CE / CME CERTIFICATE',
-    asset: kCmeCertificateAsset,
-    fileName: 'ISDR2026_CE_CME_Certificate.pdf',
-    nameLeft: 0.43,
-    nameTop: 0.41,
-    nameWidth: 0.435,
-    nameHeight: 0.06,
+  'delegate': _Cert(
+    key: 'delegate',
+    label: 'DELEGATE CERTIFICATE',
+    asset: 'assets/delegate_certificate.jpg',
+    fileName: 'ISDR2026_Delegate_Certificate.pdf',
+    nameLeft: 0.252,
+    nameTop: 0.51,
+    nameWidth: 0.49,
+    nameHeight: 0.055,
   ),
-];
+};
 
 /// Participant: day-by-day entry/exit progress and the attendance certificate,
 /// blurred and locked until the scans are done (or the admin unlocks it).
@@ -80,6 +92,7 @@ class _ParticipantCertificatePageState
 
   /// Asset of the certificate whose PDF is being built, if any.
   String? _downloading;
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -107,14 +120,52 @@ class _ParticipantCertificatePageState
       .toList();
 
   bool get _unlocked => _data['unlocked'] == true;
+  bool get _feedbackDone => _data['feedbackSubmitted'] == true;
   String get _name => _data['name']?.toString() ?? '';
+
+  List<Map<String, dynamic>> get _questions => (_data['questions'] as List? ?? [])
+      .whereType<Map>()
+      .map((q) => Map<String, dynamic>.from(q))
+      .toList();
+
+  List<_Cert> get _certificates {
+    final raw = _data['certificates'];
+    if (raw is! List) return _certificateArt.values.toList();
+    return raw.whereType<Map>().map((item) {
+      final art = _certificateArt[item['key']?.toString()];
+      if (art == null) return null;
+      final label = item['label']?.toString();
+      final fileName = item['fileName']?.toString();
+      if ((label == null || label.isEmpty) && (fileName == null || fileName.isEmpty)) {
+        return art;
+      }
+      return art.copyWithLabel(
+        label == null || label.isEmpty ? art.label : label.toUpperCase(),
+        fileName == null || fileName.isEmpty ? art.fileName : fileName,
+      );
+    }).whereType<_Cert>().toList();
+  }
+
+  Future<void> _submitFeedback(Map<String, String> answers) async {
+    setState(() => _submitting = true);
+    final res = await _api.submitConferenceFeedback(answers);
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    if (res['success'] == true) {
+      await _load();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['error']?.toString() ?? 'Could not submit feedback')),
+      );
+    }
+  }
 
   Future<void> _download(_Cert cert) async {
     setState(() => _downloading = cert.asset);
     try {
       final bytes = (await rootBundle.load(cert.asset)).buffer.asUint8List();
       final image = await decodeImageFromList(bytes);
-      final w = 842.0;
+      const w = 842.0;
       final h = w * image.height / image.width;
       final doc = pw.Document();
       doc.addPage(
@@ -132,13 +183,15 @@ class _ParticipantCertificatePageState
                 child: pw.SizedBox(
                   width: w * cert.nameWidth,
                   height: h * cert.nameHeight,
-                  child: pw.Center(
+                  child: pw.FittedBox(
+                    fit: pw.BoxFit.scaleDown,
                     child: pw.Text(
                       _name,
+                      maxLines: 1,
                       style: pw.TextStyle(
-                        fontSize: 22,
+                        fontSize: h * cert.nameHeight * 0.72,
                         fontWeight: pw.FontWeight.bold,
-                        color: PdfColor.fromInt(0xFF1E3A8A),
+                        color: const PdfColor.fromInt(0xFF1E3A8A),
                       ),
                     ),
                   ),
@@ -306,7 +359,7 @@ class _ParticipantCertificatePageState
     );
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
-      child: _unlocked
+      child: _unlocked && _feedbackDone
           ? Stack(
               children: [
                 image,
@@ -424,7 +477,16 @@ class _ParticipantCertificatePageState
                       ],
                     ),
                   ),
-                  for (final cert in _certificates) ...[
+                  if (_unlocked && !_feedbackDone) ...[
+                    const SizedBox(height: 16),
+                    ConferenceFeedbackForm(
+                      questions: _questions,
+                      submitting: _submitting,
+                      onSubmit: _submitFeedback,
+                    ),
+                  ],
+                  if (_feedbackDone || !_unlocked)
+                    for (final cert in _certificates) ...[
                     const SizedBox(height: 16),
                     Padding(
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
