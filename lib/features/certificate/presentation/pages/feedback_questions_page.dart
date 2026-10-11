@@ -126,7 +126,7 @@ class _FeedbackQuestionsPageState extends State<FeedbackQuestionsPage> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 88),
               children: [
                 Text(
-                  'Participants see this list after their certificate is enabled. Numbers follow this order.',
+                  'Participants answer these before their certificate opens. Numbers follow this order.',
                   style: GoogleFonts.inter(fontSize: 12.5, color: DarkColors.muted, height: 1.4),
                 ),
                 const SizedBox(height: 12),

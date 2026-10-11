@@ -99,7 +99,7 @@ const eventRegistrationSchema = new mongoose.Schema(
     certificateUnlockedAt: { type: Date, default: null },
     // Admin reverted the certificate: it stays locked even if the scans earn it.
     certificateRevoked: { type: Boolean, default: false },
-    // Conference feedback. It is not required before the certificate can be downloaded.
+    // Conference feedback. The participant certificate stays locked until this is submitted.
     conferenceFeedback: { type: mongoose.Schema.Types.Mixed, default: null },
     conferenceFeedbackAt: { type: Date, default: null },
   },

@@ -12,6 +12,7 @@ import 'package:pdf/widgets.dart' as pw;
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
+import 'conference_feedback_form.dart';
 /// One certificate image and where the participant's name goes on it
 /// (fractions of the image size).
 class _Cert {
@@ -72,7 +73,7 @@ const _certificateArt = {
 };
 
 /// Participant: day-by-day entry/exit progress and the certificates.
-/// Certificates are available to view and download unless an admin has locked them.
+/// The certificate opens after conference feedback is submitted, unless an admin has locked it.
 class ParticipantCertificatePage extends StatefulWidget {
   const ParticipantCertificatePage({super.key});
 
@@ -90,6 +91,7 @@ class _ParticipantCertificatePageState
 
   /// Asset of the certificate whose PDF is being built, if any.
   String? _downloading;
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -116,8 +118,50 @@ class _ParticipantCertificatePageState
       .map((d) => Map<String, dynamic>.from(d))
       .toList();
 
-  bool get _unlocked => _data['revoked'] != true;
+  bool get _revoked => _data['revoked'] == true;
+  bool get _feedbackSubmitted => _data['feedbackSubmitted'] == true;
+  bool get _unlocked => !_revoked && _feedbackSubmitted;
   String get _name => _data['name']?.toString() ?? '';
+
+  List<Map<String, dynamic>> get _questions => (_data['questions'] as List? ?? [])
+      .whereType<Map>()
+      .map((q) => Map<String, dynamic>.from(q))
+      .toList();
+
+  Future<void> _submitFeedback(Map<String, String> answers) async {
+    setState(() => _submitting = true);
+    final res = await _api.submitConferenceFeedback(answers);
+    if (!mounted) return;
+    if (res['success'] == true) {
+      await _load();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['error']?.toString() ?? 'Could not submit feedback')),
+      );
+    }
+    if (mounted) setState(() => _submitting = false);
+  }
+
+  List<Widget> _certificateBlocks() {
+    return [
+      for (final cert in _certificates) ...[
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            cert.label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: .6,
+              color: DarkColors.muted,
+            ),
+          ),
+        ),
+        _certificate(cert),
+      ],
+    ];
+  }
 
   List<_Cert> get _certificates {
     final raw = _data['certificates'];
@@ -454,24 +498,9 @@ class _ParticipantCertificatePageState
                       ],
                     ),
                   ),
-                  for (final cert in _certificates) ...[
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4, bottom: 8),
-                      child: Text(
-                        cert.label,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: .6,
-                          color: DarkColors.muted,
-                        ),
-                      ),
-                    ),
-                    _certificate(cert),
-                  ],
-                  const SizedBox(height: 14),
-                  if (!_unlocked)
+                  if (_revoked) ...[
+                    ..._certificateBlocks(),
+                    const SizedBox(height: 14),
                     Text(
                       'Your certificates are not available yet.',
                       textAlign: TextAlign.center,
@@ -480,6 +509,15 @@ class _ParticipantCertificatePageState
                         color: DarkColors.muted,
                       ),
                     ),
+                  ] else if (!_feedbackSubmitted) ...[
+                    const SizedBox(height: 16),
+                    ConferenceFeedbackForm(
+                      questions: _questions,
+                      submitting: _submitting,
+                      onSubmit: _submitFeedback,
+                    ),
+                  ] else
+                    ..._certificateBlocks(),
                 ],
               ),
             ),

@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-refresh/only-export-components */
 import { useEffect, useState } from "react";
 import { Button, Icon, Loading, Page, Spinner, useToast } from "@/components/ui";
-import { get } from "@/lib/api";
+import { get, post } from "@/lib/api";
 import { fmtDMon, parseDate } from "@/lib/format";
 import { useAppLayout } from "@/lib/appLayout";
 import ParticipantCertificateApp from "./ParticipantCertificateApp";
+import { ConferenceFeedbackForm, type FeedbackQuestion } from "./conferenceFeedback";
 
 import {
   CertificateImage,
@@ -26,6 +27,7 @@ function ParticipantCertificateWeb() {
   const [error, setError] = useState<string | null>(null);
   // fileName of the certificate whose PDF is being built, if any.
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const load = () => {
     get("/certificates/me").then((r) => {
@@ -38,10 +40,21 @@ function ParticipantCertificateWeb() {
   }, []);
 
   const days: any[] = data?.days ?? [];
-  const unlocked = data?.revoked !== true;
+  const revoked = data?.revoked === true;
+  const feedbackSubmitted = data?.feedbackSubmitted === true;
+  const unlocked = !revoked && feedbackSubmitted;
+  const questions: FeedbackQuestion[] = data?.questions ?? [];
   const name = String(data?.name ?? "");
   const certificates = resolveCertificates(data);
   const done = (d: any) => d?.entryAt != null && d?.exitAt != null;
+
+  const submitFeedback = async (answers: Record<string, string>) => {
+    setSubmitting(true);
+    const r = await post("/certificates/feedback", { answers });
+    if (r.success) load();
+    else toast(r.error || "Could not submit feedback", "error");
+    setSubmitting(false);
+  };
 
   const download = async (cert: Cert) => {
     setDownloading(cert.fileName);
@@ -64,9 +77,11 @@ function ParticipantCertificateWeb() {
     <Page
       title="Certificate"
       subtitle={
-        unlocked
-          ? "Your certificates are ready to download"
-          : "Your certificates are not available yet."
+        revoked
+          ? "Your certificates are not available yet."
+          : feedbackSubmitted
+            ? "Your certificates are ready to download"
+            : "Share your feedback to download your certificate"
       }
       back={false}
       width={960}
@@ -135,7 +150,9 @@ function ParticipantCertificateWeb() {
               </div>
             )}
           </div>
-          {certificates.map((cert) => (
+          {!revoked && !feedbackSubmitted ? (
+            <ConferenceFeedbackForm questions={questions} submitting={submitting} onSubmit={submitFeedback} />
+          ) : certificates.map((cert) => (
             <div key={cert.fileName} className="mt-6">
               <div className="mb-2 flex items-center gap-3">
                 <div className="eyebrow flex-1 pl-1">{cert.label}</div>

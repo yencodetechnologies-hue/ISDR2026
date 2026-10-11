@@ -2,19 +2,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { AppBar, Icon, Spinner, useToast } from "@/components/ui";
 import { AppSpinner } from "@/components/app/AppControls";
-import { get } from "@/lib/api";
+import { get, post } from "@/lib/api";
 import { fmtDMon, parseDate } from "@/lib/format";
 import { CertificateImage, downloadCertificatePdf, resolveCertificates } from "./certificateShared";
+import { ConferenceFeedbackForm, type FeedbackQuestion } from "./conferenceFeedback";
 
 /**
  * Participant Certificate phone screen matching participant_certificate_page.dart:
- * Attendance progress bar and certificates, ready to download unless an admin has locked them.
+ * Attendance progress, then feedback questions until they are submitted, then the certificates.
  */
 export default function ParticipantCertificateApp() {
   const toast = useToast();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     const r = await get("/certificates/me");
@@ -31,10 +33,21 @@ export default function ParticipantCertificateApp() {
   }, [load]);
 
   const days: any[] = data?.days ?? [];
-  const unlocked = data?.revoked !== true;
+  const revoked = data?.revoked === true;
+  const feedbackSubmitted = data?.feedbackSubmitted === true;
+  const unlocked = !revoked && feedbackSubmitted;
+  const questions: FeedbackQuestion[] = data?.questions ?? [];
   const name = String(data?.name ?? "");
   const certificates = resolveCertificates(data);
   const done = (d: any) => d?.entryAt != null && d?.exitAt != null;
+
+  const submitFeedback = async (answers: Record<string, string>) => {
+    setSubmitting(true);
+    const r = await post("/certificates/feedback", { answers });
+    if (r.success) await load();
+    else toast(r.error || "Could not submit feedback", "error");
+    setSubmitting(false);
+  };
 
   const download = async (cert: (typeof certificates)[0]) => {
     setDownloading(cert.fileName);
@@ -146,7 +159,9 @@ export default function ParticipantCertificateApp() {
             )}
           </div>
 
-          {certificates.map((cert) => (
+          {!revoked && !feedbackSubmitted ? (
+            <ConferenceFeedbackForm questions={questions} submitting={submitting} onSubmit={submitFeedback} />
+          ) : certificates.map((cert) => (
             <div key={cert.fileName} className="mt-4">
               <div className="mb-2 pl-1 font-inter text-[11px] font-bold tracking-[0.6px] text-muted">
                 {cert.label}
@@ -184,7 +199,7 @@ export default function ParticipantCertificateApp() {
             </div>
           ))}
 
-          {!unlocked && (
+          {revoked && (
             <div className="mt-3.5 px-2 text-center font-inter text-[12.5px] leading-relaxed text-muted">
               Your certificates are not available yet.
             </div>

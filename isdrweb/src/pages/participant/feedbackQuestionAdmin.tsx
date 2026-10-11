@@ -111,7 +111,7 @@ export function FeedbackQuestionManager({ onChanged }: { onChanged?: () => void 
     <div>
       <div className="mb-3 flex items-center gap-3">
         <div className="min-w-0 flex-1 text-sm text-muted">
-          Participants see this list after their certificate is enabled. Numbers follow the order here.
+          Participants answer these before their certificate opens. Numbers follow the order here.
         </div>
         <Button small icon="add" onClick={openNew}>
           Add question

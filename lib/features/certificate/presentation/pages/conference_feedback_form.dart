@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/widgets/dark_ui.dart';
 
-/// Conference feedback shown after a certificate is enabled and before download.
+/// Conference feedback shown until it is submitted, which opens the certificate.
 class ConferenceFeedbackForm extends StatefulWidget {
   final List<Map<String, dynamic>> questions;
   final bool submitting;

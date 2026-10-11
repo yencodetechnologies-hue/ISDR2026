@@ -162,9 +162,9 @@ const myCertificate = async (req, res) => {
       name: [reg.title, reg.name].filter(Boolean).join('. '),
       eventTitle: event ? event.title : '',
       ...status,
-      // Participants can open and download certificates without completing
-      // every entry/exit scan or the feedback form. An admin revert still locks them.
-      unlocked: !status.revoked,
+      // The certificate opens after conference feedback is submitted.
+      // An admin revert still locks it.
+      unlocked: Boolean(reg.conferenceFeedbackAt) && !status.revoked,
       feedbackSubmitted: Boolean(reg.conferenceFeedbackAt),
       questions,
       certificates: certificatesFor(reg, event),
@@ -266,7 +266,7 @@ const revertCertificates = async (req, res) => {
   }
 };
 
-// POST /api/certificates/feedback { answers } — once, after the certificate is enabled.
+// POST /api/certificates/feedback { answers } — once. Submitting it opens the certificate.
 const submitFeedback = async (req, res) => {
   try {
     if (req.userType !== 'participant') {
@@ -278,8 +278,8 @@ const submitFeedback = async (req, res) => {
       return res.status(409).json({ success: false, error: 'Feedback has already been submitted' });
     }
     const event = await ManagedEvent.findById(reg.eventId);
-    if (!certificateStatus(reg, event).unlocked) {
-      return res.status(403).json({ success: false, error: 'Your certificate is not enabled yet' });
+    if (certificateStatus(reg, event).revoked) {
+      return res.status(403).json({ success: false, error: 'Your certificate is not available' });
     }
     const questions = await questionsFor(reg.apartmentId);
     const parsed = parseFeedbackAnswers(req.body, questions);
