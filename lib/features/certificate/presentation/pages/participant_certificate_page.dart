@@ -12,8 +12,6 @@ import 'package:pdf/widgets.dart' as pw;
 import '../../../../core/services/api_service.dart';
 import '../../../../core/widgets/brand_gradient_app_bar.dart';
 import '../../../../core/widgets/dark_ui.dart';
-import 'conference_feedback_form.dart';
-
 /// One certificate image and where the participant's name goes on it
 /// (fractions of the image size).
 class _Cert {
@@ -73,8 +71,8 @@ const _certificateArt = {
   ),
 };
 
-/// Participant: day-by-day entry/exit progress and the attendance certificate,
-/// blurred and locked until the scans are done (or the admin unlocks it).
+/// Participant: day-by-day entry/exit progress and the certificates.
+/// Certificates are available to view and download unless an admin has locked them.
 class ParticipantCertificatePage extends StatefulWidget {
   const ParticipantCertificatePage({super.key});
 
@@ -92,7 +90,6 @@ class _ParticipantCertificatePageState
 
   /// Asset of the certificate whose PDF is being built, if any.
   String? _downloading;
-  bool _submitting = false;
 
   @override
   void initState() {
@@ -119,14 +116,8 @@ class _ParticipantCertificatePageState
       .map((d) => Map<String, dynamic>.from(d))
       .toList();
 
-  bool get _unlocked => _data['unlocked'] == true;
-  bool get _feedbackDone => _data['feedbackSubmitted'] == true;
+  bool get _unlocked => _data['revoked'] != true;
   String get _name => _data['name']?.toString() ?? '';
-
-  List<Map<String, dynamic>> get _questions => (_data['questions'] as List? ?? [])
-      .whereType<Map>()
-      .map((q) => Map<String, dynamic>.from(q))
-      .toList();
 
   List<_Cert> get _certificates {
     final raw = _data['certificates'];
@@ -144,20 +135,6 @@ class _ParticipantCertificatePageState
         fileName == null || fileName.isEmpty ? art.fileName : fileName,
       );
     }).whereType<_Cert>().toList();
-  }
-
-  Future<void> _submitFeedback(Map<String, String> answers) async {
-    setState(() => _submitting = true);
-    final res = await _api.submitConferenceFeedback(answers);
-    if (!mounted) return;
-    setState(() => _submitting = false);
-    if (res['success'] == true) {
-      await _load();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['error']?.toString() ?? 'Could not submit feedback')),
-      );
-    }
   }
 
   Future<void> _download(_Cert cert) async {
@@ -359,7 +336,7 @@ class _ParticipantCertificatePageState
     );
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
-      child: _unlocked && _feedbackDone
+      child: _unlocked
           ? Stack(
               children: [
                 image,
@@ -477,16 +454,7 @@ class _ParticipantCertificatePageState
                       ],
                     ),
                   ),
-                  if (_unlocked && !_feedbackDone) ...[
-                    const SizedBox(height: 16),
-                    ConferenceFeedbackForm(
-                      questions: _questions,
-                      submitting: _submitting,
-                      onSubmit: _submitFeedback,
-                    ),
-                  ],
-                  if (_feedbackDone || !_unlocked)
-                    for (final cert in _certificates) ...[
+                  for (final cert in _certificates) ...[
                     const SizedBox(height: 16),
                     Padding(
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
@@ -505,7 +473,7 @@ class _ParticipantCertificatePageState
                   const SizedBox(height: 14),
                   if (!_unlocked)
                     Text(
-                      'Get your entry and exit scanned on all event days to unlock your certificates.',
+                      'Your certificates are not available yet.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
                         fontSize: 12.5,

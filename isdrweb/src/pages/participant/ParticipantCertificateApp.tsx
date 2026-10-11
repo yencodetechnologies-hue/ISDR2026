@@ -2,22 +2,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { AppBar, Icon, Spinner, useToast } from "@/components/ui";
 import { AppSpinner } from "@/components/app/AppControls";
-import { get, post } from "@/lib/api";
+import { get } from "@/lib/api";
 import { fmtDMon, parseDate } from "@/lib/format";
-import { ConferenceFeedbackForm, type FeedbackQuestion } from "./conferenceFeedback";
 import { CertificateImage, downloadCertificatePdf, resolveCertificates } from "./certificateShared";
 
 /**
  * Participant Certificate phone screen matching participant_certificate_page.dart:
- * Attendance progress bar, blurred/locked certificates with lock icon,
- * and download PDF trigger when unlocked.
+ * Attendance progress bar and certificates, ready to download unless an admin has locked them.
  */
 export default function ParticipantCertificateApp() {
   const toast = useToast();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     const r = await get("/certificates/me");
@@ -34,20 +31,10 @@ export default function ParticipantCertificateApp() {
   }, [load]);
 
   const days: any[] = data?.days ?? [];
-  const unlocked = data?.unlocked === true;
-  const feedbackDone = data?.feedbackSubmitted === true;
+  const unlocked = data?.revoked !== true;
   const name = String(data?.name ?? "");
   const certificates = resolveCertificates(data);
-  const questions: FeedbackQuestion[] = data?.questions ?? [];
   const done = (d: any) => d?.entryAt != null && d?.exitAt != null;
-
-  const submitFeedback = async (answers: Record<string, string>) => {
-    setSubmitting(true);
-    const r = await post("/certificates/feedback", { answers });
-    setSubmitting(false);
-    if (r.success) load();
-    else toast(r.error || "Could not submit feedback", "error");
-  };
 
   const download = async (cert: (typeof certificates)[0]) => {
     setDownloading(cert.fileName);
@@ -159,18 +146,13 @@ export default function ParticipantCertificateApp() {
             )}
           </div>
 
-          {/* Certificates */}
-          {unlocked && !feedbackDone && (
-            <ConferenceFeedbackForm questions={questions} submitting={submitting} onSubmit={submitFeedback} />
-          )}
-          {(feedbackDone || !unlocked) &&
-            certificates.map((cert) => (
+          {certificates.map((cert) => (
             <div key={cert.fileName} className="mt-4">
               <div className="mb-2 pl-1 font-inter text-[11px] font-bold tracking-[0.6px] text-muted">
                 {cert.label}
               </div>
               <div className="relative overflow-hidden rounded-[14px] border border-white/10 shadow-lg shadow-black/40">
-                {unlocked && feedbackDone ? (
+                {unlocked ? (
                   <>
                     <CertificateImage name={name} img={cert.img} box={cert.box} />
                     <button
@@ -202,10 +184,9 @@ export default function ParticipantCertificateApp() {
             </div>
           ))}
 
-          {/* Footer note if locked */}
           {!unlocked && (
             <div className="mt-3.5 px-2 text-center font-inter text-[12.5px] leading-relaxed text-muted">
-              Get your entry and exit scanned on all event days to unlock your certificates.
+              Your certificates are not available yet.
             </div>
           )}
         </div>

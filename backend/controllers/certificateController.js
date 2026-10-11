@@ -156,11 +156,15 @@ const myCertificate = async (req, res) => {
     if (!reg) return res.status(404).json({ success: false, error: 'Registration not found' });
     const event = await ManagedEvent.findById(reg.eventId);
     const questions = await questionsFor(reg.apartmentId);
+    const status = certificateStatus(reg, event);
     res.json({
       success: true,
       name: [reg.title, reg.name].filter(Boolean).join('. '),
       eventTitle: event ? event.title : '',
-      ...certificateStatus(reg, event),
+      ...status,
+      // Participants can open and download certificates without completing
+      // every entry/exit scan or the feedback form. An admin revert still locks them.
+      unlocked: !status.revoked,
       feedbackSubmitted: Boolean(reg.conferenceFeedbackAt),
       questions,
       certificates: certificatesFor(reg, event),
