@@ -1,10 +1,8 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -72,8 +70,7 @@ const _certificateArt = {
   ),
 };
 
-/// Participant: day-by-day entry/exit progress and the certificates.
-/// The certificate opens after conference feedback is submitted, unless an admin has locked it.
+/// Participant certificate. Feedback is shown until it is submitted, then the certificate can be downloaded.
 class ParticipantCertificatePage extends StatefulWidget {
   const ParticipantCertificatePage({super.key});
 
@@ -113,14 +110,8 @@ class _ParticipantCertificatePageState
     });
   }
 
-  List<Map<String, dynamic>> get _days => (_data['days'] as List? ?? [])
-      .whereType<Map>()
-      .map((d) => Map<String, dynamic>.from(d))
-      .toList();
-
   bool get _revoked => _data['revoked'] == true;
   bool get _feedbackSubmitted => _data['feedbackSubmitted'] == true;
-  bool get _unlocked => !_revoked && _feedbackSubmitted;
   String get _name => _data['name']?.toString() ?? '';
 
   List<Map<String, dynamic>> get _questions => (_data['questions'] as List? ?? [])
@@ -236,116 +227,6 @@ class _ParticipantCertificatePageState
     if (mounted) setState(() => _downloading = null);
   }
 
-  Widget _progressBar() {
-    final days = _days;
-    if (days.isEmpty) {
-      return Text(
-        'Event dates are not set yet',
-        style: GoogleFonts.inter(color: DarkColors.muted, fontSize: 12.5),
-      );
-    }
-    bool done(Map d) => d['entryAt'] != null && d['exitAt'] != null;
-    Widget mark(bool ok, String label) => Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          ok ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
-          size: 11,
-          color: ok ? const Color(0xFF22C55E) : DarkColors.muted,
-        ),
-        const SizedBox(width: 3),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 10,
-            color: ok ? Colors.white : DarkColors.muted,
-          ),
-        ),
-      ],
-    );
-
-    final steps = <Widget>[];
-    for (var i = 0; i < days.length; i++) {
-      final d = days[i];
-      final complete = done(d);
-      final partial = !complete && d['entryAt'] != null;
-      final date = DateTime.tryParse(d['date'].toString());
-      final color = complete
-          ? const Color(0xFF22C55E)
-          : partial
-          ? const Color(0xFFF59E0B)
-          : DarkColors.line;
-      steps.add(
-        Expanded(
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 3,
-                      color: i == 0
-                          ? Colors.transparent
-                          : (complete
-                                ? const Color(0xFF22C55E)
-                                : DarkColors.line),
-                    ),
-                  ),
-                  Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: complete || partial ? color : Colors.transparent,
-                      border: Border.all(color: color, width: 2),
-                    ),
-                    alignment: Alignment.center,
-                    child: complete
-                        ? const Icon(Icons.check, size: 16, color: Colors.white)
-                        : Text(
-                            '${i + 1}',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: partial ? Colors.white : DarkColors.muted,
-                            ),
-                          ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      height: 3,
-                      color: i == days.length - 1
-                          ? Colors.transparent
-                          : (i + 1 < days.length && done(days[i + 1])
-                                ? const Color(0xFF22C55E)
-                                : DarkColors.line),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                date == null
-                    ? 'Day ${i + 1}'
-                    : DateFormat('d MMM').format(date),
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: complete ? Colors.white : DarkColors.muted,
-                ),
-              ),
-              const SizedBox(height: 4),
-              mark(d['entryAt'] != null, 'In'),
-              const SizedBox(height: 2),
-              mark(d['exitAt'] != null, 'Out'),
-            ],
-          ),
-        ),
-      );
-    }
-    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: steps);
-  }
-
   Widget _certificate(_Cert cert) {
     final downloading = _downloading == cert.asset;
     final image = Stack(
@@ -380,67 +261,40 @@ class _ParticipantCertificatePageState
     );
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
-      child: _unlocked
-          ? Stack(
-              children: [
-                image,
-                Positioned(
-                  right: 8,
-                  bottom: 8,
-                  child: Material(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: _downloading != null
-                          ? null
-                          : () => _download(cert),
-                      child: Padding(
-                        padding: const EdgeInsets.all(7),
-                        child: downloading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.download_rounded,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                      ),
-                    ),
-                  ),
+      child: Stack(
+        children: [
+          image,
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: Material(
+              color: Colors.black.withValues(alpha: 0.6),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: _downloading != null ? null : () => _download(cert),
+                child: Padding(
+                  padding: const EdgeInsets.all(7),
+                  child: downloading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.download_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                 ),
-              ],
-            )
-          : Stack(
-              alignment: Alignment.center,
-              children: [
-                ImageFiltered(
-                  imageFilter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                  child: image,
-                ),
-                Positioned.fill(
-                  child: Container(color: Colors.black.withValues(alpha: 0.35)),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.lock_rounded,
-                    color: Colors.white,
-                    size: 34,
-                  ),
-                ),
-              ],
+              ),
             ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -476,31 +330,7 @@ class _ParticipantCertificatePageState
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(8, 16, 8, 14),
-                    decoration: darkCardDecoration(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8, bottom: 14),
-                          child: Text(
-                            'ATTENDANCE',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: .6,
-                              color: DarkColors.muted,
-                            ),
-                          ),
-                        ),
-                        _progressBar(),
-                      ],
-                    ),
-                  ),
-                  if (_revoked) ...[
-                    ..._certificateBlocks(),
-                    const SizedBox(height: 14),
+                  if (_revoked)
                     Text(
                       'Your certificates are not available yet.',
                       textAlign: TextAlign.center,
@@ -508,15 +338,14 @@ class _ParticipantCertificatePageState
                         fontSize: 12.5,
                         color: DarkColors.muted,
                       ),
-                    ),
-                  ] else if (!_feedbackSubmitted) ...[
-                    const SizedBox(height: 16),
+                    )
+                  else if (!_feedbackSubmitted)
                     ConferenceFeedbackForm(
                       questions: _questions,
                       submitting: _submitting,
                       onSubmit: _submitFeedback,
-                    ),
-                  ] else
+                    )
+                  else
                     ..._certificateBlocks(),
                 ],
               ),
