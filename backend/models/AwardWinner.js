@@ -14,7 +14,7 @@ const awardWinnerSchema = new mongoose.Schema(
   {
     apartmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Apartment', required: true },
     awardNumber: { type: Number, required: true, min: 1 },
-    /** Rank-1 name, kept so older clients still show a recipient. */
+    /** Numbered on one line ("1. Ada  2. Ben") for apps that only read this field. */
     name: { type: String, trim: true, default: '' },
     recipients: { type: [awardRecipientSchema], default: [] },
   },

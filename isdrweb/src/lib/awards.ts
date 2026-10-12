@@ -30,8 +30,23 @@ export function recipientsOf(winners: Record<string, any>, n: number): AwardReci
       .map((r: any) => ({ rank: Number(r.rank) || 1, name: String(r.name || "").trim() }))
       .filter((r: AwardRecipient) => r.name);
   }
-  const name = String(row.name || "").trim();
-  return name ? [{ rank: 1, name }] : [];
+  return parseLegacyName(String(row.name || ""));
+}
+
+/** Splits "1. Ada  2. Ben" (or one name per line) back into recipients. */
+function parseLegacyName(name: string): AwardRecipient[] {
+  const text = name.trim();
+  if (!text) return [];
+  return text
+    .split(/\n+|\s+(?=\d+\.\s+)/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const numbered = part.match(/^(\d+)\.\s+(.+)$/);
+      if (numbered) return { rank: Number(numbered[1]), name: numbered[2].trim() };
+      return { rank: 1, name: part };
+    })
+    .filter((r) => r.name);
 }
 
 /** Unique recipients, presentation order, one line per person. */

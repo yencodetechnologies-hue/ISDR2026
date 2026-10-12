@@ -110,7 +110,7 @@ const RESULTS = [
   console.log(`Event: ${event.title} (${event._id}), apartment ${event.apartmentId}`);
 
   for (const row of RESULTS) {
-    const summary = row.recipients.map((p) => `${p.rank}. ${p.name}`).join(' · ');
+    const summary = row.recipients.map((p) => `${p.rank}. ${p.name}`).join('  ');
     await AwardWinner.findOneAndUpdate(
       { apartmentId: event.apartmentId, awardNumber: row.awardNumber },
       {

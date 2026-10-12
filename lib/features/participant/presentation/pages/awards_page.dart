@@ -171,7 +171,19 @@ class _AwardsPageState extends State<AwardsPage> {
     }
     final name = row['name']?.toString().trim() ?? '';
     if (name.isEmpty) return [];
-    return [(rank: 1, name: name)];
+    final parts = name
+        .split(RegExp(r'\n+|\s+(?=\d+\.\s+)'))
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty);
+    final parsed = parts.map((part) {
+      final numbered = RegExp(r'^(\d+)\.\s+(.+)$').firstMatch(part);
+      if (numbered != null) {
+        return (rank: int.tryParse(numbered.group(1)!) ?? 1, name: numbered.group(2)!.trim());
+      }
+      return (rank: 1, name: part);
+    }).where((r) => r.name.isNotEmpty);
+    final rows = parsed.toList();
+    return rows.isEmpty ? [(rank: 1, name: name)] : rows;
   }
 
   List<String> _consolidatedNames() {

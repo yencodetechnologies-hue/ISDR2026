@@ -10,15 +10,33 @@ function recipientsFrom(row) {
       .map((p) => ({ rank: p.rank, name: String(p.name || '').trim() }))
       .filter((p) => p.name);
   }
-  if (row.name) return [{ rank: 1, name: String(row.name).trim() }];
-  return [];
+  return parseLegacyName(row.name);
+}
+
+/** "1. Ada  2. Ben" — the string older apps show in their single winner line. */
+function legacyName(recipients) {
+  return recipients.map((p) => `${p.rank}. ${p.name}`).join('  ');
+}
+
+function parseLegacyName(name) {
+  const text = String(name || '').trim();
+  if (!text) return [];
+  return text
+    .split(/\n+|\s+(?=\d+\.\s+)/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const numbered = part.match(/^(\d+)\.\s+(.+)$/);
+      if (numbered) return { rank: Number(numbered[1]), name: numbered[2].trim() };
+      return { rank: 1, name: part };
+    })
+    .filter((p) => p.name);
 }
 
 function shapeWinner(row) {
   const recipients = recipientsFrom(row);
-  const top = recipients.find((p) => p.rank === 1) || recipients[0] || null;
   return {
-    name: top ? top.name : '',
+    name: legacyName(recipients),
     recipients,
   };
 }
@@ -70,11 +88,10 @@ const setWinner = async (req, res) => {
       await AwardWinner.deleteOne(filter);
       return res.json({ success: true, winner: null });
     }
-    const top = cleaned.recipients.find((p) => p.rank === 1) || cleaned.recipients[0];
     const doc = await AwardWinner.findOneAndUpdate(
       filter,
       {
-        $set: { name: top.name, recipients: cleaned.recipients },
+        $set: { name: legacyName(cleaned.recipients), recipients: cleaned.recipients },
         $unset: { registrationId: '' },
       },
       { upsert: true, new: true }
