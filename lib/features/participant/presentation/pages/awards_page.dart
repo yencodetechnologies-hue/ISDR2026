@@ -581,8 +581,8 @@ class _RecipientEditorSheetState extends State<_RecipientEditorSheet> {
       return;
     }
     final row = _rows.removeAt(index);
-    row.dispose();
     setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) => row.dispose());
   }
 
   void _save() {
