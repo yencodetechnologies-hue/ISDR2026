@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { AppBar, Icon, useToast } from "@/components/ui";
-import { AppSpinner } from "@/components/app/AppControls";
 import { get, put } from "@/lib/api";
+import { consolidatedNames, manualRecipients, recipientsOf, type AwardRecipient } from "@/lib/awards";
 import { useAuth } from "@/lib/auth";
 
 type Award = { number: number; title: string };
@@ -29,7 +29,7 @@ const NumberBadge = ({ n }: { n: number }) => (
   </span>
 );
 
-/** Awards at phone width — the app's AwardsPage (admin: "Award Winners" picker; participant: accordion). */
+/** Awards at phone width — the app's AwardsPage (admin types recipients; participant sees the accordion). */
 export default function AwardsApp() {
   const { user } = useAuth();
   const admin = user?.userType === "apartment";
@@ -39,42 +39,57 @@ export default function AwardsApp() {
   const [picking, setPicking] = useState<Award | null>(null);
 
   useEffect(() => {
-    get("/awards").then((r) => r.success && r.winners && typeof r.winners === "object" && setWinners(r.winners));
+    get("/awards").then((r) => {
+      if (!r.success || !r.winners || typeof r.winners !== "object") return;
+      setWinners(r.winners);
+      setOpen(new Set(Object.keys(r.winners).map((k) => Number(k))));
+    });
   }, []);
 
-  const choose = async (award: Award, registrationId: string) => {
+  const choose = async (award: Award, recipients: AwardRecipient[]) => {
+    const r = await put(`/awards/${award.number}`, { recipients });
+    if (!r.success) return r.error || "Could not save";
+    setWinners((w) => {
+      const n = { ...w };
+      if (r.winner && typeof r.winner === "object") n[String(award.number)] = r.winner;
+      else delete n[String(award.number)];
+      return n;
+    });
     setPicking(null);
-    const r = await put(`/awards/${award.number}`, { registrationId });
-    if (r.success) {
-      setWinners((w) => {
-        const n = { ...w };
-        if (r.winner && typeof r.winner === "object") n[String(award.number)] = r.winner;
-        else delete n[String(award.number)];
-        return n;
-      });
-      toast(registrationId ? "Winner saved" : "Winner removed");
-    } else toast(r.error || "Could not save");
+    toast(recipients.length ? "Recipients saved" : "Recipients removed");
+    return null;
   };
 
+  const names = consolidatedNames(winners);
   const card = (a: Award) => {
-    const winner: string | undefined = winners[String(a.number)]?.name;
-    const border = winner ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.1)";
+    const rows = recipientsOf(winners, a.number);
+    const announced = rows.length > 0;
+    const border = announced ? "rgba(245,158,11,0.4)" : "rgba(255,255,255,0.1)";
     if (admin)
       return (
         <button
           key={a.number}
           onClick={() => setPicking(a)}
-          className="mb-2.5 flex w-full items-center rounded-2xl border bg-card px-4 py-3 text-left active:bg-white/[0.03]"
+          className="mb-2.5 flex w-full items-start rounded-2xl border bg-card px-4 py-3 text-left active:bg-white/[0.03]"
           style={{ borderColor: border }}
         >
           <NumberBadge n={a.number} />
           <span className="ml-3.5 min-w-0 flex-1">
             <span className="block font-outfit text-[14.5px] font-bold">{a.title}</span>
-            <span className="mt-0.5 block text-xs font-semibold" style={{ color: winner ? "#FBBF24" : "#9CA3AF" }}>
-              {winner ? `Winner: ${winner}` : "Tap to choose the winner"}
-            </span>
+            {announced ? (
+              <span className="mt-1.5 block space-y-1">
+                {rows.map((r, i) => (
+                  <span key={`${r.rank}-${r.name}-${i}`} className="flex items-center gap-2 text-sm font-bold text-[#FBBF24]">
+                    <span className="w-5 font-extrabold">{r.rank}</span>
+                    {r.name}
+                  </span>
+                ))}
+              </span>
+            ) : (
+              <span className="mt-0.5 block text-xs font-semibold text-muted">Tap to enter recipients</span>
+            )}
           </span>
-          <Icon name={winner ? "edit" : "person_add"} size={20} color="#93C5FD" />
+          <Icon name={announced ? "edit" : "edit_note"} size={20} color="#93C5FD" />
         </button>
       );
     const expanded = open.has(a.number);
@@ -102,11 +117,23 @@ export default function AwardsApp() {
         </button>
         {expanded && (
           <div className="px-4 pb-4">
-            <div className="flex items-center gap-2 rounded-[10px] border border-[#F59E0B]/30 bg-[#F59E0B]/15 px-3 py-2.5">
-              <Icon name={winner ? "emoji_events" : "hourglass_top"} size={18} color="#FBBF24" />
-              <span className={`text-[#FBBF24] ${winner ? "text-sm font-bold" : "text-[13px] font-semibold"}`}>
-                {winner ?? "To be announced"}
-              </span>
+            <div className="rounded-[10px] border border-[#F59E0B]/30 bg-[#F59E0B]/15 px-3 py-2.5">
+              {announced ? (
+                <div className="space-y-2">
+                  {rows.map((r, i) => (
+                    <div key={`${r.rank}-${r.name}-${i}`} className="flex items-center gap-2 text-sm font-bold text-[#FBBF24]">
+                      <span className="w-5 font-extrabold">{r.rank}</span>
+                      <Icon name="emoji_events" size={16} color="#FBBF24" />
+                      {r.name}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-[13px] font-semibold text-[#FBBF24]">
+                  <Icon name="hourglass_top" size={18} color="#FBBF24" />
+                  To be announced
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -124,103 +151,146 @@ export default function AwardsApp() {
         <div className="h-3.5" />
         {header("UNDER GRADUATE STUDENTS AWARDS (CAT 9 - 12)")}
         {UG.map(card)}
+        {names.length > 0 && (
+          <>
+            <div className="h-3.5" />
+            {header("AWARD RECIPIENTS")}
+            <div className="rounded-2xl border border-[#F59E0B]/40 bg-card px-3.5 py-2">
+              {names.map((name, i) => (
+                <div key={name} className="flex items-center gap-2 py-1.5">
+                  <span className="w-7 font-outfit text-sm font-extrabold text-[#FBBF24]">{i + 1}</span>
+                  <span className="text-sm font-semibold">{name}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
       {picking && (
-        <WinnerPicker
+        <RecipientEditor
           award={picking}
-          currentId={winners[String(picking.number)]?.registrationId}
+          recipients={recipientsOf(winners, picking.number)}
           onClose={() => setPicking(null)}
-          onPick={(id) => choose(picking, id)}
+          onSave={(rows) => choose(picking, rows)}
         />
       )}
     </div>
   );
 }
 
-/** The app's _WinnerPickerSheet: participants list (from certificates) with search. */
-function WinnerPicker({
+/** The app's recipient sheet: typed rank and name, not a participant list. */
+function RecipientEditor({
   award,
-  currentId,
+  recipients,
   onClose,
-  onPick,
+  onSave,
 }: {
   award: Award;
-  currentId?: string;
+  recipients: AwardRecipient[];
   onClose: () => void;
-  onPick: (id: string) => void;
+  onSave: (recipients: AwardRecipient[]) => Promise<string | null>;
 }) {
-  const [all, setAll] = useState<any[] | null>(null);
+  const [rows, setRows] = useState(() =>
+    recipients.length ? recipients.map((r) => ({ rank: String(r.rank), name: r.name })) : [{ rank: "1", name: "" }],
+  );
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  useEffect(() => {
-    get("/certificates").then((r) => {
-      if (r.success) setAll(r.participants ?? []);
-      else {
-        setAll([]);
-        setError(r.error || "Could not load participants");
+  const [busy, setBusy] = useState(false);
+
+  const update = (i: number, patch: Partial<{ rank: string; name: string }>) =>
+    setRows((list) => list.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+
+  const submit = async (next: AwardRecipient[] | null) => {
+    let payload = next;
+    if (!payload) {
+      const parsed = manualRecipients(rows);
+      if ("error" in parsed) {
+        setError(parsed.error);
+        return;
       }
-    });
-  }, []);
-  const q = query.trim().toLowerCase();
-  const shown = (all ?? []).filter((p) => !q || `${p.name} ${p.idNumber} ${p.mobileNumber}`.toLowerCase().includes(q));
+      payload = parsed.recipients;
+    }
+    setBusy(true);
+    setError(null);
+    const err = await onSave(payload);
+    if (err) {
+      setBusy(false);
+      setError(err);
+    }
+  };
+
   return (
     <div className="animate-fade fixed inset-0 z-[90] flex items-end" onClick={onClose}>
       <div className="absolute inset-0 bg-black/55" />
       <div
-        className="animate-sheet relative flex h-[75vh] w-full flex-col rounded-t-[20px] bg-card"
+        className="animate-sheet relative flex max-h-[75vh] w-full flex-col rounded-t-[20px] bg-card"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mx-auto mt-2.5 h-1 w-10 rounded-sm bg-white/25" />
         <div className="flex items-center px-4 pb-1 pt-3.5">
-          <div className="flex-1 font-outfit text-[17px] font-bold">Winner — {award.title}</div>
-          {currentId && (
-            <button onClick={() => onPick("")} className="h-10 rounded-full px-3 text-sm font-medium text-[#F87171]">
+          <div className="min-w-0 flex-1 truncate font-outfit text-[17px] font-bold">Recipients — {award.title}</div>
+          {recipients.length > 0 && (
+            <button
+              disabled={busy}
+              onClick={() => submit([])}
+              className="h-10 shrink-0 rounded-full px-3 text-sm font-medium text-[#F87171] disabled:opacity-50"
+            >
               Remove
             </button>
           )}
         </div>
-        <div className="px-4 pb-2 pt-1.5">
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
-              <Icon name="search" color="#9CA3AF" />
-            </span>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search name, ID or mobile"
-              className="w-full rounded-[14px] bg-field py-4 pl-12 pr-3 text-base outline-none placeholder:text-muted"
-            />
-          </div>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {all === null ? (
-            <AppSpinner top={40} />
-          ) : error ? (
-            <div className="pt-16 text-center text-white/60">{error}</div>
-          ) : shown.length === 0 ? (
-            <div className="pt-16 text-center text-white/60">No participants</div>
-          ) : (
-            shown.map((p) => (
+        <p className="px-4 pb-2 text-xs text-muted">Type each recipient and rank. The same rank can be shared.</p>
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4">
+          {rows.map((row, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                value={row.rank}
+                onChange={(e) => update(i, { rank: e.target.value.replace(/\D/g, "") })}
+                inputMode="numeric"
+                aria-label="Rank"
+                className="w-14 rounded-xl bg-field px-2 py-3 text-center text-sm outline-none"
+              />
+              <input
+                value={row.name}
+                onChange={(e) => update(i, { name: e.target.value })}
+                placeholder="Recipient name"
+                className="min-w-0 flex-1 rounded-xl bg-field px-3 py-3 text-sm outline-none placeholder:text-muted"
+              />
               <button
-                key={p.id}
-                onClick={() => onPick(String(p.id))}
-                className="flex w-full items-center px-4 py-2 text-left active:bg-white/5"
+                type="button"
+                aria-label="Remove row"
+                onClick={() =>
+                  setRows((list) => (list.length === 1 ? [{ rank: "1", name: "" }] : list.filter((_, idx) => idx !== i)))
+                }
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/15 font-bold text-[#93C5FD]">
-                  {String(p.name ?? "?")
-                    .trim()[0]
-                    ?.toUpperCase() ?? "?"}
-                </span>
-                <span className="ml-4 min-w-0 flex-1">
-                  <span className="block truncate font-semibold">{p.name}</span>
-                  <span className="block truncate text-xs text-muted">
-                    {[p.idNumber, p.mobileNumber].filter(Boolean).join("  •  ")}
-                  </span>
-                </span>
-                {String(p.id) === currentId && <Icon name="emoji_events" color="#FBBF24" />}
+                <Icon name="close" size={18} color="#F87171" />
               </button>
-            ))
-          )}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() =>
+              setRows((list) => {
+                const last = Number(list[list.length - 1]?.rank) || list.length;
+                return [...list, { rank: String(last + 1), name: "" }];
+              })
+            }
+            className="inline-flex items-center gap-1 py-2 text-sm font-semibold text-[#93C5FD]"
+          >
+            <Icon name="add" size={18} color="#93C5FD" />
+            Add recipient
+          </button>
+          {error && <p className="text-sm text-[#F87171]">{error}</p>}
+        </div>
+        <div className="px-4 pb-4 pt-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => submit(null)}
+            className="flex h-12 w-full items-center justify-center rounded-xl bg-accent text-sm font-bold disabled:opacity-50"
+          >
+            {busy ? "Saving…" : "Save"}
+          </button>
         </div>
       </div>
     </div>

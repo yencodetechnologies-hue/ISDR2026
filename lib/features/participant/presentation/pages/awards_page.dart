@@ -22,7 +22,7 @@ class _AwardCategoryItem {
 }
 
 class AwardsPage extends StatefulWidget {
-  /// Admin: tapping an award opens the participant picker for its winner.
+  /// Admin: tapping an award opens a form to type its recipients.
   final bool adminMode;
 
   const AwardsPage({super.key, this.adminMode = false});
@@ -136,7 +136,7 @@ class AwardsPage extends StatefulWidget {
 class _AwardsPageState extends State<AwardsPage> {
   final _api = ApiService();
 
-  /// Award number -> {registrationId, name}.
+  /// Award number -> {name, recipients}.
   Map<String, Map<String, dynamic>> _winners = {};
 
   @override
@@ -155,27 +155,63 @@ class _AwardsPageState extends State<AwardsPage> {
     });
   }
 
+  /// Presentation order, so a person in several categories is listed once, first appearance first.
+  static const List<int> _consolidatedOrder = [5, 4, 8, 6, 7, 3, 11, 12];
+
+  List<({int rank, String name})> _recipientsFor(int number) {
+    final row = _winners['$number'];
+    if (row == null) return [];
+    final raw = row['recipients'];
+    if (raw is List && raw.isNotEmpty) {
+      return raw.whereType<Map>().map((m) {
+        final rank = int.tryParse('${m['rank']}') ?? 1;
+        final name = m['name']?.toString().trim() ?? '';
+        return (rank: rank, name: name);
+      }).where((r) => r.name.isNotEmpty).toList();
+    }
+    final name = row['name']?.toString().trim() ?? '';
+    if (name.isEmpty) return [];
+    return [(rank: 1, name: name)];
+  }
+
+  List<String> _consolidatedNames() {
+    final seen = <String>{};
+    final names = <String>[];
+    void addAll(Iterable<({int rank, String name})> rows) {
+      for (final r in rows) {
+        if (seen.add(r.name.toLowerCase())) names.add(r.name);
+      }
+    }
+
+    for (final n in _consolidatedOrder) {
+      addAll(_recipientsFor(n));
+    }
+    final known = _consolidatedOrder.map((n) => '$n').toSet();
+    for (final key in _winners.keys) {
+      if (known.contains(key)) continue;
+      final n = int.tryParse(key);
+      if (n != null) addAll(_recipientsFor(n));
+    }
+    return names;
+  }
+
   void _toast(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
-  /// Admin: pick the winner of one award (or remove the current one).
-  Future<void> _pickWinner(_AwardCategoryItem item) async {
-    final current = _winners['${item.number}'];
-    final picked = await showModalBottomSheet<Map<String, dynamic>>(
+  /// Admin: type the recipients of one award, or clear them.
+  Future<void> _editRecipients(_AwardCategoryItem item) async {
+    final current = _recipientsFor(item.number);
+    final picked = await showModalBottomSheet<List<Map<String, dynamic>>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF14141F),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _WinnerPickerSheet(
-        award: item,
-        currentId: current?['registrationId']?.toString(),
-      ),
+      builder: (_) => _RecipientEditorSheet(award: item, recipients: current),
     );
     if (picked == null || !mounted) return;
-    final id = picked['id']?.toString() ?? '';
-    final res = await _api.setAwardWinner(item.number, id);
+    final res = await _api.setAwardWinner(item.number, picked);
     if (!mounted) return;
     if (res['success'] == true) {
       setState(() {
@@ -187,7 +223,7 @@ class _AwardsPageState extends State<AwardsPage> {
           _winners.remove('${item.number}');
         }
       });
-      _toast(id.isEmpty ? 'Winner removed' : 'Winner saved');
+      _toast(picked.isEmpty ? 'Recipients removed' : 'Recipients saved');
     } else {
       _toast(res['error']?.toString() ?? 'Could not save');
     }
@@ -228,6 +264,12 @@ class _AwardsPageState extends State<AwardsPage> {
             for (final item in AwardsPage._ugAwards) ...[
               _buildAwardAccordionCard(item),
               const SizedBox(height: 10),
+            ],
+            if (_consolidatedNames().isNotEmpty) ...[
+              const SizedBox(height: 14),
+              _buildSectionHeader('AWARD RECIPIENTS'),
+              const SizedBox(height: 10),
+              _buildConsolidatedList(),
             ],
             const SizedBox(height: 22),
           ],
@@ -278,15 +320,127 @@ class _AwardsPageState extends State<AwardsPage> {
     ),
   );
 
-  /// Award heading. Participants tap it to roll open the winner (or "Yet to
-  /// be announced"); the admin taps it to choose the winner.
+  Widget _recipientRows(List<({int rank, String name})> recipients) {
+    if (recipients.isEmpty) {
+      return Row(
+        children: [
+          const Icon(Icons.hourglass_top_rounded, size: 18, color: Color(0xFFFBBF24)),
+          const SizedBox(width: 8),
+          Text(
+            'To be announced',
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFFFBBF24),
+            ),
+          ),
+        ],
+      );
+    }
+    return Column(
+      children: [
+        for (var i = 0; i < recipients.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          Row(
+            children: [
+              SizedBox(
+                width: 22,
+                child: Text(
+                  '${recipients[i].rank}',
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFFFBBF24),
+                  ),
+                ),
+              ),
+              const Icon(Icons.emoji_events_rounded, size: 16, color: Color(0xFFFBBF24)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  recipients[i].name,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFFBBF24),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _recipientPanel(List<({int rank, String name})> recipients) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0x26F59E0B),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0x4DF59E0B)),
+      ),
+      child: _recipientRows(recipients),
+    );
+  }
+
+  Widget _buildConsolidatedList() {
+    final names = _consolidatedNames();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF14141F),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x66F59E0B)),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < names.length; i++)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 28,
+                    child: Text(
+                      '${i + 1}',
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFFFBBF24),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      names[i],
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Award heading. Participants tap it to roll open the ranked recipients
+  /// (or "To be announced"); the admin taps it to type the recipients.
   Widget _buildAwardAccordionCard(_AwardCategoryItem item) {
-    final winner = _winners['${item.number}']?['name']?.toString();
+    final recipients = _recipientsFor(item.number);
+    final announced = recipients.isNotEmpty;
     final decoration = BoxDecoration(
       color: const Color(0xFF14141F),
       borderRadius: BorderRadius.circular(16),
       border: Border.all(
-        color: winner != null
+        color: announced
             ? const Color(0x66F59E0B)
             : const Color(0x1AFFFFFF),
       ),
@@ -299,10 +453,11 @@ class _AwardsPageState extends State<AwardsPage> {
           decoration: decoration,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: () => _pickWinner(item),
+            onTap: () => _editRecipients(item),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _numberBadge(item.number),
                   const SizedBox(width: 14),
@@ -311,26 +466,23 @@ class _AwardsPageState extends State<AwardsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _titleText(item.title),
-                        const SizedBox(height: 2),
-                        Text(
-                          winner == null
-                              ? 'Tap to choose the winner'
-                              : 'Winner: $winner',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: winner == null
-                                ? const Color(0xFF9CA3AF)
-                                : const Color(0xFFFBBF24),
-                          ),
-                        ),
+                        const SizedBox(height: 6),
+                        if (!announced)
+                          Text(
+                            'Tap to enter recipients',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF9CA3AF),
+                            ),
+                          )
+                        else
+                          _recipientRows(recipients),
                       ],
                     ),
                   ),
                   Icon(
-                    winner == null
-                        ? Icons.person_add_alt_1_rounded
-                        : Icons.edit_rounded,
+                    announced ? Icons.edit_rounded : Icons.edit_note_rounded,
                     size: 20,
                     color: const Color(0xFF93C5FD),
                   ),
@@ -353,6 +505,8 @@ class _AwardsPageState extends State<AwardsPage> {
             highlightColor: Colors.transparent,
           ),
           child: ExpansionTile(
+            key: ValueKey('award-${item.number}-${recipients.length}'),
+            initiallyExpanded: announced,
             tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             iconColor: const Color(0xFF93C5FD),
@@ -360,39 +514,7 @@ class _AwardsPageState extends State<AwardsPage> {
             leading: _numberBadge(item.number),
             title: _titleText(item.title),
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0x26F59E0B),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0x4DF59E0B)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      winner == null
-                          ? Icons.hourglass_top_rounded
-                          : Icons.emoji_events_rounded,
-                      size: 18,
-                      color: const Color(0xFFFBBF24),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        winner ?? 'To be announced',
-                        style: GoogleFonts.inter(
-                          fontSize: winner == null ? 13 : 14,
-                          fontWeight: winner == null
-                              ? FontWeight.w600
-                              : FontWeight.w700,
-                          color: const Color(0xFFFBBF24),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _recipientPanel(recipients),
             ],
           ),
         ),
@@ -401,65 +523,102 @@ class _AwardsPageState extends State<AwardsPage> {
   }
 }
 
-/// Admin's list of participants to choose an award winner from.
-class _WinnerPickerSheet extends StatefulWidget {
-  final _AwardCategoryItem award;
-  final String? currentId;
+class _NameRow {
+  _NameRow(String rank, String name)
+    : rank = TextEditingController(text: rank),
+      name = TextEditingController(text: name);
 
-  const _WinnerPickerSheet({required this.award, this.currentId});
+  final TextEditingController rank;
+  final TextEditingController name;
 
-  @override
-  State<_WinnerPickerSheet> createState() => _WinnerPickerSheetState();
+  void dispose() {
+    rank.dispose();
+    name.dispose();
+  }
 }
 
-class _WinnerPickerSheetState extends State<_WinnerPickerSheet> {
-  List<Map<String, dynamic>> _all = [];
-  bool _loading = true;
+/// Admin types ranked recipient names for one award.
+class _RecipientEditorSheet extends StatefulWidget {
+  final _AwardCategoryItem award;
+  final List<({int rank, String name})> recipients;
+
+  const _RecipientEditorSheet({required this.award, required this.recipients});
+
+  @override
+  State<_RecipientEditorSheet> createState() => _RecipientEditorSheetState();
+}
+
+class _RecipientEditorSheetState extends State<_RecipientEditorSheet> {
+  late final List<_NameRow> _rows;
   String? _error;
-  String _query = '';
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _rows = widget.recipients.isEmpty
+        ? [_NameRow('1', '')]
+        : widget.recipients.map((r) => _NameRow('${r.rank}', r.name)).toList();
   }
 
-  Future<void> _load() async {
-    final res = await ApiService().listCertificates();
-    if (!mounted) return;
-    setState(() {
-      _loading = false;
-      if (res['success'] == true) {
-        _all = (res['participants'] as List? ?? [])
-            .whereType<Map>()
-            .map((p) => Map<String, dynamic>.from(p))
-            .toList();
-      } else {
-        _error = res['error']?.toString() ?? 'Could not load participants';
+  @override
+  void dispose() {
+    for (final row in _rows) {
+      row.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addRow() {
+    final last = int.tryParse(_rows.last.rank.text.trim()) ?? _rows.length;
+    setState(() => _rows.add(_NameRow('${last + 1}', '')));
+  }
+
+  void _removeRow(int index) {
+    if (_rows.length == 1) {
+      _rows[0].rank.text = '1';
+      _rows[0].name.clear();
+      setState(() {});
+      return;
+    }
+    final row = _rows.removeAt(index);
+    row.dispose();
+    setState(() {});
+  }
+
+  void _save() {
+    final recipients = <Map<String, dynamic>>[];
+    for (final row in _rows) {
+      final name = row.name.text.trim();
+      if (name.isEmpty) continue;
+      final rank = int.tryParse(row.rank.text.trim());
+      if (rank == null || rank < 1) {
+        setState(() => _error = 'Each recipient needs a rank of 1 or more');
+        return;
       }
-    });
+      if (name.length > 200) {
+        setState(() => _error = 'A name is too long');
+        return;
+      }
+      recipients.add({'rank': rank, 'name': name});
+    }
+    if (recipients.isEmpty) {
+      setState(() => _error = 'Enter a name');
+      return;
+    }
+    if (recipients.length > 20) {
+      setState(() => _error = 'At most 20 recipients');
+      return;
+    }
+    Navigator.pop(context, recipients);
   }
 
   @override
   Widget build(BuildContext context) {
-    final q = _query.trim().toLowerCase();
-    final shown = _all
-        .where(
-          (p) =>
-              q.isEmpty ||
-              '${p['name']} ${p['idNumber']} ${p['mobileNumber']}'
-                  .toLowerCase()
-                  .contains(q),
-        )
-        .toList();
-
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.75,
+          height: MediaQuery.of(context).size.height * 0.7,
           child: Column(
             children: [
               const SizedBox(height: 10),
@@ -472,12 +631,12 @@ class _WinnerPickerSheetState extends State<_WinnerPickerSheet> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+                padding: const EdgeInsets.fromLTRB(16, 14, 8, 4),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
-                        'Winner — ${widget.award.title}',
+                        'Recipients — ${widget.award.title}',
                         style: GoogleFonts.outfit(
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
@@ -485,105 +644,100 @@ class _WinnerPickerSheetState extends State<_WinnerPickerSheet> {
                         ),
                       ),
                     ),
-                    if (widget.currentId != null)
+                    if (widget.recipients.isNotEmpty)
                       TextButton(
-                        onPressed: () =>
-                            Navigator.pop(context, <String, dynamic>{'id': ''}),
-                        child: const Text(
-                          'Remove',
-                          style: TextStyle(color: Color(0xFFF87171)),
+                        onPressed: () => Navigator.pop(context, <Map<String, dynamic>>[]),
+                        child: const Text('Remove', style: TextStyle(color: Color(0xFFF87171))),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Type each recipient and rank. The same rank can be shared.',
+                    style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF9CA3AF)),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  children: [
+                    for (var i = 0; i < _rows.length; i++) ...[
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 64,
+                            child: TextField(
+                              controller: _rows[i].rank,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(color: Colors.white),
+                              decoration: _fieldDecoration('Rank'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              controller: _rows[i].name,
+                              textCapitalization: TextCapitalization.words,
+                              style: GoogleFonts.inter(color: Colors.white),
+                              decoration: _fieldDecoration('Recipient name'),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => _removeRow(i),
+                            icon: const Icon(Icons.close_rounded, color: Color(0xFFF87171)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: _addRow,
+                        icon: const Icon(Icons.add_rounded, color: Color(0xFF93C5FD)),
+                        label: Text(
+                          'Add recipient',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF93C5FD),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          _error!,
+                          style: GoogleFonts.inter(color: const Color(0xFFF87171)),
                         ),
                       ),
                   ],
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-                child: TextField(
-                  onChanged: (v) => setState(() => _query = v),
-                  style: GoogleFonts.inter(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'Search name, ID or mobile',
-                    hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: Color(0xFF9CA3AF),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _save,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF3B82F6),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    filled: true,
-                    fillColor: const Color(0xFF1E1E2A),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
+                    child: Text(
+                      'Save',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white),
                     ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: _loading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _error != null
-                    ? Center(
-                        child: Text(
-                          _error!,
-                          style: GoogleFonts.inter(color: Colors.white60),
-                        ),
-                      )
-                    : shown.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No participants',
-                          style: GoogleFonts.inter(color: Colors.white60),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: shown.length,
-                        itemBuilder: (_, i) {
-                          final p = shown[i];
-                          final chosen =
-                              p['id']?.toString() == widget.currentId;
-                          return ListTile(
-                            onTap: () => Navigator.pop(context, p),
-                            leading: CircleAvatar(
-                              backgroundColor: const Color(0x263B82F6),
-                              child: Text(
-                                (p['name']?.toString() ?? '?')
-                                    .trim()
-                                    .characters
-                                    .first
-                                    .toUpperCase(),
-                                style: const TextStyle(
-                                  color: Color(0xFF93C5FD),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              p['name']?.toString() ?? '',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            subtitle: Text(
-                              [p['idNumber'], p['mobileNumber']]
-                                  .where(
-                                    (v) => (v?.toString() ?? '').isNotEmpty,
-                                  )
-                                  .join('  •  '),
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: const Color(0xFF9CA3AF),
-                              ),
-                            ),
-                            trailing: chosen
-                                ? const Icon(
-                                    Icons.emoji_events_rounded,
-                                    color: Color(0xFFFBBF24),
-                                  )
-                                : null,
-                          );
-                        },
-                      ),
               ),
             ],
           ),
@@ -591,4 +745,13 @@ class _WinnerPickerSheetState extends State<_WinnerPickerSheet> {
       ),
     );
   }
+
+  InputDecoration _fieldDecoration(String hint) => InputDecoration(
+    hintText: hint,
+    hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+    filled: true,
+    fillColor: const Color(0xFF1E1E2A),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+  );
 }

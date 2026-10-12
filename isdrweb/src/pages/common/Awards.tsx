@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
-import { Avatar, Empty, Icon, Loading, Modal, Page, SearchBox, useToast } from "@/components/ui";
+import { Button, Icon, Modal, Page, useToast } from "@/components/ui";
 import { get, put } from "@/lib/api";
+import { consolidatedNames, manualRecipients, recipientsOf, type AwardRecipient } from "@/lib/awards";
 import { useAuth } from "@/lib/auth";
-import { idOf } from "@/lib/format";
 import { useAppLayout } from "@/lib/appLayout";
 import AwardsApp from "./AwardsApp";
 
@@ -27,7 +27,7 @@ const UG_AWARDS: Award[] = [
   { number: 12, title: "Best Grant Award" },
 ];
 
-/** Conference awards. Participants see each award's winner; the admin (apartment) picks winners. */
+/** Conference awards. Participants see each award's recipients; the admin types them. */
 export default function Awards() {
   // Phone width: the mobile app's screen.
   return useAppLayout() ? <AwardsApp /> : <AwardsWeb />;
@@ -42,30 +42,37 @@ function AwardsWeb() {
   const [picking, setPicking] = useState<Award | null>(null);
 
   useEffect(() => {
-    get("/awards").then((r) => r.success && r.winners && typeof r.winners === "object" && setWinners(r.winners));
+    get("/awards").then((r) => {
+      if (!r.success || !r.winners || typeof r.winners !== "object") return;
+      setWinners(r.winners);
+      setOpen(new Set(Object.keys(r.winners).map((k) => Number(k))));
+    });
   }, []);
 
-  const save = async (award: Award, registrationId: string) => {
-    setPicking(null);
-    const res = await put(`/awards/${award.number}`, { registrationId });
-    if (!res.success) return toast(res.error || "Could not save", "error");
+  const save = async (award: Award, recipients: AwardRecipient[]) => {
+    const res = await put(`/awards/${award.number}`, { recipients });
+    if (!res.success) return res.error || "Could not save";
     setWinners((w) => {
       const n = { ...w };
       if (res.winner && typeof res.winner === "object") n[String(award.number)] = res.winner;
       else delete n[String(award.number)];
       return n;
     });
-    toast(registrationId ? "Winner saved" : "Winner removed", "success");
+    setPicking(null);
+    toast(recipients.length ? "Recipients saved" : "Recipients removed", "success");
+    return null;
   };
 
+  const names = consolidatedNames(winners);
   const card = (a: Award) => {
-    const winner: string | undefined = winners[String(a.number)]?.name;
+    const rows = recipientsOf(winners, a.number);
+    const announced = rows.length > 0;
     const expanded = open.has(a.number);
     return (
       <div
         key={a.number}
         className="card card-hover overflow-hidden"
-        style={{ borderColor: winner ? "rgba(245,158,11,0.4)" : undefined }}
+        style={{ borderColor: announced ? "rgba(245,158,11,0.4)" : undefined }}
       >
         <button
           onClick={() =>
@@ -78,30 +85,52 @@ function AwardsWeb() {
                   return n;
                 })
           }
-          className="flex w-full items-center gap-4 px-5 py-4 text-left"
+          className="flex w-full items-start gap-4 px-5 py-4 text-left"
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-accent/30 bg-accent/15 font-extrabold text-[#93C5FD]">
             {a.number}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-[14.5px] font-bold">{a.title}</span>
-            {adminMode && (
-              <span className="block text-xs font-semibold" style={{ color: winner ? "#FBBF24" : "#9CA3AF" }}>
-                {winner ? `Winner: ${winner}` : "Click to choose the winner"}
-              </span>
-            )}
+            {adminMode &&
+              (announced ? (
+                <span className="mt-2 block space-y-1.5">
+                  {rows.map((r, i) => (
+                    <span key={`${r.rank}-${r.name}-${i}`} className="flex items-center gap-2 text-sm font-bold text-[#FBBF24]">
+                      <span className="w-5 font-extrabold">{r.rank}</span>
+                      {r.name}
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                <span className="mt-0.5 block text-xs font-semibold text-muted">Click to enter recipients</span>
+              ))}
           </span>
           <Icon
-            name={adminMode ? (winner ? "edit" : "person_add") : expanded ? "expand_less" : "expand_more"}
+            name={adminMode ? (announced ? "edit" : "edit_note") : expanded ? "expand_less" : "expand_more"}
             size={20}
             color="#93C5FD"
           />
         </button>
         {!adminMode && expanded && (
           <div className="px-4 pb-4">
-            <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/15 px-3 py-2.5 font-semibold text-[#FBBF24]">
-              <Icon name={winner ? "emoji_events" : "hourglass_top"} size={18} />
-              {winner ?? "To be announced"}
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/15 px-3 py-2.5 text-[#FBBF24]">
+              {announced ? (
+                <div className="space-y-2">
+                  {rows.map((r, i) => (
+                    <div key={`${r.rank}-${r.name}-${i}`} className="flex items-center gap-2 text-sm font-bold">
+                      <span className="w-5 font-extrabold">{r.rank}</span>
+                      <Icon name="emoji_events" size={16} />
+                      {r.name}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-[13px] font-semibold">
+                  <Icon name="hourglass_top" size={18} />
+                  To be announced
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -112,7 +141,7 @@ function AwardsWeb() {
   return (
     <Page
       title={adminMode ? "Award Winners" : "Conference Awards"}
-      subtitle={adminMode ? "Click an award to choose its winner" : "Click an award to see its winner"}
+      subtitle={adminMode ? "Click an award to enter its recipients" : "Click an award to see its recipients"}
       back={false}
     >
       <div className="grid gap-6 lg:grid-cols-2">
@@ -132,12 +161,28 @@ function AwardsWeb() {
           </div>
           <div className="space-y-2.5">{UG_AWARDS.map(card)}</div>
         </section>
+        {names.length > 0 && (
+          <section className="lg:col-span-2">
+            <div className="mb-3 flex items-center gap-2">
+              <Icon name="groups" size={20} color="#F59E0B" />
+              <h2 className="font-semibold">Award recipients</h2>
+            </div>
+            <div className="card divide-y divide-white/10 px-4">
+              {names.map((name, i) => (
+                <div key={name} className="flex items-center gap-3 py-2.5">
+                  <span className="w-7 font-outfit font-extrabold text-[#FBBF24]">{i + 1}</span>
+                  <span className="font-semibold">{name}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
       {picking && (
-        <WinnerPicker
+        <RecipientEditor
           award={picking}
-          currentId={winners[String(picking.number)]?.registrationId ?? null}
-          onPick={(id) => save(picking, id)}
+          recipients={recipientsOf(winners, picking.number)}
+          onSave={(rows) => save(picking, rows)}
           onClose={() => setPicking(null)}
         />
       )}
@@ -145,75 +190,109 @@ function AwardsWeb() {
   );
 }
 
-function WinnerPicker({
+function RecipientEditor({
   award,
-  currentId,
-  onPick,
+  recipients,
+  onSave,
   onClose,
 }: {
   award: Award;
-  currentId: string | null;
-  onPick: (id: string) => void;
+  recipients: AwardRecipient[];
+  onSave: (recipients: AwardRecipient[]) => Promise<string | null>;
   onClose: () => void;
 }) {
-  const [all, setAll] = useState<any[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [q, setQ] = useState("");
-  useEffect(() => {
-    get("/certificates").then((r) => {
-      if (r.success) setAll(r.participants ?? []);
-      else setError(r.error || "Could not load participants");
-    });
-  }, []);
-  const query = q.trim().toLowerCase();
-  const shown = (all ?? []).filter(
-    (p) => !query || `${p.name} ${p.idNumber} ${p.mobileNumber}`.toLowerCase().includes(query),
+  const [rows, setRows] = useState(() =>
+    recipients.length ? recipients.map((r) => ({ rank: String(r.rank), name: r.name })) : [{ rank: "1", name: "" }],
   );
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const update = (i: number, patch: Partial<{ rank: string; name: string }>) =>
+    setRows((list) => list.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+
+  const submit = async (next: AwardRecipient[] | null) => {
+    let payload = next;
+    if (!payload) {
+      const parsed = manualRecipients(rows);
+      if ("error" in parsed) {
+        setError(parsed.error);
+        return;
+      }
+      payload = parsed.recipients;
+    }
+    setBusy(true);
+    setError(null);
+    const err = await onSave(payload);
+    if (err) {
+      setBusy(false);
+      setError(err);
+    }
+  };
+
   return (
     <Modal
       open
       onClose={onClose}
-      title={
-        <span className="flex items-center gap-2">
-          <span className="flex-1 truncate">Winner — {award.title}</span>
-          {currentId && (
-            <button onClick={() => onPick("")} className="text-sm font-semibold text-[#F87171]">
+      title={`Recipients — ${award.title}`}
+      footer={
+        <>
+          {recipients.length > 0 && (
+            <Button variant="danger" disabled={busy} onClick={() => submit([])}>
               Remove
-            </button>
+            </Button>
           )}
-        </span>
+          <Button loading={busy} onClick={() => submit(null)}>
+            Save
+          </Button>
+        </>
       }
     >
-      <SearchBox value={q} onChange={setQ} placeholder="Search name, ID or mobile" />
-      <div className="mt-3">
-        {error ? (
-          <div className="py-6 text-center text-sm text-muted">{error}</div>
-        ) : !all ? (
-          <Loading />
-        ) : shown.length === 0 ? (
-          <Empty icon="person_search" title="No participants" />
-        ) : (
-          shown.map((p) => {
-            const selected = idOf(p) === currentId;
-            return (
-              <button
-                key={idOf(p)}
-                onClick={() => onPick(idOf(p))}
-                className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-white/5"
-              >
-                <Avatar name={p.name} size={36} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">{p.name}</span>
-                  <span className="block text-xs text-muted">
-                    {[p.idNumber, p.mobileNumber].filter(Boolean).join(" · ")}
-                  </span>
-                </span>
-                {selected && <Icon name="check_circle" color="#22C55E" />}
-              </button>
-            );
-          })
-        )}
+      <p className="mb-3 text-sm text-muted">Type each recipient and rank. The same rank can be shared.</p>
+      <div className="space-y-2">
+        {rows.map((row, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              value={row.rank}
+              onChange={(e) => update(i, { rank: e.target.value.replace(/\D/g, "") })}
+              inputMode="numeric"
+              aria-label="Rank"
+              className="w-14 rounded-xl bg-field px-2 py-3 text-center text-sm outline-none"
+            />
+            <input
+              value={row.name}
+              onChange={(e) => update(i, { name: e.target.value })}
+              placeholder="Recipient name"
+              className="min-w-0 flex-1 rounded-xl bg-field px-3 py-3 text-sm outline-none placeholder:text-muted"
+            />
+            <button
+              type="button"
+              aria-label="Remove row"
+              onClick={() =>
+                setRows((list) =>
+                  list.length === 1 ? [{ rank: "1", name: "" }] : list.filter((_, idx) => idx !== i),
+                )
+              }
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#F87171]"
+            >
+              <Icon name="close" size={18} color="#F87171" />
+            </button>
+          </div>
+        ))}
       </div>
+      <button
+        type="button"
+        onClick={() =>
+          setRows((list) => {
+            const last = Number(list[list.length - 1]?.rank) || list.length;
+            return [...list, { rank: String(last + 1), name: "" }];
+          })
+        }
+        className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#93C5FD]"
+      >
+        <Icon name="add" size={18} color="#93C5FD" />
+        Add recipient
+      </button>
+      {error && <p className="mt-3 text-sm text-[#F87171]">{error}</p>}
     </Modal>
   );
 }

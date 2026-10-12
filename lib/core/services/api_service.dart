@@ -1983,15 +1983,18 @@ class ApiService {
             data: {'registrationIds': registrationIds},
           ));
 
-  /// Award winners: {winners: {"<awardNumber>": {registrationId, name}}}.
+  /// Award winners: {winners: {"<awardNumber>": {name, recipients: [{rank, name}]}}}.
   Future<Map<String, dynamic>> getAwardWinners() =>
       _sessionContentCall(() => _dio.get(ApiConfig.awards));
 
-  /// Admin sets an award's winner; an empty id removes it.
-  Future<Map<String, dynamic>> setAwardWinner(int awardNumber, String registrationId) =>
+  /// Admin saves an award's typed recipients. An empty list removes the award.
+  Future<Map<String, dynamic>> setAwardWinner(
+    int awardNumber,
+    List<Map<String, dynamic>> recipients,
+  ) =>
       _sessionContentCall(() => _dio.put(
             '${ApiConfig.awards}/$awardNumber',
-            data: {'registrationId': registrationId},
+            data: {'recipients': recipients},
           ));
 
   /// The programme PDF on Cloudinary: {url, fileName, updatedAt}. url is '' until uploaded.
