@@ -30,6 +30,8 @@
 	<string>ISDR2026 needs camera access to take photos and selfies for your profile, documents, and the participant feed.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>ISDR 2026 needs access to your photo library so you can choose and upload a photo, such as a profile picture or document.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>ISDR2026 needs permission to save photos, such as your badge QR code, to your photo library.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
